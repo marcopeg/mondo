@@ -29,7 +29,7 @@ export const RecentCRMNotes = () => {
 
   return (
     <Card
-      title="Recently updated CRM notes"
+      title=" Last Updates"
       spacing={3}
       collapsible
       collapsed
