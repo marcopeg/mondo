@@ -1,0 +1,37 @@
+# vscode
+.vscode 
+
+# Intellij
+*.iml
+.idea
+
+# npm
+node_modules
+
+# lock files
+yarn.lock
+pnpm-lock.yaml
+
+# Don't include the compiled main.js file in the repo.
+# They should be uploaded to GitHub releases instead.
+main.js
+styles.css
+
+# Exclude sourcemaps
+*.map
+
+# obsidian
+data.json
+
+# Exclude macOS Finder (System Explorer) View States
+.DS_Store
+
+# Generated/temp Tailwind/build files
+styles.build.css
+styles.full.css
+styles.tailwind.css
+styles.test.css
+tmp-tailwind-test.html
+
+# Lockfile for npm (we use yarn)
+package-lock.json
