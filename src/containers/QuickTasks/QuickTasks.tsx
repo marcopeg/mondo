@@ -55,7 +55,13 @@ export const QuickTasks = () => {
   );
 
   return (
-    <Card title="Quick tasks" spacing={3} collapsible collapsed={false}>
+    <Card
+      title="Quick Tasks"
+      icon="list-checks"
+      spacing={3}
+      collapsible
+      collapsed={false}
+    >
       {isLoading ? (
         <Typography
           variant="body"
