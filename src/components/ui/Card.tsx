@@ -175,7 +175,7 @@ export const Card: React.FC<CardProps> = ({
     <Paper p={0} {...boxProps} className={className}>
       {shouldRenderHeader && (
         <Box
-          className={[innerPaddingClass, "mb-2", "p-2"].join(" ")}
+          className={innerPaddingClass}
           style={innerPaddingStyle}
           data-collapsible={collapsible ? "true" : "false"}
         >
