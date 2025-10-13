@@ -1,3 +1,19 @@
+# Development
+
+This is an Obsidian plugin and runs inside an Electron app.
+
+```bash
+# Install dependencies
+yarn install
+
+# Lint & Build
+# (useful to check if a change builds without errors)
+yarn build
+
+# Continuous Development
+yarn dev
+```
+
 # CRM Obsidian Plugin
 
 This codebase implements an Obsidian Plugin for CRM purposes.
