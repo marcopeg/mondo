@@ -228,7 +228,7 @@ export const Card: React.FC<CardProps> = ({
         </Box>
       )}
 
-      {(title || subtitle) && (
+      {(title || subtitle) && !isCollapsed && (
         // Separator sits flush with Paper edges because it's outside the padded Box
         <Separator spacing={0} spacingBefore={0} spacingAfter={0} />
       )}
