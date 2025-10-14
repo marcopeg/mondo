@@ -270,8 +270,9 @@ export default class CRM extends Plugin {
           return;
         }
 
-        const selection = editor?.getSelection?.() ?? "";
-        if (!selection || !selection.trim()) {
+        const resolvedEditor = editor ?? view.editor ?? null;
+        const selection = resolvedEditor?.getSelection?.() ?? "";
+        if (!selection.trim()) {
           return;
         }
 
@@ -281,7 +282,7 @@ export default class CRM extends Plugin {
           item.onClick(() => {
             void this.voiceoverManager?.generateVoiceover(
               file,
-              editor,
+              resolvedEditor,
               selection
             );
           });
@@ -314,7 +315,33 @@ export default class CRM extends Plugin {
   }
 
   private extendFileMenu(menu: Menu, file: TAbstractFile, source?: string) {
-    if (!(file instanceof TFile) || !this.audioTranscriptionManager) {
+    if (!(file instanceof TFile)) {
+      return;
+    }
+
+    if (file.extension === "md") {
+      menu.addItem((item) => {
+        item.setTitle("Generate voiceover");
+        item.setIcon("file-audio");
+        item.onClick(() => {
+          void (async () => {
+            const content = await this.app.vault.read(file);
+            const activeView =
+              this.app.workspace.getActiveViewOfType(MarkdownView);
+            const activeEditor =
+              activeView?.file?.path === file.path ? activeView.editor : null;
+            const combinedContent = `${file.basename}\n\n${content}`.trim();
+            void this.voiceoverManager?.generateVoiceover(
+              file,
+              activeEditor ?? null,
+              combinedContent
+            );
+          })();
+        });
+      });
+    }
+
+    if (!this.audioTranscriptionManager) {
       return;
     }
 
