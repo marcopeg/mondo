@@ -252,11 +252,11 @@ export class VoiceoverManager {
 
     let attempt = 0;
     let targetPath = "";
-    const noteFileName = file.name;
+    const noteBaseName = file.basename;
 
     while (true) {
       const suffix = attempt === 0 ? "" : `-${attempt}`;
-      const fileName = `${getTimestamp()} ${noteFileName}${suffix}.mp3`;
+      const fileName = `Voiceover ${getTimestamp()} ${noteBaseName}${suffix}.mp3`;
       targetPath = normalizePath(`${normalizedDir}/${fileName}`);
       const exists = await vault.adapter.exists(targetPath);
       if (!exists) {
