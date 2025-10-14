@@ -262,7 +262,11 @@ export default class CRM extends Plugin {
           item.setTitle("Generate voiceover");
           item.setIcon("file-audio");
           item.onClick(() => {
-            void this.voiceoverManager?.generateVoiceover(file, selection);
+            void this.voiceoverManager?.generateVoiceover(
+              file,
+              editor,
+              selection
+            );
           });
         });
       })

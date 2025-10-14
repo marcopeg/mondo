@@ -1,5 +1,11 @@
 import type CRM from "@/main";
-import { Notice, TFile, normalizePath } from "obsidian";
+import {
+  Notice,
+  TFile,
+  normalizePath,
+  type Editor,
+  type EditorPosition,
+} from "obsidian";
 
 const VOICEOVER_MODEL = "gpt-4o-mini-tts";
 const FALLBACK_VOICES = [
@@ -14,7 +20,10 @@ const FALLBACK_VOICES = [
 ];
 
 const AUDIO_MIME_TYPE = "audio/mpeg";
-const VOICEOVER_PREFIX = "voiceover";
+type SelectionRange = {
+  start: EditorPosition;
+  end: EditorPosition;
+};
 
 const getTimestamp = () => {
   const now = new Date();
@@ -24,7 +33,6 @@ const getTimestamp = () => {
     String(now.getDate()).padStart(2, "0"),
     String(now.getHours()).padStart(2, "0"),
     String(now.getMinutes()).padStart(2, "0"),
-    String(now.getSeconds()).padStart(2, "0"),
   ];
 
   return parts.join("");
@@ -120,13 +128,19 @@ export class VoiceoverManager {
     return this.cachedVoices;
   };
 
-  generateVoiceover = async (file: TFile, text: string) => {
-    const trimmed = text.trim();
+  generateVoiceover = async (
+    file: TFile,
+    editor: Editor,
+    selectedText: string
+  ) => {
+    const trimmed = selectedText.trim();
 
     if (!trimmed) {
       new Notice("Select some text before generating a voiceover.");
       return;
     }
+
+    const selectionRange = this.captureSelectionRange(editor);
 
     const apiKey = this.getApiKey();
     if (!apiKey) {
@@ -147,8 +161,15 @@ export class VoiceoverManager {
 
     try {
       const audioBuffer = await this.requestVoiceover(trimmed, voice, apiKey);
-      const savedPath = await this.saveAudioFile(file, audioBuffer);
-      new Notice(`Voiceover saved to ${savedPath}`);
+      const audioFile = await this.saveAudioFile(file, audioBuffer);
+      this.injectAudioEmbed(
+        editor,
+        file,
+        audioFile,
+        selectedText,
+        selectionRange
+      );
+      new Notice(`Voiceover saved to ${audioFile.path}`);
     } catch (error) {
       console.error("CRM: failed to generate voiceover", error);
       const message =
@@ -231,9 +252,11 @@ export class VoiceoverManager {
 
     let attempt = 0;
     let targetPath = "";
+    const noteFileName = file.name;
+
     while (true) {
       const suffix = attempt === 0 ? "" : `-${attempt}`;
-      const fileName = `${file.basename}-${VOICEOVER_PREFIX}-${getTimestamp()}${suffix}.mp3`;
+      const fileName = `${getTimestamp()} ${noteFileName}${suffix}.mp3`;
       targetPath = normalizePath(`${normalizedDir}/${fileName}`);
       const exists = await vault.adapter.exists(targetPath);
       if (!exists) {
@@ -243,7 +266,7 @@ export class VoiceoverManager {
     }
 
     const created = await vault.createBinary(targetPath, arrayBuffer);
-    return created.path ?? targetPath;
+    return created;
   };
 
   private ensureFolder = async (folderPath: string) => {
@@ -264,4 +287,66 @@ export class VoiceoverManager {
       throw error;
     }
   };
+
+  private injectAudioEmbed = (
+    editor: Editor,
+    sourceFile: TFile,
+    audioFile: TFile,
+    originalSelection: string,
+    range: SelectionRange
+  ) => {
+    const { metadataCache } = this.plugin.app;
+    const linkText = metadataCache.fileToLinktext(
+      audioFile,
+      sourceFile.path
+    );
+    const embedText = `\n![[${linkText}]]\n`;
+    editor.replaceRange(
+      `${originalSelection}${embedText}`,
+      range.start,
+      range.end
+    );
+  };
+
+  private captureSelectionRange = (editor: Editor): SelectionRange => {
+    const [primarySelection] = editor.listSelections();
+    if (primarySelection) {
+      const normalized = this.normalizeRange(
+        primarySelection.anchor,
+        primarySelection.head
+      );
+      if (normalized) {
+        return normalized;
+      }
+    }
+
+    const cursor = this.clonePosition(editor.getCursor());
+    return { start: cursor, end: cursor };
+  };
+
+  private normalizeRange = (
+    anchor?: EditorPosition,
+    head?: EditorPosition
+  ): SelectionRange | null => {
+    if (!anchor || !head) {
+      return null;
+    }
+
+    const anchorClone = this.clonePosition(anchor);
+    const headClone = this.clonePosition(head);
+
+    if (this.isBefore(anchorClone, headClone)) {
+      return { start: anchorClone, end: headClone };
+    }
+
+    return { start: headClone, end: anchorClone };
+  };
+
+  private isBefore = (a: EditorPosition, b: EditorPosition) =>
+    a.line < b.line || (a.line === b.line && a.ch <= b.ch);
+
+  private clonePosition = (position: EditorPosition): EditorPosition => ({
+    line: position.line,
+    ch: position.ch,
+  });
 }
