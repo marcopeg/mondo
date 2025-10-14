@@ -12,7 +12,10 @@ import {
   getCRMEntityConfig,
 } from "@/types/CRMFileType";
 import { CRM_DEFAULT_TEMPLATES } from "@/templates";
-import { getSupportedOpenAIModels } from "@/utils/VoiceNoteEditor";
+import {
+  getSupportedOpenAIModels,
+  DEFAULT_OPENAI_MODEL,
+} from "@/utils/VoiceNoteEditor";
 
 // Settings tab for CRM plugin
 export class CRMSettingsTab extends PluginSettingTab {
@@ -246,11 +249,11 @@ export class CRMSettingsTab extends PluginSettingTab {
       )
       .addDropdown((dropdown) => {
         dropdown.addOptions(openAIModels);
-        const value = (this.plugin as any).settings.openAIModel ?? "gpt-5o-mini";
+        const value = (this.plugin as any).settings.openAIModel ?? DEFAULT_OPENAI_MODEL;
         dropdown.setValue(
           Object.prototype.hasOwnProperty.call(openAIModels, value)
             ? value
-            : "gpt-5o-mini"
+            : DEFAULT_OPENAI_MODEL
         );
         dropdown.onChange(async (model) => {
           (this.plugin as any).settings.openAIModel = model;

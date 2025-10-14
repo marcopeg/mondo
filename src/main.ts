@@ -12,7 +12,11 @@ import { CRMInlineViewWrapper } from "@/views/crm-inline-view/wrapper";
 import { CRMSettingsTab } from "@/views/crm-settings/CRMSettingsTab";
 import { CRMFileManager } from "@/utils/CRMFileManager";
 import { AudioTranscriptionManager } from "@/utils/AudioTranscriptionManager";
-import { VoiceNoteEditor } from "@/utils/VoiceNoteEditor";
+import {
+  VoiceNoteEditor,
+  DEFAULT_OPENAI_MODEL,
+  getSupportedOpenAIModels,
+} from "@/utils/VoiceNoteEditor";
 import {
   CRMFileType,
   CRM_FILE_TYPES,
@@ -50,7 +54,7 @@ export default class CRM extends Plugin {
     daily: DEFAULT_CRM_DAILY_SETTINGS,
     templates: Object.fromEntries(CRM_FILE_TYPES.map((t) => [String(t), ""])),
     openAIWhisperApiKey: "",
-    openAIModel: "gpt-5o-mini",
+    openAIModel: DEFAULT_OPENAI_MODEL,
   };
 
   private hasFocusedDashboardOnStartup = false;
@@ -74,7 +78,20 @@ export default class CRM extends Plugin {
     );
 
     this.settings.openAIWhisperApiKey = this.settings.openAIWhisperApiKey ?? "";
-    this.settings.openAIModel = this.settings.openAIModel ?? "gpt-5o-mini";
+    const supportedModels = getSupportedOpenAIModels();
+    const savedModel = this.settings.openAIModel;
+    const normalizedModel = Object.prototype.hasOwnProperty.call(
+      supportedModels,
+      savedModel
+    )
+      ? savedModel
+      : DEFAULT_OPENAI_MODEL;
+
+    this.settings.openAIModel = normalizedModel;
+
+    if (normalizedModel !== savedModel) {
+      await this.saveSettings();
+    }
   }
 
   async saveSettings() {

@@ -15,14 +15,15 @@ const EXTRACTED_TEXT_FALLBACK = "";
 const clamp = (value: number, min: number, max: number) =>
   Math.min(Math.max(value, min), max);
 
+const DEFAULT_OPENAI_MODEL = "gpt-5-mini" as const;
+
 const SUPPORTED_OPENAI_MODELS: Record<string, string> = {
-  "gpt-5o-mini": "GPT 5o mini",
-  "gpt-4o-mini": "GPT-4o mini",
-  "gpt-4o": "GPT-4o",
-  "gpt-4.1-mini": "GPT-4.1 mini",
+  "gpt-5": "GPT-5",
+  [DEFAULT_OPENAI_MODEL]: "GPT-5 mini",
+  "gpt-5-nano": "GPT-5 nano",
   "gpt-4.1": "GPT-4.1",
-  "o1-mini": "o1 mini",
-  "o1-preview": "o1 preview",
+  "gpt-4.1-mini": "GPT-4.1 mini",
+  "gpt-4.1-nano": "GPT-4.1 nano",
 };
 
 const RESPONSE_ENDPOINT = "https://api.openai.com/v1/responses";
@@ -376,9 +377,14 @@ export class VoiceNoteEditor {
       const transcription = await this.createTranscription(apiKey, blob);
       const noteContent = activeView.editor?.getValue?.() ?? activeView.getViewData();
       const prompt = this.buildPrompt(transcription, noteContent ?? "");
-      const model = isSupportedModel(this.plugin.settings?.openAIModel)
-        ? this.plugin.settings.openAIModel
-        : "gpt-5o-mini";
+      const configuredModel = this.plugin.settings?.openAIModel;
+      const modelIsSupported = isSupportedModel(configuredModel);
+      const model = modelIsSupported ? configuredModel : DEFAULT_OPENAI_MODEL;
+
+      if (!modelIsSupported) {
+        this.plugin.settings.openAIModel = DEFAULT_OPENAI_MODEL;
+        await this.plugin.saveSettings();
+      }
 
       new Notice("Updating note with AI…");
       const updated = await this.generateUpdatedNote(apiKey, model, prompt);
@@ -493,3 +499,5 @@ export class VoiceNoteEditor {
 export const getSupportedOpenAIModels = () => {
   return { ...SUPPORTED_OPENAI_MODELS };
 };
+
+export { DEFAULT_OPENAI_MODEL };
