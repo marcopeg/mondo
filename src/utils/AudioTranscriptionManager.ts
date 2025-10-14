@@ -134,7 +134,10 @@ export class AudioTranscriptionManager {
 
   private writeMarkdownNote = async (file: TFile, transcript: string) => {
     const directory = file.parent?.path ?? "";
-    const notePath = `${directory ? `${directory}/` : ""}${file.basename}.md`;
+    const transcriptionBasename = `${file.basename}-transcription`;
+    const notePath = `${
+      directory ? `${directory}/` : ""
+    }${transcriptionBasename}.md`;
     const embed = `![[${file.name}]]`;
     const noteContent = `${embed}\n\n${transcript}\n`;
 
