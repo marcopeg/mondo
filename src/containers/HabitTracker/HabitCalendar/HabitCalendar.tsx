@@ -7,6 +7,7 @@ export type HabitCalendarProps = {
   onClick: (dayId: string) => void;
   onToggleView: () => void;
   title?: string;
+  showToggle?: boolean;
 };
 
 const MONTH_LABELS = [
@@ -48,6 +49,7 @@ export const HabitCalendar: FC<HabitCalendarProps> = ({
   onClick,
   onToggleView,
   title,
+  showToggle = true,
 }) => {
   const [year, setYear] = useState(() => new Date().getFullYear());
   const checked = useMemo(() => new Set(checkedDays), [checkedDays]);
@@ -135,15 +137,17 @@ export const HabitCalendar: FC<HabitCalendarProps> = ({
           )}
         </div>
 
-        <div className="flex items-center">
-          <Button
-            variant="link"
-            className="mr-2"
-            onClick={onToggleView}
-          >
-            View streak
-          </Button>
-        </div>
+        {showToggle && (
+          <div className="flex items-center">
+            <Button
+              variant="link"
+              className="mr-2"
+              onClick={onToggleView}
+            >
+              View streak
+            </Button>
+          </div>
+        )}
       </div>
 
       <div

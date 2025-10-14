@@ -1,5 +1,5 @@
 import type { FC } from "react";
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Stack from "@/components/ui/Stack";
 import Paper from "@/components/ui/Paper";
 import { InlineError } from "@/components/InlineError";
@@ -19,11 +19,40 @@ const HabitTracker: FC<HabitTrackerProps> = ({
   blockKey,
   inlineKey,
 }) => {
+  const [isMobileView, setIsMobileView] = useState<boolean>(() => {
+    if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
+      return false;
+    }
+
+    return window.matchMedia("(max-width: 640px)").matches;
+  });
   const trackerKey = blockKey ?? inlineKey ?? "habits";
   const { checkedDays, viewMode, error, toggleDay, toggleView } =
     useHabitTracker({ trackerKey });
   const hasMounted = useRef(false);
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
+  const effectiveViewMode = isMobileView ? "streak" : viewMode;
+
+  useEffect(() => {
+    if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
+      return;
+    }
+
+    const mediaQuery = window.matchMedia("(max-width: 640px)");
+    const handleChange = (event: MediaQueryListEvent) => {
+      setIsMobileView(event.matches);
+    };
+
+    setIsMobileView(mediaQuery.matches);
+
+    if (typeof mediaQuery.addEventListener === "function") {
+      mediaQuery.addEventListener("change", handleChange);
+      return () => mediaQuery.removeEventListener("change", handleChange);
+    }
+
+    mediaQuery.addListener(handleChange);
+    return () => mediaQuery.removeListener(handleChange);
+  }, []);
 
   const handleDayToggle = useCallback(
     (dayId: string) => {
@@ -31,6 +60,12 @@ const HabitTracker: FC<HabitTrackerProps> = ({
     },
     [toggleDay]
   );
+
+  const handleToggleView = useCallback(() => {
+    if (!isMobileView) {
+      toggleView();
+    }
+  }, [isMobileView, toggleView]);
 
   useEffect(() => {
     if (!hasMounted.current) {
@@ -41,25 +76,27 @@ const HabitTracker: FC<HabitTrackerProps> = ({
       behavior: "smooth",
       block: "start",
     });
-  }, [viewMode]);
+  }, [effectiveViewMode]);
 
   return (
     <div ref={scrollContainerRef}>
       <Paper>
         <Stack direction="column" gap={3}>
-          {viewMode === "calendar" ? (
+          {effectiveViewMode === "calendar" ? (
             <HabitCalendar
               checkedDays={checkedDays}
               onClick={handleDayToggle}
-              onToggleView={toggleView}
+              onToggleView={handleToggleView}
               title={title}
+              showToggle={!isMobileView}
             />
           ) : (
             <HabitStreak
               checkedDays={checkedDays}
               onClick={handleDayToggle}
-              onToggleView={toggleView}
+              onToggleView={handleToggleView}
               title={title}
+              showToggle={!isMobileView}
             />
           )}
 
