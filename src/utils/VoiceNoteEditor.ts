@@ -456,7 +456,6 @@ export class VoiceNoteEditor {
           ],
         },
       ],
-      modalities: [TEXT_CONTENT_TYPE],
     };
 
     const response = await fetch(RESPONSE_ENDPOINT, {
