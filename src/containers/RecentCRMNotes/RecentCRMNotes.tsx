@@ -7,6 +7,7 @@ import { useRecentCRMNotes } from "@/hooks/use-recent-crm-notes";
 import Button from "@/components/ui/Button";
 import { Icon } from "@/components/ui/Icon";
 import { getCRMEntityConfig } from "@/types/CRMFileType";
+import { Separator } from "@/components/ui/Separator";
 
 const DATE_FORMAT_OPTIONS: Intl.DateTimeFormatOptions = {
   year: "numeric",
@@ -60,15 +61,20 @@ export const RecentCRMNotes = () => {
             );
           })}
           {hasMore && (
-            <Button
-              onClick={() => {
-                setLimit((prev) => prev + 5);
-              }}
-              className="self-start text-xs px-3 py-1"
-              type="button"
-            >
-              Load more
-            </Button>
+            <div className="flex w-full flex-col gap-2">
+              <Separator />
+              <Button
+                onClick={() => {
+                  setLimit((prev) => prev + 5);
+                }}
+                className="text-xs px-2 py-2"
+                type="button"
+                variant="link"
+                fullWidth
+              >
+                Load more
+              </Button>
+            </div>
           )}
         </Stack>
       )}
