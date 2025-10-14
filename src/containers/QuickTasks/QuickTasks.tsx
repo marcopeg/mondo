@@ -5,6 +5,7 @@ import { Typography } from "@/components/ui/Typography";
 import Link from "@/components/ui/Link";
 import { useInboxTasks, type InboxTask } from "@/hooks/use-inbox-tasks";
 import Button from "@/components/ui/Button";
+import { Separator } from "@/components/ui/Separator";
 
 export const QuickTasks = () => {
   const { tasks, isLoading, toggleTask, promoteTask } = useInboxTasks();
@@ -161,15 +162,20 @@ export const QuickTasks = () => {
             );
           })}
           {showLoadMore && (
-            <Button
-              type="button"
-              className="self-start text-xs px-3 py-1"
-              onClick={() => {
-                setVisible((prev) => prev + 10);
-              }}
-            >
-              Load more
-            </Button>
+            <div className="flex w-full flex-col gap-2">
+              <Separator />
+              <Button
+                type="button"
+                variant="link"
+                fullWidth
+                className="text-xs px-2 py-2"
+                onClick={() => {
+                  setVisible((prev) => prev + 10);
+                }}
+              >
+                Load more
+              </Button>
+            </div>
           )}
         </Stack>
       )}

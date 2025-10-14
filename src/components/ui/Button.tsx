@@ -12,6 +12,7 @@ type ButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> & {
   children?: React.ReactNode;
   to?: string; // optional path to use Link internally
   variant?: ButtonVariant;
+  fullWidth?: boolean;
 };
 
 export const Button: React.FC<ButtonProps> = ({
@@ -21,6 +22,7 @@ export const Button: React.FC<ButtonProps> = ({
   className,
   to,
   variant = "button",
+  fullWidth = false,
   ...rest
 }) => {
   const isStart = iconPosition === "start";
@@ -33,11 +35,19 @@ export const Button: React.FC<ButtonProps> = ({
   );
 
   const isLinkVariant = variant === "link";
-  const baseClassName = isLinkVariant
-    ? "crm-button-link inline-flex items-center gap-1 bg-transparent border-0 p-0 m-0 text-left text-[var(--link-color,var(--interactive-accent))] hover:text-[var(--link-color-hover,var(--link-color,var(--interactive-accent)))]"
-    : "crm-button";
+  const baseClasses = isLinkVariant
+    ? [
+        "crm-button-link",
+        fullWidth ? "flex" : "inline-flex",
+        "items-center gap-1 bg-transparent border-0 p-0 m-0 text-left text-[var(--link-color,var(--interactive-accent))] hover:text-[var(--link-color-hover,var(--link-color,var(--interactive-accent)))]",
+      ]
+    : ["crm-button"];
 
-  const classes = [baseClassName, className]
+  if (fullWidth) {
+    baseClasses.push("w-full");
+  }
+
+  const classes = [...baseClasses, className]
     .filter(Boolean)
     .join(" ");
 
