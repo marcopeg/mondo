@@ -1,6 +1,10 @@
 import {
   MarkdownView,
   Plugin,
+  Menu,
+  Plugin,
+  TAbstractFile,
+  TFile,
   type ViewState,
   type WorkspaceLeaf,
 } from "obsidian";
@@ -126,7 +130,10 @@ export default class CRM extends Plugin {
         }
 
         if (!checking) {
-          void this.audioTranscriptionManager?.transcribeAudioFile(file);
+          void this.audioTranscriptionManager?.transcribeAudioFile(
+            file,
+            file.path
+          );
         }
 
         return true;
@@ -195,6 +202,16 @@ export default class CRM extends Plugin {
     this.registerMarkdownCodeBlockProcessor(
       "crm",
       async (...args) => new CRMInlineViewWrapper(this.app, ...args)
+    );
+
+    this.registerMarkdownPostProcessor((element, context) => {
+      this.audioTranscriptionManager?.decorateMarkdown(element, context);
+    });
+
+    this.registerEvent(
+      this.app.workspace.on("file-menu", (menu, file, source) => {
+        this.extendFileMenu(menu, file, source);
+      })
     );
 
     // this.registerView(
@@ -298,6 +315,49 @@ export default class CRM extends Plugin {
 
     this.voiceoverManager?.dispose();
     this.voiceoverManager = null;
+  }
+
+  private extendFileMenu(menu: Menu, file: TAbstractFile, source?: string) {
+    if (!(file instanceof TFile) || !this.audioTranscriptionManager) {
+      return;
+    }
+
+    if (!this.audioTranscriptionManager.isAudioFile(file)) {
+      return;
+    }
+
+    const inProgress = this.audioTranscriptionManager.isTranscriptionInProgress(
+      file
+    );
+
+    menu.addItem((item) => {
+      item.setTitle(inProgress ? "Transcribing audio…" : "Transcribe audio");
+      item.setIcon(inProgress ? "loader-2" : "wand-2");
+      if (inProgress) {
+        item.setDisabled(true);
+        return;
+      }
+
+      item.onClick(() => {
+        void this.audioTranscriptionManager?.transcribeAudioFile(
+          file,
+          source ?? file.path
+        );
+      });
+    });
+
+    if (this.audioTranscriptionManager.hasExistingTranscription(file)) {
+      menu.addItem((item) => {
+        item.setTitle("Open transcription");
+        item.setIcon("file-text");
+        item.onClick(() => {
+          this.audioTranscriptionManager?.openTranscription(
+            file,
+            source ?? file.path
+          );
+        });
+      });
+    }
   }
 
   private async openEntityPanel(entityType: CRMFileType) {

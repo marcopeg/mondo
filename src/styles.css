@@ -1,0 +1,52 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+.crm-audio-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.crm-audio-action-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem 0.75rem;
+  border-radius: 0.4rem;
+  background-color: var(--background-modifier-border);
+  color: var(--text-normal);
+  border: 1px solid transparent;
+  cursor: pointer;
+  font-size: 0.85rem;
+  line-height: 1.2;
+}
+
+.crm-audio-action-button.mod-cta {
+  background-color: var(--interactive-accent);
+  color: var(--text-on-accent);
+  border-color: var(--interactive-accent);
+}
+
+.crm-audio-action-button.mod-cta:disabled {
+  opacity: 0.7;
+  cursor: default;
+}
+
+.crm-audio-action-button:disabled {
+  pointer-events: none;
+}
+
+.crm-audio-action-button:hover:not(:disabled) {
+  filter: brightness(1.05);
+}
+
+.crm-audio-action-icon {
+  width: 1rem;
+  height: 1rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
