@@ -8,6 +8,7 @@ export type HabitStreakProps = {
   onToggleView: () => void;
   streakLength?: number;
   title?: string;
+  showToggle?: boolean;
 };
 
 const accentColor = "var(--interactive-accent)";
@@ -41,6 +42,7 @@ export const HabitStreak: FC<HabitStreakProps> = ({
   onToggleView,
   streakLength = 21,
   title,
+  showToggle = true,
 }) => {
   const checked = useMemo(() => new Set(checkedDays), [checkedDays]);
 
@@ -87,13 +89,15 @@ export const HabitStreak: FC<HabitStreakProps> = ({
         >
           {title ?? `Last ${days.length} days`}
         </div>
-        <Button
-          variant="link"
-          className="mr-2"
-          onClick={onToggleView}
-        >
-          View calendar
-        </Button>
+        {showToggle && (
+          <Button
+            variant="link"
+            className="mr-2"
+            onClick={onToggleView}
+          >
+            View calendar
+          </Button>
+        )}
       </div>
 
       <div
