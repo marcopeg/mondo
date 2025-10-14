@@ -48,6 +48,11 @@ export class CRMSettingsTab extends PluginSettingTab {
     (this.plugin as any).settings.templates =
       (this.plugin as any).settings.templates ??
       Object.fromEntries(CRM_FILE_TYPES.map((t) => [String(t), ""]));
+    (this.plugin as any).settings.openAITranscriptionPolishEnabled =
+      typeof (this.plugin as any).settings.openAITranscriptionPolishEnabled ===
+      "boolean"
+        ? (this.plugin as any).settings.openAITranscriptionPolishEnabled
+        : true;
     // Helper: collect folder paths from the vault
     const collectFolderPaths = (root: TFolder, out: string[] = []) => {
       out.push(root.path === "" ? "/" : root.path);
@@ -258,6 +263,20 @@ export class CRMSettingsTab extends PluginSettingTab {
 
         dropdown.onChange(async (value) => {
           (this.plugin as any).settings.openAIModel = value;
+          await (this.plugin as any).saveSettings();
+        });
+      });
+
+    new Setting(containerEl)
+      .setName("Polish transcriptions with AI")
+      .setDesc(
+        "When enabled, dictated notes are refined by the selected OpenAI model before insertion."
+      )
+      .addToggle((toggle) => {
+        const current =
+          (this.plugin as any).settings.openAITranscriptionPolishEnabled !== false;
+        toggle.setValue(current).onChange(async (value) => {
+          (this.plugin as any).settings.openAITranscriptionPolishEnabled = value;
           await (this.plugin as any).saveSettings();
         });
       });

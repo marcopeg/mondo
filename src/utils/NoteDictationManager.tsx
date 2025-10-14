@@ -138,6 +138,11 @@ export class NoteDictationManager {
     return model.trim();
   };
 
+  private isPolishEnabled = () => {
+    const flag = this.plugin.settings?.openAITranscriptionPolishEnabled;
+    return flag !== false;
+  };
+
   private render = () => {
     if (!this.root || !this.container) {
       return;
@@ -209,8 +214,11 @@ export class NoteDictationManager {
 
     try {
       const transcript = await this.requestTranscription(audio, apiKey);
-      const polished = await this.requestCompletion(transcript, apiKey);
-      this.insertText(polished, context);
+      const shouldPolish = this.isPolishEnabled();
+      const content = shouldPolish
+        ? await this.requestCompletion(transcript, apiKey)
+        : transcript;
+      this.insertText(content, context);
       new Notice("Voice note inserted into the document.");
     } catch (error) {
       const message =

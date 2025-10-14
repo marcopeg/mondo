@@ -61,6 +61,7 @@ export default class CRM extends Plugin {
     openAIWhisperApiKey: "",
     openAIVoice: "",
     openAIModel: "gpt-5-nano",
+    openAITranscriptionPolishEnabled: true,
   };
 
   private hasFocusedDashboardOnStartup = false;
@@ -86,6 +87,10 @@ export default class CRM extends Plugin {
     this.settings.openAIWhisperApiKey = this.settings.openAIWhisperApiKey ?? "";
     this.settings.openAIVoice = this.settings.openAIVoice ?? "";
     this.settings.openAIModel = this.settings.openAIModel ?? "gpt-5-nano";
+    this.settings.openAITranscriptionPolishEnabled =
+      typeof this.settings.openAITranscriptionPolishEnabled === "boolean"
+        ? this.settings.openAITranscriptionPolishEnabled
+        : true;
   }
 
   async saveSettings() {
