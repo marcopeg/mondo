@@ -27,7 +27,7 @@ const SUPPORTED_OPENAI_MODELS: Record<string, string> = {
 
 const RESPONSE_ENDPOINT = "https://api.openai.com/v1/responses";
 
-const TEXT_CONTENT_TYPE = "text";
+const TEXT_CONTENT_TYPE = "input_text";
 
 const OUTPUT_TEXT_PATH = ["output", 0, "content", 0, "text"] as const;
 
