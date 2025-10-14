@@ -236,6 +236,80 @@ export class CRMSettingsTab extends PluginSettingTab {
         } catch (e) {}
       });
 
+    new Setting(containerEl)
+      .setName("Voiceover voice")
+      .setDesc(
+        "Select the OpenAI voice used when generating audio from selected text."
+      )
+      .addDropdown((dropdown) => {
+        const manager = this.plugin.getVoiceoverManager?.();
+        const apiKey = (this.plugin as any).settings.openAIWhisperApiKey?.trim?.();
+        const currentVoice = (this.plugin as any).settings.openAIVoice ?? "";
+
+        dropdown.onChange(async (value) => {
+          (this.plugin as any).settings.openAIVoice = value;
+          await (this.plugin as any).saveSettings();
+        });
+
+        const setOptions = (voices: string[], disabled: boolean, placeholder: string) => {
+          const select = dropdown.selectEl;
+          while (select.firstChild) {
+            select.removeChild(select.firstChild);
+          }
+
+          if (voices.length === 0) {
+            const option = document.createElement("option");
+            option.value = "";
+            option.textContent = placeholder;
+            select.appendChild(option);
+            dropdown.setValue("");
+            dropdown.setDisabled(true);
+            return;
+          }
+
+          voices.forEach((voice) => {
+            const option = document.createElement("option");
+            option.value = voice;
+            option.textContent = voice;
+            select.appendChild(option);
+          });
+
+          const initial =
+            currentVoice && voices.includes(currentVoice)
+              ? currentVoice
+              : voices[0];
+          dropdown.setValue(initial);
+          dropdown.setDisabled(disabled);
+
+          if (!currentVoice || !voices.includes(currentVoice)) {
+            (this.plugin as any).settings.openAIVoice = initial;
+            void (this.plugin as any).saveSettings();
+          }
+        };
+
+        if (!apiKey || !manager) {
+          setOptions([], true, "Set an OpenAI API key to load voices");
+          return;
+        }
+
+        dropdown.setDisabled(true);
+        const loadingOption = document.createElement("option");
+        loadingOption.value = "";
+        loadingOption.textContent = "Loading voices…";
+        dropdown.selectEl.appendChild(loadingOption);
+        dropdown.setValue("");
+
+        void manager
+          .getAvailableVoices()
+          .then((voices) => {
+            setOptions(voices, false, "No voices available");
+          })
+          .catch((error) => {
+            console.error("CRM: unable to populate voice options", error);
+            setOptions([], true, "Failed to load voices");
+          });
+      });
+
     // Daily Logs section
     new Setting(containerEl)
       .setName("Daily Logs")

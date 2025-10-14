@@ -1,4 +1,9 @@
-import { Plugin, type ViewState, type WorkspaceLeaf } from "obsidian";
+import {
+  MarkdownView,
+  Plugin,
+  type ViewState,
+  type WorkspaceLeaf,
+} from "obsidian";
 import {
   CRMDashboardViewWrapper,
   CRM_DASHBOARD_VIEW,
@@ -12,6 +17,7 @@ import { CRMInlineViewWrapper } from "@/views/crm-inline-view/wrapper";
 import { CRMSettingsTab } from "@/views/crm-settings/CRMSettingsTab";
 import { CRMFileManager } from "@/utils/CRMFileManager";
 import { AudioTranscriptionManager } from "@/utils/AudioTranscriptionManager";
+import { VoiceoverManager } from "@/utils/VoiceoverManager";
 import {
   CRMFileType,
   CRM_FILE_TYPES,
@@ -49,11 +55,13 @@ export default class CRM extends Plugin {
     daily: DEFAULT_CRM_DAILY_SETTINGS,
     templates: Object.fromEntries(CRM_FILE_TYPES.map((t) => [String(t), ""])),
     openAIWhisperApiKey: "",
+    openAIVoice: "",
   };
 
   private hasFocusedDashboardOnStartup = false;
 
   private audioTranscriptionManager: AudioTranscriptionManager | null = null;
+  private voiceoverManager: VoiceoverManager | null = null;
 
   async loadSettings() {
     const data = await this.loadData();
@@ -70,6 +78,7 @@ export default class CRM extends Plugin {
     );
 
     this.settings.openAIWhisperApiKey = this.settings.openAIWhisperApiKey ?? "";
+    this.settings.openAIVoice = this.settings.openAIVoice ?? "";
   }
 
   async saveSettings() {
@@ -86,6 +95,9 @@ export default class CRM extends Plugin {
 
     this.audioTranscriptionManager = new AudioTranscriptionManager(this);
     this.audioTranscriptionManager.initialize();
+
+    this.voiceoverManager = new VoiceoverManager(this);
+    this.voiceoverManager.initialize();
 
     // Initialize the CRM file manager in the background (non-blocking)
     const fileManager = CRMFileManager.getInstance(this.app);
@@ -233,6 +245,28 @@ export default class CRM extends Plugin {
     this.registerEvent(
       this.app.workspace.on("active-leaf-change", injectCRMLinks(this))
     );
+
+    this.registerEvent(
+      this.app.workspace.on("editor-menu", (menu, editor, view) => {
+        const file = (view as MarkdownView | null)?.file ?? null;
+        if (!file) {
+          return;
+        }
+
+        const selection = editor?.getSelection?.() ?? "";
+        if (!selection || !selection.trim()) {
+          return;
+        }
+
+        menu.addItem((item) => {
+          item.setTitle("Generate voiceover");
+          item.setIcon("file-audio");
+          item.onClick(() => {
+            void this.voiceoverManager?.generateVoiceover(file, selection);
+          });
+        });
+      })
+    );
   }
 
   onunload() {
@@ -253,6 +287,9 @@ export default class CRM extends Plugin {
 
     this.audioTranscriptionManager?.dispose();
     this.audioTranscriptionManager = null;
+
+    this.voiceoverManager?.dispose();
+    this.voiceoverManager = null;
   }
 
   private async openEntityPanel(entityType: CRMFileType) {
@@ -371,4 +408,6 @@ export default class CRM extends Plugin {
     this.hasFocusedDashboardOnStartup = true;
     await this.showPanel(CRM_DASHBOARD_VIEW, "main");
   }
+
+  getVoiceoverManager = () => this.voiceoverManager;
 }
