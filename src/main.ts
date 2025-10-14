@@ -114,7 +114,10 @@ export default class CRM extends Plugin {
         }
 
         if (!checking) {
-          void this.audioTranscriptionManager?.transcribeAudioFile(file);
+          void this.audioTranscriptionManager?.transcribeAudioFile(
+            file,
+            file.path
+          );
         }
 
         return true;
@@ -184,6 +187,10 @@ export default class CRM extends Plugin {
       "crm",
       async (...args) => new CRMInlineViewWrapper(this.app, ...args)
     );
+
+    this.registerMarkdownPostProcessor((element, context) => {
+      this.audioTranscriptionManager?.decorateMarkdown(element, context);
+    });
 
     // this.registerView(
     //   CRM_SIDE_VIEW,
