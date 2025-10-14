@@ -210,6 +210,32 @@ export class CRMSettingsTab extends PluginSettingTab {
         });
     }
 
+    new Setting(containerEl)
+      .setName("Audio Transcription")
+      .setDesc("Configure AI transcription for embedded audio.")
+      .setHeading();
+
+    new Setting(containerEl)
+      .setName("OpenAI Whisper API key")
+      .setDesc(
+        "Used to transcribe embedded audio with OpenAI Whisper-compatible models."
+      )
+      .addText((text) => {
+        text
+          .setPlaceholder("sk-...")
+          .setValue(
+            (this.plugin as any).settings.openAIWhisperApiKey?.toString?.() ?? ""
+          )
+          .onChange(async (value) => {
+            (this.plugin as any).settings.openAIWhisperApiKey = value.trim();
+            await (this.plugin as any).saveSettings();
+          });
+
+        try {
+          (text.inputEl as HTMLInputElement).type = "password";
+        } catch (e) {}
+      });
+
     // Daily Logs section
     new Setting(containerEl)
       .setName("Daily Logs")

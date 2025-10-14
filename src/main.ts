@@ -11,6 +11,7 @@ import {
 import { CRMInlineViewWrapper } from "@/views/crm-inline-view/wrapper";
 import { CRMSettingsTab } from "@/views/crm-settings/CRMSettingsTab";
 import { CRMFileManager } from "@/utils/CRMFileManager";
+import { AudioTranscriptionManager } from "@/utils/AudioTranscriptionManager";
 import {
   CRMFileType,
   CRM_FILE_TYPES,
@@ -47,9 +48,12 @@ export default class CRM extends Plugin {
     journal: DEFAULT_CRM_JOURNAL_SETTINGS,
     daily: DEFAULT_CRM_DAILY_SETTINGS,
     templates: Object.fromEntries(CRM_FILE_TYPES.map((t) => [String(t), ""])),
+    openAIWhisperApiKey: "",
   };
 
   private hasFocusedDashboardOnStartup = false;
+
+  private audioTranscriptionManager: AudioTranscriptionManager | null = null;
 
   async loadSettings() {
     const data = await this.loadData();
@@ -64,6 +68,8 @@ export default class CRM extends Plugin {
       Object.fromEntries(CRM_FILE_TYPES.map((t) => [String(t), ""])),
       this.settings.templates ?? {}
     );
+
+    this.settings.openAIWhisperApiKey = this.settings.openAIWhisperApiKey ?? "";
   }
 
   async saveSettings() {
@@ -77,6 +83,9 @@ export default class CRM extends Plugin {
     // Initialize settings
     this.addSettingTab(new CRMSettingsTab(this.app, this));
     await this.loadSettings();
+
+    this.audioTranscriptionManager = new AudioTranscriptionManager(this);
+    this.audioTranscriptionManager.initialize();
 
     // Initialize the CRM file manager in the background (non-blocking)
     const fileManager = CRMFileManager.getInstance(this.app);
@@ -220,6 +229,9 @@ export default class CRM extends Plugin {
       .forEach((leaf) => leaf.detach());
 
     disposeCRMLinkInjections();
+
+    this.audioTranscriptionManager?.dispose();
+    this.audioTranscriptionManager = null;
   }
 
   private async openEntityPanel(entityType: CRMFileType) {
