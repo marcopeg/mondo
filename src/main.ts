@@ -1,6 +1,7 @@
 import {
-  Menu,
+  MarkdownView,
   Plugin,
+  Menu,
   TAbstractFile,
   TFile,
   type ViewState,
@@ -19,6 +20,7 @@ import { CRMInlineViewWrapper } from "@/views/crm-inline-view/wrapper";
 import { CRMSettingsTab } from "@/views/crm-settings/CRMSettingsTab";
 import { CRMFileManager } from "@/utils/CRMFileManager";
 import { AudioTranscriptionManager } from "@/utils/AudioTranscriptionManager";
+import { VoiceoverManager } from "@/utils/VoiceoverManager";
 import {
   CRMFileType,
   CRM_FILE_TYPES,
@@ -56,11 +58,13 @@ export default class CRM extends Plugin {
     daily: DEFAULT_CRM_DAILY_SETTINGS,
     templates: Object.fromEntries(CRM_FILE_TYPES.map((t) => [String(t), ""])),
     openAIWhisperApiKey: "",
+    openAIVoice: "",
   };
 
   private hasFocusedDashboardOnStartup = false;
 
   private audioTranscriptionManager: AudioTranscriptionManager | null = null;
+  private voiceoverManager: VoiceoverManager | null = null;
 
   async loadSettings() {
     const data = await this.loadData();
@@ -77,6 +81,7 @@ export default class CRM extends Plugin {
     );
 
     this.settings.openAIWhisperApiKey = this.settings.openAIWhisperApiKey ?? "";
+    this.settings.openAIVoice = this.settings.openAIVoice ?? "";
   }
 
   async saveSettings() {
@@ -93,6 +98,9 @@ export default class CRM extends Plugin {
 
     this.audioTranscriptionManager = new AudioTranscriptionManager(this);
     this.audioTranscriptionManager.initialize();
+
+    this.voiceoverManager = new VoiceoverManager(this);
+    this.voiceoverManager.initialize();
 
     // Initialize the CRM file manager in the background (non-blocking)
     const fileManager = CRMFileManager.getInstance(this.app);
@@ -113,10 +121,7 @@ export default class CRM extends Plugin {
       checkCallback: (checking) => {
         const file = this.app.workspace.getActiveFile();
 
-        if (
-          !file ||
-          !this.audioTranscriptionManager?.isAudioFile(file)
-        ) {
+        if (!file || !this.audioTranscriptionManager?.isAudioFile(file)) {
           return false;
         }
 
@@ -253,6 +258,36 @@ export default class CRM extends Plugin {
     this.registerEvent(
       this.app.workspace.on("active-leaf-change", injectCRMLinks(this))
     );
+
+    this.registerEvent(
+      this.app.workspace.on("editor-menu", (menu, editor, view) => {
+        if (!(view instanceof MarkdownView)) {
+          return;
+        }
+
+        const file = view.file;
+        if (!file) {
+          return;
+        }
+
+        const selection = editor?.getSelection?.() ?? "";
+        if (!selection || !selection.trim()) {
+          return;
+        }
+
+        menu.addItem((item) => {
+          item.setTitle("Generate voiceover");
+          item.setIcon("file-audio");
+          item.onClick(() => {
+            void this.voiceoverManager?.generateVoiceover(
+              file,
+              editor,
+              selection
+            );
+          });
+        });
+      })
+    );
   }
 
   onunload() {
@@ -273,6 +308,9 @@ export default class CRM extends Plugin {
 
     this.audioTranscriptionManager?.dispose();
     this.audioTranscriptionManager = null;
+
+    this.voiceoverManager?.dispose();
+    this.voiceoverManager = null;
   }
 
   private extendFileMenu(menu: Menu, file: TAbstractFile, source?: string) {
@@ -284,9 +322,8 @@ export default class CRM extends Plugin {
       return;
     }
 
-    const inProgress = this.audioTranscriptionManager.isTranscriptionInProgress(
-      file
-    );
+    const inProgress =
+      this.audioTranscriptionManager.isTranscriptionInProgress(file);
 
     menu.addItem((item) => {
       item.setTitle(inProgress ? "Transcribing audio…" : "Transcribe audio");
@@ -434,4 +471,6 @@ export default class CRM extends Plugin {
     this.hasFocusedDashboardOnStartup = true;
     await this.showPanel(CRM_DASHBOARD_VIEW, "main");
   }
+
+  getVoiceoverManager = () => this.voiceoverManager;
 }
