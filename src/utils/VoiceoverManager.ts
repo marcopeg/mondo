@@ -25,6 +25,9 @@ type SelectionRange = {
   end: EditorPosition;
 };
 
+const sanitizeForFileName = (input: string) =>
+  input.replace(/[\\/:*?"<>|]/g, "-").trim();
+
 const getTimestamp = () => {
   const now = new Date();
   const parts = [
@@ -249,10 +252,9 @@ export class VoiceoverManager {
 
     const vault = this.plugin.app.vault;
     const arrayBuffer = audio;
-
+    const noteBaseName = sanitizeForFileName(file.basename) || "note";
     let attempt = 0;
     let targetPath = "";
-    const noteBaseName = file.basename;
 
     while (true) {
       const suffix = attempt === 0 ? "" : `-${attempt}`;
@@ -301,11 +303,18 @@ export class VoiceoverManager {
       sourceFile.path
     );
     const embedText = `\n![[${linkText}]]\n`;
-    editor.replaceRange(
-      `${originalSelection}${embedText}`,
-      range.start,
-      range.end
-    );
+    const insertion = `${originalSelection}${embedText}`;
+
+    editor.replaceRange(insertion, range.start, range.end);
+
+    try {
+      const startOffset = editor.posToOffset(range.start);
+      const newOffset = startOffset + insertion.length;
+      const newCursor = editor.offsetToPos(newOffset);
+      editor.setCursor(newCursor);
+    } catch (error) {
+      console.warn("CRM: unable to reposition cursor after voiceover", error);
+    }
   };
 
   private captureSelectionRange = (editor: Editor): SelectionRange => {

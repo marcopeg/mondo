@@ -248,7 +248,11 @@ export default class CRM extends Plugin {
 
     this.registerEvent(
       this.app.workspace.on("editor-menu", (menu, editor, view) => {
-        const file = (view as MarkdownView | null)?.file ?? null;
+        if (!(view instanceof MarkdownView)) {
+          return;
+        }
+
+        const file = view.file;
         if (!file) {
           return;
         }
