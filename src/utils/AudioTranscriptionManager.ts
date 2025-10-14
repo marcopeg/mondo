@@ -156,6 +156,14 @@ export class AudioTranscriptionManager {
     this.openTranscriptionFile(note, originPath ?? audioFile.path);
   };
 
+  hasExistingTranscription = (file: TFile) => {
+    return Boolean(this.getTranscriptionNoteFile(file));
+  };
+
+  isTranscriptionInProgress = (file: TFile) => {
+    return this.activeTranscriptions.has(file.path);
+  };
+
   private getTranscriptionNotePath = (file: TFile) => {
     const directory = file.parent?.path ?? "";
     const transcriptionBasename = `${file.basename}-transcription`;
@@ -252,6 +260,10 @@ export class AudioTranscriptionManager {
       cls: "crm-audio-action-button mod-cta",
     });
     transcribeButton.setAttr("type", "button");
+    transcribeButton.setAttr(
+      "title",
+      "Transcribe this recording with Whisper and link the note"
+    );
     const transcribeIcon = transcribeButton.createSpan({
       cls: "crm-audio-action-icon",
     });
@@ -273,6 +285,10 @@ export class AudioTranscriptionManager {
         cls: "crm-audio-action-button",
       });
       openButton.setAttr("type", "button");
+      openButton.setAttr(
+        "title",
+        "Open the linked transcription note in a new pane"
+      );
       const openIcon = openButton.createSpan({ cls: "crm-audio-action-icon" });
       setIcon(openIcon, "file-text");
       openButton.createSpan({ text: "Open transcription" });
