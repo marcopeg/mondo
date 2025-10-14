@@ -237,6 +237,32 @@ export class CRMSettingsTab extends PluginSettingTab {
       });
 
     new Setting(containerEl)
+      .setName("OpenAI model")
+      .setDesc("Model used to polish dictated voice notes before insertion.")
+      .addDropdown((dropdown) => {
+        const models = ["gpt-5", "gpt-5-mini", "gpt-5-nano"];
+        models.forEach((model) => {
+          dropdown.addOption(model, model);
+        });
+
+        const current =
+          (this.plugin as any).settings.openAIModel?.toString?.() ?? "gpt-5-nano";
+
+        if (!models.includes(current)) {
+          dropdown.setValue("gpt-5-nano");
+          (this.plugin as any).settings.openAIModel = "gpt-5-nano";
+          void (this.plugin as any).saveSettings();
+        } else {
+          dropdown.setValue(current);
+        }
+
+        dropdown.onChange(async (value) => {
+          (this.plugin as any).settings.openAIModel = value;
+          await (this.plugin as any).saveSettings();
+        });
+      });
+
+    new Setting(containerEl)
       .setName("Voiceover voice")
       .setDesc(
         "Select the OpenAI voice used when generating audio from selected text."

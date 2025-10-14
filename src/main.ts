@@ -21,6 +21,7 @@ import { CRMSettingsTab } from "@/views/crm-settings/CRMSettingsTab";
 import { CRMFileManager } from "@/utils/CRMFileManager";
 import { AudioTranscriptionManager } from "@/utils/AudioTranscriptionManager";
 import { VoiceoverManager } from "@/utils/VoiceoverManager";
+import { NoteDictationManager } from "@/utils/NoteDictationManager";
 import {
   CRMFileType,
   CRM_FILE_TYPES,
@@ -59,12 +60,14 @@ export default class CRM extends Plugin {
     templates: Object.fromEntries(CRM_FILE_TYPES.map((t) => [String(t), ""])),
     openAIWhisperApiKey: "",
     openAIVoice: "",
+    openAIModel: "gpt-5-nano",
   };
 
   private hasFocusedDashboardOnStartup = false;
 
   private audioTranscriptionManager: AudioTranscriptionManager | null = null;
   private voiceoverManager: VoiceoverManager | null = null;
+  private noteDictationManager: NoteDictationManager | null = null;
 
   async loadSettings() {
     const data = await this.loadData();
@@ -82,6 +85,7 @@ export default class CRM extends Plugin {
 
     this.settings.openAIWhisperApiKey = this.settings.openAIWhisperApiKey ?? "";
     this.settings.openAIVoice = this.settings.openAIVoice ?? "";
+    this.settings.openAIModel = this.settings.openAIModel ?? "gpt-5-nano";
   }
 
   async saveSettings() {
@@ -101,6 +105,9 @@ export default class CRM extends Plugin {
 
     this.voiceoverManager = new VoiceoverManager(this);
     this.voiceoverManager.initialize();
+
+    this.noteDictationManager = new NoteDictationManager(this);
+    this.noteDictationManager.initialize();
 
     // Initialize the CRM file manager in the background (non-blocking)
     const fileManager = CRMFileManager.getInstance(this.app);
@@ -311,6 +318,9 @@ export default class CRM extends Plugin {
 
     this.voiceoverManager?.dispose();
     this.voiceoverManager = null;
+
+    this.noteDictationManager?.dispose();
+    this.noteDictationManager = null;
   }
 
   private extendFileMenu(menu: Menu, file: TAbstractFile, source?: string) {
@@ -473,4 +483,6 @@ export default class CRM extends Plugin {
   }
 
   getVoiceoverManager = () => this.voiceoverManager;
+
+  getNoteDictationManager = () => this.noteDictationManager;
 }
