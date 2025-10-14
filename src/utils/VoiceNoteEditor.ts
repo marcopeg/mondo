@@ -30,22 +30,88 @@ const RESPONSE_ENDPOINT = "https://api.openai.com/v1/responses";
 
 const TEXT_CONTENT_TYPE = "input_text";
 
-const OUTPUT_TEXT_PATH = ["output", 0, "content", 0, "text"] as const;
+type OutputContent = {
+  type?: string;
+  text?: unknown;
+};
 
-type OutputPath = typeof OUTPUT_TEXT_PATH;
+type OutputMessage = {
+  type?: string;
+  content?: unknown;
+  text?: unknown;
+};
 
-type PathIndex = OutputPath[number];
+type OpenAIResponse = {
+  output?: unknown;
+  output_text?: unknown;
+  content?: unknown;
+  text?: unknown;
+};
 
-const getNested = (input: unknown, path: OutputPath): unknown => {
-  let current: unknown = input;
-  path.forEach((key) => {
-    if (current && typeof current === "object" && key in current) {
-      current = (current as Record<PathIndex, unknown>)[key];
-    } else {
-      current = undefined;
+const extractTextFromContent = (content: unknown): string => {
+  if (!Array.isArray(content)) {
+    return "";
+  }
+
+  for (const part of content) {
+    if (!part || typeof part !== "object") {
+      continue;
     }
-  });
-  return current;
+
+    const { type, text } = part as OutputContent;
+
+    if (type && type !== "output_text" && type !== "text") {
+      continue;
+    }
+
+    if (typeof text === "string" && text.trim()) {
+      return text.trim();
+    }
+  }
+
+  return "";
+};
+
+const extractOutputText = (payload: unknown): string => {
+  if (!payload || typeof payload !== "object") {
+    return "";
+  }
+
+  const { output, content, output_text: outputText, text } = payload as OpenAIResponse;
+
+  if (Array.isArray(output)) {
+    for (const entry of output) {
+      if (!entry || typeof entry !== "object") {
+        continue;
+      }
+
+      const { content: entryContent, text: entryText } = entry as OutputMessage;
+
+      const fromContent = extractTextFromContent(entryContent);
+      if (fromContent) {
+        return fromContent;
+      }
+
+      if (typeof entryText === "string" && entryText.trim()) {
+        return entryText.trim();
+      }
+    }
+  }
+
+  const fromContent = extractTextFromContent(content);
+  if (fromContent) {
+    return fromContent;
+  }
+
+  if (typeof outputText === "string" && outputText.trim()) {
+    return outputText.trim();
+  }
+
+  if (typeof text === "string" && text.trim()) {
+    return text.trim();
+  }
+
+  return "";
 };
 
 const isSupportedModel = (model: string): model is keyof typeof SUPPORTED_OPENAI_MODELS =>
@@ -484,8 +550,7 @@ export class VoiceNoteEditor {
     }
 
     const data = await response.json();
-    const output = getNested(data, OUTPUT_TEXT_PATH);
-    const text = typeof output === "string" ? output.trim() : "";
+    const text = extractOutputText(data);
 
     if (!text) {
       throw new Error("Model did not return any content.");
