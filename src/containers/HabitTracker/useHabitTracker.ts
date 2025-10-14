@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useApp } from "@/hooks/use-app";
 import { useActiveTab } from "@/hooks/use-active-tab";
+import { MarkdownView } from "obsidian";
 
 type HabitTrackerView = "streak" | "calendar";
 
@@ -74,10 +75,43 @@ export const useHabitTracker = ({
   const trackerKey = requestedKey ?? "habits";
   const viewSettingKey = `${trackerKey}-view`;
   const ensureRef = useRef<string | null>(null);
+  const [isEditingTargetFile, setIsEditingTargetFile] = useState(false);
 
   const [error, setError] = useState<string | null>(null);
   const [trackedDays, setTrackedDays] = useState<Set<string>>(new Set());
   const [viewMode, setViewMode] = useState<HabitTrackerView>(DEFAULT_VIEW_MODE);
+
+  useEffect(() => {
+    if (!targetFile) {
+      setIsEditingTargetFile(false);
+      return;
+    }
+
+    const evaluateEditingState = () => {
+      const markdownView = app.workspace.getActiveViewOfType(MarkdownView);
+      if (!markdownView || !markdownView.file) {
+        setIsEditingTargetFile(false);
+        return;
+      }
+
+      if (markdownView.file.path !== targetFile.path) {
+        setIsEditingTargetFile(false);
+        return;
+      }
+
+      setIsEditingTargetFile(markdownView.getMode() === "source");
+    };
+
+    evaluateEditingState();
+
+    const modeChangeRef = app.workspace.on("layout-change", evaluateEditingState);
+    const leafChangeRef = app.workspace.on("active-leaf-change", evaluateEditingState);
+
+    return () => {
+      app.workspace.offref(modeChangeRef);
+      app.workspace.offref(leafChangeRef);
+    };
+  }, [app, targetFile]);
 
   const ensureFrontmatter = useCallback(async () => {
     if (!targetFile) {
@@ -87,6 +121,11 @@ export const useHabitTracker = ({
 
     const ensureKey = `${targetFile.path}|${trackerKey}`;
     if (ensureRef.current === ensureKey) return;
+
+    if (isEditingTargetFile) {
+      ensureRef.current = null;
+      return;
+    }
 
     try {
       await app.fileManager.processFrontMatter(targetFile, (fm) => {
@@ -104,7 +143,7 @@ export const useHabitTracker = ({
       ensureRef.current = null;
       setError("Unable to read habit tracker data.");
     }
-  }, [app.fileManager, targetFile, trackerKey, viewSettingKey]);
+  }, [app.fileManager, isEditingTargetFile, targetFile, trackerKey, viewSettingKey]);
 
   useEffect(() => {
     ensureRef.current = null;
@@ -134,6 +173,10 @@ export const useHabitTracker = ({
         return;
       }
 
+      if (isEditingTargetFile) {
+        return;
+      }
+
       try {
         await app.fileManager.processFrontMatter(targetFile, (fm) => {
           fm[trackerKey] = sortDates(next);
@@ -144,13 +187,17 @@ export const useHabitTracker = ({
         setError("Unable to save habit tracker data.");
       }
     },
-    [app.fileManager, targetFile, trackerKey]
+    [app.fileManager, isEditingTargetFile, targetFile, trackerKey]
   );
 
   const persistViewMode = useCallback(
     async (next: HabitTrackerView) => {
       if (!targetFile) {
         setError("Unable to save habit tracker view.");
+        return;
+      }
+
+      if (isEditingTargetFile) {
         return;
       }
 
@@ -163,7 +210,7 @@ export const useHabitTracker = ({
         setError("Unable to save habit tracker view.");
       }
     },
-    [app.fileManager, targetFile, viewSettingKey]
+    [app.fileManager, isEditingTargetFile, targetFile, viewSettingKey]
   );
 
   const toggleDay = useCallback(
