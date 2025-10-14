@@ -2,7 +2,6 @@ import {
   MarkdownView,
   Plugin,
   Menu,
-  Plugin,
   TAbstractFile,
   TFile,
   type ViewState,
@@ -122,10 +121,7 @@ export default class CRM extends Plugin {
       checkCallback: (checking) => {
         const file = this.app.workspace.getActiveFile();
 
-        if (
-          !file ||
-          !this.audioTranscriptionManager?.isAudioFile(file)
-        ) {
+        if (!file || !this.audioTranscriptionManager?.isAudioFile(file)) {
           return false;
         }
 
@@ -326,9 +322,8 @@ export default class CRM extends Plugin {
       return;
     }
 
-    const inProgress = this.audioTranscriptionManager.isTranscriptionInProgress(
-      file
-    );
+    const inProgress =
+      this.audioTranscriptionManager.isTranscriptionInProgress(file);
 
     menu.addItem((item) => {
       item.setTitle(inProgress ? "Transcribing audio…" : "Transcribe audio");
