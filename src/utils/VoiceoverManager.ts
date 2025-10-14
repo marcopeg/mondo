@@ -1,11 +1,12 @@
 import type CRM from "@/main";
 import {
+  Modal,
   Notice,
   TFile,
   normalizePath,
   type Editor,
-  type EditorPosition,
 } from "obsidian";
+import { createHash } from "crypto";
 
 const VOICEOVER_MODEL = "gpt-4o-mini-tts";
 const FALLBACK_VOICES = [
@@ -20,18 +21,11 @@ const FALLBACK_VOICES = [
 ];
 
 const AUDIO_MIME_TYPE = "audio/mpeg";
-type SelectionRange = {
-  start: EditorPosition;
-  end: EditorPosition;
-};
 
 type VoicesResponse = {
   voices?: unknown;
   data?: unknown;
 };
-
-const sanitizeForFileName = (input: string) =>
-  input.replace(/[\\/:*?"<>|]/g, "-").trim();
 
 const getTimestamp = () => {
   const now = new Date();
@@ -45,6 +39,9 @@ const getTimestamp = () => {
 
   return parts.join("");
 };
+
+const hashContent = (content: string) =>
+  createHash("md5").update(content).digest("hex");
 
 const resolveVoiceName = (input: unknown) => {
   if (!input) {
@@ -70,10 +67,121 @@ const resolveVoiceName = (input: unknown) => {
     : null;
 };
 
+class VoiceoverModal extends Modal {
+  private statusEl!: HTMLParagraphElement;
+  private audioContainerEl!: HTMLDivElement;
+  private buttonsEl!: HTMLDivElement;
+  private audioEl: HTMLAudioElement | null = null;
+  private cancelHandler: (() => void) | null = null;
+
+  onOpen() {
+    this.modalEl.addClass("crm-voiceover-modal");
+    this.titleEl.setText("Voiceover");
+
+    this.statusEl = this.contentEl.createEl("p", {
+      cls: "crm-voiceover-status",
+    });
+
+    this.audioContainerEl = this.contentEl.createDiv({
+      cls: "crm-voiceover-audio",
+    });
+
+    this.buttonsEl = this.contentEl.createDiv({
+      cls: "crm-voiceover-buttons",
+    });
+
+    this.setStatus("Preparing voiceover…");
+  }
+
+  onClose() {
+    this.audioEl?.pause();
+    this.audioEl = null;
+    this.cancelHandler = null;
+    this.contentEl.empty();
+  }
+
+  setStatus = (message: string) => {
+    this.statusEl.setText(message);
+    this.clearButtons();
+    this.clearAudio();
+  };
+
+  showGenerating = (onCancel: () => void) => {
+    this.statusEl.setText("Generating audio…");
+    this.clearAudio();
+    this.cancelHandler = onCancel;
+    this.renderButtons([
+      {
+        text: "Cancel",
+        action: () => {
+          this.cancelHandler?.();
+        },
+      },
+    ]);
+  };
+
+  showPlayer = (file: TFile) => {
+    this.statusEl.setText(`Voiceover ready: ${file.name}`);
+    this.clearAudio();
+    this.cancelHandler = null;
+    const audioPath = this.app.vault.getResourcePath(file);
+    this.audioEl = this.audioContainerEl.createEl("audio", {
+      attr: { controls: "true" },
+    });
+    this.audioEl.src = audioPath;
+    void this.audioEl.play().catch((error) => {
+      console.warn("CRM: unable to autoplay voiceover", error);
+    });
+    this.renderButtons([
+      {
+        text: "Close",
+        action: () => this.close(),
+      },
+    ]);
+  };
+
+  showError = (message: string) => {
+    this.statusEl.setText(message);
+    this.clearAudio();
+    this.cancelHandler = null;
+    this.renderButtons([
+      {
+        text: "Close",
+        action: () => this.close(),
+      },
+    ]);
+  };
+
+  private clearAudio = () => {
+    this.audioEl?.pause();
+    this.audioContainerEl.empty();
+    this.audioEl = null;
+  };
+
+  private renderButtons = (
+    buttons: Array<{ text: string; action: () => void }>
+  ) => {
+    this.clearButtons();
+    buttons.forEach((config) => {
+      const button = this.buttonsEl.createEl("button", {
+        cls: "mod-cta",
+        text: config.text,
+      });
+      button.addEventListener("click", () => {
+        config.action();
+      });
+    });
+  };
+
+  private clearButtons = () => {
+    this.buttonsEl.empty();
+  };
+}
+
 export class VoiceoverManager {
   private readonly plugin: CRM;
   private cachedVoices: string[] | undefined;
-  private readonly activeNotes = new Set<string>();
+  private readonly activeNotes = new Map<string, AbortController>();
 
   constructor(plugin: CRM) {
     this.plugin = plugin;
@@ -140,17 +248,15 @@ export class VoiceoverManager {
 
   generateVoiceover = async (
     file: TFile,
-    editor: Editor,
+    _editor: Editor | null,
     selectedText: string
   ) => {
     const trimmed = selectedText.trim();
 
     if (!trimmed) {
-      new Notice("Select some text before generating a voiceover.");
+      new Notice("Provide some text before generating a voiceover.");
       return;
     }
-
-    const selectionRange = this.captureSelectionRange(editor);
 
     const apiKey = this.getApiKey();
     if (!apiKey) {
@@ -165,27 +271,66 @@ export class VoiceoverManager {
       return;
     }
 
-    const voice = await this.resolveVoice();
-    this.activeNotes.add(file.path);
-    new Notice("Generating voiceover…");
+    const voiceoverModal = new VoiceoverModal(this.plugin.app);
+    voiceoverModal.open();
+    voiceoverModal.setStatus("Checking for existing voiceover…");
 
     try {
-      const audioBuffer = await this.requestVoiceover(trimmed, voice, apiKey);
-      const audioFile = await this.saveAudioFile(file, audioBuffer);
-      this.injectAudioEmbed(
-        editor,
-        file,
-        audioFile,
-        selectedText,
-        selectionRange
+      const attachmentsDir = this.resolveAttachmentsDirectory(file);
+      const contentHash = hashContent(trimmed);
+      const existing = await this.findExistingVoiceover(
+        attachmentsDir,
+        contentHash
       );
+
+      if (existing) {
+        voiceoverModal.showPlayer(existing);
+        return;
+      }
+
+      const voice = await this.resolveVoice();
+      const controller = new AbortController();
+      this.activeNotes.set(file.path, controller);
+
+      voiceoverModal.showGenerating(() => {
+        controller.abort();
+        voiceoverModal.setStatus("Cancelling voiceover…");
+      });
+
+      const audioBuffer = await this.requestVoiceover(
+        trimmed,
+        voice,
+        apiKey,
+        controller.signal
+      );
+
+      const audioFile = await this.saveAudioFile(
+        file,
+        audioBuffer,
+        attachmentsDir,
+        contentHash
+      );
+
+      voiceoverModal.showPlayer(audioFile);
       new Notice(`Voiceover saved to ${audioFile.path}`);
     } catch (error) {
-      console.error("CRM: failed to generate voiceover", error);
-      const message =
-        error instanceof Error ? error.message : "Unknown voiceover error.";
-      new Notice(`Voiceover failed: ${message}`);
+      const abortError =
+        error instanceof Error && error.name === "AbortError";
+      if (abortError) {
+        console.info("CRM: voiceover generation cancelled");
+        voiceoverModal.showError("Voiceover generation cancelled.");
+      } else {
+        console.error("CRM: failed to generate voiceover", error);
+        const message =
+          error instanceof Error ? error.message : "Unknown voiceover error.";
+        voiceoverModal.showError(`Voiceover failed: ${message}`);
+        new Notice(`Voiceover failed: ${message}`);
+      }
     } finally {
+      const controller = this.activeNotes.get(file.path);
+      if (controller?.signal.aborted) {
+        // Already handled via modal state.
+      }
       this.activeNotes.delete(file.path);
     }
   };
@@ -213,7 +358,8 @@ export class VoiceoverManager {
   private requestVoiceover = async (
     text: string,
     voice: string,
-    apiKey: string
+    apiKey: string,
+    signal: AbortSignal
   ) => {
     const response = await fetch("https://api.openai.com/v1/audio/speech", {
       method: "POST",
@@ -227,6 +373,7 @@ export class VoiceoverManager {
         voice,
         input: text,
       }),
+      signal,
     });
 
     if (!response.ok) {
@@ -248,33 +395,18 @@ export class VoiceoverManager {
     }
   };
 
-  private saveAudioFile = async (file: TFile, audio: ArrayBuffer) => {
-    const baseDirectory = file.parent?.path ?? "";
-    const attachmentsDir = baseDirectory
-      ? `${baseDirectory}/attachments`
-      : "attachments";
-    const normalizedDir = normalizePath(attachmentsDir);
-
-    await this.ensureFolder(normalizedDir);
+  private saveAudioFile = async (
+    file: TFile,
+    audio: ArrayBuffer,
+    directory: string,
+    hash: string
+  ) => {
+    await this.ensureFolder(directory);
 
     const vault = this.plugin.app.vault;
-    const arrayBuffer = audio;
-    const noteBaseName = sanitizeForFileName(file.basename) || "note";
-    let attempt = 0;
-    let targetPath = "";
-
-    while (true) {
-      const suffix = attempt === 0 ? "" : `-${attempt}`;
-      const fileName = `Voiceover ${getTimestamp()} ${noteBaseName}${suffix}.mp3`;
-      targetPath = normalizePath(`${normalizedDir}/${fileName}`);
-      const exists = await vault.adapter.exists(targetPath);
-      if (!exists) {
-        break;
-      }
-      attempt += 1;
-    }
-
-    const created = await vault.createBinary(targetPath, arrayBuffer);
+    const fileName = `Voiceover ${getTimestamp()} ${hash}.mp3`;
+    const targetPath = normalizePath(`${directory}/${fileName}`);
+    const created = await vault.createBinary(targetPath, audio);
     return created;
   };
 
@@ -297,72 +429,41 @@ export class VoiceoverManager {
     }
   };
 
-  private injectAudioEmbed = (
-    editor: Editor,
-    sourceFile: TFile,
-    audioFile: TFile,
-    originalSelection: string,
-    range: SelectionRange
+  private resolveAttachmentsDirectory = (file: TFile) => {
+    const baseDirectory = file.parent?.path ?? "";
+    const attachmentsDir = baseDirectory
+      ? `${baseDirectory}/attachments`
+      : "attachments";
+    return normalizePath(attachmentsDir);
+  };
+
+  private findExistingVoiceover = async (
+    directory: string,
+    hash: string
   ) => {
-    const { metadataCache } = this.plugin.app;
-    const linkText = metadataCache.fileToLinktext(
-      audioFile,
-      sourceFile.path
-    );
-    const embedText = `\n![[${linkText}]]\n`;
-    const insertion = `${originalSelection}${embedText}`;
-
-    editor.replaceRange(insertion, range.start, range.end);
-
-    try {
-      const startOffset = editor.posToOffset(range.start);
-      const newOffset = startOffset + insertion.length;
-      const newCursor = editor.offsetToPos(newOffset);
-      editor.setCursor(newCursor);
-    } catch (error) {
-      console.warn("CRM: unable to reposition cursor after voiceover", error);
-    }
-  };
-
-  private captureSelectionRange = (editor: Editor): SelectionRange => {
-    const [primarySelection] = editor.listSelections();
-    if (primarySelection) {
-      const normalized = this.normalizeRange(
-        primarySelection.anchor,
-        primarySelection.head
-      );
-      if (normalized) {
-        return normalized;
-      }
-    }
-
-    const cursor = this.clonePosition(editor.getCursor());
-    return { start: cursor, end: cursor };
-  };
-
-  private normalizeRange = (
-    anchor?: EditorPosition,
-    head?: EditorPosition
-  ): SelectionRange | null => {
-    if (!anchor || !head) {
+    const adapter = this.plugin.app.vault.adapter;
+    const exists = await adapter.exists(directory);
+    if (!exists) {
       return null;
     }
 
-    const anchorClone = this.clonePosition(anchor);
-    const headClone = this.clonePosition(head);
+    try {
+      const listing = await adapter.list(directory);
+      const match = listing.files.find((filePath) =>
+        filePath.endsWith(`${hash}.mp3`)
+      );
 
-    if (this.isBefore(anchorClone, headClone)) {
-      return { start: anchorClone, end: headClone };
+      if (!match) {
+        return null;
+      }
+
+      const abstract = this.plugin.app.vault.getAbstractFileByPath(
+        normalizePath(match)
+      );
+      return abstract instanceof TFile ? abstract : null;
+    } catch (error) {
+      console.error("CRM: failed to list attachments folder", error);
+      return null;
     }
-
-    return { start: headClone, end: anchorClone };
   };
-
-  private isBefore = (a: EditorPosition, b: EditorPosition) =>
-    a.line < b.line || (a.line === b.line && a.ch <= b.ch);
-
-  private clonePosition = (position: EditorPosition): EditorPosition => ({
-    line: position.line,
-    ch: position.ch,
-  });
 }
