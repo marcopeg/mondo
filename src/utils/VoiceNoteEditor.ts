@@ -389,8 +389,7 @@ export class VoiceNoteEditor {
       new Notice("Updating note with AI…");
       const updated = await this.generateUpdatedNote(apiKey, model, prompt);
 
-      activeView.editor?.setValue?.(updated);
-      await this.plugin.app.vault.modify(file, updated);
+      await this.writeUpdatedContent(activeView, file, updated);
       new Notice("Note updated.");
     } catch (error) {
       console.error("CRM: voice note editing failed", error);
@@ -493,6 +492,21 @@ export class VoiceNoteEditor {
     }
 
     return text;
+  };
+
+  private writeUpdatedContent = async (view: MarkdownView, file: TFile, content: string) => {
+    try {
+      const editor = view.editor;
+      if (editor) {
+        editor.setValue(content);
+      } else {
+        view.setViewData(content, false);
+      }
+    } catch (error) {
+      console.warn("CRM: failed to update active editor", error);
+    }
+
+    await this.plugin.app.vault.modify(file, content);
   };
 }
 
