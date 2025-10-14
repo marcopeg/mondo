@@ -101,6 +101,27 @@ export default class CRM extends Plugin {
     });
 
     this.addCommand({
+      id: "crm-transcribe-audio-note",
+      name: "Transcribe",
+      checkCallback: (checking) => {
+        const file = this.app.workspace.getActiveFile();
+
+        if (
+          !file ||
+          !this.audioTranscriptionManager?.isAudioFile(file)
+        ) {
+          return false;
+        }
+
+        if (!checking) {
+          void this.audioTranscriptionManager?.transcribeAudioFile(file);
+        }
+
+        return true;
+      },
+    });
+
+    this.addCommand({
       id: "open-journal",
       name: "Open Journal",
       hotkeys: [{ modifiers: ["Mod", "Shift"], key: "j" }],
