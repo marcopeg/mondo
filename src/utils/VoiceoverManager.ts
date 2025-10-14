@@ -25,6 +25,11 @@ type SelectionRange = {
   end: EditorPosition;
 };
 
+type VoicesResponse = {
+  voices?: unknown;
+  data?: unknown;
+};
+
 const sanitizeForFileName = (input: string) =>
   input.replace(/[\\/:*?"<>|]/g, "-").trim();
 
@@ -67,7 +72,7 @@ const resolveVoiceName = (input: unknown) => {
 
 export class VoiceoverManager {
   private readonly plugin: CRM;
-  private cachedVoices: string[] | null = null;
+  private cachedVoices: string[] | undefined;
   private readonly activeNotes = new Set<string>();
 
   constructor(plugin: CRM) {
@@ -79,7 +84,7 @@ export class VoiceoverManager {
   };
 
   dispose = () => {
-    this.cachedVoices = null;
+    this.cachedVoices = undefined;
     this.activeNotes.clear();
   };
 
@@ -105,15 +110,15 @@ export class VoiceoverManager {
         throw await this.resolveError(response);
       }
 
-      const payload = await response.json();
-      const rawList =
-        (Array.isArray(payload?.voices) ? payload.voices : null) ??
-        (Array.isArray(payload?.data) ? payload.data : null) ??
+      const payload = (await response.json()) as VoicesResponse;
+      const rawList: unknown[] =
+        (Array.isArray(payload.voices) ? payload.voices : null) ??
+        (Array.isArray(payload.data) ? payload.data : null) ??
         [];
 
       const voices = rawList
-        .map((voice) => resolveVoiceName(voice))
-        .filter((voice): voice is string => Boolean(voice));
+        .map((voice: unknown) => resolveVoiceName(voice))
+        .filter((voice): voice is string => typeof voice === "string");
 
       if (voices.length === 0) {
         this.cachedVoices = [...FALLBACK_VOICES];
@@ -128,7 +133,9 @@ export class VoiceoverManager {
       this.cachedVoices = [...FALLBACK_VOICES];
     }
 
-    return this.cachedVoices;
+    const resolved = this.cachedVoices ?? [...FALLBACK_VOICES];
+    this.cachedVoices = resolved;
+    return resolved;
   };
 
   generateVoiceover = async (
