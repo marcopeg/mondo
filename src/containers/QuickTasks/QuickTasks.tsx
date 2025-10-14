@@ -55,25 +55,13 @@ export const QuickTasks = () => {
   );
 
   return (
-    <Card
-      title="Quick Tasks"
-      icon="list-checks"
-      spacing={3}
-      collapsible
-      collapsed={false}
-    >
+    <Card title="Quick Tasks" icon="list-checks" collapsible collapsed={false}>
       {isLoading ? (
-        <Typography
-          variant="body"
-          className="text-sm text-[var(--text-muted)]"
-        >
+        <Typography variant="body" className="text-sm text-[var(--text-muted)]">
           Loading inbox tasks...
         </Typography>
       ) : tasks.length === 0 ? (
-        <Typography
-          variant="body"
-          className="text-sm text-[var(--text-muted)]"
-        >
+        <Typography variant="body" className="text-sm text-[var(--text-muted)]">
           No open tasks in Inbox.
         </Typography>
       ) : (
@@ -102,7 +90,12 @@ export const QuickTasks = () => {
                   justify="space-between"
                   gap={3}
                 >
-                  <Stack direction="row" align="start" gap={2} className="flex-1">
+                  <Stack
+                    direction="row"
+                    align="start"
+                    gap={2}
+                    className="flex-1"
+                  >
                     <input
                       type="checkbox"
                       className="mt-1 h-4 w-4 accent-[var(--interactive-accent)]"

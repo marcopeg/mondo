@@ -17,10 +17,7 @@ const DATE_FORMAT_OPTIONS: Intl.DateTimeFormatOptions = {
 };
 
 const useDateFormatter = () =>
-  useMemo(
-    () => new Intl.DateTimeFormat(undefined, DATE_FORMAT_OPTIONS),
-    []
-  );
+  useMemo(() => new Intl.DateTimeFormat(undefined, DATE_FORMAT_OPTIONS), []);
 
 export const RecentCRMNotes = () => {
   const [limit, setLimit] = useState(5);
@@ -28,17 +25,9 @@ export const RecentCRMNotes = () => {
   const formatter = useDateFormatter();
 
   return (
-    <Card
-      title=" Last Updates"
-      spacing={3}
-      collapsible
-      collapsed
-    >
+    <Card title="Last Updates" icon="clock" collapsible collapsed>
       {notes.length === 0 ? (
-        <Typography
-          variant="body"
-          className="text-sm text-[var(--text-muted)]"
-        >
+        <Typography variant="body" className="text-sm text-[var(--text-muted)]">
           No CRM notes found yet.
         </Typography>
       ) : (

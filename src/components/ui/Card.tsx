@@ -76,14 +76,6 @@ export const Card: React.FC<CardProps> = ({
 
   // Build inner padding class and inline fallback for Boxes inside Paper
   // If explicit padding props are provided, prefer them over spacing default.
-  const resolvedPadding = {
-    p,
-    px,
-    py,
-    pt,
-    pb,
-  };
-
   const buildPaddingClass = () => {
     // if any explicit p* provided, build a class list for them; otherwise use spacing
     if (
@@ -170,6 +162,28 @@ export const Card: React.FC<CardProps> = ({
       }
     : {};
 
+  const headerFlexStyle: React.CSSProperties = {
+    display: "flex",
+    flexDirection: "row",
+    alignItems: hasTextualHeaderContent ? "flex-start" : "center",
+    justifyContent: hasTextualHeaderContent ? "space-between" : "flex-end",
+    gap: "0.5rem",
+    width: "100%",
+  };
+
+  const actionsFlexStyle: React.CSSProperties = {
+    display: "flex",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: "0.5rem",
+    flexShrink: 0,
+    alignSelf: hasTextualHeaderContent ? "flex-start" : undefined,
+  };
+
+  const titleWrapperStyle: React.CSSProperties = collapsible
+    ? { outline: "none", cursor: "pointer", userSelect: "none" }
+    : { outline: "none" };
+
   return (
     // keep Paper unpadded by default; padding will be applied to the inner Boxes
     <Paper p={0} {...boxProps} className={className}>
@@ -182,13 +196,13 @@ export const Card: React.FC<CardProps> = ({
           <Stack
             align={hasTextualHeaderContent ? "start" : "center"}
             justify={hasTextualHeaderContent ? "space-between" : "end"}
-            className="w-full"
             gap={2}
+            style={headerFlexStyle}
           >
             {titleProps && (
               <div
                 className={collapsible ? "cursor-pointer select-none" : undefined}
-                style={{ outline: "none" }}
+                style={titleWrapperStyle}
                 {...(titleInteractiveProps as any)}
               >
                 <Title {...titleProps} />
@@ -201,6 +215,7 @@ export const Card: React.FC<CardProps> = ({
                 className={
                   hasTextualHeaderContent ? "shrink-0 self-start" : "shrink-0"
                 }
+                style={actionsFlexStyle}
               >
                 {resolvedActions.map((action, index) => {
                   if (!action.text && !action.icon) {
