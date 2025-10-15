@@ -68,6 +68,7 @@ export const QuickTasks: React.FC<{ collapsed?: boolean }> = ({
       icon="list-checks"
       collapsible
       collapsed={collapsed}
+      collapseOnHeaderClick
       actions={[
         {
           content: <Badge aria-label={badgeLabel}>{openTasksCount}</Badge>,
