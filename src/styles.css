@@ -53,10 +53,19 @@
 
 .crm-voice-fab-container {
   position: fixed;
-  right: calc(1.25rem + env(safe-area-inset-right, 0px));
-  bottom: calc(1.25rem + env(safe-area-inset-bottom, 0px));
+  right: 0.8rem;
+  bottom: 3rem;
   z-index: var(--layer-tooltip, 400); /* keep below mobile side panels */
   pointer-events: none;
+}
+
+/* Mobile phones: place the FAB above the classic bottom control bar.
+   Use a larger bottom offset on small viewports and respect safe-area-inset-bottom. */
+@media (max-width: 640px) {
+  .crm-voice-fab-container {
+    right: calc(1rem + env(safe-area-inset-right, 0px));
+    bottom: calc(5rem + env(safe-area-inset-bottom, 0px));
+  }
 }
 
 .crm-voice-fab {
