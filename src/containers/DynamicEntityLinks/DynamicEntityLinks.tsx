@@ -10,6 +10,8 @@ import { TeamsLinks } from "./TeamsLinks";
 import { EmployeesLinks } from "./EmployeesLinks";
 import { ProjectsLinks } from "./ProjectsLinks";
 import { ParticipantTasksLinks } from "./ParticipantTasksLinks";
+import { RolePeopleLinks } from "./RolePeopleLinks";
+import { RoleTasksLinks } from "./RoleTasksLinks";
 import { Stack } from "@/components/ui/Stack";
 
 type LinkPanelProps = {
@@ -25,6 +27,8 @@ const entityMap: Record<string, React.ComponentType<LinkPanelProps>> = {
   employees: EmployeesLinks,
   projects: ProjectsLinks,
   "participant-tasks": ParticipantTasksLinks,
+  "role-people": RolePeopleLinks,
+  "role-tasks": RoleTasksLinks,
 };
 
 const renderMissingConfigError = (message: string, key?: React.Key) => (

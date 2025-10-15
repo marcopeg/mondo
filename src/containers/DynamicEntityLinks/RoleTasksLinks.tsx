@@ -5,33 +5,31 @@ import { Typography } from "@/components/ui/Typography";
 import Link from "@/components/ui/Link";
 import { useFiles } from "@/hooks/use-files";
 import { CRMFileType } from "@/types/CRMFileType";
-import { matchesPropertyLink } from "@/utils/matchesPropertyLink";
+import { matchesAnyPropertyLink } from "@/utils/matchesAnyPropertyLink";
+import { getEntityDisplayName } from "@/utils/getEntityDisplayName";
 import { getTaskLabel, getTaskStatus } from "@/utils/taskMetadata";
 import type { TCachedFile } from "@/types/TCachedFile";
 import type { App } from "obsidian";
 
-type ParticipantTasksLinksProps = {
+type RoleTasksLinksProps = {
   file: TCachedFile;
   config: Record<string, unknown>;
 };
 
-export const ParticipantTasksLinks = ({
-  file,
-  config,
-}: ParticipantTasksLinksProps) => {
-  const hostFile = file.file;
-  if (!hostFile) {
+export const RoleTasksLinks = ({ file, config }: RoleTasksLinksProps) => {
+  if (!file.file) {
     return null;
   }
 
   const tasks = useFiles(CRMFileType.TASK, {
     filter: useCallback(
       (candidate: TCachedFile, _app: App) => {
-        if (!candidate.file || candidate.file.path === hostFile.path)
+        if (!file.file) {
           return false;
-        return matchesPropertyLink(candidate, "participants", hostFile);
+        }
+        return matchesAnyPropertyLink(candidate, ["role", "roles"], file.file);
       },
-      [hostFile]
+      [file.file]
     ),
   });
 
@@ -39,9 +37,7 @@ export const ParticipantTasksLinks = ({
     return null;
   }
 
-  const entityName =
-    (file.cache?.frontmatter?.show as string | undefined)?.trim() ||
-    hostFile.basename;
+  const roleName = getEntityDisplayName(file);
 
   return (
     <Card
@@ -49,7 +45,7 @@ export const ParticipantTasksLinks = ({
       collapsed={Boolean((config as any)?.collapsed)}
       icon="check-square"
       title="Tasks"
-      subtitle={`Tasks referencing ${entityName}`}
+      subtitle={`Tasks referencing ${roleName}`}
     >
       <Stack direction="column" gap={2}>
         {tasks.map((task) => {
@@ -87,4 +83,4 @@ export const ParticipantTasksLinks = ({
   );
 };
 
-export default ParticipantTasksLinks;
+export default RoleTasksLinks;
