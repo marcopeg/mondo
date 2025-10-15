@@ -1,6 +1,10 @@
 import { App, TFile, TFolder, MarkdownView } from "obsidian";
 import type CRM from "@/main";
 
+type OpenJournalOptions = {
+  modifyExisting?: boolean;
+};
+
 function pad(n: number) {
   return String(n).padStart(2, "0");
 }
@@ -17,7 +21,12 @@ function formatTime(format: string, date: Date) {
 }
 
 // Open (and create if needed) today's journal file inside the configured journal folder
-export async function openJournal(app: App, plugin: CRM) {
+export async function openJournal(
+  app: App,
+  plugin: CRM,
+  options?: OpenJournalOptions
+) {
+  const { modifyExisting = true } = options ?? {};
   const settings = (plugin as any).settings || {};
   const journalSettings = settings.journal || {
     root: "Journal",
@@ -75,7 +84,7 @@ export async function openJournal(app: App, plugin: CRM) {
   if (!tfile) {
     // create with the required frontmatter at the top
     tfile = await app.vault.create(filePath, makeFrontmatter(isoDate));
-  } else {
+  } else if (modifyExisting) {
     // Ensure existing file has no crm fragment at top and has normalized frontmatter
     try {
       const raw = await app.vault.read(tfile);
@@ -184,170 +193,179 @@ export async function openJournal(app: App, plugin: CRM) {
     const view = leaf.view as unknown as MarkdownView | null;
     if (view && view.editor) {
       const editor = view.editor;
-      const content = editor.getValue() || "";
 
-      const useSections = (journalSettings as any).useSections ?? false;
+      if (modifyExisting) {
+        const content = editor.getValue() || "";
 
-      if (!useSections) {
-        // Default behavior: ensure file ends with exactly two newlines: one separator and one editable empty line
-        const trimmed = content.replace(/\n*$/, "");
-        const desired = trimmed + "\n\n";
-        if (desired !== content) {
-          editor.setValue(desired);
-        }
-        const final = editor.getValue();
-        const lines = final.split(/\n/);
-        // Cursor on the last empty line after the separator
-        const cursorLine = Math.max(0, lines.length - 1);
-        editor.setCursor({ line: cursorLine, ch: 0 });
-        editor.focus();
-      } else {
-        // Sections mode
-        const noteFormat = journalSettings.note || "HH:MM";
-        const sectionSetting = (journalSettings.section || "h3").toLowerCase();
+        const useSections = (journalSettings as any).useSections ?? false;
 
-        const lines = content.split(/\n/);
-
-        const now = new Date();
-        const headingText = formatTime(noteFormat, now);
-
-        const findSectionEnd = (startIndex: number) => {
-          for (let i = startIndex + 1; i < lines.length; i++) {
-            if (/^#\s+/.test(lines[i])) return i - 1;
+        if (!useSections) {
+          // Default behavior: ensure file ends with exactly two newlines: one separator and one editable empty line
+          const trimmed = content.replace(/\n*$/, "");
+          const desired = trimmed + "\n\n";
+          if (desired !== content) {
+            editor.setValue(desired);
           }
-          return lines.length - 1;
-        };
+          const final = editor.getValue();
+          const lines = final.split(/\n/);
+          // Cursor on the last empty line after the separator
+          const cursorLine = Math.max(0, lines.length - 1);
+          editor.setCursor({ line: cursorLine, ch: 0 });
+          editor.focus();
+        } else {
+          // Sections mode
+          const noteFormat = journalSettings.note || "HH:MM";
+          const sectionSetting = (journalSettings.section || "h3").toLowerCase();
 
-        if (sectionSetting === "inline") {
-          // Inline mode: prefer existing heading or inline part; otherwise insert a new line with "HH:MM - "
-          const token = `${headingText} - `;
-          // Search for existing heading matching the time or an inline token
-          let foundHeadingIndex = -1;
-          let foundInlineIndex = -1;
-          let foundInlineCh = 0;
-          for (let i = 0; i < lines.length; i++) {
-            const line = lines[i] ?? "";
-            // check headings H1..H6 exact match
-            for (let h = 1; h <= 6; h++) {
-              if (line.trim() === `${"#".repeat(h)} ${headingText}`) {
-                foundHeadingIndex = i;
+          const lines = content.split(/\n/);
+
+          const now = new Date();
+          const headingText = formatTime(noteFormat, now);
+
+          const findSectionEnd = (startIndex: number) => {
+            for (let i = startIndex + 1; i < lines.length; i++) {
+              if (/^#\s+/.test(lines[i])) return i - 1;
+            }
+            return lines.length - 1;
+          };
+
+          if (sectionSetting === "inline") {
+            // Inline mode: prefer existing heading or inline part; otherwise insert a new line with "HH:MM - "
+            const token = `${headingText} - `;
+            // Search for existing heading matching the time or an inline token
+            let foundHeadingIndex = -1;
+            let foundInlineIndex = -1;
+            let foundInlineCh = 0;
+            for (let i = 0; i < lines.length; i++) {
+              const line = lines[i] ?? "";
+              // check headings H1..H6 exact match
+              for (let h = 1; h <= 6; h++) {
+                if (line.trim() === `${"#".repeat(h)} ${headingText}`) {
+                  foundHeadingIndex = i;
+                  break;
+                }
+              }
+              if (foundHeadingIndex >= 0) break;
+              const idx = line.indexOf(`${headingText} -`);
+              if (idx !== -1 && foundInlineIndex === -1) {
+                foundInlineIndex = i;
+                // position after the token plus trailing space if present
+                foundInlineCh =
+                  idx +
+                  `${headingText} -`.length +
+                  (line[idx + `${headingText} -`.length] === " " ? 1 : 0);
+              }
+            }
+
+            if (foundHeadingIndex >= 0) {
+              // Existing heading: place cursor on a new line after the section
+              const sectionEnd = findSectionEnd(foundHeadingIndex);
+              const lastLineIndex = sectionEnd;
+              const lastLineText = lines[lastLineIndex] ?? "";
+              const insertCh = lastLineText.length;
+              editor.replaceRange("\n", { line: lastLineIndex, ch: insertCh });
+              editor.setCursor({ line: lastLineIndex + 1, ch: 0 });
+              editor.focus();
+            } else if (foundInlineIndex >= 0) {
+              // Existing inline token: move cursor to the end of that inline section
+              const lineText = lines[foundInlineIndex] ?? "";
+              const tokenStr = `${headingText} -`;
+              const tokenPos = lineText.indexOf(tokenStr);
+              const afterToken = tokenPos >= 0 ? tokenPos + tokenStr.length : 0;
+              // Determine last non-space character after the token
+              const rest = lineText.slice(afterToken);
+              const lastNonSpaceOffset = rest.replace(/\s+$/, "").length;
+              const lastNonSpacePos = afterToken + lastNonSpaceOffset;
+              // Position: one space after lastNonSpacePos
+              const hasSpaceAfter =
+                lineText.length > lastNonSpacePos &&
+                lineText[lastNonSpacePos] === " ";
+              if (lastNonSpaceOffset === 0) {
+                // No content after token: ensure a single space and place cursor after it
+                editor.replaceRange(" ", {
+                  line: foundInlineIndex,
+                  ch: afterToken,
+                });
+                editor.setCursor({ line: foundInlineIndex, ch: afterToken + 1 });
+              } else {
+                if (hasSpaceAfter) {
+                  editor.setCursor({
+                    line: foundInlineIndex,
+                    ch: lastNonSpacePos + 1,
+                  });
+                } else {
+                  // Insert a space after the content
+                  editor.replaceRange(" ", {
+                    line: foundInlineIndex,
+                    ch: lastNonSpacePos,
+                  });
+                  editor.setCursor({
+                    line: foundInlineIndex,
+                    ch: lastNonSpacePos + 1,
+                  });
+                }
+              }
+              editor.focus();
+            } else {
+              // Not found: append a new line with the token and put cursor after it
+              const insertPosLine = lines.length;
+              const needsNewline =
+                insertPosLine !== 0 &&
+                (lines[insertPosLine - 1] ?? "").length > 0;
+              const insertText = `${needsNewline ? "\n" : ""}${token}`;
+              editor.replaceRange(insertText, { line: insertPosLine, ch: 0 });
+              const targetLine = insertPosLine + (needsNewline ? 1 : 0);
+              editor.setCursor({ line: targetLine, ch: token.length });
+              editor.focus();
+            }
+          } else {
+            // Heading-style sections (h1..h6)
+            const match = sectionSetting.match(/^h([1-6])$/);
+            const level = match ? Math.max(1, Math.min(6, Number(match[1]))) : 3;
+            const prefix = "#".repeat(level);
+            const headingLine = `${prefix} ${headingText}`;
+
+            // Find existing heading line that exactly matches
+            let foundIndex = -1;
+            for (let i = 0; i < lines.length; i++) {
+              if (lines[i].trim() === headingLine) {
+                foundIndex = i;
                 break;
               }
             }
-            if (foundHeadingIndex >= 0) break;
-            const idx = line.indexOf(`${headingText} -`);
-            if (idx !== -1 && foundInlineIndex === -1) {
-              foundInlineIndex = i;
-              // position after the token plus trailing space if present
-              foundInlineCh =
-                idx +
-                `${headingText} -`.length +
-                (line[idx + `${headingText} -`.length] === " " ? 1 : 0);
-            }
-          }
 
-          if (foundHeadingIndex >= 0) {
-            // Existing heading: place cursor on a new line after the section
-            const sectionEnd = findSectionEnd(foundHeadingIndex);
-            const lastLineIndex = sectionEnd;
-            const lastLineText = lines[lastLineIndex] ?? "";
-            const insertCh = lastLineText.length;
-            editor.replaceRange("\n", { line: lastLineIndex, ch: insertCh });
-            editor.setCursor({ line: lastLineIndex + 1, ch: 0 });
-            editor.focus();
-          } else if (foundInlineIndex >= 0) {
-            // Existing inline token: move cursor to the end of that inline section
-            const lineText = lines[foundInlineIndex] ?? "";
-            const tokenStr = `${headingText} -`;
-            const tokenPos = lineText.indexOf(tokenStr);
-            const afterToken = tokenPos >= 0 ? tokenPos + tokenStr.length : 0;
-            // Determine last non-space character after the token
-            const rest = lineText.slice(afterToken);
-            const lastNonSpaceOffset = rest.replace(/\s+$/, "").length;
-            const lastNonSpacePos = afterToken + lastNonSpaceOffset;
-            // Position: one space after lastNonSpacePos
-            const hasSpaceAfter =
-              lineText.length > lastNonSpacePos &&
-              lineText[lastNonSpacePos] === " ";
-            if (lastNonSpaceOffset === 0) {
-              // No content after token: ensure a single space and place cursor after it
-              editor.replaceRange(" ", {
-                line: foundInlineIndex,
-                ch: afterToken,
-              });
-              editor.setCursor({ line: foundInlineIndex, ch: afterToken + 1 });
+            if (foundIndex >= 0) {
+              // Place cursor on a new line after the existing section
+              const sectionEnd = findSectionEnd(foundIndex);
+              const lastLineIndex = sectionEnd;
+              const lastLineText = lines[lastLineIndex] ?? "";
+              const insertCh = lastLineText.length;
+              editor.replaceRange("\n", { line: lastLineIndex, ch: insertCh });
+              editor.setCursor({ line: lastLineIndex + 1, ch: 0 });
+              editor.focus();
             } else {
-              if (hasSpaceAfter) {
-                editor.setCursor({
-                  line: foundInlineIndex,
-                  ch: lastNonSpacePos + 1,
-                });
-              } else {
-                // Insert a space after the content
-                editor.replaceRange(" ", {
-                  line: foundInlineIndex,
-                  ch: lastNonSpacePos,
-                });
-                editor.setCursor({
-                  line: foundInlineIndex,
-                  ch: lastNonSpacePos + 1,
-                });
+              // Not found: append heading and place cursor on the new empty line after it
+              let lastHeading = -1;
+              for (let i = 0; i < lines.length; i++) {
+                if (/^#\s+/.test(lines[i])) lastHeading = i;
               }
+              const insertPosLine =
+                lastHeading >= 0 ? findSectionEnd(lastHeading) + 1 : lines.length;
+              const prependNewline = insertPosLine !== 0;
+              const insertText = `${prependNewline ? "\n" : ""}${headingLine}\n`;
+              editor.replaceRange(insertText, { line: insertPosLine, ch: 0 });
+              const targetLine = insertPosLine + (prependNewline ? 2 : 1);
+              editor.setCursor({ line: targetLine, ch: 0 });
+              editor.focus();
             }
-            editor.focus();
-          } else {
-            // Not found: append a new line with the token and put cursor after it
-            const insertPosLine = lines.length;
-            const needsNewline =
-              insertPosLine !== 0 &&
-              (lines[insertPosLine - 1] ?? "").length > 0;
-            const insertText = `${needsNewline ? "\n" : ""}${token}`;
-            editor.replaceRange(insertText, { line: insertPosLine, ch: 0 });
-            const targetLine = insertPosLine + (needsNewline ? 1 : 0);
-            editor.setCursor({ line: targetLine, ch: token.length });
-            editor.focus();
-          }
-        } else {
-          // Heading-style sections (h1..h6)
-          const match = sectionSetting.match(/^h([1-6])$/);
-          const level = match ? Math.max(1, Math.min(6, Number(match[1]))) : 3;
-          const prefix = "#".repeat(level);
-          const headingLine = `${prefix} ${headingText}`;
-
-          // Find existing heading line that exactly matches
-          let foundIndex = -1;
-          for (let i = 0; i < lines.length; i++) {
-            if (lines[i].trim() === headingLine) {
-              foundIndex = i;
-              break;
-            }
-          }
-
-          if (foundIndex >= 0) {
-            // Place cursor on a new line after the existing section
-            const sectionEnd = findSectionEnd(foundIndex);
-            const lastLineIndex = sectionEnd;
-            const lastLineText = lines[lastLineIndex] ?? "";
-            const insertCh = lastLineText.length;
-            editor.replaceRange("\n", { line: lastLineIndex, ch: insertCh });
-            editor.setCursor({ line: lastLineIndex + 1, ch: 0 });
-            editor.focus();
-          } else {
-            // Not found: append heading and place cursor on the new empty line after it
-            let lastHeading = -1;
-            for (let i = 0; i < lines.length; i++) {
-              if (/^#\s+/.test(lines[i])) lastHeading = i;
-            }
-            const insertPosLine =
-              lastHeading >= 0 ? findSectionEnd(lastHeading) + 1 : lines.length;
-            const prependNewline = insertPosLine !== 0;
-            const insertText = `${prependNewline ? "\n" : ""}${headingLine}\n`;
-            editor.replaceRange(insertText, { line: insertPosLine, ch: 0 });
-            const targetLine = insertPosLine + (prependNewline ? 2 : 1);
-            editor.setCursor({ line: targetLine, ch: 0 });
-            editor.focus();
           }
         }
+      } else {
+        const lineCount = editor.lineCount();
+        const lastLineIndex = Math.max(0, lineCount - 1);
+        const lastLineLength = editor.getLine(lastLineIndex)?.length ?? 0;
+        editor.setCursor({ line: lastLineIndex, ch: lastLineLength });
+        editor.focus();
       }
 
       // Try to center the cursor vertically in the viewport for comfortable writing
