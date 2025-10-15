@@ -14,46 +14,9 @@ import VoiceFabButton from "@/components/VoiceFabButton";
 import NoteDictationController, {
   type DictationState,
 } from "@/utils/NoteDictationController";
+import VoiceTranscriptionService from "@/utils/VoiceTranscriptionService";
 
-const TRANSCRIPTION_MODEL = "gpt-4o-mini-transcribe";
-const DEFAULT_MODEL = "gpt-5-nano";
-const RESPONSES_URL = "https://api.openai.com/v1/responses";
-const TRANSCRIPTIONS_URL = "https://api.openai.com/v1/audio/transcriptions";
 const PROCESSING_NOTICE_MS = 5_000;
-
-const extractErrorMessage = async (response: Response) => {
-  try {
-    const payload = (await response.json()) as Record<string, unknown>;
-    const message =
-      typeof payload?.error === "object" && payload.error && "message" in payload.error
-        ? String((payload.error as Record<string, unknown>).message ?? "")
-        : typeof payload?.message === "string"
-        ? payload.message
-        : null;
-    return message && message.trim() ? message.trim() : response.statusText;
-  } catch (error) {
-    return response.statusText || "Request failed";
-  }
-};
-
-type ResponseContent = {
-  type?: string;
-  text?: string;
-  value?: string;
-};
-
-type ResponseOutput = {
-  type?: string;
-  content?: ResponseContent[];
-  text?: string;
-};
-
-type ResponsePayload = {
-  output_text?: string;
-  output?: ResponseOutput[];
-  content?: ResponseOutput[];
-  data?: ResponseOutput[];
-};
 
 type RecordingContext = {
   editor: Editor;
@@ -64,6 +27,7 @@ type RecordingContext = {
 
 export class NoteDictationManager {
   private readonly plugin: CRM;
+  private readonly transcriptionService: VoiceTranscriptionService;
   private container: HTMLElement | null = null;
   private root: Root | null = null;
   private recordingContext: RecordingContext | null = null;
@@ -79,6 +43,7 @@ export class NoteDictationManager {
 
   constructor(plugin: CRM) {
     this.plugin = plugin;
+    this.transcriptionService = new VoiceTranscriptionService(plugin);
   }
 
   initialize = () => {
@@ -156,24 +121,7 @@ export class NoteDictationManager {
   };
 
   private getApiKey = () => {
-    const key = this.plugin.settings?.openAIWhisperApiKey;
-    if (typeof key !== "string") {
-      return "";
-    }
-    return key.trim();
-  };
-
-  private getSelectedModel = () => {
-    const model = this.plugin.settings?.openAIModel;
-    if (typeof model !== "string" || !model.trim()) {
-      return DEFAULT_MODEL;
-    }
-    return model.trim();
-  };
-
-  private isPolishEnabled = () => {
-    const flag = this.plugin.settings?.openAITranscriptionPolishEnabled;
-    return flag !== false;
+    return this.transcriptionService.getApiKey();
   };
 
   private render = () => {
@@ -250,11 +198,7 @@ export class NoteDictationManager {
     this.processingNotice = new Notice("Processing voice note…", PROCESSING_NOTICE_MS);
 
     try {
-      const transcript = await this.requestTranscription(audio, apiKey);
-      const shouldPolish = this.isPolishEnabled();
-      const content = shouldPolish
-        ? await this.requestCompletion(transcript, apiKey)
-        : transcript;
+      const content = await this.transcriptionService.process(audio);
       this.insertText(content, context);
       new Notice("Voice note inserted into the document.");
     } catch (error) {
@@ -430,104 +374,6 @@ export class NoteDictationManager {
       return "alert-circle";
     }
     return "mic";
-  };
-
-  private requestTranscription = async (audio: Blob, apiKey: string) => {
-    const formData = new FormData();
-    formData.append("model", TRANSCRIPTION_MODEL);
-    formData.append("file", audio, "voice-note.webm");
-
-    const response = await fetch(TRANSCRIPTIONS_URL, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: formData,
-    });
-
-    if (!response.ok) {
-      const message = await extractErrorMessage(response);
-      throw new Error(message || "Transcription request failed.");
-    }
-
-    const payload = (await response.json()) as { text?: string };
-    const transcript = typeof payload.text === "string" ? payload.text.trim() : "";
-
-    if (!transcript) {
-      throw new Error("Received an empty transcription result.");
-    }
-
-    return transcript;
-  };
-
-  private requestCompletion = async (transcript: string, apiKey: string) => {
-    const model = this.getSelectedModel();
-    const prompt = `You are an expert transcription curator.\nTake this raw voice transcript and polish it from the classic vocalization issues.\nMake the minimum intervention possible.\n\nTRANSCRIPT:\n${transcript}`;
-
-    const response = await fetch(RESPONSES_URL, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model,
-        input: prompt,
-      }),
-    });
-
-    if (!response.ok) {
-      const message = await extractErrorMessage(response);
-      throw new Error(message || "Model request failed.");
-    }
-
-    const payload = (await response.json()) as ResponsePayload;
-    const text = this.extractText(payload).trim();
-
-    if (!text) {
-      throw new Error("The model did not return any text.");
-    }
-
-    return text;
-  };
-
-  private extractText = (payload: ResponsePayload): string => {
-    if (payload.output_text && payload.output_text.trim()) {
-      return payload.output_text.trim();
-    }
-
-    const collections = [payload.output, payload.content, payload.data];
-
-    for (const collection of collections) {
-      if (!Array.isArray(collection)) {
-        continue;
-      }
-
-      for (const item of collection) {
-        if (!item) {
-          continue;
-        }
-
-        if (typeof item.text === "string" && item.text.trim()) {
-          return item.text.trim();
-        }
-
-        if (!Array.isArray(item.content)) {
-          continue;
-        }
-
-        for (const content of item.content) {
-          const candidate =
-            (typeof content?.text === "string" && content.text.trim()) ||
-            (typeof content?.value === "string" && content.value.trim());
-          if (candidate) {
-            return candidate.trim();
-          }
-        }
-      }
-    }
-
-    return "";
   };
 
   private insertText = (text: string, context: RecordingContext) => {
