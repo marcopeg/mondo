@@ -77,7 +77,8 @@
   height: 1.9rem;
   border-radius: var(--radius-s, 0.35rem);
   color: var(--text-muted);
-  background: transparent;
+  background: none;
+  background-color: transparent;
   border: none;
   cursor: pointer;
   transition: color 0.18s ease, background-color 0.18s ease, opacity 0.18s ease;
@@ -90,7 +91,6 @@
 
 .crm-textfield__mic:hover:not(:disabled) {
   color: var(--text-normal);
-  background: var(--background-modifier-hover);
 }
 
 .crm-textfield__mic:focus-visible {
@@ -99,7 +99,7 @@
 }
 
 .crm-textfield__mic--recording {
-  color: var(--interactive-accent);
+  color: var(--color-green, #2f9e44);
 }
 
 .crm-textfield__mic--processing {
