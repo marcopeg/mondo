@@ -319,6 +319,7 @@ const TextField = forwardRef<HTMLInputElement, TextFieldProps>(
           variant="link"
           className={buttonClasses.join(" ")}
           tone={isRecording ? "success" : "default"}
+          type="button"
           onClick={handleMicClick}
           disabled={buttonDisabled}
           aria-label={buttonLabel}
