@@ -20,6 +20,8 @@ const FALLBACK_VOICES = [
   "sol",
 ];
 
+const DEFAULT_VOICEOVER_CACHE_PATH = "/voiceover";
+
 const AUDIO_MIME_TYPE = "audio/mpeg";
 const VOICE_PREVIEW_TEXT =
   "Hello from Obsidian CRM. This is a quick voice preview.";
@@ -340,10 +342,15 @@ export class VoiceoverManager {
     voiceoverModal.setStatus("Checking for existing voiceover…");
 
     try {
-      const attachmentsDir = this.resolveAttachmentsDirectory(file);
-      const contentHash = await hashContent(trimmed);
+      const cacheDirectory = this.resolveVoiceoverDirectory();
+      let voice = this.plugin.settings?.openAIVoice?.trim?.() ?? "";
+      if (!voice) {
+        voice = (await this.resolveVoice()).trim();
+      }
+
+      const contentHash = await hashContent(`${voice}::${trimmed}`);
       const existing = await this.findExistingVoiceover(
-        attachmentsDir,
+        cacheDirectory,
         contentHash
       );
 
@@ -352,7 +359,6 @@ export class VoiceoverManager {
         return;
       }
 
-      const voice = await this.resolveVoice();
       const controller = new AbortController();
       this.activeNotes.set(file.path, controller);
 
@@ -371,7 +377,7 @@ export class VoiceoverManager {
       const audioFile = await this.saveAudioFile(
         file,
         audioBuffer,
-        attachmentsDir,
+        cacheDirectory,
         contentHash
       );
 
@@ -547,11 +553,12 @@ export class VoiceoverManager {
     directory: string,
     hash: string
   ) => {
-    await this.ensureFolder(directory);
+    const normalizedDirectory = normalizePath(directory);
+    await this.ensureFolder(normalizedDirectory);
 
     const vault = this.plugin.app.vault;
     const fileName = `Voiceover ${getTimestamp()} ${hash}.mp3`;
-    const targetPath = normalizePath(`${directory}/${fileName}`);
+    const targetPath = normalizePath(`${normalizedDirectory}/${fileName}`);
     const created = await vault.createBinary(targetPath, audio);
     return created;
   };
@@ -559,14 +566,15 @@ export class VoiceoverManager {
   private ensureFolder = async (folderPath: string) => {
     const vault = this.plugin.app.vault;
     const adapter = vault.adapter;
-    const exists = await adapter.exists(folderPath);
+    const normalizedPath = normalizePath(folderPath);
+    const exists = await adapter.exists(normalizedPath);
 
     if (exists) {
       return;
     }
 
     try {
-      await vault.createFolder(folderPath);
+      await vault.createFolder(normalizedPath);
     } catch (error) {
       if (error instanceof Error && error.message.includes("exist")) {
         return;
@@ -575,12 +583,12 @@ export class VoiceoverManager {
     }
   };
 
-  private resolveAttachmentsDirectory = (file: TFile) => {
-    const baseDirectory = file.parent?.path ?? "";
-    const attachmentsDir = baseDirectory
-      ? `${baseDirectory}/attachments`
-      : "attachments";
-    return normalizePath(attachmentsDir);
+  private resolveVoiceoverDirectory = () => {
+    const configured = this.plugin.settings?.voiceoverCachePath;
+    const trimmed =
+      typeof configured === "string" ? configured.trim() : "";
+    const resolved = trimmed || DEFAULT_VOICEOVER_CACHE_PATH;
+    return normalizePath(resolved);
   };
 
   private findExistingVoiceover = async (
@@ -588,13 +596,14 @@ export class VoiceoverManager {
     hash: string
   ) => {
     const adapter = this.plugin.app.vault.adapter;
-    const exists = await adapter.exists(directory);
+    const normalizedDirectory = normalizePath(directory);
+    const exists = await adapter.exists(normalizedDirectory);
     if (!exists) {
       return null;
     }
 
     try {
-      const listing = await adapter.list(directory);
+      const listing = await adapter.list(normalizedDirectory);
       const match = listing.files.find((filePath) =>
         filePath.endsWith(`${hash}.mp3`)
       );
@@ -608,7 +617,7 @@ export class VoiceoverManager {
       );
       return abstract instanceof TFile ? abstract : null;
     } catch (error) {
-      console.error("CRM: failed to list attachments folder", error);
+      console.error("CRM: failed to list voiceover cache folder", error);
       return null;
     }
   };

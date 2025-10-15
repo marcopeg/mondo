@@ -285,6 +285,80 @@ export class CRMSettingsTab extends PluginSettingTab {
 
     const voiceManager = this.plugin.getVoiceoverManager?.();
     const voicePreviewTooltip = "Preview the selected voice";
+
+    new Setting(containerEl)
+      .setName("Voiceover")
+      .setDesc("Configure AI-generated voiceovers.")
+      .setHeading();
+
+    new Setting(containerEl)
+      .setName("Voiceover media cache")
+      .setDesc(
+        "Vault-relative folder where generated voiceovers are stored. The folder will be created when needed."
+      )
+      .addSearch((search) => {
+        const fallback = "/voiceover";
+        const stored =
+          (this.plugin as any).settings.voiceoverCachePath?.toString?.() ??
+          fallback;
+
+        const applyValue = async (raw: string) => {
+          const trimmed = raw?.trim?.() ?? "";
+          const resolved = trimmed || fallback;
+          (this.plugin as any).settings.voiceoverCachePath = resolved;
+          await (this.plugin as any).saveSettings();
+          if (search.inputEl.value !== resolved) {
+            try {
+              search.setValue(resolved);
+            } catch (error) {
+              search.inputEl.value = resolved;
+              search.inputEl.dispatchEvent(
+                new Event("input", { bubbles: true })
+              );
+              search.inputEl.dispatchEvent(
+                new Event("change", { bubbles: true })
+              );
+            }
+          }
+        };
+
+        search
+          .setPlaceholder(fallback)
+          .setValue(stored || fallback)
+          .onChange(async (value) => {
+            await applyValue(value);
+          });
+
+        try {
+          const sugg = new FolderSuggest(
+            this.app,
+            search.inputEl as HTMLInputElement,
+            async (picked: string) => {
+              const resolved = picked || fallback;
+
+              try {
+                search.setValue(resolved);
+              } catch (error) {
+                search.inputEl.value = resolved;
+                search.inputEl.dispatchEvent(
+                  new Event("input", { bubbles: true })
+                );
+                search.inputEl.dispatchEvent(
+                  new Event("change", { bubbles: true })
+                );
+              }
+
+              await applyValue(resolved);
+            }
+          );
+
+          (this as any)._suggesters = (this as any)._suggesters || [];
+          (this as any)._suggesters.push(sugg);
+        } catch (error) {
+          // Suggest is unavailable (e.g. tests); ignore.
+        }
+      });
+
     let previewState = { disabled: true, tooltip: voicePreviewTooltip };
     let previewButton: ExtraButtonComponent | null = null;
     const applyPreviewState = () => {

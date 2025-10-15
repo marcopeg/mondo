@@ -65,6 +65,7 @@ export default class CRM extends Plugin {
     openAIVoice: "",
     openAIModel: "gpt-5-nano",
     openAITranscriptionPolishEnabled: true,
+    voiceoverCachePath: "/voiceover",
   };
 
   private hasFocusedDashboardOnStartup = false;
@@ -176,6 +177,12 @@ export default class CRM extends Plugin {
       typeof this.settings.openAITranscriptionPolishEnabled === "boolean"
         ? this.settings.openAITranscriptionPolishEnabled
         : true;
+    const cachePath = this.settings.voiceoverCachePath;
+    if (typeof cachePath === "string" && cachePath.trim()) {
+      this.settings.voiceoverCachePath = cachePath.trim();
+    } else {
+      this.settings.voiceoverCachePath = "/voiceover";
+    }
   }
 
   async saveSettings() {
