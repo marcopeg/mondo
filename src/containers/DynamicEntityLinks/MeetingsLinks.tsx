@@ -6,6 +6,8 @@ import { CRMFileType } from "@/types/CRMFileType";
 import { matchesPropertyLink } from "@/utils/matchesPropertyLink";
 import type { TCachedFile } from "@/types/TCachedFile";
 import type { App } from "obsidian";
+import { useApp } from "@/hooks/use-app";
+import { createMeetingForPerson } from "@/utils/createMeetingForPerson";
 
 type MeetingsLinksProps = {
   config: Record<string, unknown>;
@@ -13,6 +15,7 @@ type MeetingsLinksProps = {
 };
 
 export const MeetingsLinks = ({ file, config }: MeetingsLinksProps) => {
+  const app = useApp();
   const entityType = file.cache?.frontmatter?.type as string | undefined;
 
   const meetings = useFiles(CRMFileType.MEETING, {
@@ -38,10 +41,6 @@ export const MeetingsLinks = ({ file, config }: MeetingsLinksProps) => {
     ),
   });
 
-  if (meetings.length === 0) {
-    return null;
-  }
-
   const displayName =
     (file.cache?.frontmatter?.show as string | undefined) ??
     file.file.basename;
@@ -59,6 +58,34 @@ export const MeetingsLinks = ({ file, config }: MeetingsLinksProps) => {
     }
   })();
 
+  const handleAddMeeting = useCallback(() => {
+    if (entityType !== "person") {
+      return;
+    }
+
+    if (!file?.file) {
+      console.warn("MeetingsLinks: missing focused person file.");
+      return;
+    }
+
+    void (async () => {
+      try {
+        await createMeetingForPerson({ app, personFile: file });
+      } catch (error) {
+        console.error("MeetingsLinks: failed to create meeting", error);
+      }
+    })();
+  }, [app, entityType, file]);
+
+  const actions = entityType === "person"
+    ? [
+        {
+          icon: "plus",
+          onClick: handleAddMeeting,
+        },
+      ]
+    : undefined;
+
   return (
     <Card
       collapsible
@@ -66,8 +93,13 @@ export const MeetingsLinks = ({ file, config }: MeetingsLinksProps) => {
       icon="calendar"
       title="Meetings"
       subtitle={subtitle}
+      actions={actions}
     >
-      <MeetingsTable items={meetings} />
+      {meetings.length > 0 ? (
+        <MeetingsTable items={meetings} />
+      ) : (
+        <p style={{ color: "var(--text-muted)" }}>No meetings yet.</p>
+      )}
     </Card>
   );
 };
