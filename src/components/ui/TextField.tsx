@@ -5,7 +5,7 @@ import React, {
   useRef,
   useState,
 } from "react";
-import { Notice, setIcon } from "obsidian";
+import { Notice } from "obsidian";
 import { useApp } from "@/hooks/use-app";
 import NoteDictationController, {
   type DictationState,
@@ -13,6 +13,7 @@ import NoteDictationController, {
 import VoiceTranscriptionService from "@/utils/VoiceTranscriptionService";
 import getCRMPlugin from "@/utils/getCRMPlugin";
 import type CRM from "@/main";
+import Button from "@/components/ui/Button";
 
 const setNativeInputValue = (input: HTMLInputElement, value: string) => {
   const descriptor = Object.getOwnPropertyDescriptor(
@@ -30,7 +31,8 @@ const setNativeInputValue = (input: HTMLInputElement, value: string) => {
 
 const resolveIconName = (status: DictationState["status"]) => {
   if (status === "recording") {
-    return "waveform";
+    // Use a stable, always-available icon while recording
+    return "mic";
   }
   if (status === "processing") {
     return "loader-2";
@@ -82,7 +84,6 @@ const TextField = forwardRef<HTMLInputElement, TextFieldProps>(
     const unsubscribeRef = useRef<(() => void) | null>(null);
     const pluginRef = useRef<CRM | null>(null);
     const serviceRef = useRef<VoiceTranscriptionService | null>(null);
-    const iconRef = useRef<HTMLSpanElement | null>(null);
     const [dictationState, setDictationState] = useState<DictationState | null>(
       null
     );
@@ -93,8 +94,9 @@ const TextField = forwardRef<HTMLInputElement, TextFieldProps>(
         if (typeof forwardedRef === "function") {
           forwardedRef(node);
         } else if (forwardedRef) {
-          (forwardedRef as React.MutableRefObject<HTMLInputElement | null>).current =
-            node;
+          (
+            forwardedRef as React.MutableRefObject<HTMLInputElement | null>
+          ).current = node;
         }
       },
       [forwardedRef]
@@ -227,23 +229,11 @@ const TextField = forwardRef<HTMLInputElement, TextFieldProps>(
       ? "Set your OpenAI API key in the CRM settings."
       : null;
 
-    useEffect(() => {
-      if (!iconRef.current) {
-        return;
-      }
-
-      const iconName = resolveIconName(status);
-      setIcon(iconRef.current, iconName);
-
-      if (isProcessing) {
-        iconRef.current.classList.add("crm-voice-fab-icon--spin");
-      } else {
-        iconRef.current.classList.remove("crm-voice-fab-icon--spin");
-      }
-    }, [isProcessing, status]);
+    // No direct DOM icon mutation needed; Button will render dynamic icon from state.
 
     const buttonLabel = deriveButtonLabel(status);
-    const tooltip = dictationState?.errorMessage ?? micUnavailableReason ?? buttonLabel;
+    const tooltip =
+      dictationState?.errorMessage ?? micUnavailableReason ?? buttonLabel;
 
     const handleMicClick = () => {
       if (!whisper) {
@@ -307,6 +297,14 @@ const TextField = forwardRef<HTMLInputElement, TextFieldProps>(
       buttonClasses.push("crm-textfield__mic--success");
     }
 
+    const iconName = resolveIconName(status);
+    const iconClassName = [
+      "crm-textfield__mic-icon",
+      isProcessing ? "crm-voice-fab-icon--spin" : undefined,
+    ]
+      .filter(Boolean)
+      .join(" ");
+
     return (
       <div className={wrapperClassName}>
         <input
@@ -317,17 +315,25 @@ const TextField = forwardRef<HTMLInputElement, TextFieldProps>(
           readOnly={readOnly}
           {...props}
         />
-        <button
-          type="button"
+        <Button
+          variant="link"
           className={buttonClasses.join(" ")}
+          tone={isRecording ? "success" : "default"}
           onClick={handleMicClick}
           disabled={buttonDisabled}
           aria-label={buttonLabel}
           aria-pressed={isRecording}
           title={tooltip}
-        >
-          <span ref={iconRef} className="crm-textfield__mic-icon" aria-hidden />
-        </button>
+          // Override link defaults to remove underline and keep inherited color/background.
+          style={{
+            textDecorationLine: "none",
+            textDecorationThickness: 0,
+            background: "transparent",
+            boxShadow: "none",
+          }}
+          icon={iconName}
+          iconClassName={iconClassName}
+        />
       </div>
     );
   }
