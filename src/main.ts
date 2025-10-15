@@ -264,6 +264,18 @@ export default class CRM extends Plugin {
     });
 
     this.addCommand({
+      id: "open-today",
+      name: "Open Today's Journal",
+      callback: async () => {
+        try {
+          await openJournal(this.app, this, { modifyExisting: false });
+        } catch (e) {
+          console.error("CRM: Failed to open today's journal:", e);
+        }
+      },
+    });
+
+    this.addCommand({
       id: "add-log",
       name: "Add Log",
       hotkeys: [{ modifiers: ["Mod", "Shift"], key: "l" }],
