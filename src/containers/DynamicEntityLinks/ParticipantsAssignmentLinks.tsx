@@ -1,0 +1,321 @@
+import { useCallback, useMemo, useState } from "react";
+import { AutoComplete } from "@/components/AutoComplete";
+import { InlineError } from "@/components/InlineError";
+import { Button } from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
+import { Stack } from "@/components/ui/Stack";
+import { useApp } from "@/hooks/use-app";
+import { useFiles } from "@/hooks/use-files";
+import { useSetting } from "@/hooks/use-setting";
+import { CRMFileType } from "@/types/CRMFileType";
+import type { TCachedFile } from "@/types/TCachedFile";
+import type { TFile } from "obsidian";
+import { getEntityDisplayName } from "@/utils/getEntityDisplayName";
+import { getTemplateForType, renderTemplate } from "@/utils/CRMTemplates";
+
+type ParticipantsAssignmentLinksProps = {
+  config: Record<string, unknown>;
+  file: TCachedFile;
+};
+
+export const ParticipantsAssignmentLinks = ({
+  file,
+  config,
+}: ParticipantsAssignmentLinksProps) => {
+  const app = useApp();
+  const peopleRootSetting = useSetting<string>(
+    `rootPaths.${CRMFileType.PERSON}`,
+    "/"
+  );
+  const people = useFiles(CRMFileType.PERSON);
+  const [isSaving, setIsSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const frontmatter = file.cache?.frontmatter as
+    | Record<string, unknown>
+    | undefined;
+
+  const participants = useMemo(() => parseParticipants(frontmatter?.participants), [
+    frontmatter?.participants,
+  ]);
+
+  const entityType = String(frontmatter?.type ?? "task");
+
+  const normalizedPeopleRoot = useMemo(() => {
+    if (!peopleRootSetting || peopleRootSetting === "/") {
+      return "";
+    }
+    return peopleRootSetting.replace(/^\/+|\/+$/g, "").trim();
+  }, [peopleRootSetting]);
+
+  const personOptions = useMemo(
+    () => people.map((candidate) => candidate.file.basename),
+    [people]
+  );
+
+  const persistParticipant = useCallback(
+    async (link: string) => {
+      if (!file.file) {
+        return;
+      }
+
+      const normalizedLink = normalizeLink(link);
+      if (!normalizedLink) {
+        return;
+      }
+
+      setIsSaving(true);
+      setError(null);
+
+      try {
+        await app.fileManager.processFrontMatter(file.file, (fm) => {
+          const existing = parseParticipants(fm?.participants);
+          const hasLink = existing.some(
+            (value) => normalizeLink(String(value)) === normalizedLink
+          );
+          if (hasLink) {
+            fm.participants = existing.length > 0 ? existing : [link];
+            return;
+          }
+          fm.participants = [...existing, link];
+        });
+      } catch (err) {
+        console.error("ParticipantsAssignmentLinks: failed to update", err);
+        setError("Unable to update participants. Please try again.");
+      } finally {
+        setIsSaving(false);
+      }
+    },
+    [app.fileManager, file.file]
+  );
+
+  const handleAssignMe = useCallback(() => {
+    if (isSaving) {
+      return;
+    }
+    const target = normalizedPeopleRoot
+      ? `${normalizedPeopleRoot}/me`
+      : "me";
+    const link = `[[${target}]]`;
+    void persistParticipant(link);
+  }, [isSaving, normalizedPeopleRoot, persistParticipant]);
+
+  const ensurePersonFile = useCallback(
+    async (name: string): Promise<TFile | null> => {
+      const pluginInstance = (app as any).plugins?.plugins?.["crm"] as
+        | {
+            settings?: {
+              rootPaths?: Partial<Record<CRMFileType, string>>;
+              templates?: Partial<Record<CRMFileType, string>>;
+            };
+          }
+        | undefined;
+
+      if (!pluginInstance?.settings) {
+        throw new Error("CRM plugin settings are not available.");
+      }
+
+      const settings = pluginInstance.settings;
+      const folderSetting = settings.rootPaths?.[CRMFileType.PERSON] ?? "/";
+      const normalizedFolder =
+        folderSetting === "/"
+          ? ""
+          : folderSetting.replace(/^\/+|\/+$/g, "").trim();
+
+      if (normalizedFolder) {
+        const existingFolder = app.vault.getAbstractFileByPath(normalizedFolder);
+        if (!existingFolder) {
+          await app.vault.createFolder(normalizedFolder);
+        }
+      }
+
+      const base = (name || "untitled").trim();
+      const safeBase = sanitizeFileName(base);
+      const fileName = safeBase.endsWith(".md") ? safeBase : `${safeBase}.md`;
+      const filePath = normalizedFolder
+        ? `${normalizedFolder}/${fileName}`
+        : fileName;
+
+      let personFile = app.vault.getAbstractFileByPath(filePath) as
+        | TFile
+        | null;
+
+      if (!personFile) {
+        const now = new Date();
+        const isoTimestamp = now.toISOString();
+        const templateSource = getTemplateForType(
+          settings.templates,
+          CRMFileType.PERSON
+        );
+        const slug = slugify(base) || safeBase.toLowerCase();
+        const content = renderTemplate(templateSource, {
+          title: base,
+          type: String(CRMFileType.PERSON),
+          filename: fileName,
+          slug,
+          date: isoTimestamp.split("T")[0],
+          time: isoTimestamp.slice(11, 16),
+          datetime: isoTimestamp,
+        });
+
+        personFile = await app.vault.create(filePath, content);
+      }
+
+      return personFile;
+    },
+    [app]
+  );
+
+  const handleAssignPerson = useCallback(
+    (value: string) => {
+      if (isSaving || !file.file) {
+        return;
+      }
+
+      const trimmed = value.trim();
+      if (!trimmed) {
+        return;
+      }
+
+      const existing = people.find(
+        (candidate) =>
+          candidate.file.basename.toLowerCase() === trimmed.toLowerCase()
+      );
+
+      const assignExisting = async (targetFile: TFile, display?: string) => {
+        const linkTarget = app.metadataCache.fileToLinktext(
+          targetFile,
+          file.file!.path
+        );
+        const alias = display?.trim();
+        const link =
+          alias && alias !== linkTarget
+            ? `[[${linkTarget}|${alias}]]`
+            : `[[${linkTarget}]]`;
+        await persistParticipant(link);
+      };
+
+      if (existing?.file) {
+        const displayName = getEntityDisplayName(existing);
+        void assignExisting(existing.file, displayName);
+        return;
+      }
+
+      void (async () => {
+        try {
+          const created = await ensurePersonFile(trimmed);
+          if (!created) {
+            throw new Error("Person file could not be created.");
+          }
+          await assignExisting(created, trimmed);
+        } catch (err) {
+          console.error(
+            "ParticipantsAssignmentLinks: failed to create person",
+            err
+          );
+          setError("Unable to assign this person. Please try again.");
+        }
+      })();
+    },
+    [
+      app.metadataCache,
+      ensurePersonFile,
+      file.file,
+      isSaving,
+      people,
+      persistParticipant,
+    ]
+  );
+
+  if (!file.file || participants.length > 0) {
+    return null;
+  }
+
+  const entityName = getEntityDisplayName(file);
+  const fallbackName = entityType === "project" ? "this project" : "this task";
+  const targetLabel = entityName || fallbackName;
+  const subtitle = `Assign participants to this ${entityType === "project" ? "project" : "task"}.`;
+
+  const inputClassName = [
+    "setting-input w-full",
+    isSaving ? "opacity-60 pointer-events-none" : undefined,
+  ]
+    .filter(Boolean)
+    .join(" ");
+
+  return (
+    <Card
+      collapsible
+      collapsed={Boolean((config as any)?.collapsed)}
+      icon="user-plus"
+      title="Participants"
+      subtitle={subtitle}
+    >
+      <Stack direction="column" gap={2}>
+        {error ? <InlineError message={error} /> : null}
+        <Button
+          icon="user-round-plus"
+          onClick={handleAssignMe}
+          disabled={isSaving}
+        >
+          Assign it to me
+        </Button>
+        <div className="flex flex-col gap-1">
+          <span className="text-sm font-medium text-[var(--text-muted)]">
+            Assign to
+          </span>
+          <AutoComplete
+            values={personOptions}
+            onSelect={handleAssignPerson}
+            placeholder={`Type a person to assign to ${targetLabel}`}
+            className={inputClassName}
+          />
+        </div>
+      </Stack>
+    </Card>
+  );
+};
+
+const parseParticipants = (value: unknown): string[] => {
+  if (value === undefined || value === null) {
+    return [];
+  }
+  if (Array.isArray(value)) {
+    return value
+      .map((item) => String(item).trim())
+      .filter((item) => item.length > 0);
+  }
+  const single = String(value).trim();
+  return single ? [single] : [];
+};
+
+const normalizeLink = (raw: string): string => {
+  let link = raw.trim();
+  if (!link) {
+    return "";
+  }
+  if (link.startsWith("[[") && link.endsWith("]]")) {
+    link = link.slice(2, -2);
+  }
+  link = link.split("|")[0];
+  link = link.replace(/\\/g, "/");
+  link = link.replace(/\.md$/i, "");
+  link = link.replace(/^\/+/, "");
+  return link.trim();
+};
+
+const sanitizeFileName = (value: string) =>
+  value
+    .replace(/[\u0000-\u001f\u007f<>:"|?*]+/g, "-")
+    .replace(/[\\/]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .trim() || "untitled";
+
+const slugify = (value: string): string =>
+  value
+    .trim()
+    .toLowerCase()
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
