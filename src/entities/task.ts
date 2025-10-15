@@ -4,7 +4,7 @@ const template = `---
 type: task
 show: "{{title}}"
 status: open
-related:
+participants: []
 ---
 
 `;
