@@ -12,9 +12,15 @@ type CardActionBase = {
   onClick: () => void;
 };
 
+type CardActionContent = {
+  key?: React.Key;
+  content: React.ReactNode;
+};
+
 type CardAction =
   | (CardActionBase & { text: string })
-  | (CardActionBase & { icon: string });
+  | (CardActionBase & { icon: string })
+  | CardActionContent;
 
 type CardProps = {
   title?: string;
@@ -38,6 +44,7 @@ type CardProps = {
   actions?: CardAction[];
   collapsible?: boolean;
   collapsed?: boolean;
+  collapseOnHeaderClick?: boolean;
 };
 
 /**
@@ -63,6 +70,7 @@ export const Card: React.FC<CardProps> = ({
   actions,
   collapsible = false,
   collapsed = false,
+  collapseOnHeaderClick = false,
 }) => {
   // Collect Box props to forward
   const boxProps: any = {};
@@ -147,11 +155,15 @@ export const Card: React.FC<CardProps> = ({
     setIsCollapsed((prev) => !prev);
   }, [collapsible]);
 
-  const titleInteractiveProps = collapsible
+  const collapseInteractiveProps: (React.HTMLAttributes<HTMLDivElement> & {
+    "aria-expanded"?: boolean;
+  }) = collapsible
     ? {
         role: "button",
         tabIndex: 0,
-        onClick: toggleCollapse,
+        onClick: () => {
+          toggleCollapse();
+        },
         onKeyDown: (event: React.KeyboardEvent<HTMLDivElement>) => {
           if (event.key === "Enter" || event.key === " ") {
             event.preventDefault();
@@ -160,6 +172,14 @@ export const Card: React.FC<CardProps> = ({
         },
         "aria-expanded": !isCollapsed,
       }
+    : {};
+
+  const headerInteractiveProps = collapseOnHeaderClick
+    ? collapseInteractiveProps
+    : {};
+
+  const titleInteractiveProps = !collapseOnHeaderClick
+    ? collapseInteractiveProps
     : {};
 
   const headerFlexStyle: React.CSSProperties = {
@@ -180,18 +200,32 @@ export const Card: React.FC<CardProps> = ({
     alignSelf: hasTextualHeaderContent ? "flex-start" : undefined,
   };
 
-  const titleWrapperStyle: React.CSSProperties = collapsible
-    ? { outline: "none", cursor: "pointer", userSelect: "none" }
-    : { outline: "none" };
+  const headerClassName = [
+    innerPaddingClass,
+    collapseOnHeaderClick && collapsible ? "cursor-pointer select-none" : undefined,
+  ]
+    .filter(Boolean)
+    .join(" ");
+
+  const headerStyle: React.CSSProperties = {
+    ...innerPaddingStyle,
+    ...(collapseOnHeaderClick ? { outline: "none" } : {}),
+  };
+
+  const titleWrapperClassName =
+    collapsible && !collapseOnHeaderClick ? "cursor-pointer select-none" : undefined;
+
+  const titleWrapperStyle: React.CSSProperties = { outline: "none" };
 
   return (
     // keep Paper unpadded by default; padding will be applied to the inner Boxes
     <Paper p={0} {...boxProps} className={className}>
       {shouldRenderHeader && (
         <Box
-          className={innerPaddingClass}
-          style={innerPaddingStyle}
+          className={headerClassName}
+          style={headerStyle}
           data-collapsible={collapsible ? "true" : "false"}
+          {...(headerInteractiveProps as any)}
         >
           <Stack
             align={hasTextualHeaderContent ? "start" : "center"}
@@ -201,11 +235,11 @@ export const Card: React.FC<CardProps> = ({
           >
             {titleProps && (
               <div
-                className={collapsible ? "cursor-pointer select-none" : undefined}
+                className={titleWrapperClassName}
                 style={titleWrapperStyle}
                 {...(titleInteractiveProps as any)}
               >
-                <Title {...titleProps} />
+                {titleProps && <Title {...titleProps} />}
               </div>
             )}
             {hasActions && (
@@ -216,8 +250,32 @@ export const Card: React.FC<CardProps> = ({
                   hasTextualHeaderContent ? "shrink-0 self-start" : "shrink-0"
                 }
                 style={actionsFlexStyle}
+                onClick={
+                  collapseOnHeaderClick
+                    ? (event: React.MouseEvent<HTMLDivElement>) => {
+                        event.stopPropagation();
+                      }
+                    : undefined
+                }
+                onKeyDown={
+                  collapseOnHeaderClick
+                    ? (event: React.KeyboardEvent<HTMLDivElement>) => {
+                        event.stopPropagation();
+                      }
+                    : undefined
+                }
               >
                 {resolvedActions.map((action, index) => {
+                  if ("content" in action) {
+                    const key = action.key ?? `custom-${index}`;
+
+                    return (
+                      <div key={key} className="flex items-center">
+                        {action.content}
+                      </div>
+                    );
+                  }
+
                   if (!action.text && !action.icon) {
                     throw new Error(
                       "Card action must define at least a text or an icon."

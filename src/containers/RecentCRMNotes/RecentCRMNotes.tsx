@@ -26,7 +26,13 @@ export const RecentCRMNotes = () => {
   const formatter = useDateFormatter();
 
   return (
-    <Card title="Last Updates" icon="clock" collapsible collapsed>
+    <Card
+      title="Last Updates"
+      icon="clock"
+      collapsible
+      collapsed
+      collapseOnHeaderClick
+    >
       {notes.length === 0 ? (
         <Typography variant="body" className="text-sm text-[var(--text-muted)]">
           No CRM notes found yet.

@@ -7,6 +7,7 @@ import { useInboxTasks, type InboxTask } from "@/hooks/use-inbox-tasks";
 import Button from "@/components/ui/Button";
 import SplitButton from "@/components/ui/SplitButton";
 import { Separator } from "@/components/ui/Separator";
+import Badge from "@/components/ui/Badge";
 
 export const QuickTasks: React.FC<{ collapsed?: boolean }> = ({
   collapsed = false,
@@ -58,12 +59,21 @@ export const QuickTasks: React.FC<{ collapsed?: boolean }> = ({
     [promoteTask, setPendingState]
   );
 
+  const openTasksCount = tasks.length;
+  const badgeLabel = `${openTasksCount} open task${openTasksCount === 1 ? "" : "s"}`;
+
   return (
     <Card
       title="Quick Tasks"
       icon="list-checks"
       collapsible
       collapsed={collapsed}
+      collapseOnHeaderClick
+      actions={[
+        {
+          content: <Badge aria-label={badgeLabel}>{openTasksCount}</Badge>,
+        },
+      ]}
     >
       {isLoading ? (
         <Typography variant="body" className="text-sm text-[var(--text-muted)]">
