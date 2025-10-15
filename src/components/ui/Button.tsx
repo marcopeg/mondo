@@ -13,6 +13,7 @@ type ButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> & {
   to?: string; // optional path to use Link internally
   variant?: ButtonVariant;
   fullWidth?: boolean;
+  iconClassName?: string;
 };
 
 export const Button: React.FC<ButtonProps> = ({
@@ -23,14 +24,16 @@ export const Button: React.FC<ButtonProps> = ({
   to,
   variant = "button",
   fullWidth = false,
+  iconClassName,
   ...rest
 }) => {
   const isStart = iconPosition === "start";
+  const iconElement = icon ? <Icon name={icon} className={iconClassName} /> : null;
   const content = (
     <>
-      {isStart && icon && <Icon name={icon} />}
+      {isStart && iconElement}
       {children}
-      {!isStart && icon && <Icon name={icon} />}
+      {!isStart && iconElement}
     </>
   );
 
