@@ -276,12 +276,13 @@ export class CRMSettingsTab extends PluginSettingTab {
     }
 
     const addFolderSetting = (
+      container: HTMLElement,
       name: string,
       desc: string,
       getValue: () => string,
       setValue: (v: string) => Promise<void>
     ) => {
-      new Setting(containerEl)
+      new Setting(container)
         .setName(name)
         .setDesc(desc)
         .addSearch((s) => {
@@ -338,9 +339,142 @@ export class CRMSettingsTab extends PluginSettingTab {
       };
     });
 
-    for (const { label, type, entityHelper } of entityDefinitions) {
+    const addSelfPersonSetting = (container: HTMLElement) => {
+      const storedSelfPath = (
+        (this.plugin as any).settings?.selfPersonPath?.toString?.() ?? ""
+      ).trim();
+
+      const selfSetting = new Setting(container)
+        .setName("Who's me?")
+        .setDesc(
+          'Pick a person that will be used to mean "myself" in the CRM.'
+        );
+
+      selfSetting.addSearch((search) => {
+        const applyStoredValue = (value: string) => {
+          try {
+            search.setValue(value);
+          } catch (error) {
+            search.inputEl.value = value;
+            search.inputEl.dispatchEvent(new Event("input", { bubbles: true }));
+            search.inputEl.dispatchEvent(new Event("change", { bubbles: true }));
+          }
+        };
+
+        const persistSelfPersonPath = async (path: string) => {
+          const normalized = path.trim();
+          if ((this.plugin as any).settings.selfPersonPath !== normalized) {
+            (this.plugin as any).settings.selfPersonPath = normalized;
+            await (this.plugin as any).saveSettings();
+          }
+        };
+
+        const applyPersonSelection = async (entry: PersonEntry) => {
+          if (search.inputEl.value !== entry.path) {
+            applyStoredValue(entry.path);
+          }
+          await persistSelfPersonPath(entry.path);
+        };
+
+        const clearSelfPerson = async () => {
+          if ((this.plugin as any).settings.selfPersonPath) {
+            (this.plugin as any).settings.selfPersonPath = "";
+            await (this.plugin as any).saveSettings();
+          }
+        };
+
+        search
+          .setPlaceholder("Select a person note…")
+          .setValue(storedSelfPath)
+          .onChange(async (value) => {
+            const trimmed = value.trim();
+            if (!trimmed) {
+              await clearSelfPerson();
+              return;
+            }
+
+            const entry = findPersonEntry(trimmed);
+            if (!entry) {
+              return;
+            }
+
+            await applyPersonSelection(entry);
+          });
+
+        const buttonEl = (search as any).buttonEl as
+          | HTMLButtonElement
+          | undefined;
+        if (buttonEl) {
+          buttonEl.setAttribute("aria-label", "Select a person note");
+          buttonEl.setAttribute("title", "Select a person note");
+          buttonEl.onclick = (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            const modal = new PersonPickerModal(
+              this.app,
+              collectPersonEntries,
+              async (entry) => {
+                await applyPersonSelection(entry);
+              }
+            );
+            modal.open();
+            return false;
+          };
+        }
+
+        try {
+          const suggest = new PersonSuggest(
+            this.app,
+            search.inputEl as HTMLInputElement,
+            collectPersonEntries,
+            async (entry) => {
+              await applyPersonSelection(entry);
+            }
+          );
+          (this as any)._suggesters = (this as any)._suggesters || [];
+          (this as any)._suggesters.push(suggest);
+        } catch (error) {
+          // Suggest is unavailable (e.g. tests); ignore.
+        }
+
+        try {
+          const clearButton = (search as any).clearButtonEl as
+            | HTMLButtonElement
+            | undefined;
+          if (clearButton) {
+            clearButton.onclick = async (event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              search.setValue("");
+              await clearSelfPerson();
+              return false;
+            };
+          }
+        } catch (error) {
+          // Ignore issues while wiring the clear button.
+        }
+      });
+    };
+
+    new Setting(containerEl)
+      .setName("Entity defaults")
+      .setDesc(
+        "Customize the default folder and template used when creating CRM entities."
+      )
+      .setHeading();
+
+    for (const {
+      label,
+      type,
+      entityHelper,
+      templateHelper,
+    } of entityDefinitions) {
+      const group = containerEl.createDiv("crm-settings-entity-group");
+      new Setting(group).setName(label).setHeading();
+
       addFolderSetting(
-        label,
+        group,
+        "Default folder",
         entityHelper || `type=${type}`,
         () => (this.plugin as any).settings.rootPaths[type],
         async (v) => {
@@ -348,131 +482,9 @@ export class CRMSettingsTab extends PluginSettingTab {
           await (this.plugin as any).saveSettings();
         }
       );
-    }
 
-    const storedSelfPath = (
-      (this.plugin as any).settings?.selfPersonPath?.toString?.() ?? ""
-    ).trim();
-
-    const selfSetting = new Setting(containerEl)
-      .setName("Who's me?")
-      .setDesc('Pick a person that will be used to mean "myself" in the CRM.');
-
-    selfSetting.addSearch((search) => {
-      const applyStoredValue = (value: string) => {
-        try {
-          search.setValue(value);
-        } catch (error) {
-          search.inputEl.value = value;
-          search.inputEl.dispatchEvent(new Event("input", { bubbles: true }));
-          search.inputEl.dispatchEvent(new Event("change", { bubbles: true }));
-        }
-      };
-
-      const persistSelfPersonPath = async (path: string) => {
-        const normalized = path.trim();
-        if ((this.plugin as any).settings.selfPersonPath !== normalized) {
-          (this.plugin as any).settings.selfPersonPath = normalized;
-          await (this.plugin as any).saveSettings();
-        }
-      };
-
-      const applyPersonSelection = async (entry: PersonEntry) => {
-        if (search.inputEl.value !== entry.path) {
-          applyStoredValue(entry.path);
-        }
-        await persistSelfPersonPath(entry.path);
-      };
-
-      const clearSelfPerson = async () => {
-        if ((this.plugin as any).settings.selfPersonPath) {
-          (this.plugin as any).settings.selfPersonPath = "";
-          await (this.plugin as any).saveSettings();
-        }
-      };
-
-      search
-        .setPlaceholder("Select a person note…")
-        .setValue(storedSelfPath)
-        .onChange(async (value) => {
-          const trimmed = value.trim();
-          if (!trimmed) {
-            await clearSelfPerson();
-            return;
-          }
-
-          const entry = findPersonEntry(trimmed);
-          if (!entry) {
-            return;
-          }
-
-          await applyPersonSelection(entry);
-        });
-
-      const buttonEl = (search as any).buttonEl as
-        | HTMLButtonElement
-        | undefined;
-      if (buttonEl) {
-        buttonEl.setAttribute("aria-label", "Select a person note");
-        buttonEl.setAttribute("title", "Select a person note");
-        buttonEl.onclick = (event) => {
-          event.preventDefault();
-          event.stopPropagation();
-          const modal = new PersonPickerModal(
-            this.app,
-            collectPersonEntries,
-            async (entry) => {
-              await applyPersonSelection(entry);
-            }
-          );
-          modal.open();
-          return false;
-        };
-      }
-
-      try {
-        const suggest = new PersonSuggest(
-          this.app,
-          search.inputEl as HTMLInputElement,
-          collectPersonEntries,
-          async (entry) => {
-            await applyPersonSelection(entry);
-          }
-        );
-        (this as any)._suggesters = (this as any)._suggesters || [];
-        (this as any)._suggesters.push(suggest);
-      } catch (error) {
-        // Suggest is unavailable (e.g. tests); ignore.
-      }
-
-      try {
-        const clearButton = (search as any).clearButtonEl as
-          | HTMLButtonElement
-          | undefined;
-        if (clearButton) {
-          clearButton.onclick = async (event) => {
-            event.preventDefault();
-            event.stopPropagation();
-            search.setValue("");
-            await clearSelfPerson();
-            return false;
-          };
-        }
-      } catch (error) {
-        // Ignore issues while wiring the clear button.
-      }
-    });
-
-    new Setting(containerEl)
-      .setName("Entity Templates")
-      .setDesc(
-        "Customize the content inserted when creating new CRM entities. Variables: {{title}}, {{type}}, {{filename}}, {{slug}}, {{date}}, {{time}}, {{datetime}}. Use {{date:YYYY-MM-DD}} or {{time:HH:mm}} for custom formatting. Leave blank to fallback to the default template."
-      )
-      .setHeading();
-
-    for (const { label, type, templateHelper } of entityDefinitions) {
-      new Setting(containerEl)
-        .setName(label)
+      new Setting(group)
+        .setName("Template")
         .setDesc(
           templateHelper || `Template for new ${label.toLowerCase()} notes.`
         )
@@ -490,6 +502,10 @@ export class CRMSettingsTab extends PluginSettingTab {
           textarea.inputEl.rows = 6;
           textarea.inputEl.addClass("crm-settings-template");
         });
+
+      if (type === CRMFileType.PERSON) {
+        addSelfPersonSetting(group);
+      }
     }
 
     new Setting(containerEl)
@@ -789,6 +805,7 @@ export class CRMSettingsTab extends PluginSettingTab {
       .setHeading();
 
     addFolderSetting(
+      containerEl,
       "Daily root",
       "Where do you want to store your Daily Logs?\n(Default: Daily)",
       () => (this.plugin as any).settings.daily?.root ?? "Daily",
@@ -880,6 +897,7 @@ export class CRMSettingsTab extends PluginSettingTab {
       .setHeading();
 
     addFolderSetting(
+      containerEl,
       "Journal root",
       "Where do you want to store your Journaling notes?\n(Default: Journal)",
       () => (this.plugin as any).settings.journal?.root ?? "Journal",
