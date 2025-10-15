@@ -174,6 +174,35 @@ export default class CRM extends Plugin {
       },
     });
 
+    this.addCommand({
+      id: "crm-generate-voiceover-current-note",
+      name: "Generate Voiceover for Current Note",
+      checkCallback: (checking) => {
+        const file = this.app.workspace.getActiveFile();
+        if (!file || file.extension !== "md") {
+          return false;
+        }
+
+        if (!checking) {
+          void (async () => {
+            const content = await this.app.vault.read(file);
+            const activeView =
+              this.app.workspace.getActiveViewOfType(MarkdownView);
+            const activeEditor =
+              activeView?.file?.path === file.path ? activeView.editor : null;
+            const combinedContent = `${file.basename}\n\n${content}`.trim();
+            void this.voiceoverManager?.generateVoiceover(
+              file,
+              activeEditor ?? null,
+              combinedContent
+            );
+          })();
+        }
+
+        return true;
+      },
+    });
+
     CRM_FILE_TYPES.forEach((fileType) => {
       const config = getCRMEntityConfig(fileType);
       const label = config?.name ?? fileType;

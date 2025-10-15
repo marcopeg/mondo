@@ -6,7 +6,6 @@ import {
   normalizePath,
   type Editor,
 } from "obsidian";
-import { createHash } from "crypto";
 
 const VOICEOVER_MODEL = "gpt-4o-mini-tts";
 const FALLBACK_VOICES = [
@@ -40,8 +39,39 @@ const getTimestamp = () => {
   return parts.join("");
 };
 
-const hashContent = (content: string) =>
-  createHash("md5").update(content).digest("hex");
+const toHex = (buffer: ArrayBuffer) =>
+  Array.from(new Uint8Array(buffer))
+    .map((byte) => byte.toString(16).padStart(2, "0"))
+    .join("");
+
+const computeFallbackHash = (content: string) => {
+  let hash = 5381;
+
+  for (let index = 0; index < content.length; index += 1) {
+    hash = (hash * 33) ^ content.charCodeAt(index);
+  }
+
+  return (hash >>> 0).toString(16).padStart(8, "0");
+};
+
+const hashContent = async (content: string) => {
+  const crypto = (globalThis as { crypto?: Crypto }).crypto;
+
+  if (crypto?.subtle) {
+    try {
+      const encoder = new TextEncoder();
+      const digest = await crypto.subtle.digest(
+        "SHA-256",
+        encoder.encode(content)
+      );
+      return toHex(digest);
+    } catch (error) {
+      console.warn("CRM: failed to hash content via Web Crypto", error);
+    }
+  }
+
+  return computeFallbackHash(content);
+};
 
 const resolveVoiceName = (input: unknown) => {
   if (!input) {
@@ -277,7 +307,7 @@ export class VoiceoverManager {
 
     try {
       const attachmentsDir = this.resolveAttachmentsDirectory(file);
-      const contentHash = hashContent(trimmed);
+      const contentHash = await hashContent(trimmed);
       const existing = await this.findExistingVoiceover(
         attachmentsDir,
         contentHash
