@@ -27,7 +27,7 @@ const taskConfig: CRMEntityConfig<"task"> = {
     },
   },
   list: {
-    columns: ["show", "status"],
+    columns: ["show", "participants", "status"],
   },
   links: [{ type: "participants-assignment" }],
 };
