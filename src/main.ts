@@ -2,6 +2,7 @@ import {
   MarkdownView,
   Plugin,
   Menu,
+  Notice,
   TAbstractFile,
   TFile,
   type ViewState,
@@ -26,6 +27,7 @@ import {
   CRMFileType,
   CRM_FILE_TYPES,
   getCRMEntityConfig,
+  isCRMFileType,
 } from "@/types/CRMFileType";
 import {
   DEFAULT_CRM_JOURNAL_SETTINGS,
@@ -39,6 +41,7 @@ import {
   injectCRMLinks,
   disposeCRMLinkInjections,
 } from "@/events/inject-crm-links";
+import { requestGeolocation } from "@/utils/geolocation";
 
 // Dev purposes: set to true to always focus on dashboard on startup
 const focusOnDashboard = false;
@@ -69,6 +72,88 @@ export default class CRM extends Plugin {
   private audioTranscriptionManager: AudioTranscriptionManager | null = null;
   private voiceoverManager: VoiceoverManager | null = null;
   private noteDictationManager: NoteDictationManager | null = null;
+  private pendingGeolocUpdates: Map<string, number> = new Map();
+
+  private scheduleGeolocCapture = (path: string) => {
+    if (this.pendingGeolocUpdates.has(path)) {
+      return;
+    }
+
+    this.pendingGeolocUpdates.set(path, 0);
+
+    window.setTimeout(() => {
+      void this.tryApplyGeolocation(path);
+    }, 500);
+  };
+
+  private tryApplyGeolocation = async (path: string): Promise<void> => {
+    const attempts = this.pendingGeolocUpdates.get(path);
+    if (attempts === undefined) {
+      return;
+    }
+
+    const abstract = this.app.vault.getAbstractFileByPath(path);
+    if (!(abstract instanceof TFile) || abstract.extension !== "md") {
+      this.pendingGeolocUpdates.delete(path);
+      return;
+    }
+
+    const cache = this.app.metadataCache.getFileCache(abstract);
+    const frontmatter = cache?.frontmatter as
+      | Record<string, unknown>
+      | undefined;
+
+    if (!frontmatter) {
+      if (attempts < 10) {
+        this.pendingGeolocUpdates.set(path, attempts + 1);
+        window.setTimeout(() => {
+          void this.tryApplyGeolocation(path);
+        }, 1000);
+      } else {
+        this.pendingGeolocUpdates.delete(path);
+      }
+      return;
+    }
+
+    const type = frontmatter.type;
+    if (typeof type !== "string" || !isCRMFileType(type)) {
+      this.pendingGeolocUpdates.delete(path);
+      return;
+    }
+
+    await this.applyGeolocationToFile(abstract, { notify: false });
+    this.pendingGeolocUpdates.delete(path);
+  };
+
+  private applyGeolocationToFile = async (
+    file: TFile,
+    { notify }: { notify: boolean }
+  ): Promise<boolean> => {
+    try {
+      const geoloc = await requestGeolocation();
+      await this.app.fileManager.processFrontMatter(file, (fm) => {
+        fm.geoloc = geoloc;
+      });
+
+      if (notify) {
+        new Notice("Geolocation saved to frontmatter.");
+      }
+
+      return true;
+    } catch (error) {
+      console.error("CRM: Failed to capture geolocation", error);
+
+      if (notify) {
+        const message =
+          error instanceof Error && error.message
+            ? error.message
+            : "Unable to capture geolocation.";
+        new Notice(`Geolocation failed: ${message}`);
+      }
+
+      return false;
+    }
+  };
 
   async loadSettings() {
     const data = await this.loadData();
@@ -119,6 +204,16 @@ export default class CRM extends Plugin {
     fileManager.initialize().catch((err) => {
       console.error("CRM: Failed to initialize file manager:", err);
     });
+
+    this.registerEvent(
+      this.app.vault.on("create", (abstract) => {
+        if (!(abstract instanceof TFile) || abstract.extension !== "md") {
+          return;
+        }
+
+        this.scheduleGeolocCapture(abstract.path);
+      })
+    );
 
     this.addCommand({
       id: "open-dashboard",
@@ -171,6 +266,24 @@ export default class CRM extends Plugin {
         } catch (e) {
           console.error("CRM: Failed to add daily log:", e);
         }
+      },
+    });
+
+    this.addCommand({
+      id: "crm-add-geolocation",
+      name: "Add Geolocation to Current Note",
+      checkCallback: (checking) => {
+        const file = this.app.workspace.getActiveFile();
+
+        if (!file || file.extension !== "md") {
+          return false;
+        }
+
+        if (!checking) {
+          void this.applyGeolocationToFile(file, { notify: true });
+        }
+
+        return true;
       },
     });
 
