@@ -66,6 +66,7 @@ export default class CRM extends Plugin {
     openAIModel: "gpt-5-nano",
     openAITranscriptionPolishEnabled: true,
     voiceoverCachePath: "/voiceover",
+    selfPersonPath: "",
   };
 
   private hasFocusedDashboardOnStartup = false;
@@ -182,6 +183,13 @@ export default class CRM extends Plugin {
       this.settings.voiceoverCachePath = cachePath.trim();
     } else {
       this.settings.voiceoverCachePath = "/voiceover";
+    }
+
+    const selfPersonPath = this.settings.selfPersonPath;
+    if (typeof selfPersonPath === "string") {
+      this.settings.selfPersonPath = selfPersonPath.trim();
+    } else {
+      this.settings.selfPersonPath = "";
     }
   }
 

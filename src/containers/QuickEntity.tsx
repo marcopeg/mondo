@@ -12,6 +12,8 @@ import {
   getTemplateForType,
   renderTemplate,
 } from "@/utils/CRMTemplates";
+import { addParticipantLink } from "@/utils/participants";
+import { resolveSelfPerson } from "@/utils/selfPerson";
 
 interface QuickEntityProps {
   type: string; // e.g. "company" | "person" | "project"
@@ -82,6 +84,7 @@ export const QuickEntity = ({ type, placeholder }: QuickEntityProps) => {
           : fileName;
 
         let tfile = app.vault.getAbstractFileByPath(filePath) as TFile | null;
+        let createdFile: TFile | null = null;
         if (!tfile) {
           const now = new Date();
           const slug = slugify(base) || safeBase.toLowerCase();
@@ -102,6 +105,18 @@ export const QuickEntity = ({ type, placeholder }: QuickEntityProps) => {
           });
 
           tfile = await app.vault.create(filePath, content);
+          createdFile = tfile;
+        }
+
+        if (createdFile && entityType === CRMFileType.TASK) {
+          try {
+            const selfParticipant = resolveSelfPerson(app, createdFile.path);
+            if (selfParticipant) {
+              await addParticipantLink(app, createdFile, selfParticipant.link);
+            }
+          } catch (error) {
+            console.error("QuickEntity: failed to assign self participant", error);
+          }
         }
 
         const leaf = app.workspace.getLeaf(true);

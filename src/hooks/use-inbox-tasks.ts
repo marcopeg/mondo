@@ -7,6 +7,8 @@ import {
 } from "@/utils/CRMTemplates";
 import { CRMFileType } from "@/types/CRMFileType";
 import { TFile } from "obsidian";
+import { addParticipantLink } from "@/utils/participants";
+import { resolveSelfPerson } from "@/utils/selfPerson";
 import type {
   CachedMetadata,
   EventRef,
@@ -509,6 +511,20 @@ export const useInboxTasks = () => {
         const combined = `${templateBlock}${bodySection}`;
 
         const created = await app.vault.create(filePath, combined);
+
+        if (targetType === CRMFileType.TASK) {
+          try {
+            const selfParticipant = resolveSelfPerson(app, created.path);
+            if (selfParticipant) {
+              await addParticipantLink(app, created, selfParticipant.link);
+            }
+          } catch (error) {
+            console.error(
+              "useInboxTasks: failed to assign self participant",
+              error
+            );
+          }
+        }
 
         const linkTarget = created.basename;
         const linkLabel = titleBase.replace(/[\[\]]/g, "");
