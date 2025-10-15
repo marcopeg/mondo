@@ -5,6 +5,7 @@ import { useLink } from "@/components/ui/Link";
 type IconPosition = "start" | "end";
 
 type ButtonVariant = "button" | "link";
+type ButtonTone = "default" | "info" | "success" | "danger" | "warning";
 
 type ButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> & {
   icon?: string; // lucide/obsidian icon name
@@ -14,6 +15,7 @@ type ButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> & {
   variant?: ButtonVariant;
   fullWidth?: boolean;
   iconClassName?: string;
+  tone?: ButtonTone; // visual tone for text/icon color (link variant primarily)
 };
 
 export const Button: React.FC<ButtonProps> = ({
@@ -25,10 +27,13 @@ export const Button: React.FC<ButtonProps> = ({
   variant = "button",
   fullWidth = false,
   iconClassName,
+  tone = "default",
   ...rest
 }) => {
   const isStart = iconPosition === "start";
-  const iconElement = icon ? <Icon name={icon} className={iconClassName} /> : null;
+  const iconElement = icon ? (
+    <Icon name={icon} className={iconClassName} />
+  ) : null;
   const content = (
     <>
       {isStart && iconElement}
@@ -38,11 +43,30 @@ export const Button: React.FC<ButtonProps> = ({
   );
 
   const isLinkVariant = variant === "link";
+
+  // Resolve tone color (used for link variant)
+  const toneColor: string | undefined = (() => {
+    switch (tone) {
+      case "info":
+        return "var(--interactive-accent)";
+      case "success":
+        return "var(--color-green, #2f9e44)";
+      case "danger":
+        return "var(--color-red, #d94848)";
+      case "warning":
+        return "var(--color-orange, #d97706)";
+      default:
+        return undefined;
+    }
+  })();
   const baseClasses = isLinkVariant
     ? [
         "crm-button-link",
         fullWidth ? "flex" : "inline-flex",
-        "items-center gap-1 bg-transparent border-0 p-0 m-0 text-left text-[var(--link-color,var(--interactive-accent))] hover:text-[var(--link-color-hover,var(--link-color,var(--interactive-accent)))]",
+        // When a tone is provided, avoid Tailwind text utilities that override color; use currentColor instead
+        tone === "default"
+          ? "items-center gap-1 bg-transparent border-0 p-0 m-0 text-left text-[var(--link-color,var(--interactive-accent))] hover:text-[var(--link-color-hover,var(--link-color,var(--interactive-accent)))]"
+          : "items-center gap-1 bg-transparent border-0 p-0 m-0 text-left text-current hover:text-current",
       ]
     : ["crm-button"];
 
@@ -50,10 +74,12 @@ export const Button: React.FC<ButtonProps> = ({
     baseClasses.push("w-full");
   }
 
-  const classes = [...baseClasses, className]
-    .filter(Boolean)
-    .join(" ");
+  const classes = [...baseClasses, className].filter(Boolean).join(" ");
 
+  // Compose styles: for link, default underline/transparent, merge caller props, apply tone color if provided
+  const callerStyle = (rest.style as React.CSSProperties) || {};
+  const computedColor =
+    callerStyle.color ?? (isLinkVariant ? toneColor : undefined);
   const linkStyle: React.CSSProperties | undefined = isLinkVariant
     ? {
         cursor: rest.disabled ? undefined : "var(--cursor-link, pointer)",
@@ -61,24 +87,33 @@ export const Button: React.FC<ButtonProps> = ({
         textDecorationThickness: "var(--link-decoration-thickness, 1px)",
         background: "transparent",
         boxShadow: "none",
+        ...callerStyle,
+        ...(computedColor ? { color: computedColor } : {}),
       }
-    : undefined;
+    : callerStyle;
 
   // If `to` is provided, render a Link instead of a native button so it behaves as navigation
   if (to) {
     // If `to` is provided we'll render a native button that behaves like a link via useLink
     const { onClick, disabled, "aria-label": ariaLabel, title } = rest as any;
     const ref = React.useRef<HTMLButtonElement>(null);
-    useLink(ref as any, to, { onClick: (e: MouseEvent) => onClick && onClick(e as any), disabled });
+    useLink(ref as any, to, {
+      onClick: (e: MouseEvent) => onClick && onClick(e as any),
+      disabled,
+    });
 
     const [isHover, setIsHover] = React.useState(false);
 
     const linkStyles: React.CSSProperties = isLinkVariant
       ? {
           ...linkStyle,
-          color: isHover
-            ? "var(--link-color-hover, var(--link-color,var(--interactive-accent)))"
-            : "var(--link-color, var(--interactive-accent))",
+          // If a tone is specified, keep its color on hover; otherwise emulate default link hover behavior
+          color:
+            tone !== "default"
+              ? (linkStyle?.color as string | undefined)
+              : isHover
+              ? "var(--link-color-hover, var(--link-color,var(--interactive-accent)))"
+              : "var(--link-color, var(--interactive-accent))",
           border: "none",
           outline: "none",
         }
@@ -104,11 +139,7 @@ export const Button: React.FC<ButtonProps> = ({
   }
 
   return (
-    <button
-      className={classes}
-      style={isLinkVariant ? linkStyle : undefined}
-      {...(rest as any)}
-    >
+    <button className={classes} style={linkStyle} {...(rest as any)}>
       {content}
     </button>
   );
