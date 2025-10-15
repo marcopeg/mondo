@@ -20,6 +20,8 @@ const FALLBACK_VOICES = [
 ];
 
 const AUDIO_MIME_TYPE = "audio/mpeg";
+const VOICE_PREVIEW_TEXT =
+  "Hello from Obsidian CRM. This is a quick voice preview.";
 
 type VoicesResponse = {
   voices?: unknown;
@@ -212,6 +214,9 @@ export class VoiceoverManager {
   private readonly plugin: CRM;
   private cachedVoices: string[] | undefined;
   private readonly activeNotes = new Map<string, AbortController>();
+  private previewAudio: HTMLAudioElement | null = null;
+  private previewUrl: string | null = null;
+  private previewController: AbortController | null = null;
 
   constructor(plugin: CRM) {
     this.plugin = plugin;
@@ -224,6 +229,9 @@ export class VoiceoverManager {
   dispose = () => {
     this.cachedVoices = undefined;
     this.activeNotes.clear();
+    this.previewController?.abort();
+    this.previewController = null;
+    this.stopPreview();
   };
 
   getAvailableVoices = async (): Promise<string[]> => {
@@ -385,6 +393,71 @@ export class VoiceoverManager {
   private getApiKey = () =>
     this.plugin.settings?.openAIWhisperApiKey?.trim?.() ?? "";
 
+  previewVoice = async (voice: string) => {
+    const trimmed = voice?.trim?.();
+
+    if (!trimmed) {
+      throw new Error("Select a voice to preview.");
+    }
+
+    const apiKey = this.getApiKey();
+    if (!apiKey) {
+      throw new Error(
+        "Set your OpenAI Whisper API key in the CRM settings before previewing voices."
+      );
+    }
+
+    this.previewController?.abort();
+    this.previewController = null;
+    this.stopPreview();
+
+    const controller = new AbortController();
+    this.previewController = controller;
+
+    try {
+      const audioBuffer = await this.requestVoiceover(
+        VOICE_PREVIEW_TEXT,
+        trimmed,
+        apiKey,
+        controller.signal
+      );
+
+      if (controller.signal.aborted) {
+        return;
+      }
+
+      this.stopPreview();
+
+      const blob = new Blob([audioBuffer], { type: AUDIO_MIME_TYPE });
+      const url = URL.createObjectURL(blob);
+      const audio = new Audio(url);
+
+      this.previewAudio = audio;
+      this.previewUrl = url;
+
+      audio.addEventListener("ended", this.stopPreview);
+      audio.addEventListener("error", this.stopPreview);
+
+      await audio.play();
+    } catch (error) {
+      if (controller.signal.aborted) {
+        return;
+      }
+
+      console.error("CRM: failed to preview voice", error);
+
+      if (error instanceof Error) {
+        throw error;
+      }
+
+      throw new Error("Failed to preview voice.");
+    } finally {
+      if (this.previewController === controller) {
+        this.previewController = null;
+      }
+    }
+  };
+
   private requestVoiceover = async (
     text: string,
     voice: string,
@@ -411,6 +484,23 @@ export class VoiceoverManager {
     }
 
     return response.arrayBuffer();
+  };
+
+  private stopPreview = () => {
+    const audio = this.previewAudio;
+    if (audio) {
+      audio.pause();
+      audio.removeEventListener("ended", this.stopPreview);
+      audio.removeEventListener("error", this.stopPreview);
+      audio.src = "";
+    }
+
+    if (this.previewUrl) {
+      URL.revokeObjectURL(this.previewUrl);
+    }
+
+    this.previewAudio = null;
+    this.previewUrl = null;
   };
 
   private resolveError = async (response: Response) => {

@@ -4,6 +4,8 @@ import {
   App,
   TFolder,
   AbstractInputSuggest,
+  Notice,
+  type ExtraButtonComponent,
 } from "obsidian";
 import type CRM from "@/main";
 import {
@@ -281,15 +283,35 @@ export class CRMSettingsTab extends PluginSettingTab {
         });
       });
 
+    const voiceManager = this.plugin.getVoiceoverManager?.();
+    const voicePreviewTooltip = "Preview the selected voice";
+    let previewState = { disabled: true, tooltip: voicePreviewTooltip };
+    let previewButton: ExtraButtonComponent | null = null;
+    const applyPreviewState = () => {
+      if (!previewButton) {
+        return;
+      }
+
+      previewButton.setDisabled(previewState.disabled);
+      previewButton.setTooltip(previewState.tooltip);
+      previewButton.setIcon("play");
+    };
+    const setPreviewState = (disabled: boolean, tooltip: string) => {
+      previewState = { disabled, tooltip };
+      applyPreviewState();
+    };
+    let voiceSelect: HTMLSelectElement | null = null;
+
     new Setting(containerEl)
       .setName("Voiceover voice")
       .setDesc(
         "Select the OpenAI voice used when generating audio from selected text."
       )
       .addDropdown((dropdown) => {
-        const manager = this.plugin.getVoiceoverManager?.();
         const apiKey = (this.plugin as any).settings.openAIWhisperApiKey?.trim?.();
         const currentVoice = (this.plugin as any).settings.openAIVoice ?? "";
+
+        voiceSelect = dropdown.selectEl;
 
         dropdown.onChange(async (value) => {
           (this.plugin as any).settings.openAIVoice = value;
@@ -309,6 +331,7 @@ export class CRMSettingsTab extends PluginSettingTab {
             select.appendChild(option);
             dropdown.setValue("");
             dropdown.setDisabled(true);
+            setPreviewState(true, placeholder);
             return;
           }
 
@@ -326,13 +349,15 @@ export class CRMSettingsTab extends PluginSettingTab {
           dropdown.setValue(initial);
           dropdown.setDisabled(disabled);
 
+          setPreviewState(disabled, disabled ? placeholder : voicePreviewTooltip);
+
           if (!currentVoice || !voices.includes(currentVoice)) {
             (this.plugin as any).settings.openAIVoice = initial;
             void (this.plugin as any).saveSettings();
           }
         };
 
-        if (!apiKey || !manager) {
+        if (!apiKey || !voiceManager) {
           setOptions([], true, "Set an OpenAI API key to load voices");
           return;
         }
@@ -344,7 +369,9 @@ export class CRMSettingsTab extends PluginSettingTab {
         dropdown.selectEl.appendChild(loadingOption);
         dropdown.setValue("");
 
-        void manager
+        setPreviewState(true, "Loading voices…");
+
+        void voiceManager
           .getAvailableVoices()
           .then((voices) => {
             setOptions(voices, false, "No voices available");
@@ -352,7 +379,45 @@ export class CRMSettingsTab extends PluginSettingTab {
           .catch((error) => {
             console.error("CRM: unable to populate voice options", error);
             setOptions([], true, "Failed to load voices");
+            setPreviewState(true, "Failed to load voices");
           });
+      })
+      .addExtraButton((button) => {
+        previewButton = button;
+        applyPreviewState();
+
+        button.onClick(async () => {
+          const selected = voiceSelect?.value?.trim?.() ?? "";
+
+          if (!selected) {
+            new Notice("Select a voice before previewing.");
+            return;
+          }
+
+          if (!voiceManager) {
+            new Notice(
+              "Voice preview is unavailable because the voiceover manager is not initialized."
+            );
+            return;
+          }
+
+          previewButton?.setDisabled(true);
+          previewButton?.setIcon("loader-2");
+          previewButton?.setTooltip("Loading preview…");
+
+          try {
+            await voiceManager.previewVoice(selected);
+          } catch (error) {
+            const message =
+              error instanceof Error && error.message
+                ? error.message
+                : "Failed to preview voice.";
+            console.error("CRM: voice preview failed", error);
+            new Notice(`Voice preview failed: ${message}`);
+          } finally {
+            applyPreviewState();
+          }
+        });
       });
 
     // Daily Logs section
