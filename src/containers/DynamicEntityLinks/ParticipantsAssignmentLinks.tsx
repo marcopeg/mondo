@@ -42,8 +42,6 @@ export const ParticipantsAssignmentLinks = ({
 
   const hasParticipants = participants.length > 0;
 
-  const entityType = String(frontmatter?.type ?? "task");
-
   const normalizedPeopleRoot = useMemo(() => {
     if (!peopleRootSetting || peopleRootSetting === "/") {
       return "";
@@ -258,11 +256,6 @@ export const ParticipantsAssignmentLinks = ({
     return null;
   }
 
-  const entityName = getEntityDisplayName(file);
-  const fallbackName = entityType === "project" ? "this project" : "this task";
-  const targetLabel = entityName || fallbackName;
-  const subtitle = `Assign participants to this ${entityType === "project" ? "project" : "task"}.`;
-
   const inputClassName = [
     "setting-input w-full",
     isSaving ? "opacity-60 pointer-events-none" : undefined,
@@ -271,16 +264,10 @@ export const ParticipantsAssignmentLinks = ({
     .join(" ");
 
   return (
-    <Card
-      collapsible
-      collapsed={Boolean((config as any)?.collapsed)}
-      icon="user-plus"
-      title="Participants"
-      subtitle={subtitle}
-    >
-      <Stack direction="column" gap={2}>
+    <Card p={2} className="w-full">
+      <Stack direction="column" gap={error ? 2 : 1} className="w-full">
         {error ? <InlineError message={error} /> : null}
-        <Stack direction="row" gap={2} align="end" className="flex-wrap">
+        <Stack gap={2} align="center" className="flex-wrap w-full">
           {!hasParticipants ? (
             <Button
               icon="user-round-plus"
@@ -291,14 +278,11 @@ export const ParticipantsAssignmentLinks = ({
               Assign it to me
             </Button>
           ) : null}
-          <div className="flex flex-1 flex-col gap-1 min-w-[12rem]">
-            <span className="text-sm font-medium text-[var(--text-muted)]">
-              Add participant
-            </span>
+          <div className="flex-1 min-w-[12rem]">
             <AutoComplete
               values={availablePersonOptions}
               onSelect={handleAssignPerson}
-              placeholder={`Type a person to assign to ${targetLabel}`}
+              placeholder="Add participant"
               className={inputClassName}
             />
           </div>
