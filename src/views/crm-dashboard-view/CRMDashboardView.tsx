@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useApp } from "@/hooks/use-app";
 import { Typography } from "@/components/ui/Typography";
 import Button from "@/components/ui/Button";
@@ -9,10 +9,17 @@ import { CRM_ENTITY_CONFIG_LIST } from "@/entities";
 import EntityPicker from "./components/EntityPicker";
 import RecentCRMNotes from "@/containers/RecentCRMNotes";
 import QuickTasks from "@/containers/QuickTasks";
+import { useSetting } from "@/hooks/use-setting";
+import { resolveSelfPerson } from "@/utils/selfPerson";
 
 export const CRMDashboardView = () => {
   const app = useApp();
   const [_, setTick] = useState(0);
+  const selfPersonPath = useSetting<string>("selfPersonPath", "");
+  const selfPerson = useMemo(
+    () => resolveSelfPerson(app, null, selfPersonPath),
+    [app, selfPersonPath]
+  );
   const onOpenToday = async () => {
     (app as any).commands.executeCommandById("crm:open-today");
   };
@@ -27,6 +34,21 @@ export const CRMDashboardView = () => {
     (app as any).commands.executeCommandById(`crm:open-${normalized}`);
   };
 
+  const onOpenMe = useCallback(async () => {
+    if (!selfPerson) {
+      return;
+    }
+
+    try {
+      const leaf = app.workspace.getLeaf(false) || app.workspace.getLeaf(true);
+      if (leaf) {
+        await (leaf as any).openFile(selfPerson.file);
+      }
+    } catch (error) {
+      console.error("CRM Dashboard: failed to open self person note", error);
+    }
+  }, [app, selfPerson]);
+
   const quickPickSections = CRM_ENTITY_CONFIG_LIST.map((config) => ({
     type: config.type,
     icon: config.icon,
@@ -35,23 +57,62 @@ export const CRMDashboardView = () => {
       config.dashboard.placeholder ?? `Search ${config.name.toLowerCase()}...`,
   }));
 
+  const quickActions = useMemo(
+    () =>
+      [
+        selfPerson
+          ? {
+              key: "me",
+              label: "Open Me",
+              icon: "user",
+              onClick: onOpenMe,
+            }
+          : null,
+        {
+          key: "today",
+          label: "Open Today",
+          icon: "calendar",
+          onClick: onOpenToday,
+        },
+        {
+          key: "journal",
+          label: "Open Journal",
+          icon: "book-open",
+          onClick: onOpenJournal,
+        },
+      ].filter(Boolean) as Array<{
+        key: string;
+        label: string;
+        icon: string;
+        onClick: () => void;
+      }>,
+    [onOpenJournal, onOpenMe, onOpenToday, selfPerson]
+  );
+
   return (
     <div className="p-4 space-y-6">
       <Typography variant="h1">CRM Dashboard</Typography>
-      <div className="flex flex-col gap-2 lg:flex-row lg:items-stretch lg:gap-4">
-        <div className="w-full lg:flex-1">
-          <QuickLogEntry />
+      <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-stretch sm:gap-3">
+          {quickActions.map((action) => (
+            <Button
+              key={action.key}
+              className="mod-cta flex-1"
+              fullWidth
+              icon={action.icon}
+              onClick={action.onClick}
+            >
+              {action.label}
+            </Button>
+          ))}
         </div>
-        <div className="w-full lg:flex-1">
-          <QuickTaskEntry />
-        </div>
-        <div className="flex w-full flex-row flex-wrap justify-start gap-2 lg:w-auto lg:flex-nowrap lg:justify-end">
-          <Button className="mod-cta" onClick={onOpenToday} icon="calendar">
-            Open Today
-          </Button>
-          <Button className="mod-cta" onClick={onOpenJournal} icon="book-open">
-            Open Journal
-          </Button>
+        <div className="grid grid-cols-1 gap-2 lg:grid-cols-2 lg:gap-4">
+          <div className="w-full">
+            <QuickLogEntry />
+          </div>
+          <div className="w-full">
+            <QuickTaskEntry />
+          </div>
         </div>
       </div>
       <RecentCRMNotes />
