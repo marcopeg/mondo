@@ -34,6 +34,7 @@ import {
   DEFAULT_CRM_DAILY_SETTINGS,
 } from "@/types/CRMOtherPaths";
 import { openJournal } from "@/commands/journal.open";
+import { openDailyNote } from "@/commands/daily.open";
 import { addDailyLog } from "@/commands/daily.addLog";
 import { journalMoveFactory } from "@/commands/journal.nav";
 import { injectJournalNav } from "@/events/inject-journal-nav";
@@ -268,7 +269,7 @@ export default class CRM extends Plugin {
       name: "Open Today's Journal",
       callback: async () => {
         try {
-          await openJournal(this.app, this, { modifyExisting: false });
+          await openDailyNote(this.app, this);
         } catch (e) {
           console.error("CRM: Failed to open today's journal:", e);
         }
