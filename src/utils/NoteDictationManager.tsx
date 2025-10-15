@@ -36,6 +36,7 @@ export class NoteDictationManager {
   private unsubscribeController: (() => void) | null = null;
   private toolbarButton: HTMLButtonElement | null = null;
   private toolbarIcon: HTMLElement | null = null;
+  private toolbarLabel: HTMLElement | null = null;
   private toolbarVisible = false;
   private toolbarDisabled = false;
   private toolbarTooltip: string | undefined;
@@ -215,30 +216,45 @@ export class NoteDictationManager {
   };
 
   private handleToolbarClick = () => {
+    void this.toggleRecording({ showDisabledNotice: false });
+  };
+
+  toggleRecording = async ({
+    showDisabledNotice = true,
+  }: { showDisabledNotice?: boolean } = {}) => {
+    this.render();
+
     const controller = this.controller;
     if (!controller || !this.toolbarVisible) {
-      return;
+      if (showDisabledNotice) {
+        new Notice("Open a markdown note to record a voice snippet.");
+      }
+      return "unavailable" as const;
     }
 
     if (this.toolbarDisabled) {
-      if (this.toolbarTooltip) {
+      if (showDisabledNotice && this.toolbarTooltip) {
         new Notice(this.toolbarTooltip);
       }
-      return;
+      return "unavailable" as const;
     }
 
     const state = controller.getState();
 
     if (state.status === "recording") {
       controller.stop();
-      return;
+      return "stopped" as const;
     }
 
     if (state.status === "processing") {
-      return;
+      if (showDisabledNotice) {
+        new Notice("Please wait for the current dictation to finish processing.");
+      }
+      return "processing" as const;
     }
 
-    void controller.start();
+    await controller.start();
+    return "started" as const;
   };
 
   private updateToolbarButton = () => {
@@ -255,13 +271,6 @@ export class NoteDictationManager {
 
     if (!this.toolbarButton || !this.toolbarButton.isConnected) {
       this.createToolbarButton(container);
-    }
-
-    const label = this.toolbarTooltip ?? "Record voice note";
-    if (this.toolbarButton) {
-      this.toolbarButton.setAttribute("title", label);
-      this.toolbarButton.setAttribute("aria-label", label);
-      this.toolbarButton.disabled = this.toolbarDisabled;
     }
 
     if (this.controller) {
@@ -292,10 +301,24 @@ export class NoteDictationManager {
     button.appendChild(icon);
     setIcon(icon, "mic");
 
-    container.appendChild(button);
+    const label = document.createElement("span");
+    label.className = "crm-dictation-toolbar-button__label";
+    label.textContent = "Start dictation";
+    button.appendChild(label);
+
+    if (container.firstChild) {
+      container.insertBefore(button, container.firstChild);
+    } else {
+      container.appendChild(button);
+    }
 
     this.toolbarButton = button;
     this.toolbarIcon = icon;
+    this.toolbarLabel = label;
+
+    if (this.controller) {
+      this.updateToolbarState(this.controller.getState());
+    }
   };
 
   private destroyToolbarButton = () => {
@@ -311,6 +334,7 @@ export class NoteDictationManager {
     }
 
     this.toolbarIcon = null;
+    this.toolbarLabel = null;
   };
 
   private findToolbarContainer = () => {
@@ -358,6 +382,25 @@ export class NoteDictationManager {
         icon.classList.remove("crm-voice-fab-icon--spin");
       }
     }
+
+    this.applyToolbarLabels(state);
+  };
+
+  private applyToolbarLabels = (state: DictationState) => {
+    const button = this.toolbarButton;
+    if (!button) {
+      return;
+    }
+
+    const tooltip = this.toolbarTooltip;
+    const accessibleLabel = this.getToolbarAccessibleLabel(state);
+    const title = tooltip ?? accessibleLabel;
+    button.setAttribute("aria-label", accessibleLabel);
+    button.setAttribute("title", title);
+
+    if (this.toolbarLabel) {
+      this.toolbarLabel.textContent = this.getToolbarActionLabel(state);
+    }
   };
 
   private resolveIconName = (status: DictationState["status"]) => {
@@ -374,6 +417,42 @@ export class NoteDictationManager {
       return "alert-circle";
     }
     return "mic";
+  };
+
+  private getToolbarAccessibleLabel = (state: DictationState) => {
+    if (this.toolbarDisabled && this.toolbarTooltip) {
+      return "Start dictation";
+    }
+
+    if (state.status === "recording") {
+      return "Stop dictation";
+    }
+    if (state.status === "processing") {
+      return "Processing dictation";
+    }
+    if (state.status === "success") {
+      return "Dictation inserted";
+    }
+    if (state.status === "error") {
+      return "Retry dictation";
+    }
+    return "Start dictation";
+  };
+
+  private getToolbarActionLabel = (state: DictationState) => {
+    if (state.status === "recording") {
+      return "Stop";
+    }
+    if (state.status === "processing") {
+      return "Processing";
+    }
+    if (state.status === "success") {
+      return "Done";
+    }
+    if (state.status === "error") {
+      return "Retry";
+    }
+    return "Start dictation";
   };
 
   private insertText = (text: string, context: RecordingContext) => {

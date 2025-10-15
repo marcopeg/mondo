@@ -260,6 +260,21 @@ export default class CRM extends Plugin {
     });
 
     this.addCommand({
+      id: "crm-toggle-note-dictation",
+      name: "Start Dictation (Mobile)",
+      mobileOnly: true,
+      editorCallback: async () => {
+        const result = await this.noteDictationManager?.toggleRecording();
+        if (result === "started") {
+          new Notice("Dictation started. Tap again to stop.");
+        }
+        if (result === "stopped") {
+          new Notice("Dictation stopped. Processing…");
+        }
+      },
+    });
+
+    this.addCommand({
       id: "open-journal",
       name: "Open Journal",
       hotkeys: [{ modifiers: ["Mod", "Shift"], key: "j" }],

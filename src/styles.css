@@ -384,13 +384,16 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 2.75rem;
+  gap: 0.4rem;
   height: 2.75rem;
+  padding: 0 0.75rem;
   margin: 0 0.125rem;
   border: none;
   border-radius: 0.75rem;
   background: transparent;
   color: var(--icon-color, var(--text-muted));
+  font-size: 0.75rem;
+  line-height: 1;
   transition: transform 0.18s ease, background-color 0.18s ease,
     color 0.18s ease;
 }
@@ -426,6 +429,10 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
+}
+
+.crm-dictation-toolbar-button__label {
+  white-space: nowrap;
 }
 
 @keyframes crm-voice-fab-spin {
