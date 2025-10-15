@@ -4,6 +4,7 @@ import {
   Notice,
   TFile,
   normalizePath,
+  type App,
   type Editor,
 } from "obsidian";
 
@@ -98,11 +99,17 @@ const resolveVoiceName = (input: unknown) => {
 };
 
 class VoiceoverModal extends Modal {
+  private readonly noteTitle: string;
   private statusEl!: HTMLParagraphElement;
   private audioContainerEl!: HTMLDivElement;
   private buttonsEl!: HTMLDivElement;
   private audioEl: HTMLAudioElement | null = null;
   private cancelHandler: (() => void) | null = null;
+
+  constructor(app: App, noteTitle: string) {
+    super(app);
+    this.noteTitle = noteTitle;
+  }
 
   onOpen() {
     this.modalEl.addClass("crm-voiceover-modal");
@@ -137,6 +144,7 @@ class VoiceoverModal extends Modal {
   };
 
   showGenerating = (onCancel: () => void) => {
+    this.titleEl.setText("Generating voiceover");
     this.statusEl.setText("Generating audio…");
     this.clearAudio();
     this.cancelHandler = onCancel;
@@ -146,12 +154,14 @@ class VoiceoverModal extends Modal {
         action: () => {
           this.cancelHandler?.();
         },
+        variant: "neutral",
       },
     ]);
   };
 
   showPlayer = (file: TFile) => {
-    this.statusEl.setText(`Voiceover ready: ${file.name}`);
+    this.titleEl.setText(`playing: ${this.noteTitle}`);
+    this.statusEl.setText("Voiceover ready to play.");
     this.clearAudio();
     this.cancelHandler = null;
     const audioPath = this.app.vault.getResourcePath(file);
@@ -166,11 +176,13 @@ class VoiceoverModal extends Modal {
       {
         text: "Close",
         action: () => this.close(),
+        variant: "accent",
       },
     ]);
   };
 
   showError = (message: string) => {
+    this.titleEl.setText("Voiceover error");
     this.statusEl.setText(message);
     this.clearAudio();
     this.cancelHandler = null;
@@ -178,6 +190,7 @@ class VoiceoverModal extends Modal {
       {
         text: "Close",
         action: () => this.close(),
+        variant: "accent",
       },
     ]);
   };
@@ -189,14 +202,24 @@ class VoiceoverModal extends Modal {
   };
 
   private renderButtons = (
-    buttons: Array<{ text: string; action: () => void }>
+    buttons: Array<{
+      text: string;
+      action: () => void;
+      variant?: "accent" | "neutral";
+    }>
   ) => {
     this.clearButtons();
     buttons.forEach((config) => {
       const button = this.buttonsEl.createEl("button", {
-        cls: "mod-cta",
+        cls: "crm-voiceover-button",
         text: config.text,
       });
+      if (config.variant === "accent") {
+        button.addClass("crm-voiceover-button--accent");
+      }
+      if (config.variant === "neutral") {
+        button.addClass("crm-voiceover-button--neutral");
+      }
       button.addEventListener("click", () => {
         config.action();
       });
@@ -301,7 +324,10 @@ export class VoiceoverManager {
       return;
     }
 
-    const voiceoverModal = new VoiceoverModal(this.plugin.app);
+    const voiceoverModal = new VoiceoverModal(
+      this.plugin.app,
+      file.basename || file.name
+    );
     voiceoverModal.open();
     voiceoverModal.setStatus("Checking for existing voiceover…");
 
