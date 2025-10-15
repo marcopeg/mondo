@@ -65,7 +65,7 @@ export const Button: React.FC<ButtonProps> = ({
         fullWidth ? "flex" : "inline-flex",
         // When a tone is provided, avoid Tailwind text utilities that override color; use currentColor instead
         tone === "default"
-          ? "items-center gap-1 bg-transparent border-0 p-0 m-0 text-left text-[var(--link-color,var(--interactive-accent))] hover:text-[var(--link-color-hover,var(--link-color,var(--interactive-accent)))]"
+          ? "items-center gap-1 bg-transparent border-0 p-0 m-0 text-left text-[var(--text-normal)] hover:text-[var(--interactive-accent)]"
           : "items-center gap-1 bg-transparent border-0 p-0 m-0 text-left text-current hover:text-current",
       ]
     : ["crm-button"];
@@ -107,13 +107,8 @@ export const Button: React.FC<ButtonProps> = ({
     const linkStyles: React.CSSProperties = isLinkVariant
       ? {
           ...linkStyle,
-          // If a tone is specified, keep its color on hover; otherwise emulate default link hover behavior
-          color:
-            tone !== "default"
-              ? (linkStyle?.color as string | undefined)
-              : isHover
-              ? "var(--link-color-hover, var(--link-color,var(--interactive-accent)))"
-              : "var(--link-color, var(--interactive-accent))",
+          // If a tone is specified, keep its color (no hover override). If default, let CSS classes handle color/hover.
+          ...(tone !== "default" ? { color: linkStyle?.color as string | undefined } : {}),
           border: "none",
           outline: "none",
         }
