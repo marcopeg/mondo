@@ -182,14 +182,17 @@ export class CRMSettingsTab extends PluginSettingTab {
 
     class PersonSuggest extends AbstractInputSuggest<PersonEntry> {
       private readonly getEntries: () => PersonEntry[];
+      private readonly onSelect?: (entry: PersonEntry) => void;
 
       constructor(
         app: App,
         inputEl: HTMLInputElement,
-        getEntries: () => PersonEntry[]
+        getEntries: () => PersonEntry[],
+        onSelect?: (entry: PersonEntry) => void
       ) {
         super(app, inputEl);
         this.getEntries = getEntries;
+        this.onSelect = onSelect;
       }
 
       getSuggestions(query: string) {
@@ -217,6 +220,15 @@ export class CRMSettingsTab extends PluginSettingTab {
         input.value = item.path;
         input.dispatchEvent(new Event("input", { bubbles: true }));
         input.dispatchEvent(new Event("change", { bubbles: true }));
+
+        if (this.onSelect) {
+          try {
+            this.onSelect(item);
+          } catch (error) {
+            // ignore persistence errors from select callback
+          }
+        }
+
         this.close();
       }
     }
@@ -320,6 +332,14 @@ export class CRMSettingsTab extends PluginSettingTab {
         }
       };
 
+      const persistSelfPersonPath = async (path: string) => {
+        const normalized = path.trim();
+        if ((this.plugin as any).settings.selfPersonPath !== normalized) {
+          (this.plugin as any).settings.selfPersonPath = normalized;
+          await (this.plugin as any).saveSettings();
+        }
+      };
+
       search
         .setPlaceholder("Select a person note…")
         .setValue(storedSelfPath)
@@ -340,20 +360,24 @@ export class CRMSettingsTab extends PluginSettingTab {
 
           if (search.inputEl.value !== entry.path) {
             applyStoredValue(entry.path);
-            return;
           }
 
-          if ((this.plugin as any).settings.selfPersonPath !== entry.path) {
-            (this.plugin as any).settings.selfPersonPath = entry.path;
-            await (this.plugin as any).saveSettings();
-          }
+          await persistSelfPersonPath(entry.path);
         });
 
       try {
         const suggest = new PersonSuggest(
           this.app,
           search.inputEl as HTMLInputElement,
-          collectPersonEntries
+          collectPersonEntries,
+          (entry) => {
+            void (async () => {
+              if (search.inputEl.value !== entry.path) {
+                applyStoredValue(entry.path);
+              }
+              await persistSelfPersonPath(entry.path);
+            })();
+          }
         );
         (this as any)._suggesters = (this as any)._suggesters || [];
         (this as any)._suggesters.push(suggest);
