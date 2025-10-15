@@ -8,7 +8,9 @@ import Button from "@/components/ui/Button";
 import SplitButton from "@/components/ui/SplitButton";
 import { Separator } from "@/components/ui/Separator";
 
-export const QuickTasks = () => {
+export const QuickTasks: React.FC<{ collapsed?: boolean }> = ({
+  collapsed = false,
+}) => {
   const { tasks, isLoading, toggleTask, promoteTask } = useInboxTasks();
   const [visible, setVisible] = useState(10);
   const [pending, setPending] = useState<Record<string, boolean>>({});
@@ -57,7 +59,12 @@ export const QuickTasks = () => {
   );
 
   return (
-    <Card title="Quick Tasks" icon="list-checks" collapsible collapsed={false}>
+    <Card
+      title="Quick Tasks"
+      icon="list-checks"
+      collapsible
+      collapsed={collapsed}
+    >
       {isLoading ? (
         <Typography variant="body" className="text-sm text-[var(--text-muted)]">
           Loading inbox tasks...

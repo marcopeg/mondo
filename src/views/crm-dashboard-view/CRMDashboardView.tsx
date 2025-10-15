@@ -63,7 +63,7 @@ export const CRMDashboardView = () => {
         </div>
       </div>
       <RecentCRMNotes />
-      <QuickTasks />
+      <QuickTasks collapsed />
       <Separator spacing={4} />
       <div className="mt-4 grid grid-cols-1 gap-y-8 gap-x-16 md:grid-cols-2 xl:grid-cols-3">
         {quickPickSections.map((section) => (
