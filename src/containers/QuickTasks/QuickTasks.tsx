@@ -5,6 +5,7 @@ import { Typography } from "@/components/ui/Typography";
 import Link from "@/components/ui/Link";
 import { useInboxTasks, type InboxTask } from "@/hooks/use-inbox-tasks";
 import Button from "@/components/ui/Button";
+import SplitButton from "@/components/ui/SplitButton";
 import { Separator } from "@/components/ui/Separator";
 
 export const QuickTasks = () => {
@@ -125,30 +126,31 @@ export const QuickTasks = () => {
                     </Stack>
                   </Stack>
                   <Stack direction="row" gap={1} className="shrink-0">
-                    <Button
+                    <SplitButton
                       type="button"
                       className="text-xs px-2 py-1"
+                      toggleClassName="text-xs px-1 py-1"
                       disabled={isBusy}
                       onClick={() => {
                         if (isBusy) return;
                         void handlePromote(task, "task");
                       }}
                       icon="check-square"
+                      menuAriaLabel="Promote inbox task"
+                      secondaryActions={[
+                        {
+                          label: "project",
+                          icon: "folder-git-2",
+                          disabled: isBusy,
+                          onSelect: () => {
+                            if (isBusy) return;
+                            void handlePromote(task, "project");
+                          },
+                        },
+                      ]}
                     >
                       task
-                    </Button>
-                    <Button
-                      type="button"
-                      className="text-xs px-2 py-1"
-                      disabled={isBusy}
-                      onClick={() => {
-                        if (isBusy) return;
-                        void handlePromote(task, "project");
-                      }}
-                      icon="folder-git-2"
-                    >
-                      project
-                    </Button>
+                    </SplitButton>
                   </Stack>
                 </Stack>
               </div>
