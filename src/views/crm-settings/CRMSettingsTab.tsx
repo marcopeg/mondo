@@ -6,7 +6,7 @@ import {
   AbstractInputSuggest,
   Notice,
   type ExtraButtonComponent,
-  SearchComponent,
+  FuzzySuggestModal,
 } from "obsidian";
 import type CRM from "@/main";
 import {
@@ -180,15 +180,26 @@ export class CRMSettingsTab extends PluginSettingTab {
       );
     };
 
+    const renderPersonSuggestion = (item: PersonEntry, el: HTMLElement) => {
+      el.empty();
+      el.createEl("div", { text: item.label, cls: "crm-settings-person-label" });
+      if (item.path !== item.label) {
+        el.createEl("div", {
+          text: item.path,
+          cls: "crm-settings-person-path",
+        });
+      }
+    };
+
     class PersonSuggest extends AbstractInputSuggest<PersonEntry> {
       private readonly getEntries: () => PersonEntry[];
-      private readonly onSelect?: (entry: PersonEntry) => void;
+      private readonly onSelect?: (entry: PersonEntry) => void | Promise<void>;
 
       constructor(
         app: App,
         inputEl: HTMLInputElement,
         getEntries: () => PersonEntry[],
-        onSelect?: (entry: PersonEntry) => void
+        onSelect?: (entry: PersonEntry) => void | Promise<void>
       ) {
         super(app, inputEl);
         this.getEntries = getEntries;
@@ -205,31 +216,55 @@ export class CRMSettingsTab extends PluginSettingTab {
       }
 
       renderSuggestion(item: PersonEntry, el: HTMLElement) {
-        el.empty();
-        el.createEl("div", { text: item.label, cls: "crm-settings-person-label" });
-        if (item.path !== item.label) {
-          el.createEl("div", {
-            text: item.path,
-            cls: "crm-settings-person-path",
-          });
-        }
+        renderPersonSuggestion(item, el);
       }
 
       selectSuggestion(item: PersonEntry) {
-        const input = this.inputEl as HTMLInputElement;
-        input.value = item.path;
-        input.dispatchEvent(new Event("input", { bubbles: true }));
-        input.dispatchEvent(new Event("change", { bubbles: true }));
-
         if (this.onSelect) {
           try {
-            this.onSelect(item);
+            void this.onSelect(item);
           } catch (error) {
             // ignore persistence errors from select callback
           }
         }
 
         this.close();
+      }
+    }
+
+    class PersonPickerModal extends FuzzySuggestModal<PersonEntry> {
+      private readonly getEntries: () => PersonEntry[];
+      private readonly onSelect: (entry: PersonEntry) => void | Promise<void>;
+
+      constructor(
+        app: App,
+        getEntries: () => PersonEntry[],
+        onSelect: (entry: PersonEntry) => void | Promise<void>
+      ) {
+        super(app);
+        this.getEntries = getEntries;
+        this.onSelect = onSelect;
+        this.setPlaceholder("Select a person note");
+      }
+
+      getItems(): PersonEntry[] {
+        return this.getEntries();
+      }
+
+      getItemText(item: PersonEntry): string {
+        return item.label;
+      }
+
+      renderSuggestion(item: PersonEntry, el: HTMLElement) {
+        renderPersonSuggestion(item, el);
+      }
+
+      onChooseItem(item: PersonEntry) {
+        try {
+          void this.onSelect(item);
+        } catch (error) {
+          // ignore persistence errors from select callback
+        }
       }
     }
 
@@ -308,7 +343,6 @@ export class CRMSettingsTab extends PluginSettingTab {
       );
     }
 
-    let selfSearch: SearchComponent | null = null;
     const storedSelfPath = (
       (this.plugin as any).settings?.selfPersonPath?.toString?.() ?? ""
     ).trim();
@@ -320,8 +354,6 @@ export class CRMSettingsTab extends PluginSettingTab {
       );
 
     selfSetting.addSearch((search) => {
-      selfSearch = search;
-
       const applyStoredValue = (value: string) => {
         try {
           search.setValue(value);
@@ -340,16 +372,27 @@ export class CRMSettingsTab extends PluginSettingTab {
         }
       };
 
+      const applyPersonSelection = async (entry: PersonEntry) => {
+        if (search.inputEl.value !== entry.path) {
+          applyStoredValue(entry.path);
+        }
+        await persistSelfPersonPath(entry.path);
+      };
+
+      const clearSelfPerson = async () => {
+        if ((this.plugin as any).settings.selfPersonPath) {
+          (this.plugin as any).settings.selfPersonPath = "";
+          await (this.plugin as any).saveSettings();
+        }
+      };
+
       search
         .setPlaceholder("Select a person note…")
         .setValue(storedSelfPath)
         .onChange(async (value) => {
           const trimmed = value.trim();
           if (!trimmed) {
-            if ((this.plugin as any).settings.selfPersonPath) {
-              (this.plugin as any).settings.selfPersonPath = "";
-              await (this.plugin as any).saveSettings();
-            }
+            await clearSelfPerson();
             return;
           }
 
@@ -358,25 +401,37 @@ export class CRMSettingsTab extends PluginSettingTab {
             return;
           }
 
-          if (search.inputEl.value !== entry.path) {
-            applyStoredValue(entry.path);
-          }
-
-          await persistSelfPersonPath(entry.path);
+          await applyPersonSelection(entry);
         });
+
+      const buttonEl = (search as any).buttonEl as
+        | HTMLButtonElement
+        | undefined;
+      if (buttonEl) {
+        buttonEl.setAttribute("aria-label", "Select a person note");
+        buttonEl.setAttribute("title", "Select a person note");
+        buttonEl.onclick = (event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          const modal = new PersonPickerModal(
+            this.app,
+            collectPersonEntries,
+            async (entry) => {
+              await applyPersonSelection(entry);
+            }
+          );
+          modal.open();
+          return false;
+        };
+      }
 
       try {
         const suggest = new PersonSuggest(
           this.app,
           search.inputEl as HTMLInputElement,
           collectPersonEntries,
-          (entry) => {
-            void (async () => {
-              if (search.inputEl.value !== entry.path) {
-                applyStoredValue(entry.path);
-              }
-              await persistSelfPersonPath(entry.path);
-            })();
+          async (entry) => {
+            await applyPersonSelection(entry);
           }
         );
         (this as any)._suggesters = (this as any)._suggesters || [];
@@ -384,31 +439,22 @@ export class CRMSettingsTab extends PluginSettingTab {
       } catch (error) {
         // Suggest is unavailable (e.g. tests); ignore.
       }
-    });
 
-    selfSetting.addExtraButton((button) => {
-      button
-        .setIcon("x-circle")
-        .setTooltip("Clear selection")
-        .onClick(() => {
-          (this.plugin as any).settings.selfPersonPath = "";
-          void (async () => {
-            await (this.plugin as any).saveSettings();
-            if (selfSearch) {
-              try {
-                selfSearch.setValue("");
-              } catch (error) {
-                selfSearch.inputEl.value = "";
-                selfSearch.inputEl.dispatchEvent(
-                  new Event("input", { bubbles: true })
-                );
-                selfSearch.inputEl.dispatchEvent(
-                  new Event("change", { bubbles: true })
-                );
-              }
-            }
-          })();
-        });
+      try {
+        const clearButton =
+          (search as any).clearButtonEl as HTMLButtonElement | undefined;
+        if (clearButton) {
+          clearButton.onclick = async (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            search.setValue("");
+            await clearSelfPerson();
+            return false;
+          };
+        }
+      } catch (error) {
+        // Ignore issues while wiring the clear button.
+      }
     });
 
     new Setting(containerEl)
