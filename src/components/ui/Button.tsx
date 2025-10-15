@@ -108,7 +108,9 @@ export const Button: React.FC<ButtonProps> = ({
       ? {
           ...linkStyle,
           // If a tone is specified, keep its color (no hover override). If default, let CSS classes handle color/hover.
-          ...(tone !== "default" ? { color: linkStyle?.color as string | undefined } : {}),
+          ...(tone !== "default"
+            ? { color: linkStyle?.color as string | undefined }
+            : {}),
           border: "none",
           outline: "none",
         }
