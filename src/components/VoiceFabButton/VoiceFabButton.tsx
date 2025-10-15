@@ -1,7 +1,13 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { setIcon } from "obsidian";
+import {
+  CRM_DICTATION_ICON_ID,
+  registerDictationIcon,
+} from "@/utils/registerDictationIcon";
 import type NoteDictationController from "@/utils/NoteDictationController";
 import type { DictationState } from "@/utils/NoteDictationController";
+
+registerDictationIcon();
 
 type VoiceFabButtonProps = {
   controller: NoteDictationController;
@@ -63,7 +69,7 @@ const resolveIcon = (state: DictationState) => {
   if (state.status === "error") {
     return "alert-circle";
   }
-  return "mic";
+  return CRM_DICTATION_ICON_ID;
 };
 
 export const VoiceFabButton: React.FC<VoiceFabButtonProps> = ({

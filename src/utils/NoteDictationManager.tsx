@@ -15,6 +15,10 @@ import NoteDictationController, {
   type DictationState,
 } from "@/utils/NoteDictationController";
 import VoiceTranscriptionService from "@/utils/VoiceTranscriptionService";
+import {
+  CRM_DICTATION_ICON_ID,
+  registerDictationIcon,
+} from "@/utils/registerDictationIcon";
 
 const PROCESSING_NOTICE_MS = 5_000;
 
@@ -45,6 +49,7 @@ export class NoteDictationManager {
   constructor(plugin: CRM) {
     this.plugin = plugin;
     this.transcriptionService = new VoiceTranscriptionService(plugin);
+    registerDictationIcon();
   }
 
   initialize = () => {
@@ -299,7 +304,7 @@ export class NoteDictationManager {
     const icon = document.createElement("span");
     icon.className = "crm-dictation-toolbar-button__icon";
     button.appendChild(icon);
-    setIcon(icon, "mic");
+    setIcon(icon, CRM_DICTATION_ICON_ID);
 
     const label = document.createElement("span");
     label.className = "crm-dictation-toolbar-button__label";
@@ -416,7 +421,15 @@ export class NoteDictationManager {
     if (status === "error") {
       return "alert-circle";
     }
-    return "mic";
+    return CRM_DICTATION_ICON_ID;
+  };
+
+  activateMobileToolbar = () => {
+    if (!Platform.isMobileApp) {
+      return;
+    }
+
+    this.render();
   };
 
   private getToolbarAccessibleLabel = (state: DictationState) => {
