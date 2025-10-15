@@ -7,6 +7,7 @@ import {
   Notice,
   type ExtraButtonComponent,
   FuzzySuggestModal,
+  type FuzzyMatch,
 } from "obsidian";
 import type CRM from "@/main";
 import {
@@ -182,7 +183,10 @@ export class CRMSettingsTab extends PluginSettingTab {
 
     const renderPersonSuggestion = (item: PersonEntry, el: HTMLElement) => {
       el.empty();
-      el.createEl("div", { text: item.label, cls: "crm-settings-person-label" });
+      el.createEl("div", {
+        text: item.label,
+        cls: "crm-settings-person-label",
+      });
       if (item.path !== item.label) {
         el.createEl("div", {
           text: item.path,
@@ -193,7 +197,10 @@ export class CRMSettingsTab extends PluginSettingTab {
 
     class PersonSuggest extends AbstractInputSuggest<PersonEntry> {
       private readonly getEntries: () => PersonEntry[];
-      private readonly onSelect?: (entry: PersonEntry) => void | Promise<void>;
+      // Use a distinct name to avoid conflicting with AbstractInputSuggest.onSelect method signature
+      private readonly handleSelect?: (
+        entry: PersonEntry
+      ) => void | Promise<void>;
 
       constructor(
         app: App,
@@ -203,7 +210,7 @@ export class CRMSettingsTab extends PluginSettingTab {
       ) {
         super(app, inputEl);
         this.getEntries = getEntries;
-        this.onSelect = onSelect;
+        this.handleSelect = onSelect;
       }
 
       getSuggestions(query: string) {
@@ -220,9 +227,9 @@ export class CRMSettingsTab extends PluginSettingTab {
       }
 
       selectSuggestion(item: PersonEntry) {
-        if (this.onSelect) {
+        if (this.handleSelect) {
           try {
-            void this.onSelect(item);
+            void this.handleSelect(item);
           } catch (error) {
             // ignore persistence errors from select callback
           }
@@ -255,11 +262,11 @@ export class CRMSettingsTab extends PluginSettingTab {
         return item.label;
       }
 
-      renderSuggestion(item: PersonEntry, el: HTMLElement) {
-        renderPersonSuggestion(item, el);
+      renderSuggestion(match: FuzzyMatch<PersonEntry>, el: HTMLElement) {
+        renderPersonSuggestion(match.item, el);
       }
 
-      onChooseItem(item: PersonEntry) {
+      onChooseItem(item: PersonEntry, _evt?: MouseEvent | KeyboardEvent) {
         try {
           void this.onSelect(item);
         } catch (error) {
@@ -349,9 +356,7 @@ export class CRMSettingsTab extends PluginSettingTab {
 
     const selfSetting = new Setting(containerEl)
       .setName("Who's me?")
-      .setDesc(
-        "Pick a person that will be used to mean \"myself\" in the CRM."
-      );
+      .setDesc('Pick a person that will be used to mean "myself" in the CRM.');
 
     selfSetting.addSearch((search) => {
       const applyStoredValue = (value: string) => {
@@ -441,8 +446,9 @@ export class CRMSettingsTab extends PluginSettingTab {
       }
 
       try {
-        const clearButton =
-          (search as any).clearButtonEl as HTMLButtonElement | undefined;
+        const clearButton = (search as any).clearButtonEl as
+          | HTMLButtonElement
+          | undefined;
         if (clearButton) {
           clearButton.onclick = async (event) => {
             event.preventDefault();
@@ -467,13 +473,13 @@ export class CRMSettingsTab extends PluginSettingTab {
     for (const { label, type, templateHelper } of entityDefinitions) {
       new Setting(containerEl)
         .setName(label)
-        .setDesc(templateHelper || `Template for new ${label.toLowerCase()} notes.`)
+        .setDesc(
+          templateHelper || `Template for new ${label.toLowerCase()} notes.`
+        )
         .addTextArea((textarea) => {
           textarea
             .setPlaceholder(CRM_DEFAULT_TEMPLATES[type])
-            .setValue(
-              (this.plugin as any).settings.templates?.[type] ?? ""
-            )
+            .setValue((this.plugin as any).settings.templates?.[type] ?? "")
             .onChange(async (value) => {
               (this.plugin as any).settings.templates =
                 (this.plugin as any).settings.templates || {};
@@ -500,7 +506,8 @@ export class CRMSettingsTab extends PluginSettingTab {
         text
           .setPlaceholder("sk-...")
           .setValue(
-            (this.plugin as any).settings.openAIWhisperApiKey?.toString?.() ?? ""
+            (this.plugin as any).settings.openAIWhisperApiKey?.toString?.() ??
+              ""
           )
           .onChange(async (value) => {
             (this.plugin as any).settings.openAIWhisperApiKey = value.trim();
@@ -522,7 +529,8 @@ export class CRMSettingsTab extends PluginSettingTab {
         });
 
         const current =
-          (this.plugin as any).settings.openAIModel?.toString?.() ?? "gpt-5-nano";
+          (this.plugin as any).settings.openAIModel?.toString?.() ??
+          "gpt-5-nano";
 
         if (!models.includes(current)) {
           dropdown.setValue("gpt-5-nano");
@@ -545,9 +553,11 @@ export class CRMSettingsTab extends PluginSettingTab {
       )
       .addToggle((toggle) => {
         const current =
-          (this.plugin as any).settings.openAITranscriptionPolishEnabled !== false;
+          (this.plugin as any).settings.openAITranscriptionPolishEnabled !==
+          false;
         toggle.setValue(current).onChange(async (value) => {
-          (this.plugin as any).settings.openAITranscriptionPolishEnabled = value;
+          (this.plugin as any).settings.openAITranscriptionPolishEnabled =
+            value;
           await (this.plugin as any).saveSettings();
         });
       });
@@ -651,7 +661,9 @@ export class CRMSettingsTab extends PluginSettingTab {
         "Select the OpenAI voice used when generating audio from selected text."
       )
       .addDropdown((dropdown) => {
-        const apiKey = (this.plugin as any).settings.openAIWhisperApiKey?.trim?.();
+        const apiKey = (
+          this.plugin as any
+        ).settings.openAIWhisperApiKey?.trim?.();
         const currentVoice = (this.plugin as any).settings.openAIVoice ?? "";
 
         voiceSelect = dropdown.selectEl;
@@ -661,7 +673,11 @@ export class CRMSettingsTab extends PluginSettingTab {
           await (this.plugin as any).saveSettings();
         });
 
-        const setOptions = (voices: string[], disabled: boolean, placeholder: string) => {
+        const setOptions = (
+          voices: string[],
+          disabled: boolean,
+          placeholder: string
+        ) => {
           const select = dropdown.selectEl;
           while (select.firstChild) {
             select.removeChild(select.firstChild);
@@ -692,7 +708,10 @@ export class CRMSettingsTab extends PluginSettingTab {
           dropdown.setValue(initial);
           dropdown.setDisabled(disabled);
 
-          setPreviewState(disabled, disabled ? placeholder : voicePreviewTooltip);
+          setPreviewState(
+            disabled,
+            disabled ? placeholder : voicePreviewTooltip
+          );
 
           if (!currentVoice || !voices.includes(currentVoice)) {
             (this.plugin as any).settings.openAIVoice = initial;
