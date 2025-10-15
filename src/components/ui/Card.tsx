@@ -38,6 +38,7 @@ type CardProps = {
   actions?: CardAction[];
   collapsible?: boolean;
   collapsed?: boolean;
+  titleAdornment?: React.ReactNode;
 };
 
 /**
@@ -63,6 +64,7 @@ export const Card: React.FC<CardProps> = ({
   actions,
   collapsible = false,
   collapsed = false,
+  titleAdornment,
 }) => {
   // Collect Box props to forward
   const boxProps: any = {};
@@ -121,7 +123,9 @@ export const Card: React.FC<CardProps> = ({
   const hasTextualHeaderContent = Boolean(title || subtitle);
   const hasIcon = Boolean(icon);
   const hasActions = resolvedActions.length > 0;
-  const shouldRenderHeader = hasTextualHeaderContent || hasIcon || hasActions;
+  const hasTitleAdornment = Boolean(titleAdornment);
+  const shouldRenderHeader =
+    hasTextualHeaderContent || hasIcon || hasActions || hasTitleAdornment;
 
   const titleProps: React.ComponentProps<typeof Title> | undefined = (() => {
     if (title && subtitle) {
@@ -199,13 +203,22 @@ export const Card: React.FC<CardProps> = ({
             gap={2}
             style={headerFlexStyle}
           >
-            {titleProps && (
+            {(titleProps || hasTitleAdornment) && (
               <div
                 className={collapsible ? "cursor-pointer select-none" : undefined}
                 style={titleWrapperStyle}
                 {...(titleInteractiveProps as any)}
               >
-                <Title {...titleProps} />
+                <div
+                  className={
+                    hasTitleAdornment ? "flex items-center gap-2" : undefined
+                  }
+                >
+                  {titleProps && <Title {...titleProps} />}
+                  {titleAdornment && (
+                    <div className="shrink-0">{titleAdornment}</div>
+                  )}
+                </div>
               </div>
             )}
             {hasActions && (
