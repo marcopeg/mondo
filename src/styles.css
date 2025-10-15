@@ -120,6 +120,57 @@
   color: var(--color-green, #2f9e44);
 }
 
+.crm-settings-entity-group {
+  margin-bottom: 1rem;
+}
+
+.crm-settings-entity-group.is-collapsed .crm-settings-entity-group-content {
+  display: none;
+}
+
+.crm-settings-entity-group-content {
+  margin-left: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.crm-settings-entity-group-content > .setting-item {
+  margin: 0;
+}
+
+.crm-settings-entity-heading {
+  cursor: pointer;
+  user-select: none;
+}
+
+.crm-settings-entity-heading:focus-visible {
+  outline: 2px solid var(--interactive-accent);
+  outline-offset: 2px;
+}
+
+.crm-settings-entity-heading .setting-item-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.crm-settings-entity-heading .setting-item-name::before {
+  content: "▸";
+  transition: transform 0.15s ease;
+  display: inline-block;
+}
+
+.crm-settings-entity-group:not(.is-collapsed)
+  .crm-settings-entity-heading
+  .setting-item-name::before {
+  transform: rotate(90deg);
+}
+
+.crm-settings-entity-heading .setting-item-description {
+  margin-left: 1.45rem;
+}
+
 .crm-textfield__mic-icon {
   width: 1.15rem;
   height: 1.15rem;

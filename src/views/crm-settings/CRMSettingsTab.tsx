@@ -30,12 +30,6 @@ export class CRMSettingsTab extends PluginSettingTab {
     const { containerEl } = this;
     containerEl.empty();
 
-    // Use core settings heading for consistency with Obsidian UI
-    new Setting(containerEl)
-      .setName("Entity Paths")
-      .setDesc("Group your entities by folder to boost performances.")
-      .setHeading();
-
     // Ensure settings object exists
     (this.plugin as any).settings = (this.plugin as any).settings ?? {
       rootPaths: Object.fromEntries(
@@ -456,13 +450,6 @@ export class CRMSettingsTab extends PluginSettingTab {
       });
     };
 
-    new Setting(containerEl)
-      .setName("Entity defaults")
-      .setDesc(
-        "Customize the default folder and template used when creating CRM entities."
-      )
-      .setHeading();
-
     for (const {
       label,
       type,
@@ -470,10 +457,64 @@ export class CRMSettingsTab extends PluginSettingTab {
       templateHelper,
     } of entityDefinitions) {
       const group = containerEl.createDiv("crm-settings-entity-group");
-      new Setting(group).setName(label).setHeading();
+      group.addClass("is-collapsed");
+
+      const headingSetting = new Setting(group)
+        .setName(label)
+        .setHeading();
+      headingSetting.settingEl.addClass("crm-settings-entity-heading");
+      headingSetting.settingEl.setAttribute("role", "button");
+      headingSetting.settingEl.setAttribute("tabindex", "0");
+
+      const groupContent = group.createDiv("crm-settings-entity-group-content");
+
+      const contentId = `crm-settings-entity-${type}-content`;
+      groupContent.setAttribute("id", contentId);
+      headingSetting.settingEl.setAttribute("aria-controls", contentId);
+      headingSetting.settingEl.setAttribute("aria-expanded", "false");
+
+      const toggleGroup = (force?: boolean) => {
+        const shouldOpen =
+          typeof force === "boolean"
+            ? force
+            : group.hasClass("is-collapsed");
+        if (shouldOpen) {
+          group.removeClass("is-collapsed");
+          headingSetting.settingEl.setAttribute("aria-expanded", "true");
+        } else {
+          group.addClass("is-collapsed");
+          headingSetting.settingEl.setAttribute("aria-expanded", "false");
+        }
+      };
+
+      headingSetting.settingEl.addEventListener("click", () => {
+        toggleGroup();
+      });
+      headingSetting.settingEl.addEventListener("keydown", (event) => {
+        if (event.defaultPrevented) {
+          return;
+        }
+
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          toggleGroup();
+          return;
+        }
+
+        if (event.key === "ArrowRight") {
+          event.preventDefault();
+          toggleGroup(true);
+          return;
+        }
+
+        if (event.key === "ArrowLeft") {
+          event.preventDefault();
+          toggleGroup(false);
+        }
+      });
 
       addFolderSetting(
-        group,
+        groupContent,
         "Default folder",
         entityHelper || `type=${type}`,
         () => (this.plugin as any).settings.rootPaths[type],
@@ -483,7 +524,7 @@ export class CRMSettingsTab extends PluginSettingTab {
         }
       );
 
-      new Setting(group)
+      new Setting(groupContent)
         .setName("Template")
         .setDesc(
           templateHelper || `Template for new ${label.toLowerCase()} notes.`
@@ -504,7 +545,7 @@ export class CRMSettingsTab extends PluginSettingTab {
         });
 
       if (type === CRMFileType.PERSON) {
-        addSelfPersonSetting(group);
+        addSelfPersonSetting(groupContent);
       }
     }
 
