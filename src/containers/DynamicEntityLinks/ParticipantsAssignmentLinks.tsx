@@ -35,9 +35,12 @@ export const ParticipantsAssignmentLinks = ({
     | Record<string, unknown>
     | undefined;
 
-  const participants = useMemo(() => parseParticipants(frontmatter?.participants), [
-    frontmatter?.participants,
-  ]);
+  const participants = useMemo(
+    () => parseParticipants(frontmatter?.participants),
+    [frontmatter?.participants]
+  );
+
+  const hasParticipants = participants.length > 0;
 
   const entityType = String(frontmatter?.type ?? "task");
 
@@ -48,9 +51,33 @@ export const ParticipantsAssignmentLinks = ({
     return peopleRootSetting.replace(/^\/+|\/+$/g, "").trim();
   }, [peopleRootSetting]);
 
-  const personOptions = useMemo(
-    () => people.map((candidate) => candidate.file.basename),
-    [people]
+  const participantLookup = useMemo(() => {
+    const normalized = new Set<string>();
+    participants.forEach((entry) => {
+      const trimmed = entry.trim();
+      if (trimmed) {
+        normalized.add(trimmed.toLowerCase());
+      }
+      const normalizedLink = normalizeLink(entry);
+      if (normalizedLink) {
+        normalized.add(normalizedLink.toLowerCase());
+      }
+    });
+    return normalized;
+  }, [participants]);
+
+  const availablePersonOptions = useMemo(
+    () =>
+      people
+        .filter((candidate) => {
+          const base = candidate.file.basename.toLowerCase();
+          const path = candidate.file.path.replace(/\.md$/i, "").toLowerCase();
+          return (
+            !participantLookup.has(base) && !participantLookup.has(path)
+          );
+        })
+        .map((candidate) => candidate.file.basename),
+    [participantLookup, people]
   );
 
   const persistParticipant = useCallback(
@@ -227,7 +254,7 @@ export const ParticipantsAssignmentLinks = ({
     ]
   );
 
-  if (!file.file || participants.length > 0) {
+  if (!file.file) {
     return null;
   }
 
@@ -253,24 +280,29 @@ export const ParticipantsAssignmentLinks = ({
     >
       <Stack direction="column" gap={2}>
         {error ? <InlineError message={error} /> : null}
-        <Button
-          icon="user-round-plus"
-          onClick={handleAssignMe}
-          disabled={isSaving}
-        >
-          Assign it to me
-        </Button>
-        <div className="flex flex-col gap-1">
-          <span className="text-sm font-medium text-[var(--text-muted)]">
-            Assign to
-          </span>
-          <AutoComplete
-            values={personOptions}
-            onSelect={handleAssignPerson}
-            placeholder={`Type a person to assign to ${targetLabel}`}
-            className={inputClassName}
-          />
-        </div>
+        <Stack direction="row" gap={2} align="end" className="flex-wrap">
+          {!hasParticipants ? (
+            <Button
+              icon="user-round-plus"
+              onClick={handleAssignMe}
+              disabled={isSaving}
+              className="whitespace-nowrap"
+            >
+              Assign it to me
+            </Button>
+          ) : null}
+          <div className="flex flex-1 flex-col gap-1 min-w-[12rem]">
+            <span className="text-sm font-medium text-[var(--text-muted)]">
+              Add participant
+            </span>
+            <AutoComplete
+              values={availablePersonOptions}
+              onSelect={handleAssignPerson}
+              placeholder={`Type a person to assign to ${targetLabel}`}
+              className={inputClassName}
+            />
+          </div>
+        </Stack>
       </Stack>
     </Card>
   );
