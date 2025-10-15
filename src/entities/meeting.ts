@@ -20,7 +20,10 @@ project:
 
 `;
 
-const meetingConfig: CRMEntityConfig<"meeting"> = {
+const meetingConfig: CRMEntityConfig<
+  "meeting",
+  { type: "facts"; collapsed?: boolean }
+> = {
   type: "meeting",
   name: "Meetings",
   icon: "calendar-clock",
@@ -41,6 +44,11 @@ const meetingConfig: CRMEntityConfig<"meeting"> = {
     columns: ["date_time", "participants"],
     sort: { column: "date_time", direction: "desc" },
   },
+  links: [
+    {
+      type: "facts",
+    },
+  ],
 };
 
 export default meetingConfig;

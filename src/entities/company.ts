@@ -13,6 +13,7 @@ const companyConfig: CRMEntityConfig<
   | { type: "teams"; collapsed?: boolean }
   | { type: "employees"; collapsed?: boolean }
   | { type: "projects"; collapsed?: boolean }
+  | { type: "facts"; collapsed?: boolean }
 > = {
   type: "company",
   name: "Companies",
@@ -43,6 +44,9 @@ const companyConfig: CRMEntityConfig<
     {
       type: "employees",
       collapsed: true,
+    },
+    {
+      type: "facts",
     },
   ],
 };

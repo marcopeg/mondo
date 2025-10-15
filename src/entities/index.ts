@@ -8,6 +8,7 @@ import role from "./role";
 import team from "./team";
 import restaurant from "./restaurant";
 import task from "./task";
+import fact from "./fact";
 import type { CRMEntityConfig } from "@/types/CRMEntityConfig";
 
 const ENTITIES = [
@@ -21,6 +22,7 @@ const ENTITIES = [
   project,
   meeting,
   gear,
+  fact,
 ] as const;
 
 type EntityConfig = (typeof ENTITIES)[number];

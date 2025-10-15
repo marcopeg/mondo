@@ -16,6 +16,7 @@ const personConfig: CRMEntityConfig<
   | { type: "teammates"; collapsed?: boolean }
   | { type: "meetings"; collapsed?: boolean }
   | { type: "projects"; collapsed?: boolean }
+  | { type: "facts"; collapsed?: boolean }
 > = {
   type: "person",
   name: "People",
@@ -48,6 +49,9 @@ const personConfig: CRMEntityConfig<
     },
     {
       type: "projects",
+    },
+    {
+      type: "facts",
     },
   ],
 };
