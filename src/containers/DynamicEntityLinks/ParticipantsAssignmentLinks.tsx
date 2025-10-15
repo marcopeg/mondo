@@ -12,6 +12,12 @@ import type { TCachedFile } from "@/types/TCachedFile";
 import type { TFile } from "obsidian";
 import { getEntityDisplayName } from "@/utils/getEntityDisplayName";
 import { getTemplateForType, renderTemplate } from "@/utils/CRMTemplates";
+import {
+  addParticipantLink,
+  normalizeParticipantLink,
+  parseParticipants,
+} from "@/utils/participants";
+import { resolveSelfPerson } from "@/utils/selfPerson";
 
 type ParticipantsAssignmentLinksProps = {
   config: Record<string, unknown>;
@@ -23,10 +29,7 @@ export const ParticipantsAssignmentLinks = ({
   config,
 }: ParticipantsAssignmentLinksProps) => {
   const app = useApp();
-  const peopleRootSetting = useSetting<string>(
-    `rootPaths.${CRMFileType.PERSON}`,
-    "/"
-  );
+  const selfPersonPath = useSetting<string>("selfPersonPath", "");
   const people = useFiles(CRMFileType.PERSON);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -42,13 +45,6 @@ export const ParticipantsAssignmentLinks = ({
 
   const hasParticipants = participants.length > 0;
 
-  const normalizedPeopleRoot = useMemo(() => {
-    if (!peopleRootSetting || peopleRootSetting === "/") {
-      return "";
-    }
-    return peopleRootSetting.replace(/^\/+|\/+$/g, "").trim();
-  }, [peopleRootSetting]);
-
   const participantLookup = useMemo(() => {
     const normalized = new Set<string>();
     participants.forEach((entry) => {
@@ -56,7 +52,7 @@ export const ParticipantsAssignmentLinks = ({
       if (trimmed) {
         normalized.add(trimmed.toLowerCase());
       }
-      const normalizedLink = normalizeLink(entry);
+      const normalizedLink = normalizeParticipantLink(entry);
       if (normalizedLink) {
         normalized.add(normalizedLink.toLowerCase());
       }
@@ -84,7 +80,7 @@ export const ParticipantsAssignmentLinks = ({
         return;
       }
 
-      const normalizedLink = normalizeLink(link);
+      const normalizedLink = normalizeParticipantLink(link);
       if (!normalizedLink) {
         return;
       }
@@ -93,17 +89,10 @@ export const ParticipantsAssignmentLinks = ({
       setError(null);
 
       try {
-        await app.fileManager.processFrontMatter(file.file, (fm) => {
-          const existing = parseParticipants(fm?.participants);
-          const hasLink = existing.some(
-            (value) => normalizeLink(String(value)) === normalizedLink
-          );
-          if (hasLink) {
-            fm.participants = existing.length > 0 ? existing : [link];
-            return;
-          }
-          fm.participants = [...existing, link];
-        });
+        const updated = await addParticipantLink(app, file.file, link);
+        if (!updated) {
+          throw new Error("Unable to add participant");
+        }
       } catch (err) {
         console.error("ParticipantsAssignmentLinks: failed to update", err);
         setError("Unable to update participants. Please try again.");
@@ -111,19 +100,23 @@ export const ParticipantsAssignmentLinks = ({
         setIsSaving(false);
       }
     },
-    [app.fileManager, file.file]
+    [app, file.file]
+  );
+
+  const selfParticipant = useMemo(
+    () =>
+      file.file
+        ? resolveSelfPerson(app, file.file.path, selfPersonPath)
+        : null,
+    [app, file.file, selfPersonPath]
   );
 
   const handleAssignMe = useCallback(() => {
-    if (isSaving) {
+    if (isSaving || !selfParticipant) {
       return;
     }
-    const target = normalizedPeopleRoot
-      ? `${normalizedPeopleRoot}/me`
-      : "me";
-    const link = `[[${target}]]`;
-    void persistParticipant(link);
-  }, [isSaving, normalizedPeopleRoot, persistParticipant]);
+    void persistParticipant(selfParticipant.link);
+  }, [isSaving, persistParticipant, selfParticipant]);
 
   const ensurePersonFile = useCallback(
     async (name: string): Promise<TFile | null> => {
@@ -268,7 +261,7 @@ export const ParticipantsAssignmentLinks = ({
       <Stack direction="column" gap={error ? 2 : 1} className="w-full">
         {error ? <InlineError message={error} /> : null}
         <Stack gap={2} align="center" className="flex-wrap w-full">
-          {!hasParticipants ? (
+          {!hasParticipants && selfParticipant ? (
             <Button
               icon="user-round-plus"
               onClick={handleAssignMe}
@@ -290,34 +283,6 @@ export const ParticipantsAssignmentLinks = ({
       </Stack>
     </Card>
   );
-};
-
-const parseParticipants = (value: unknown): string[] => {
-  if (value === undefined || value === null) {
-    return [];
-  }
-  if (Array.isArray(value)) {
-    return value
-      .map((item) => String(item).trim())
-      .filter((item) => item.length > 0);
-  }
-  const single = String(value).trim();
-  return single ? [single] : [];
-};
-
-const normalizeLink = (raw: string): string => {
-  let link = raw.trim();
-  if (!link) {
-    return "";
-  }
-  if (link.startsWith("[[") && link.endsWith("]]")) {
-    link = link.slice(2, -2);
-  }
-  link = link.split("|")[0];
-  link = link.replace(/\\/g, "/");
-  link = link.replace(/\.md$/i, "");
-  link = link.replace(/^\/+/, "");
-  return link.trim();
 };
 
 const sanitizeFileName = (value: string) =>

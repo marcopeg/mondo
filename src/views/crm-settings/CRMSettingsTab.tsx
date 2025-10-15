@@ -6,6 +6,7 @@ import {
   AbstractInputSuggest,
   Notice,
   type ExtraButtonComponent,
+  SearchComponent,
 } from "obsidian";
 import type CRM from "@/main";
 import {
@@ -113,6 +114,113 @@ export class CRMSettingsTab extends PluginSettingTab {
       }
     }
 
+    type PersonEntry = {
+      path: string;
+      label: string;
+      search: string;
+    };
+
+    const collectPersonEntries = (): PersonEntry[] => {
+      const markdownFiles = this.app.vault.getMarkdownFiles();
+      return markdownFiles
+        .map((file) => {
+          const cache = this.app.metadataCache.getFileCache(file);
+          const frontmatter = cache?.frontmatter as
+            | Record<string, unknown>
+            | undefined;
+          const type =
+            typeof frontmatter?.type === "string"
+              ? frontmatter.type.trim().toLowerCase()
+              : "";
+          if (type !== CRMFileType.PERSON) {
+            return null;
+          }
+          const show =
+            typeof frontmatter?.show === "string"
+              ? frontmatter.show.trim()
+              : "";
+          const name =
+            typeof frontmatter?.name === "string"
+              ? frontmatter.name.trim()
+              : "";
+          const label = show || name || file.basename;
+          const path = file.path;
+          return {
+            path,
+            label,
+            search: `${label.toLowerCase()} ${path.toLowerCase()}`,
+          } as PersonEntry;
+        })
+        .filter((entry): entry is PersonEntry => Boolean(entry))
+        .sort((first, second) =>
+          first.label.localeCompare(second.label, undefined, {
+            sensitivity: "base",
+          })
+        );
+    };
+
+    const findPersonEntry = (value: string): PersonEntry | null => {
+      const trimmed = value.trim();
+      if (!trimmed) {
+        return null;
+      }
+      const entries = collectPersonEntries();
+      const normalized = trimmed.endsWith(".md") ? trimmed : `${trimmed}.md`;
+      const normalizedNoExt = normalized.replace(/\.md$/iu, "");
+      return (
+        entries.find((entry) => {
+          const entryNoExt = entry.path.replace(/\.md$/iu, "");
+          return (
+            entry.path === trimmed ||
+            entry.path === normalized ||
+            entryNoExt === trimmed ||
+            entryNoExt === normalizedNoExt
+          );
+        }) ?? null
+      );
+    };
+
+    class PersonSuggest extends AbstractInputSuggest<PersonEntry> {
+      private readonly getEntries: () => PersonEntry[];
+
+      constructor(
+        app: App,
+        inputEl: HTMLInputElement,
+        getEntries: () => PersonEntry[]
+      ) {
+        super(app, inputEl);
+        this.getEntries = getEntries;
+      }
+
+      getSuggestions(query: string) {
+        const entries = this.getEntries();
+        const normalized = query.trim().toLowerCase();
+        if (!normalized) {
+          return entries;
+        }
+        return entries.filter((entry) => entry.search.includes(normalized));
+      }
+
+      renderSuggestion(item: PersonEntry, el: HTMLElement) {
+        el.empty();
+        el.createEl("div", { text: item.label, cls: "crm-settings-person-label" });
+        if (item.path !== item.label) {
+          el.createEl("div", {
+            text: item.path,
+            cls: "crm-settings-person-path",
+          });
+        }
+      }
+
+      selectSuggestion(item: PersonEntry) {
+        const input = this.inputEl as HTMLInputElement;
+        input.value = item.path;
+        input.dispatchEvent(new Event("input", { bubbles: true }));
+        input.dispatchEvent(new Event("change", { bubbles: true }));
+        this.close();
+      }
+    }
+
     const addFolderSetting = (
       name: string,
       desc: string,
@@ -187,6 +295,97 @@ export class CRMSettingsTab extends PluginSettingTab {
         }
       );
     }
+
+    let selfSearch: SearchComponent | null = null;
+    const storedSelfPath = (
+      (this.plugin as any).settings?.selfPersonPath?.toString?.() ?? ""
+    ).trim();
+
+    const selfSetting = new Setting(containerEl)
+      .setName("Who's me?")
+      .setDesc(
+        "Pick a person that will be used to mean \"myself\" in the CRM."
+      );
+
+    selfSetting.addSearch((search) => {
+      selfSearch = search;
+
+      const applyStoredValue = (value: string) => {
+        try {
+          search.setValue(value);
+        } catch (error) {
+          search.inputEl.value = value;
+          search.inputEl.dispatchEvent(new Event("input", { bubbles: true }));
+          search.inputEl.dispatchEvent(new Event("change", { bubbles: true }));
+        }
+      };
+
+      search
+        .setPlaceholder("Select a person note…")
+        .setValue(storedSelfPath)
+        .onChange(async (value) => {
+          const trimmed = value.trim();
+          if (!trimmed) {
+            if ((this.plugin as any).settings.selfPersonPath) {
+              (this.plugin as any).settings.selfPersonPath = "";
+              await (this.plugin as any).saveSettings();
+            }
+            return;
+          }
+
+          const entry = findPersonEntry(trimmed);
+          if (!entry) {
+            return;
+          }
+
+          if (search.inputEl.value !== entry.path) {
+            applyStoredValue(entry.path);
+            return;
+          }
+
+          if ((this.plugin as any).settings.selfPersonPath !== entry.path) {
+            (this.plugin as any).settings.selfPersonPath = entry.path;
+            await (this.plugin as any).saveSettings();
+          }
+        });
+
+      try {
+        const suggest = new PersonSuggest(
+          this.app,
+          search.inputEl as HTMLInputElement,
+          collectPersonEntries
+        );
+        (this as any)._suggesters = (this as any)._suggesters || [];
+        (this as any)._suggesters.push(suggest);
+      } catch (error) {
+        // Suggest is unavailable (e.g. tests); ignore.
+      }
+    });
+
+    selfSetting.addExtraButton((button) => {
+      button
+        .setIcon("x-circle")
+        .setTooltip("Clear selection")
+        .onClick(() => {
+          (this.plugin as any).settings.selfPersonPath = "";
+          void (async () => {
+            await (this.plugin as any).saveSettings();
+            if (selfSearch) {
+              try {
+                selfSearch.setValue("");
+              } catch (error) {
+                selfSearch.inputEl.value = "";
+                selfSearch.inputEl.dispatchEvent(
+                  new Event("input", { bubbles: true })
+                );
+                selfSearch.inputEl.dispatchEvent(
+                  new Event("change", { bubbles: true })
+                );
+              }
+            }
+          })();
+        });
+    });
 
     new Setting(containerEl)
       .setName("Entity Templates")
