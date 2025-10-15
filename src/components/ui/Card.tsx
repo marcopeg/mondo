@@ -12,9 +12,15 @@ type CardActionBase = {
   onClick: () => void;
 };
 
+type CardActionContent = {
+  key?: React.Key;
+  content: React.ReactNode;
+};
+
 type CardAction =
   | (CardActionBase & { text: string })
-  | (CardActionBase & { icon: string });
+  | (CardActionBase & { icon: string })
+  | CardActionContent;
 
 type CardProps = {
   title?: string;
@@ -38,7 +44,6 @@ type CardProps = {
   actions?: CardAction[];
   collapsible?: boolean;
   collapsed?: boolean;
-  titleAdornment?: React.ReactNode;
 };
 
 /**
@@ -64,7 +69,6 @@ export const Card: React.FC<CardProps> = ({
   actions,
   collapsible = false,
   collapsed = false,
-  titleAdornment,
 }) => {
   // Collect Box props to forward
   const boxProps: any = {};
@@ -123,9 +127,7 @@ export const Card: React.FC<CardProps> = ({
   const hasTextualHeaderContent = Boolean(title || subtitle);
   const hasIcon = Boolean(icon);
   const hasActions = resolvedActions.length > 0;
-  const hasTitleAdornment = Boolean(titleAdornment);
-  const shouldRenderHeader =
-    hasTextualHeaderContent || hasIcon || hasActions || hasTitleAdornment;
+  const shouldRenderHeader = hasTextualHeaderContent || hasIcon || hasActions;
 
   const titleProps: React.ComponentProps<typeof Title> | undefined = (() => {
     if (title && subtitle) {
@@ -203,22 +205,13 @@ export const Card: React.FC<CardProps> = ({
             gap={2}
             style={headerFlexStyle}
           >
-            {(titleProps || hasTitleAdornment) && (
+            {titleProps && (
               <div
                 className={collapsible ? "cursor-pointer select-none" : undefined}
                 style={titleWrapperStyle}
                 {...(titleInteractiveProps as any)}
               >
-                <div
-                  className={
-                    hasTitleAdornment ? "flex items-center gap-2" : undefined
-                  }
-                >
-                  {titleProps && <Title {...titleProps} />}
-                  {titleAdornment && (
-                    <div className="shrink-0">{titleAdornment}</div>
-                  )}
-                </div>
+                {titleProps && <Title {...titleProps} />}
               </div>
             )}
             {hasActions && (
@@ -231,6 +224,16 @@ export const Card: React.FC<CardProps> = ({
                 style={actionsFlexStyle}
               >
                 {resolvedActions.map((action, index) => {
+                  if ("content" in action) {
+                    const key = action.key ?? `custom-${index}`;
+
+                    return (
+                      <div key={key} className="flex items-center">
+                        {action.content}
+                      </div>
+                    );
+                  }
+
                   if (!action.text && !action.icon) {
                     throw new Error(
                       "Card action must define at least a text or an icon."

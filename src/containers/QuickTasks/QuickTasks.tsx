@@ -68,9 +68,11 @@ export const QuickTasks: React.FC<{ collapsed?: boolean }> = ({
       icon="list-checks"
       collapsible
       collapsed={collapsed}
-      titleAdornment={
-        <Badge aria-label={badgeLabel}>{openTasksCount}</Badge>
-      }
+      actions={[
+        {
+          content: <Badge aria-label={badgeLabel}>{openTasksCount}</Badge>,
+        },
+      ]}
     >
       {isLoading ? (
         <Typography variant="body" className="text-sm text-[var(--text-muted)]">
