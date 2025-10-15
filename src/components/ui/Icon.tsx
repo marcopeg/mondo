@@ -1,7 +1,12 @@
 import { useEffect, useRef } from "react";
 import { setIcon } from "obsidian";
 
-export const Icon = ({ name }: { name: string }) => {
+type IconProps = {
+  name: string;
+  className?: string;
+};
+
+export const Icon = ({ name, className }: IconProps) => {
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -10,11 +15,12 @@ export const Icon = ({ name }: { name: string }) => {
     }
   }, [name]);
 
-  return (
-    <span
-      ref={ref}
-      className="inline-flex items-center justify-center w-5 h-5 mr-2"
-      aria-hidden
-    />
-  );
+  const classes = [
+    "inline-flex items-center justify-center w-5 h-5",
+    className ?? "mr-2",
+  ]
+    .filter(Boolean)
+    .join(" ");
+
+  return <span ref={ref} className={classes} aria-hidden />;
 };
