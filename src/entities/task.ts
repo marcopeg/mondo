@@ -29,7 +29,10 @@ const taskConfig: CRMEntityConfig<"task"> = {
   list: {
     columns: ["show", "status"],
   },
-  links: [{ type: "participants-assignment" }],
+  links: [
+    { type: "participants-assignment" },
+    { type: "facts" },
+  ],
 };
 
 export default taskConfig;

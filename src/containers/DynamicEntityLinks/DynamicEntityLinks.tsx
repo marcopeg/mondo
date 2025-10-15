@@ -14,6 +14,7 @@ import { RolePeopleLinks } from "./RolePeopleLinks";
 import { RoleTasksLinks } from "./RoleTasksLinks";
 import { Stack } from "@/components/ui/Stack";
 import { ParticipantsAssignmentLinks } from "./ParticipantsAssignmentLinks";
+import { FactsLinks } from "./FactsLinks";
 
 type LinkPanelProps = {
   file: TCachedFile;
@@ -31,6 +32,7 @@ const entityMap: Record<string, React.ComponentType<LinkPanelProps>> = {
   "role-people": RolePeopleLinks,
   "role-tasks": RoleTasksLinks,
   "participants-assignment": ParticipantsAssignmentLinks,
+  facts: FactsLinks,
 };
 
 const renderMissingConfigError = (message: string, key?: React.Key) => (
