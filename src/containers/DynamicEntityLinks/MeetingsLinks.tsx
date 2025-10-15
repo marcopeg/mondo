@@ -1,4 +1,4 @@
-import { useCallback } from "react";
+import { useCallback, useMemo } from "react";
 import { Card } from "@/components/ui/Card";
 import MeetingsTable from "@/components/MeetingsTable";
 import { useFiles } from "@/hooks/use-files";
@@ -7,7 +7,10 @@ import { matchesPropertyLink } from "@/utils/matchesPropertyLink";
 import type { TCachedFile } from "@/types/TCachedFile";
 import type { App } from "obsidian";
 import { useApp } from "@/hooks/use-app";
-import { createMeetingForPerson } from "@/utils/createMeetingForPerson";
+import {
+  createMeetingForEntity,
+  type MeetingLinkTarget,
+} from "@/utils/createMeetingForPerson";
 
 type MeetingsLinksProps = {
   config: Record<string, unknown>;
@@ -33,6 +36,8 @@ export const MeetingsLinks = ({ file, config }: MeetingsLinksProps) => {
             );
           case "project":
             return matchesPropertyLink(meetingCached, "project", file.file);
+          case "location":
+            return matchesPropertyLink(meetingCached, "location", file.file);
           default:
             return false;
         }
@@ -53,31 +58,83 @@ export const MeetingsLinks = ({ file, config }: MeetingsLinksProps) => {
         return "Meetings involving this team";
       case "project":
         return "Meetings associated with this project";
+      case "location":
+        return "Meetings at this location";
       default:
         return "Meetings";
     }
   })();
 
+  const linkTargets = useMemo<MeetingLinkTarget[]>(() => {
+    if (!file?.file || !entityType) {
+      return [];
+    }
+
+    switch (entityType) {
+      case "person":
+        return [
+          {
+            property: "participants",
+            mode: "list",
+            target: file,
+          },
+        ];
+      case "team":
+        return [
+          {
+            property: "team",
+            mode: "single",
+            target: file,
+          },
+        ];
+      case "project":
+        return [
+          {
+            property: "project",
+            mode: "single",
+            target: file,
+          },
+        ];
+      case "location":
+        return [
+          {
+            property: "location",
+            mode: "single",
+            target: file,
+          },
+        ];
+      default:
+        return [];
+    }
+  }, [entityType, file]);
+
   const handleAddMeeting = useCallback(() => {
-    if (entityType !== "person") {
+    if (!file?.file) {
+      console.warn("MeetingsLinks: missing focused entity file.");
       return;
     }
 
-    if (!file?.file) {
-      console.warn("MeetingsLinks: missing focused person file.");
+    if (linkTargets.length === 0) {
+      console.warn(
+        `MeetingsLinks: unsupported entity type for meeting creation: ${entityType}`
+      );
       return;
     }
 
     void (async () => {
       try {
-        await createMeetingForPerson({ app, personFile: file });
+        await createMeetingForEntity({
+          app,
+          entityFile: file,
+          linkTargets,
+        });
       } catch (error) {
         console.error("MeetingsLinks: failed to create meeting", error);
       }
     })();
-  }, [app, entityType, file]);
+  }, [app, entityType, file, linkTargets]);
 
-  const actions = entityType === "person"
+  const actions = linkTargets.length > 0
     ? [
         {
           icon: "plus",

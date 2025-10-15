@@ -27,25 +27,147 @@ const sanitizeFolder = (rawPath: string | undefined): string => {
   return trimmed.replace(/^\/+/, "").replace(/\/+$/, "");
 };
 
-type CreateMeetingForPersonParams = {
+export type MeetingLinkTarget = {
+  property: string;
+  mode: "single" | "list";
+  target: TCachedFile;
+};
+
+type CreateMeetingForEntityParams = {
   app: App;
-  personFile: TCachedFile;
+  entityFile: TCachedFile;
+  linkTargets: MeetingLinkTarget[];
   openAfterCreate?: boolean;
 };
 
-export const createMeetingForPerson = async ({
+const buildWikiLink = ({
   app,
-  personFile,
+  meetingPath,
+  targetFile,
+  displayName,
+}: {
+  app: App;
+  meetingPath: string;
+  targetFile: TFile;
+  displayName: string;
+}) => {
+  const linkTarget = app.metadataCache.fileToLinktext(targetFile, meetingPath);
+  const alias = displayName ? `|${displayName}` : "";
+  return `[[${linkTarget}${alias}]]`;
+};
+
+const injectLinkTargets = ({
+  content,
+  linkTargets,
+  app,
+  meetingPath,
+}: {
+  content: string;
+  linkTargets: MeetingLinkTarget[];
+  app: App;
+  meetingPath: string;
+}): string => {
+  if (linkTargets.length === 0) {
+    return content;
+  }
+
+  const frontmatterMatch = content.match(/^---\n([\s\S]*?)\n---/);
+  if (!frontmatterMatch) {
+    return content;
+  }
+
+  const [fullMatch, frontmatterBody] = frontmatterMatch;
+  const lines = frontmatterBody.split("\n");
+
+  const findKeyIndex = (key: string) =>
+    lines.findIndex((line) =>
+      line.trim().toLowerCase().startsWith(`${key.toLowerCase()}:`)
+    );
+
+  const ensureListEntry = (key: string, valueLine: string) => {
+    const normalizedKey = `${key.toLowerCase()}:`;
+    let keyIndex = lines.findIndex(
+      (line) => line.trim().toLowerCase() === normalizedKey
+    );
+
+    if (keyIndex === -1) {
+      keyIndex = findKeyIndex(key);
+    }
+
+    if (keyIndex === -1) {
+      lines.push(`${key}:`);
+      lines.push(valueLine);
+      return;
+    }
+
+    if (lines[keyIndex].trim().toLowerCase() !== normalizedKey) {
+      lines[keyIndex] = `${key}:`;
+    }
+
+    let insertIndex = keyIndex + 1;
+    while (
+      insertIndex < lines.length &&
+      lines[insertIndex].trim().startsWith("-")
+    ) {
+      if (lines[insertIndex].trim() === valueLine.trim()) {
+        return;
+      }
+      insertIndex += 1;
+    }
+
+    lines.splice(insertIndex, 0, valueLine);
+  };
+
+  const ensureSingleEntry = (key: string, valueLine: string) => {
+    const keyIndex = findKeyIndex(key);
+    if (keyIndex === -1) {
+      lines.push(valueLine);
+      return;
+    }
+
+    lines[keyIndex] = valueLine;
+  };
+
+  linkTargets.forEach(({ property, mode, target }) => {
+    const targetFile = target?.file;
+    if (!targetFile) {
+      return;
+    }
+
+    const displayName = getEntityDisplayName(target);
+    const wikiLink = buildWikiLink({
+      app,
+      meetingPath,
+      targetFile,
+      displayName,
+    });
+    const quotedLink = JSON.stringify(wikiLink);
+
+    if (mode === "list") {
+      ensureListEntry(property, `  - ${quotedLink}`);
+    } else {
+      ensureSingleEntry(property, `${property}: ${quotedLink}`);
+    }
+  });
+
+  const updatedFrontmatter = lines.join("\n");
+  return content.replace(fullMatch, `---\n${updatedFrontmatter}\n---`);
+};
+
+export const createMeetingForEntity = async ({
+  app,
+  entityFile,
+  linkTargets,
   openAfterCreate = true,
-}: CreateMeetingForPersonParams): Promise<TFile | null> => {
-  if (!personFile?.file) {
-    console.warn("createMeetingForPerson: missing person file reference");
+}: CreateMeetingForEntityParams): Promise<TFile | null> => {
+  if (!entityFile?.file) {
+    console.warn("createMeetingForEntity: missing entity file reference");
     return null;
   }
 
   const plugin = getCRMPlugin(app);
   if (!plugin) {
-    console.error("createMeetingForPerson: CRM plugin instance not available");
+    console.error("createMeetingForEntity: CRM plugin instance not available");
     return null;
   }
 
@@ -54,7 +176,7 @@ export const createMeetingForPerson = async ({
     templates?: Partial<Record<CRMFileType, string>>;
   };
 
-  const displayName = getEntityDisplayName(personFile);
+  const displayName = getEntityDisplayName(entityFile);
   const rootPathSetting = settings.rootPaths?.[CRMFileType.MEETING] ?? "/";
   const normalizedFolder = sanitizeFolder(rootPathSetting);
 
@@ -85,7 +207,7 @@ export const createMeetingForPerson = async ({
 
     const formattedTime = isoTimestamp.slice(11, 16);
 
-    let content = renderTemplate(templateSource, {
+    const rendered = renderTemplate(templateSource, {
       title: safeTitle,
       type: String(CRMFileType.MEETING),
       filename: fileName,
@@ -95,43 +217,19 @@ export const createMeetingForPerson = async ({
       datetime: isoTimestamp,
     });
 
-    const linkTarget = app.metadataCache.fileToLinktext(personFile.file, filePath);
-    const participantLink = `  - "[[${linkTarget}|${displayName}]]"`;
+    const validTargets = linkTargets.filter((target) => target?.target?.file);
+    const contentWithLinks = injectLinkTargets({
+      content: rendered,
+      linkTargets: validTargets,
+      app,
+      meetingPath: filePath,
+    });
 
-    const frontmatterMatch = content.match(/^---\n([\s\S]*?)\n---/);
-    if (frontmatterMatch) {
-      const frontmatterBody = frontmatterMatch[1];
-      const fmLines = frontmatterBody.split("\n");
-      const participantsIndex = fmLines.findIndex(
-        (line) => line.trim().toLowerCase() === "participants:"
-      );
-
-      if (participantsIndex !== -1) {
-        fmLines.splice(participantsIndex + 1, 0, participantLink);
-      } else {
-        fmLines.push("participants:");
-        fmLines.push(participantLink);
-      }
-
-      const updatedFrontmatter = fmLines.join("\n");
-      content = content.replace(frontmatterMatch[0], `---\n${updatedFrontmatter}\n---`);
-    } else {
-      content = [
-        "---",
-        `type: ${CRMFileType.MEETING}`,
-        `show: ${JSON.stringify(safeTitle)}`,
-        "participants:",
-        participantLink,
-        "---",
-        content,
-      ].join("\n");
-    }
-
-    meetingFile = await app.vault.create(filePath, content);
+    meetingFile = await app.vault.create(filePath, contentWithLinks);
   }
 
   if (meetingFile && openAfterCreate) {
-    const leaf = app.workspace.getLeaf(true);
+    const leaf = app.workspace.getLeaf(false);
     if (leaf && typeof (leaf as any).openFile === "function") {
       await (leaf as any).openFile(meetingFile);
     }
@@ -139,5 +237,29 @@ export const createMeetingForPerson = async ({
 
   return meetingFile;
 };
+
+type CreateMeetingForPersonParams = {
+  app: App;
+  personFile: TCachedFile;
+  openAfterCreate?: boolean;
+};
+
+export const createMeetingForPerson = ({
+  app,
+  personFile,
+  openAfterCreate = true,
+}: CreateMeetingForPersonParams) =>
+  createMeetingForEntity({
+    app,
+    entityFile: personFile,
+    linkTargets: [
+      {
+        property: "participants",
+        mode: "list",
+        target: personFile,
+      },
+    ],
+    openAfterCreate,
+  });
 
 export default createMeetingForPerson;
