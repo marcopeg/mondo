@@ -14,6 +14,12 @@ import VoiceTranscriptionService from "@/utils/VoiceTranscriptionService";
 import getCRMPlugin from "@/utils/getCRMPlugin";
 import type CRM from "@/main";
 import Button from "@/components/ui/Button";
+import {
+  CRM_DICTATION_ICON_ID,
+  registerDictationIcon,
+} from "@/utils/registerDictationIcon";
+
+registerDictationIcon();
 
 const setNativeInputValue = (input: HTMLInputElement, value: string) => {
   const descriptor = Object.getOwnPropertyDescriptor(
@@ -32,7 +38,7 @@ const setNativeInputValue = (input: HTMLInputElement, value: string) => {
 const resolveIconName = (status: DictationState["status"]) => {
   if (status === "recording") {
     // Use a stable, always-available icon while recording
-    return "mic";
+    return CRM_DICTATION_ICON_ID;
   }
   if (status === "processing") {
     return "loader-2";
@@ -43,7 +49,7 @@ const resolveIconName = (status: DictationState["status"]) => {
   if (status === "error") {
     return "alert-circle";
   }
-  return "mic";
+  return CRM_DICTATION_ICON_ID;
 };
 
 const deriveButtonLabel = (status: DictationState["status"]) => {

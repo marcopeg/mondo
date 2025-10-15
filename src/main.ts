@@ -24,6 +24,10 @@ import { AudioTranscriptionManager } from "@/utils/AudioTranscriptionManager";
 import { VoiceoverManager } from "@/utils/VoiceoverManager";
 import { NoteDictationManager } from "@/utils/NoteDictationManager";
 import {
+  CRM_DICTATION_ICON_ID,
+  registerDictationIcon,
+} from "@/utils/registerDictationIcon";
+import {
   CRMFileType,
   CRM_FILE_TYPES,
   getCRMEntityConfig,
@@ -206,6 +210,8 @@ export default class CRM extends Plugin {
     this.addSettingTab(new CRMSettingsTab(this.app, this));
     await this.loadSettings();
 
+    registerDictationIcon();
+
     this.audioTranscriptionManager = new AudioTranscriptionManager(this);
     this.audioTranscriptionManager.initialize();
 
@@ -214,6 +220,11 @@ export default class CRM extends Plugin {
 
     this.noteDictationManager = new NoteDictationManager(this);
     this.noteDictationManager.initialize();
+    this.noteDictationManager.activateMobileToolbar();
+
+    this.app.workspace.onLayoutReady(() => {
+      this.noteDictationManager?.activateMobileToolbar();
+    });
 
     // Initialize the CRM file manager in the background (non-blocking)
     const fileManager = CRMFileManager.getInstance(this.app);
@@ -263,6 +274,7 @@ export default class CRM extends Plugin {
       id: "crm-toggle-note-dictation",
       name: "Start Dictation (Mobile)",
       mobileOnly: true,
+      icon: CRM_DICTATION_ICON_ID,
       editorCallback: async () => {
         const result = await this.noteDictationManager?.toggleRecording();
         if (result === "started") {
