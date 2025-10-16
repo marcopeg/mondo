@@ -15,11 +15,7 @@ const gearConfig: CRMEntityConfig<"gear"> = {
     placeholder: "Search gear...",
   },
   settings: {
-    entity: {
-      helper: "type=gear",
-    },
     template: {
-      helper: "Template for new gear notes.",
       default: template,
     },
   },

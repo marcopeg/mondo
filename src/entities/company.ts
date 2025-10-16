@@ -22,11 +22,7 @@ const companyConfig: CRMEntityConfig<
     placeholder: "Search companies...",
   },
   settings: {
-    entity: {
-      helper: "type=company",
-    },
     template: {
-      helper: "Template for new companies notes.",
       default: template,
     },
   },

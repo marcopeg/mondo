@@ -16,11 +16,7 @@ const restaurantConfig: CRMEntityConfig<"restaurant"> = {
     placeholder: "Search restaurants...",
   },
   settings: {
-    entity: {
-      helper: "type=restaurant",
-    },
     template: {
-      helper: "Template for new restaurant notes.",
       default: template,
     },
   },

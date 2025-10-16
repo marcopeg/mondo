@@ -21,11 +21,7 @@ const teamConfig: CRMEntityConfig<
     placeholder: "Search teams...",
   },
   settings: {
-    entity: {
-      helper: "type=team",
-    },
     template: {
-      helper: "Template for new teams notes.",
       default: template,
     },
   },

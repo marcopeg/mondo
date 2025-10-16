@@ -25,11 +25,7 @@ const personConfig: CRMEntityConfig<
     placeholder: "Search people...",
   },
   settings: {
-    entity: {
-      helper: "type=person",
-    },
     template: {
-      helper: "Template for new people notes.",
       default: template,
     },
   },

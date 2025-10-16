@@ -29,11 +29,7 @@ const factConfig: CRMEntityConfig<
     placeholder: "Search facts...",
   },
   settings: {
-    entity: {
-      helper: "type=fact",
-    },
     template: {
-      helper: "Template for new fact notes.",
       default: template,
     },
   },

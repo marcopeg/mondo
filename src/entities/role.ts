@@ -13,11 +13,7 @@ const roleConfig: CRMEntityConfig<
     placeholder: "Search roles...",
   },
   settings: {
-    entity: {
-      helper: "type=role",
-    },
     template: {
-      helper: "Template for new roles notes.",
       default: DEFAULT_TEMPLATE,
     },
   },

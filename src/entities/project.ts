@@ -22,11 +22,7 @@ const projectConfig: CRMEntityConfig<
     placeholder: "Search projects...",
   },
   settings: {
-    entity: {
-      helper: "type=project",
-    },
     template: {
-      helper: "Template for new projects notes.",
       default: template,
     },
   },

@@ -3,11 +3,8 @@ export interface CRMEntityDashboardConfig {
 }
 
 export interface CRMEntitySettingsConfig {
-  entity: {
-    helper: string;
-  };
+  entity?: Record<string, never>;
   template: {
-    helper: string;
     default: string;
   };
 }

@@ -406,8 +406,6 @@ export class CRMSettingsTab extends PluginSettingTab {
       return {
         type,
         label: config?.name ?? type,
-        entityHelper: config?.settings.entity.helper ?? "",
-        templateHelper: config?.settings.template.helper ?? "",
       };
     });
 
@@ -429,7 +427,9 @@ export class CRMSettingsTab extends PluginSettingTab {
           } catch (error) {
             search.inputEl.value = value;
             search.inputEl.dispatchEvent(new Event("input", { bubbles: true }));
-            search.inputEl.dispatchEvent(new Event("change", { bubbles: true }));
+            search.inputEl.dispatchEvent(
+              new Event("change", { bubbles: true })
+            );
           }
         };
 
@@ -588,12 +588,7 @@ export class CRMSettingsTab extends PluginSettingTab {
       }
     });
 
-    for (const {
-      label,
-      type,
-      entityHelper,
-      templateHelper,
-    } of entityDefinitions) {
+    for (const { label, type } of entityDefinitions) {
       const section = entitiesContent.createDiv("crm-settings-entity-section");
       const sectionHeading = new Setting(section).setName(label).setHeading();
       sectionHeading.settingEl.addClass("crm-settings-entity-section-heading");
@@ -602,8 +597,8 @@ export class CRMSettingsTab extends PluginSettingTab {
 
       addFolderSetting(
         fields,
-        "Default folder",
-        entityHelper || `type=${type}`,
+        "Documents Store",
+        "Pick a folder in which to store all the documents for this entity",
         () => (this.plugin as any).settings.rootPaths[type],
         async (v) => {
           (this.plugin as any).settings.rootPaths[type] = v || "/";
@@ -622,8 +617,8 @@ export class CRMSettingsTab extends PluginSettingTab {
           raw.includes("\n") || raw.includes("{{") || raw.includes("---")
             ? raw
             : raw.trim();
-        const current =
-          ((this.plugin as any).settings.templates?.[type] ?? "") as string;
+        const current = ((this.plugin as any).settings.templates?.[type] ??
+          "") as string;
 
         if (current === normalized) {
           return;
@@ -644,10 +639,8 @@ export class CRMSettingsTab extends PluginSettingTab {
       };
 
       new Setting(fields)
-        .setName("Template")
-        .setDesc(
-          templateHelper || `Template for new ${label.toLowerCase()} notes.`
-        )
+        .setName("Custom Template")
+        .setDesc("Pick a note to copy over whenever creating a new entity")
         .addSearch((search) => {
           const showPicker = () => {
             const modal = new TemplatePickerModal(this.app, async (file) => {

@@ -31,11 +31,7 @@ const meetingConfig: CRMEntityConfig<
     placeholder: "Search meetings...",
   },
   settings: {
-    entity: {
-      helper: "type=meeting",
-    },
     template: {
-      helper: "Template for new meetings notes.",
       default: template,
     },
   },

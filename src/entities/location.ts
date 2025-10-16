@@ -9,11 +9,7 @@ const locationConfig: CRMEntityConfig<"location"> = {
     placeholder: "Search locations...",
   },
   settings: {
-    entity: {
-      helper: "type=location",
-    },
     template: {
-      helper: "Template for new locations notes.",
       default: DEFAULT_TEMPLATE,
     },
   },

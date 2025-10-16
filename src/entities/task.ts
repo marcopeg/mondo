@@ -16,11 +16,7 @@ const taskConfig: CRMEntityConfig<"task"> = {
     placeholder: "Search tasks...",
   },
   settings: {
-    entity: {
-      helper: "type=task",
-    },
     template: {
-      helper: "Template for new task notes.",
       default: template,
     },
   },
