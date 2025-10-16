@@ -3,6 +3,7 @@ import {
   Setting,
   App,
   TFolder,
+  TFile,
   AbstractInputSuggest,
   Notice,
   type ExtraButtonComponent,
@@ -105,6 +106,84 @@ export class CRMSettingsTab extends PluginSettingTab {
           (this as any).close();
         } catch (e) {
           // ignore
+        }
+      }
+    }
+
+    class MarkdownFileSuggest extends AbstractInputSuggest<TFile> {
+      private readonly onPick?: (file: TFile) => void | Promise<void>;
+
+      constructor(
+        app: App,
+        inputEl: HTMLInputElement,
+        onPick?: (file: TFile) => void | Promise<void>
+      ) {
+        super(app, inputEl);
+        this.onPick = onPick;
+      }
+
+      getSuggestions(query: string): TFile[] {
+        const files = this.app.vault.getMarkdownFiles();
+        if (!query) {
+          return files.slice(0, 50);
+        }
+
+        const normalized = query.toLowerCase();
+        return files.filter((file) =>
+          file.path.toLowerCase().includes(normalized)
+        );
+      }
+
+      renderSuggestion(file: TFile, el: HTMLElement) {
+        el.setText(file.path);
+      }
+
+      selectSuggestion(file: TFile) {
+        if (this.onPick) {
+          try {
+            void this.onPick(file);
+          } catch (error) {
+            // ignore persistence issues triggered during suggestion pick
+          }
+        } else {
+          const input = (this as any).inputEl as HTMLInputElement | undefined;
+          if (input) {
+            input.value = file.path;
+            input.dispatchEvent(new Event("input", { bubbles: true }));
+            input.dispatchEvent(new Event("change", { bubbles: true }));
+          }
+        }
+
+        try {
+          (this as any).close();
+        } catch (error) {
+          // ignore inability to close suggest UI
+        }
+      }
+    }
+
+    class TemplatePickerModal extends FuzzySuggestModal<TFile> {
+      private readonly onSelect: (file: TFile) => void | Promise<void>;
+
+      constructor(app: App, onSelect: (file: TFile) => void | Promise<void>) {
+        super(app);
+        this.onSelect = onSelect;
+        this.setPlaceholder("Select a template note");
+      }
+
+      getItems(): TFile[] {
+        return this.app.vault.getMarkdownFiles();
+      }
+
+      getItemText(file: TFile): string {
+        return file.path;
+      }
+
+      onChooseItem(file: TFile, _evt?: MouseEvent | KeyboardEvent) {
+        try {
+          void this.onSelect(file);
+        } catch (error) {
+          // ignore persistence errors raised by selection handler
         }
       }
     }
@@ -533,24 +612,213 @@ export class CRMSettingsTab extends PluginSettingTab {
         }
       );
 
-      new Setting(fields)
+      const getStoredTemplatePath = (): string =>
+        ((this.plugin as any).settings.templates?.[type] ?? "") as string;
+
+      const persistTemplatePath = async (raw: string) => {
+        (this.plugin as any).settings.templates =
+          (this.plugin as any).settings.templates || {};
+
+        const normalized =
+          raw.includes("\n") || raw.includes("{{") || raw.includes("---")
+            ? raw
+            : raw.trim();
+        const current =
+          ((this.plugin as any).settings.templates?.[type] ?? "") as string;
+
+        if (current === normalized) {
+          return;
+        }
+
+        (this.plugin as any).settings.templates[type] = normalized;
+        await (this.plugin as any).saveSettings();
+      };
+
+      let syncTemplateInput = false;
+      let applyTemplateInput: ((value: string) => void) | null = null;
+
+      const updateTemplatePath = async (value: string) => {
+        await persistTemplatePath(value);
+        if (applyTemplateInput) {
+          applyTemplateInput(value);
+        }
+      };
+
+      const templateSetting = new Setting(fields)
         .setName("Template")
         .setDesc(
           templateHelper || `Template for new ${label.toLowerCase()} notes.`
         )
-        .addTextArea((textarea) => {
-          textarea
-            .setPlaceholder(CRM_DEFAULT_TEMPLATES[type])
-            .setValue((this.plugin as any).settings.templates?.[type] ?? "")
-            .onChange(async (value) => {
-              (this.plugin as any).settings.templates =
-                (this.plugin as any).settings.templates || {};
-              (this.plugin as any).settings.templates[type] = value;
-              await (this.plugin as any).saveSettings();
+        .addSearch((search) => {
+          const showPicker = () => {
+            const modal = new TemplatePickerModal(this.app, async (file) => {
+              await updateTemplatePath(file.path);
             });
 
-          textarea.inputEl.rows = 6;
-          textarea.inputEl.addClass("crm-settings-template");
+            modal.open();
+          };
+
+          search
+            .setPlaceholder("Select a template note…")
+            .setValue(getStoredTemplatePath())
+            .onChange(async (value) => {
+              if (syncTemplateInput) {
+                return;
+              }
+
+              await persistTemplatePath(value);
+            });
+
+          applyTemplateInput = (value: string) => {
+            syncTemplateInput = true;
+            try {
+              search.setValue(value);
+            } catch (error) {
+              search.inputEl.value = value;
+              search.inputEl.dispatchEvent(
+                new Event("input", { bubbles: true })
+              );
+              search.inputEl.dispatchEvent(
+                new Event("change", { bubbles: true })
+              );
+            } finally {
+              syncTemplateInput = false;
+            }
+          };
+
+          const buttonEl = (search as any).buttonEl as
+            | HTMLButtonElement
+            | undefined;
+
+          if (buttonEl) {
+            buttonEl.setAttribute("aria-label", "Browse template notes");
+            buttonEl.addEventListener("click", (event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              showPicker();
+            });
+          }
+
+          try {
+            const suggester = new MarkdownFileSuggest(
+              this.app,
+              search.inputEl as HTMLInputElement,
+              async (file) => {
+                await updateTemplatePath(file.path);
+              }
+            );
+            (this as any)._suggesters = (this as any)._suggesters || [];
+            (this as any)._suggesters.push(suggester);
+          } catch (error) {
+            // ignore suggest attachment issues
+          }
+        });
+
+      const getTemplateFolder = () => "CRM Templates";
+
+      const sanitizeTemplateFileName = (value: string) =>
+        value.replace(/[\\/:*?"<>|]+/g, "-");
+
+      const openTemplateNote = async () => {
+        const path = getStoredTemplatePath();
+        if (!path) {
+          new Notice("Select a template note first.");
+          return;
+        }
+
+        const abstract = this.app.vault.getAbstractFileByPath(path);
+        if (!(abstract instanceof TFile)) {
+          new Notice("Template note not found.");
+          return;
+        }
+
+        const leaf = this.app.workspace.getLeaf(false) ??
+          this.app.workspace.getLeaf(true);
+        if (leaf && typeof (leaf as any).openFile === "function") {
+          await (leaf as any).openFile(abstract);
+        }
+      };
+
+      const createTemplateNote = async () => {
+        const folderPath = getTemplateFolder();
+        const folderAbstract =
+          this.app.vault.getAbstractFileByPath(folderPath);
+
+        if (folderAbstract && !(folderAbstract instanceof TFolder)) {
+          throw new Error(
+            `CRM template folder path "${folderPath}" is already a file.`
+          );
+        }
+
+        if (!folderAbstract) {
+          try {
+            await this.app.vault.createFolder(folderPath);
+          } catch (error) {
+            if (
+              !(error instanceof Error) ||
+              !/exist/i.test(error.message || "")
+            ) {
+              throw error;
+            }
+          }
+        }
+
+        const baseName = `${label} Template.md`;
+        const safeBase = sanitizeTemplateFileName(baseName);
+        const baseWithoutExt = safeBase.replace(/\.md$/i, "");
+
+        let attempt = 0;
+        let targetPath = `${folderPath}/${safeBase}`;
+        while (this.app.vault.getAbstractFileByPath(targetPath)) {
+          attempt += 1;
+          targetPath = `${folderPath}/${baseWithoutExt} ${attempt}.md`;
+        }
+
+        const content = CRM_DEFAULT_TEMPLATES[type] ?? "";
+        const file = await this.app.vault.create(targetPath, content);
+        await updateTemplatePath(file.path);
+
+        const leaf = this.app.workspace.getLeaf(true);
+        if (leaf && typeof (leaf as any).openFile === "function") {
+          await (leaf as any).openFile(file);
+        }
+
+        new Notice(`Created ${label.toLowerCase()} template note.`);
+      };
+
+      const resetTemplateSelection = async () => {
+        await updateTemplatePath("");
+        new Notice(`Reverted to default ${label.toLowerCase()} template.`);
+      };
+
+      templateSetting
+        .addExtraButton((button) => {
+          button.setIcon("pencil");
+          button.setTooltip("Open template note");
+          button.onClick(() => {
+            void openTemplateNote();
+          });
+        })
+        .addExtraButton((button) => {
+          button.setIcon("plus");
+          button.setTooltip("Create template note from default");
+          button.onClick(() => {
+            void (async () => {
+              try {
+                await createTemplateNote();
+              } catch (error) {
+                console.error("CRM: failed to create template note", error);
+                new Notice("Unable to create template note.");
+              }
+            })();
+          });
+        })
+        .addExtraButton((button) => {
+          button.setIcon("rotate-ccw");
+          button.setTooltip("Use default template");
+          button.onClick(() => {
+            void resetTemplateSelection();
+          });
         });
 
       if (type === CRMFileType.PERSON) {

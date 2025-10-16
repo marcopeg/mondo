@@ -479,7 +479,11 @@ export const useInboxTasks = () => {
           counter += 1;
         }
 
-        const templateSource = getTemplateForType(templates, targetType);
+        const templateSource = await getTemplateForType(
+          app,
+          templates,
+          targetType
+        );
 
         const now = new Date();
         const iso = now.toISOString();

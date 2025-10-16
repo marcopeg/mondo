@@ -200,7 +200,8 @@ export const createMeetingForEntity = async ({
   let meetingFile = app.vault.getAbstractFileByPath(filePath) as TFile | null;
 
   if (!meetingFile) {
-    const templateSource = getTemplateForType(
+    const templateSource = await getTemplateForType(
+      app,
       settings.templates,
       CRMFileType.MEETING
     );
