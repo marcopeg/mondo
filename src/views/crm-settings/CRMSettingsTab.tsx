@@ -16,7 +16,6 @@ import {
   CRM_FILE_TYPES,
   getCRMEntityConfig,
 } from "@/types/CRMFileType";
-import { CRM_DEFAULT_TEMPLATES } from "@/templates";
 
 // Settings tab for CRM plugin
 export class CRMSettingsTab extends PluginSettingTab {
@@ -644,7 +643,7 @@ export class CRMSettingsTab extends PluginSettingTab {
         }
       };
 
-      const templateSetting = new Setting(fields)
+      new Setting(fields)
         .setName("Template")
         .setDesc(
           templateHelper || `Template for new ${label.toLowerCase()} notes.`
@@ -712,113 +711,6 @@ export class CRMSettingsTab extends PluginSettingTab {
           } catch (error) {
             // ignore suggest attachment issues
           }
-        });
-
-      const getTemplateFolder = () => "CRM Templates";
-
-      const sanitizeTemplateFileName = (value: string) =>
-        value.replace(/[\\/:*?"<>|]+/g, "-");
-
-      const openTemplateNote = async () => {
-        const path = getStoredTemplatePath();
-        if (!path) {
-          new Notice("Select a template note first.");
-          return;
-        }
-
-        const abstract = this.app.vault.getAbstractFileByPath(path);
-        if (!(abstract instanceof TFile)) {
-          new Notice("Template note not found.");
-          return;
-        }
-
-        const leaf = this.app.workspace.getLeaf(false) ??
-          this.app.workspace.getLeaf(true);
-        if (leaf && typeof (leaf as any).openFile === "function") {
-          await (leaf as any).openFile(abstract);
-        }
-      };
-
-      const createTemplateNote = async () => {
-        const folderPath = getTemplateFolder();
-        const folderAbstract =
-          this.app.vault.getAbstractFileByPath(folderPath);
-
-        if (folderAbstract && !(folderAbstract instanceof TFolder)) {
-          throw new Error(
-            `CRM template folder path "${folderPath}" is already a file.`
-          );
-        }
-
-        if (!folderAbstract) {
-          try {
-            await this.app.vault.createFolder(folderPath);
-          } catch (error) {
-            if (
-              !(error instanceof Error) ||
-              !/exist/i.test(error.message || "")
-            ) {
-              throw error;
-            }
-          }
-        }
-
-        const baseName = `${label} Template.md`;
-        const safeBase = sanitizeTemplateFileName(baseName);
-        const baseWithoutExt = safeBase.replace(/\.md$/i, "");
-
-        let attempt = 0;
-        let targetPath = `${folderPath}/${safeBase}`;
-        while (this.app.vault.getAbstractFileByPath(targetPath)) {
-          attempt += 1;
-          targetPath = `${folderPath}/${baseWithoutExt} ${attempt}.md`;
-        }
-
-        const content = CRM_DEFAULT_TEMPLATES[type] ?? "";
-        const file = await this.app.vault.create(targetPath, content);
-        await updateTemplatePath(file.path);
-
-        const leaf = this.app.workspace.getLeaf(true);
-        if (leaf && typeof (leaf as any).openFile === "function") {
-          await (leaf as any).openFile(file);
-        }
-
-        new Notice(`Created ${label.toLowerCase()} template note.`);
-      };
-
-      const resetTemplateSelection = async () => {
-        await updateTemplatePath("");
-        new Notice(`Reverted to default ${label.toLowerCase()} template.`);
-      };
-
-      templateSetting
-        .addExtraButton((button) => {
-          button.setIcon("pencil");
-          button.setTooltip("Open template note");
-          button.onClick(() => {
-            void openTemplateNote();
-          });
-        })
-        .addExtraButton((button) => {
-          button.setIcon("plus");
-          button.setTooltip("Create template note from default");
-          button.onClick(() => {
-            void (async () => {
-              try {
-                await createTemplateNote();
-              } catch (error) {
-                console.error("CRM: failed to create template note", error);
-                new Notice("Unable to create template note.");
-              }
-            })();
-          });
-        })
-        .addExtraButton((button) => {
-          button.setIcon("rotate-ccw");
-          button.setTooltip("Use default template");
-          button.onClick(() => {
-            void resetTemplateSelection();
-          });
         });
 
       if (type === CRMFileType.PERSON) {
