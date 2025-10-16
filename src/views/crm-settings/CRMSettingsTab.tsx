@@ -450,71 +450,80 @@ export class CRMSettingsTab extends PluginSettingTab {
       });
     };
 
+    const entitiesGroup = containerEl.createDiv(
+      "crm-settings-entities-collapsible"
+    );
+    entitiesGroup.addClass("is-collapsed");
+
+    const entitiesHeading = new Setting(entitiesGroup)
+      .setName("Configure Entitites")
+      .setHeading();
+    entitiesHeading.settingEl.addClass("crm-settings-entities-heading");
+    entitiesHeading.settingEl.setAttribute("role", "button");
+    entitiesHeading.settingEl.setAttribute("tabindex", "0");
+
+    const entitiesContent = entitiesGroup.createDiv(
+      "crm-settings-entities-collapsible-content"
+    );
+    const entitiesContentId = "crm-settings-entities-content";
+    entitiesContent.setAttribute("id", entitiesContentId);
+    entitiesHeading.settingEl.setAttribute("aria-controls", entitiesContentId);
+    entitiesHeading.settingEl.setAttribute("aria-expanded", "false");
+
+    const toggleEntities = (force?: boolean) => {
+      const shouldOpen =
+        typeof force === "boolean"
+          ? force
+          : entitiesGroup.hasClass("is-collapsed");
+      if (shouldOpen) {
+        entitiesGroup.removeClass("is-collapsed");
+        entitiesHeading.settingEl.setAttribute("aria-expanded", "true");
+      } else {
+        entitiesGroup.addClass("is-collapsed");
+        entitiesHeading.settingEl.setAttribute("aria-expanded", "false");
+      }
+    };
+
+    entitiesHeading.settingEl.addEventListener("click", () => {
+      toggleEntities();
+    });
+    entitiesHeading.settingEl.addEventListener("keydown", (event) => {
+      if (event.defaultPrevented) {
+        return;
+      }
+
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        toggleEntities();
+        return;
+      }
+
+      if (event.key === "ArrowRight") {
+        event.preventDefault();
+        toggleEntities(true);
+        return;
+      }
+
+      if (event.key === "ArrowLeft") {
+        event.preventDefault();
+        toggleEntities(false);
+      }
+    });
+
     for (const {
       label,
       type,
       entityHelper,
       templateHelper,
     } of entityDefinitions) {
-      const group = containerEl.createDiv("crm-settings-entity-group");
-      group.addClass("is-collapsed");
+      const section = entitiesContent.createDiv("crm-settings-entity-section");
+      const sectionHeading = new Setting(section).setName(label).setHeading();
+      sectionHeading.settingEl.addClass("crm-settings-entity-section-heading");
 
-      const headingSetting = new Setting(group)
-        .setName(label)
-        .setHeading();
-      headingSetting.settingEl.addClass("crm-settings-entity-heading");
-      headingSetting.settingEl.setAttribute("role", "button");
-      headingSetting.settingEl.setAttribute("tabindex", "0");
-
-      const groupContent = group.createDiv("crm-settings-entity-group-content");
-
-      const contentId = `crm-settings-entity-${type}-content`;
-      groupContent.setAttribute("id", contentId);
-      headingSetting.settingEl.setAttribute("aria-controls", contentId);
-      headingSetting.settingEl.setAttribute("aria-expanded", "false");
-
-      const toggleGroup = (force?: boolean) => {
-        const shouldOpen =
-          typeof force === "boolean"
-            ? force
-            : group.hasClass("is-collapsed");
-        if (shouldOpen) {
-          group.removeClass("is-collapsed");
-          headingSetting.settingEl.setAttribute("aria-expanded", "true");
-        } else {
-          group.addClass("is-collapsed");
-          headingSetting.settingEl.setAttribute("aria-expanded", "false");
-        }
-      };
-
-      headingSetting.settingEl.addEventListener("click", () => {
-        toggleGroup();
-      });
-      headingSetting.settingEl.addEventListener("keydown", (event) => {
-        if (event.defaultPrevented) {
-          return;
-        }
-
-        if (event.key === "Enter" || event.key === " ") {
-          event.preventDefault();
-          toggleGroup();
-          return;
-        }
-
-        if (event.key === "ArrowRight") {
-          event.preventDefault();
-          toggleGroup(true);
-          return;
-        }
-
-        if (event.key === "ArrowLeft") {
-          event.preventDefault();
-          toggleGroup(false);
-        }
-      });
+      const fields = section.createDiv("crm-settings-entity-fields");
 
       addFolderSetting(
-        groupContent,
+        fields,
         "Default folder",
         entityHelper || `type=${type}`,
         () => (this.plugin as any).settings.rootPaths[type],
@@ -524,7 +533,7 @@ export class CRMSettingsTab extends PluginSettingTab {
         }
       );
 
-      new Setting(groupContent)
+      new Setting(fields)
         .setName("Template")
         .setDesc(
           templateHelper || `Template for new ${label.toLowerCase()} notes.`
@@ -545,7 +554,7 @@ export class CRMSettingsTab extends PluginSettingTab {
         });
 
       if (type === CRMFileType.PERSON) {
-        addSelfPersonSetting(groupContent);
+        addSelfPersonSetting(fields);
       }
     }
 
