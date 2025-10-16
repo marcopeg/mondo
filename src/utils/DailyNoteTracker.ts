@@ -2,6 +2,12 @@ import type CRM from "@/main";
 import type { App, CachedMetadata, TAbstractFile } from "obsidian";
 import { TFile } from "obsidian";
 
+const isAlreadyExistsError = (
+  error: unknown,
+  target: "folder" | "file"
+): boolean =>
+  error instanceof Error && error.message.includes(`${target} already exists`);
+
 const normalizeFolder = (value: string | null | undefined): string => {
   if (!value) {
     return "";
@@ -293,6 +299,9 @@ export class DailyNoteTracker {
     try {
       await this.app.vault.createFolder(folder);
     } catch (error) {
+      if (isAlreadyExistsError(error, "folder")) {
+        return;
+      }
       console.error("DailyNoteTracker: failed to create folder", error);
     }
   };
@@ -335,6 +344,14 @@ export class DailyNoteTracker {
       }
       return null;
     } catch (error) {
+      if (isAlreadyExistsError(error, "file")) {
+        const existingFile = this.app.vault.getAbstractFileByPath(path);
+        if (existingFile instanceof TFile) {
+          this.dailyNoteCache.set(dateKey, existingFile.path);
+          return existingFile;
+        }
+        return null;
+      }
       console.error("DailyNoteTracker: failed to create daily note", error);
       return null;
     } finally {
