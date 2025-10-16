@@ -2,7 +2,6 @@ import type { CRMEntityConfig } from "@/types/CRMEntityConfig";
 
 const template = `---
 type: team
-show: "{{title}}"
 company:
 area:
 ---

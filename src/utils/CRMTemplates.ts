@@ -165,7 +165,7 @@ export const renderTemplate = (
   const { fm, body } = extractFrontmatter(templateWithFence);
   const cleanFrontmatter = sanitizeFrontmatter(fm);
 
-  const header = ["---", `type: {{type}}`, `show: {{title}}`]
+  const header = ["---", `type: {{type}}`]
     .concat(cleanFrontmatter ? [cleanFrontmatter] : [])
     .concat("---")
     .join("\n");
@@ -194,11 +194,7 @@ export const renderTemplate = (
   const { fm: renderedFm, body: renderedBody } = extractFrontmatter(output);
   const finalFrontmatter = sanitizeFrontmatter(renderedFm);
 
-  const headerLines = [
-    "---",
-    `type: ${context.type}`,
-    `show: ${JSON.stringify(context.title ?? "")}`,
-  ];
+  const headerLines = ["---", `type: ${context.type}`];
 
   if (finalFrontmatter) {
     headerLines.push(...finalFrontmatter.split(/\r?\n/));

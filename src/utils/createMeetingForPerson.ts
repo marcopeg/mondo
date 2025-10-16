@@ -3,6 +3,7 @@ import type { TCachedFile } from "@/types/TCachedFile";
 import { getEntityDisplayName } from "@/utils/getEntityDisplayName";
 import { getTemplateForType, renderTemplate } from "@/utils/CRMTemplates";
 import { getCRMPlugin } from "@/utils/getCRMPlugin";
+import { normalizeFolderPath } from "@/utils/normalizeFolderPath";
 import type { App, TFile } from "obsidian";
 
 const slugify = (value: string): string =>
@@ -13,19 +14,6 @@ const slugify = (value: string): string =>
     .replace(/[\u0300-\u036f]/g, "")
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");
-
-const sanitizeFolder = (rawPath: string | undefined): string => {
-  if (!rawPath) {
-    return "";
-  }
-
-  const trimmed = rawPath.trim();
-  if (!trimmed || trimmed === "/") {
-    return "";
-  }
-
-  return trimmed.replace(/^\/+/, "").replace(/\/+$/, "");
-};
 
 export type MeetingLinkTarget = {
   property: string;
@@ -178,7 +166,7 @@ export const createMeetingForEntity = async ({
 
   const displayName = getEntityDisplayName(entityFile);
   const rootPathSetting = settings.rootPaths?.[CRMFileType.MEETING] ?? "/";
-  const normalizedFolder = sanitizeFolder(rootPathSetting);
+  const normalizedFolder = normalizeFolderPath(rootPathSetting);
 
   if (normalizedFolder) {
     const existingFolder = app.vault.getAbstractFileByPath(normalizedFolder);

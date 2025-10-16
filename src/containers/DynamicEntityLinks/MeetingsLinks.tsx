@@ -1,5 +1,7 @@
 import { useCallback, useMemo } from "react";
 import { Card } from "@/components/ui/Card";
+import Badge from "@/components/ui/Badge";
+import Button from "@/components/ui/Button";
 import MeetingsTable from "@/components/MeetingsTable";
 import { useFiles } from "@/hooks/use-files";
 import { CRMFileType } from "@/types/CRMFileType";
@@ -134,14 +136,35 @@ export const MeetingsLinks = ({ file, config }: MeetingsLinksProps) => {
     })();
   }, [app, entityType, file, linkTargets]);
 
-  const actions = linkTargets.length > 0
-    ? [
-        {
-          icon: "plus",
-          onClick: handleAddMeeting,
-        },
-      ]
-    : undefined;
+  const meetingCount = meetings.length;
+  const actions = [
+    {
+      key: "meeting-count",
+      content: (
+        <Badge
+          aria-label={`${meetingCount} meeting${meetingCount === 1 ? "" : "s"}`}
+        >
+          {meetingCount}
+        </Badge>
+      ),
+    },
+  ];
+
+  if (linkTargets.length > 0) {
+    actions.push({
+      key: "meeting-create",
+      content: (
+        <Button
+          variant="link"
+          icon="plus"
+          onClick={handleAddMeeting}
+          disabled={!file?.file}
+        >
+          + New Meeting
+        </Button>
+      ),
+    });
+  }
 
   const hasMeetings = meetings.length > 0;
 
