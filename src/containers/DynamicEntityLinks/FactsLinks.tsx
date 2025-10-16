@@ -199,6 +199,8 @@ export const FactsLinks = ({ file, config }: FactsLinksProps) => {
     },
   ];
 
+  const hasFacts = sortedFacts.length > 0;
+
   return (
     <Card
       collapsible
@@ -207,8 +209,9 @@ export const FactsLinks = ({ file, config }: FactsLinksProps) => {
       title="Facts"
       subtitle={subtitle}
       actions={actions}
+      {...(!hasFacts ? { p: 0 } : {})}
     >
-      {sortedFacts.length > 0 ? (
+      {hasFacts ? (
         <Stack direction="column" gap={2}>
           {sortedFacts.map((fact) => {
             const factFile = fact.file;
@@ -241,9 +244,7 @@ export const FactsLinks = ({ file, config }: FactsLinksProps) => {
             );
           })}
         </Stack>
-      ) : (
-        <p style={{ color: "var(--text-muted)" }}>No facts yet.</p>
-      )}
+      ) : null}
     </Card>
   );
 };
