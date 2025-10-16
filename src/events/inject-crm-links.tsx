@@ -4,6 +4,7 @@ import { Plugin, WorkspaceLeaf, MarkdownView, TFile } from "obsidian";
 import { AppProvider } from "@/context/AppProvider";
 import { EntityFileProvider } from "@/context/EntityFileProvider";
 import { EntityLinks } from "@/containers/DynamicEntityLinks";
+import DailyNoteLinks from "@/containers/DailyNoteLinks";
 import { isCRMFileType } from "@/types/CRMFileType";
 import type { TCachedFile } from "@/types/TCachedFile";
 import { getLeafFilePath } from "./inject-journal-nav";
@@ -78,7 +79,51 @@ const createInjectionNode = (path: string) => {
   return wrapper;
 };
 
-const renderReact = (mount: HTMLElement, plugin: Plugin, path: string) => {
+const normalizeFolder = (value: string | null | undefined): string => {
+  if (!value || value === "/") {
+    return "";
+  }
+  return value.replace(/^\/+|\/+$/g, "");
+};
+
+const isInFolder = (path: string, folder: string): boolean => {
+  if (!folder) {
+    return true;
+  }
+  return path === folder || path.startsWith(`${folder}/`);
+};
+
+type RendererComponent = React.ComponentType;
+
+const resolveRenderer = (
+  type: string | null,
+  path: string,
+  plugin: Plugin
+): RendererComponent | null => {
+  if (!type) {
+    return null;
+  }
+
+  if (isCRMFileType(type)) {
+    return EntityLinks;
+  }
+
+  if (type === "log") {
+    const inbox = normalizeFolder((plugin as any).settings?.inbox ?? "Inbox");
+    if (isInFolder(path, inbox)) {
+      return DailyNoteLinks;
+    }
+  }
+
+  return null;
+};
+
+const renderReact = (
+  mount: HTMLElement,
+  plugin: Plugin,
+  path: string,
+  Renderer: RendererComponent
+) => {
   let root = (mount as any)[REACT_ROOT] as Root | undefined;
   if (!root) {
     root = createRoot(mount);
@@ -89,7 +134,7 @@ const renderReact = (mount: HTMLElement, plugin: Plugin, path: string) => {
     <React.StrictMode>
       <AppProvider app={plugin.app}>
         <EntityFileProvider path={path}>
-          <EntityLinks />
+          <Renderer />
         </EntityFileProvider>
       </AppProvider>
     </React.StrictMode>
@@ -128,7 +173,8 @@ const ensureInjectionForLeaf = (
   }
 
   const type = getFrontmatterType(path, plugin);
-  if (!type || !isCRMFileType(String(type))) {
+  const Renderer = resolveRenderer(type, path, plugin);
+  if (!Renderer) {
     if (existing) {
       unmountAndRemove(existing.node);
       injections.delete(leafId);
@@ -177,7 +223,7 @@ const ensureInjectionForLeaf = (
     ".crm-injected-hello-root"
   ) as HTMLElement | null;
   if (mount) {
-    renderReact(mount, plugin, path);
+    renderReact(mount, plugin, path, Renderer);
   }
 };
 
