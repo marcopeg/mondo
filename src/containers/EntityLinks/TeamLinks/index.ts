@@ -1,1 +1,0 @@
-export { TeamLinks } from "./TeamLinks";

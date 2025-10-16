@@ -1,13 +1,11 @@
 import { InlineError } from "@/components/InlineError";
 import type { ComponentType } from "react";
-import { EntityLinks } from "@/containers/EntityLinks";
 import { JournalNav } from "@/containers/JournalNav";
 import HabitTracker from "@/containers/HabitTracker";
 
 type CRMInlineBlockProps = Record<string, string>;
 
 const blocksMap: Record<string, ComponentType<CRMInlineBlockProps>> = {
-  "entity-links": EntityLinks as ComponentType<CRMInlineBlockProps>,
   "journal-nav": JournalNav as ComponentType<CRMInlineBlockProps>,
   habits: HabitTracker as ComponentType<CRMInlineBlockProps>,
 };
@@ -50,25 +48,28 @@ const parseBlockSource = (
     ? parseInlineQuery(inlineQuery)
     : {};
 
-  const props = rest.reduce<CRMInlineBlockProps>((acc, line) => {
-    const colonIndex = line.indexOf(":");
-    const equalsIndex = line.indexOf("=");
-    const separatorIndex = colonIndex !== -1 ? colonIndex : equalsIndex;
-    if (separatorIndex === -1) {
+  const props = rest.reduce<CRMInlineBlockProps>(
+    (acc, line) => {
+      const colonIndex = line.indexOf(":");
+      const equalsIndex = line.indexOf("=");
+      const separatorIndex = colonIndex !== -1 ? colonIndex : equalsIndex;
+      if (separatorIndex === -1) {
+        return acc;
+      }
+
+      const key = line.slice(0, separatorIndex).trim();
+      const value = line.slice(separatorIndex + 1).trim();
+
+      if (key.length === 0) {
+        return acc;
+      }
+
+      acc[key] = value;
+
       return acc;
-    }
-
-    const key = line.slice(0, separatorIndex).trim();
-    const value = line.slice(separatorIndex + 1).trim();
-
-    if (key.length === 0) {
-      return acc;
-    }
-
-    acc[key] = value;
-
-    return acc;
-  }, { ...baseProps });
+    },
+    { ...baseProps }
+  );
 
   return { blockKey, props };
 };
@@ -78,7 +79,9 @@ export const CRMInlineView = ({ source }: { source: string }) => {
   const BlockComponent = blockKey ? blocksMap[blockKey] : undefined;
 
   if (!BlockComponent) {
-    return <InlineError message={`block not found: ${blockKey || "(empty)"}`} />;
+    return (
+      <InlineError message={`block not found: ${blockKey || "(empty)"}`} />
+    );
   }
 
   const { key: keyProp, ...restProps } = props;

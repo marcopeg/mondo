@@ -1,1 +1,0 @@
-export { PersonLinks } from "./PersonLinks";
