@@ -45,12 +45,19 @@ export const DynamicEntityLinks = () => {
     return null;
   }
 
-  const entityType = file.cache?.frontmatter?.type;
-  if (!entityType) {
+  const frontmatter = file.cache?.frontmatter;
+  if (!frontmatter) {
+    return null;
+  }
+
+  const rawEntityType = frontmatter?.type;
+  if (!rawEntityType) {
     return renderMissingConfigError(
       "current file is missing a frontmatter type"
     );
   }
+
+  const entityType = String(rawEntityType).trim().toLowerCase();
 
   if (!isCRMEntityType(entityType)) {
     return renderMissingConfigError(`unknown entity type "${entityType}"`);

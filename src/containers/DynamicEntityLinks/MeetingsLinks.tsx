@@ -143,6 +143,8 @@ export const MeetingsLinks = ({ file, config }: MeetingsLinksProps) => {
       ]
     : undefined;
 
+  const hasMeetings = meetings.length > 0;
+
   return (
     <Card
       collapsible
@@ -151,12 +153,9 @@ export const MeetingsLinks = ({ file, config }: MeetingsLinksProps) => {
       title="Meetings"
       subtitle={subtitle}
       actions={actions}
+      {...(!hasMeetings ? { p: 0 } : {})}
     >
-      {meetings.length > 0 ? (
-        <MeetingsTable items={meetings} />
-      ) : (
-        <p style={{ color: "var(--text-muted)" }}>No meetings yet.</p>
-      )}
+      {hasMeetings ? <MeetingsTable items={meetings} /> : null}
     </Card>
   );
 };
