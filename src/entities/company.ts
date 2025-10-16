@@ -19,7 +19,6 @@ const companyConfig: CRMEntityConfig<
   name: "Companies",
   icon: "building-2",
   dashboard: {
-    helper: "Open or create a new Company",
     placeholder: "Search companies...",
   },
   settings: {

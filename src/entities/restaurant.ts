@@ -13,7 +13,6 @@ const restaurantConfig: CRMEntityConfig<"restaurant"> = {
   name: "Restaurants",
   icon: "utensils",
   dashboard: {
-    helper: "Open or create a new Restaurant",
     placeholder: "Search restaurants...",
   },
   settings: {

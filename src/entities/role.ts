@@ -10,7 +10,6 @@ const roleConfig: CRMEntityConfig<
   name: "Roles",
   icon: "briefcase",
   dashboard: {
-    helper: "Open or create a new Role",
     placeholder: "Search roles...",
   },
   settings: {
@@ -25,10 +24,7 @@ const roleConfig: CRMEntityConfig<
   list: {
     columns: ["show"],
   },
-  links: [
-    { type: "role-people" },
-    { type: "role-tasks" },
-  ],
+  links: [{ type: "role-people" }, { type: "role-tasks" }],
 };
 
 export default roleConfig;

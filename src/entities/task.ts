@@ -13,7 +13,6 @@ const taskConfig: CRMEntityConfig<"task"> = {
   name: "Tasks",
   icon: "check-square",
   dashboard: {
-    helper: "Open or create a task",
     placeholder: "Search tasks...",
   },
   settings: {

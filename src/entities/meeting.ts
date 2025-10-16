@@ -28,7 +28,6 @@ const meetingConfig: CRMEntityConfig<
   name: "Meetings",
   icon: "calendar-clock",
   dashboard: {
-    helper: "Open or create a new Meeting",
     placeholder: "Search meetings...",
   },
   settings: {

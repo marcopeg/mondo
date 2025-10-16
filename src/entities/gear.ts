@@ -12,7 +12,6 @@ const gearConfig: CRMEntityConfig<"gear"> = {
   name: "Gear",
   icon: "settings",
   dashboard: {
-    helper: "Open or create new Gear",
     placeholder: "Search gear...",
   },
   settings: {

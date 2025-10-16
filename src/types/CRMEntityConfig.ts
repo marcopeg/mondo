@@ -1,5 +1,4 @@
 export interface CRMEntityDashboardConfig {
-  helper: string;
   placeholder?: string;
 }
 

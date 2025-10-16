@@ -18,7 +18,6 @@ const teamConfig: CRMEntityConfig<
   name: "Teams",
   icon: "users",
   dashboard: {
-    helper: "Open or create a new Team",
     placeholder: "Search teams...",
   },
   settings: {

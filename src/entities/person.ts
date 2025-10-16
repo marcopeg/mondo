@@ -22,7 +22,6 @@ const personConfig: CRMEntityConfig<
   icon: "user",
   aliases: ["people"],
   dashboard: {
-    helper: "Open or create a new Person",
     placeholder: "Search people...",
   },
   settings: {

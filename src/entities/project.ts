@@ -19,7 +19,6 @@ const projectConfig: CRMEntityConfig<
   name: "Projects",
   icon: "folder-git-2",
   dashboard: {
-    helper: "Open or create a new Project",
     placeholder: "Search projects...",
   },
   settings: {

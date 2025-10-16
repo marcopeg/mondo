@@ -18,12 +18,14 @@ prev:
 
 `;
 
-const factConfig: CRMEntityConfig<"fact", { type: "facts"; collapsed?: boolean }> = {
+const factConfig: CRMEntityConfig<
+  "fact",
+  { type: "facts"; collapsed?: boolean }
+> = {
   type: "fact",
   name: "Facts",
   icon: "bookmark",
   dashboard: {
-    helper: "Open or create a new Fact",
     placeholder: "Search facts...",
   },
   settings: {
