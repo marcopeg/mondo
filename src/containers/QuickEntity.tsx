@@ -14,6 +14,7 @@ import {
 } from "@/utils/CRMTemplates";
 import { addParticipantLink } from "@/utils/participants";
 import { resolveSelfPerson } from "@/utils/selfPerson";
+import { normalizeFolderPath } from "@/utils/normalizeFolderPath";
 
 interface QuickEntityProps {
   type: string; // e.g. "company" | "person" | "project"
@@ -64,10 +65,7 @@ export const QuickEntity = ({ type, placeholder }: QuickEntityProps) => {
         const folderSetting =
           (settings.rootPaths && settings.rootPaths[entityType]) || "/";
 
-        const normalizedFolder =
-          folderSetting === "/"
-            ? ""
-            : folderSetting.replace(/^\/+/, "").replace(/\/+$/, "");
+        const normalizedFolder = normalizeFolderPath(folderSetting);
 
         if (normalizedFolder !== "") {
           const existing = app.vault.getAbstractFileByPath(normalizedFolder);

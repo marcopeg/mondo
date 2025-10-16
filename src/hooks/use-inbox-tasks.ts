@@ -9,6 +9,7 @@ import { CRMFileType } from "@/types/CRMFileType";
 import { TFile } from "obsidian";
 import { addParticipantLink } from "@/utils/participants";
 import { resolveSelfPerson } from "@/utils/selfPerson";
+import { normalizeFolderPath } from "@/utils/normalizeFolderPath";
 import type {
   CachedMetadata,
   EventRef,
@@ -16,12 +17,8 @@ import type {
   ListItemCache,
 } from "obsidian";
 
-const normalizeFolder = (folder: string | undefined | null): string => {
-  if (!folder) {
-    return "";
-  }
-  return folder.replace(/^\/+|\/+$/g, "");
-};
+const normalizeFolder = (folder: string | undefined | null): string =>
+  normalizeFolderPath(folder ?? "");
 
 const isInFolder = (path: string, folder: string): boolean => {
   if (!folder) {
@@ -444,10 +441,7 @@ export const useInboxTasks = () => {
           {}) as Partial<Record<CRMFileType, string>>;
 
         const folderSetting = rootPaths[targetType] ?? "/";
-        const normalizedFolder =
-          folderSetting === "/"
-            ? ""
-            : folderSetting.replace(/^\/+/, "").replace(/\/+$/, "");
+        const normalizedFolder = normalizeFolderPath(folderSetting);
 
         if (normalizedFolder) {
           await ensureFolder(app, normalizedFolder);
@@ -500,8 +494,7 @@ export const useInboxTasks = () => {
         let content = renderTemplate(templateSource ?? "", data);
 
         if (!content.trim()) {
-          const safeTitle = titleBase.replace(/"/g, '\\"');
-          content = `---\ntype: ${targetType}\nshow: "${safeTitle}"\n---\n`;
+          content = `---\ntype: ${targetType}\n---\n`;
         }
 
         const body = (target.raw || target.text || "").trim();

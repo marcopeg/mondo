@@ -18,6 +18,7 @@ import {
   parseParticipants,
 } from "@/utils/participants";
 import { resolveSelfPerson } from "@/utils/selfPerson";
+import { normalizeFolderPath } from "@/utils/normalizeFolderPath";
 
 type ParticipantsAssignmentLinksProps = {
   config: Record<string, unknown>;
@@ -135,10 +136,7 @@ export const ParticipantsAssignmentLinks = ({
 
       const settings = pluginInstance.settings;
       const folderSetting = settings.rootPaths?.[CRMFileType.PERSON] ?? "/";
-      const normalizedFolder =
-        folderSetting === "/"
-          ? ""
-          : folderSetting.replace(/^\/+|\/+$/g, "").trim();
+      const normalizedFolder = normalizeFolderPath(folderSetting);
 
       if (normalizedFolder) {
         const existingFolder = app.vault.getAbstractFileByPath(normalizedFolder);

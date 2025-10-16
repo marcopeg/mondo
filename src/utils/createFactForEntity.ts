@@ -4,6 +4,7 @@ import { getEntityDisplayName } from "@/utils/getEntityDisplayName";
 import { getTemplateForType, renderTemplate } from "@/utils/CRMTemplates";
 import { getCRMPlugin } from "@/utils/getCRMPlugin";
 import type { App, TFile } from "obsidian";
+import { normalizeFolderPath } from "@/utils/normalizeFolderPath";
 
 const slugify = (value: string): string =>
   value
@@ -13,19 +14,6 @@ const slugify = (value: string): string =>
     .replace(/[\u0300-\u036f]/g, "")
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");
-
-const sanitizeFolder = (rawPath: string | undefined): string => {
-  if (!rawPath) {
-    return "";
-  }
-
-  const trimmed = rawPath.trim();
-  if (!trimmed || trimmed === "/") {
-    return "";
-  }
-
-  return trimmed.replace(/^\/+/, "").replace(/\/+$/, "");
-};
 
 const buildWikiLink = ({
   app,
@@ -80,7 +68,7 @@ export const createFactForEntity = async ({
 
   const displayName = getEntityDisplayName(entityFile);
   const rootPathSetting = settings.rootPaths?.[CRMFileType.FACT] ?? "/";
-  const normalizedFolder = sanitizeFolder(rootPathSetting);
+  const normalizedFolder = normalizeFolderPath(rootPathSetting);
 
   if (normalizedFolder) {
     const existingFolder = app.vault.getAbstractFileByPath(normalizedFolder);
