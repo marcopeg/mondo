@@ -180,7 +180,8 @@
   position: fixed;
   right: 0.8rem;
   bottom: 3rem;
-  z-index: var(--layer-tooltip, 400); /* keep below mobile side panels */
+  /* Keep above note content but below drawers, popovers, and other overlays. */
+  z-index: max(1, calc(var(--layer-sidebar, 200) - 1));
   pointer-events: none;
 }
 
