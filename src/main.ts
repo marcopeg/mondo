@@ -47,6 +47,7 @@ import {
   disposeCRMLinkInjections,
 } from "@/events/inject-crm-links";
 import { requestGeolocation } from "@/utils/geolocation";
+import DailyNoteTracker from "@/utils/DailyNoteTracker";
 
 // Dev purposes: set to true to always focus on dashboard on startup
 const focusOnDashboard = false;
@@ -80,6 +81,7 @@ export default class CRM extends Plugin {
   private voiceoverManager: VoiceoverManager | null = null;
   private noteDictationManager: NoteDictationManager | null = null;
   private pendingGeolocUpdates: Map<string, number> = new Map();
+  private dailyNoteTracker: DailyNoteTracker | null = null;
 
   private scheduleGeolocCapture = (path: string) => {
     if (this.pendingGeolocUpdates.has(path)) {
@@ -222,6 +224,8 @@ export default class CRM extends Plugin {
     this.noteDictationManager.initialize();
     this.noteDictationManager.activateMobileToolbar();
 
+    this.dailyNoteTracker = new DailyNoteTracker(this);
+
     this.app.workspace.onLayoutReady(() => {
       this.noteDictationManager?.activateMobileToolbar();
     });
@@ -239,6 +243,17 @@ export default class CRM extends Plugin {
         }
 
         this.scheduleGeolocCapture(abstract.path);
+        this.dailyNoteTracker?.handleFileCreated(abstract);
+      })
+    );
+
+    this.registerEvent(
+      this.app.vault.on("modify", (abstract) => {
+        if (!(abstract instanceof TFile) || abstract.extension !== "md") {
+          return;
+        }
+
+        this.dailyNoteTracker?.handleFileModified(abstract);
       })
     );
 
