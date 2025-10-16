@@ -244,6 +244,90 @@ const sanitizeFileName = (value: string): string =>
     .replace(/\s+/g, " ")
     .trim();
 
+const FRONTMATTER_BOUNDARY_REGEX = /^---\s*\r?\n([\s\S]*?)\r?\n---/;
+
+const ensureQuickTaskFrontmatter = (
+  content: string,
+  { website }: { website: string | null }
+): string => {
+  const match = content.match(FRONTMATTER_BOUNDARY_REGEX);
+  if (!match) {
+    return content;
+  }
+
+  const [fullMatch, frontmatterBody] = match;
+  const newline = fullMatch.includes("\r\n") ? "\r\n" : "\n";
+  const lines = frontmatterBody.split(/\r?\n/);
+  const updatedLines = [...lines];
+
+  let hasShowLine = false;
+  for (let index = 0; index < updatedLines.length; index += 1) {
+    if (/^\s*show\s*:/i.test(updatedLines[index])) {
+      updatedLines[index] = 'show: ""';
+      hasShowLine = true;
+    }
+  }
+
+  if (!hasShowLine) {
+    const typeIndex = updatedLines.findIndex((line) =>
+      /^\s*type\s*:/i.test(line)
+    );
+    const insertIndex = typeIndex >= 0 ? typeIndex + 1 : 0;
+    updatedLines.splice(insertIndex, 0, 'show: ""');
+  }
+
+  if (website) {
+    const websiteLine = `website: ${JSON.stringify(website)}`;
+    let hasWebsiteLine = false;
+    for (let index = 0; index < updatedLines.length; index += 1) {
+      if (/^\s*website\s*:/i.test(updatedLines[index])) {
+        updatedLines[index] = websiteLine;
+        hasWebsiteLine = true;
+        break;
+      }
+    }
+
+    if (!hasWebsiteLine) {
+      const showIndex = updatedLines.findIndex((line) =>
+        /^\s*show\s*:/i.test(line)
+      );
+      const insertIndex = showIndex >= 0 ? showIndex + 1 : updatedLines.length;
+      updatedLines.splice(insertIndex, 0, websiteLine);
+    }
+  }
+
+  const updatedFrontmatter = updatedLines.join(newline);
+  const replacement = `---${newline}${updatedFrontmatter}${newline}---`;
+  return content.replace(fullMatch, replacement);
+};
+
+const extractWebsiteFromTask = (raw: string): string | null => {
+  const trimmed = raw.trim();
+  if (!trimmed) {
+    return null;
+  }
+
+  const unwrapped =
+    trimmed.startsWith("<") && trimmed.endsWith(">")
+      ? trimmed.slice(1, -1).trim()
+      : trimmed;
+
+  if (/[\s\t\r\n]/.test(unwrapped)) {
+    return null;
+  }
+
+  try {
+    const parsed = new URL(unwrapped);
+    if (parsed.protocol === "http:" || parsed.protocol === "https:") {
+      return unwrapped;
+    }
+  } catch {
+    return null;
+  }
+
+  return null;
+};
+
 const ensureFolder = async (app: any, folderPath: string) => {
   if (!folderPath) return;
   const existing = app.vault.getAbstractFileByPath(folderPath);
@@ -454,6 +538,8 @@ export const useInboxTasks = () => {
         }
 
         const sourceText = target.text || target.raw || "";
+        const normalizedTask = sourceText.trim();
+        const website = extractWebsiteFromTask(normalizedTask);
         const titleBase =
           toTitleCase(sourceText).slice(0, 120) ||
           (targetType === "project" ? "New Project Task" : "New Task");
@@ -496,11 +582,12 @@ export const useInboxTasks = () => {
         let content = renderTemplate(templateSource ?? "", data);
 
         if (!content.trim()) {
-          const safeTitle = titleBase.replace(/"/g, '\\"');
-          content = `---\ntype: ${targetType}\nshow: "${safeTitle}"\n---\n`;
+          content = `---\ntype: ${targetType}\nshow: ""\n---\n`;
         }
 
-        const body = (target.raw || target.text || "").trim();
+        content = ensureQuickTaskFrontmatter(content, { website });
+
+        const body = normalizedTask;
         const templateBlock = content.endsWith("\n\n")
           ? content
           : `${content.trimEnd()}\n\n`;
