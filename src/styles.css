@@ -120,8 +120,9 @@
   color: var(--color-green, #2f9e44);
 }
 
+
 .crm-settings-entities-collapsible {
-  margin-bottom: 1rem;
+  margin-bottom: 1.5rem;
 }
 
 .crm-settings-entities-collapsible.is-collapsed
@@ -130,10 +131,8 @@
 }
 
 .crm-settings-entities-collapsible-content {
-  margin-left: 1.5rem;
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
+  margin: 0;
+  padding: 0;
 }
 
 .crm-settings-entities-heading {
@@ -166,21 +165,6 @@
 
 .crm-settings-entities-heading .setting-item-description {
   margin-left: 1.45rem;
-}
-
-.crm-settings-entity-section-heading {
-  margin-bottom: 0.5rem;
-}
-
-.crm-settings-entity-fields {
-  display: flex;
-  flex-direction: column;
-}
-
-.crm-settings-entity-fields > .setting-item {
-  margin: 0;
-  padding-top: 0 !important;
-  padding-bottom: 0 !important;
 }
 
 .crm-textfield__mic-icon {
