@@ -3,7 +3,6 @@ import type { TCachedFile } from "@/types/TCachedFile";
 import { getEntityDisplayName } from "@/utils/getEntityDisplayName";
 import { getTemplateForType, renderTemplate } from "@/utils/CRMTemplates";
 import { getCRMPlugin } from "@/utils/getCRMPlugin";
-import { requestGeolocation } from "@/utils/geolocation";
 import type { App, TFile } from "obsidian";
 
 const slugify = (value: string): string =>
@@ -130,13 +129,6 @@ export const createFactForEntity = async ({
     return null;
   }
 
-  let geoloc: unknown;
-  try {
-    geoloc = await requestGeolocation();
-  } catch (error) {
-    console.warn("createFactForEntity: failed to capture geolocation", error);
-  }
-
   const validTargets = linkTargets.filter(
     (target) => target?.target?.file && target.property
   );
@@ -145,10 +137,6 @@ export const createFactForEntity = async ({
     frontmatter.date = dateStamp;
     frontmatter.time = timeStamp;
     frontmatter.datetime = isoTimestamp;
-
-    if (geoloc) {
-      frontmatter.geoloc = geoloc;
-    }
 
     validTargets.forEach(({ property, mode, target }) => {
       const targetFile = target.file;
