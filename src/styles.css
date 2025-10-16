@@ -120,6 +120,53 @@
   color: var(--color-green, #2f9e44);
 }
 
+
+.crm-settings-entities-collapsible {
+  margin-bottom: 1.5rem;
+}
+
+.crm-settings-entities-collapsible.is-collapsed
+  .crm-settings-entities-collapsible-content {
+  display: none;
+}
+
+.crm-settings-entities-collapsible-content {
+  margin: 0;
+  padding: 0;
+}
+
+.crm-settings-entities-heading {
+  cursor: pointer;
+  user-select: none;
+}
+
+.crm-settings-entities-heading:focus-visible {
+  outline: 2px solid var(--interactive-accent);
+  outline-offset: 2px;
+}
+
+.crm-settings-entities-heading .setting-item-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.crm-settings-entities-heading .setting-item-name::before {
+  content: "▸";
+  transition: transform 0.15s ease;
+  display: inline-block;
+}
+
+.crm-settings-entities-collapsible:not(.is-collapsed)
+  .crm-settings-entities-heading
+  .setting-item-name::before {
+  transform: rotate(90deg);
+}
+
+.crm-settings-entities-heading .setting-item-description {
+  margin-left: 1.45rem;
+}
+
 .crm-textfield__mic-icon {
   width: 1.15rem;
   height: 1.15rem;
