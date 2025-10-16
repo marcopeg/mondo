@@ -9,9 +9,7 @@ const roleConfig: CRMEntityConfig<
   type: "role",
   name: "Roles",
   icon: "briefcase",
-  dashboard: {
-    placeholder: "Search roles...",
-  },
+  dashboard: {},
   settings: {
     template: {
       default: DEFAULT_TEMPLATE,

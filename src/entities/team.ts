@@ -17,9 +17,7 @@ const teamConfig: CRMEntityConfig<
   type: "team",
   name: "Teams",
   icon: "users",
-  dashboard: {
-    placeholder: "Search teams...",
-  },
+  dashboard: {},
   settings: {
     template: {
       default: template,

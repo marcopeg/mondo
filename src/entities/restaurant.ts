@@ -12,9 +12,7 @@ const restaurantConfig: CRMEntityConfig<"restaurant"> = {
   type: "restaurant",
   name: "Restaurants",
   icon: "utensils",
-  dashboard: {
-    placeholder: "Search restaurants...",
-  },
+  dashboard: {},
   settings: {
     template: {
       default: template,

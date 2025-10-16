@@ -1,5 +1,5 @@
 export interface CRMEntityDashboardConfig {
-  placeholder?: string;
+  // Dashboard config is intentionally empty
 }
 
 export interface CRMEntitySettingsConfig {

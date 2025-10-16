@@ -27,9 +27,7 @@ const meetingConfig: CRMEntityConfig<
   type: "meeting",
   name: "Meetings",
   icon: "calendar-clock",
-  dashboard: {
-    placeholder: "Search meetings...",
-  },
+  dashboard: {},
   settings: {
     template: {
       default: template,

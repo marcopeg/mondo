@@ -11,9 +11,7 @@ const gearConfig: CRMEntityConfig<"gear"> = {
   type: "gear",
   name: "Gear",
   icon: "settings",
-  dashboard: {
-    placeholder: "Search gear...",
-  },
+  dashboard: {},
   settings: {
     template: {
       default: template,

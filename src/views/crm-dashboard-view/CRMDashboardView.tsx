@@ -53,8 +53,7 @@ export const CRMDashboardView = () => {
     type: config.type,
     icon: config.icon,
     title: config.name,
-    placeholder:
-      config.dashboard.placeholder ?? `Search ${config.name.toLowerCase()}...`,
+    placeholder: "",
   }));
 
   const quickActions = useMemo(

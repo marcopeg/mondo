@@ -21,9 +21,7 @@ const personConfig: CRMEntityConfig<
   name: "People",
   icon: "user",
   aliases: ["people"],
-  dashboard: {
-    placeholder: "Search people...",
-  },
+  dashboard: {},
   settings: {
     template: {
       default: template,

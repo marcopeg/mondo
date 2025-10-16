@@ -25,9 +25,7 @@ const factConfig: CRMEntityConfig<
   type: "fact",
   name: "Facts",
   icon: "bookmark",
-  dashboard: {
-    placeholder: "Search facts...",
-  },
+  dashboard: {},
   settings: {
     template: {
       default: template,

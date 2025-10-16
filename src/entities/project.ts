@@ -18,9 +18,7 @@ const projectConfig: CRMEntityConfig<
   type: "project",
   name: "Projects",
   icon: "folder-git-2",
-  dashboard: {
-    placeholder: "Search projects...",
-  },
+  dashboard: {},
   settings: {
     template: {
       default: template,

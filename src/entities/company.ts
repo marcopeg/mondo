@@ -18,9 +18,7 @@ const companyConfig: CRMEntityConfig<
   type: "company",
   name: "Companies",
   icon: "building-2",
-  dashboard: {
-    placeholder: "Search companies...",
-  },
+  dashboard: {},
   settings: {
     template: {
       default: template,

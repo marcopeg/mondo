@@ -5,9 +5,7 @@ const locationConfig: CRMEntityConfig<"location"> = {
   type: "location",
   name: "Locations",
   icon: "map-pin",
-  dashboard: {
-    placeholder: "Search locations...",
-  },
+  dashboard: {},
   settings: {
     template: {
       default: DEFAULT_TEMPLATE,
