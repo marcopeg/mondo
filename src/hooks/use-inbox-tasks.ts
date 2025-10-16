@@ -599,6 +599,13 @@ export const useInboxTasks = () => {
 
         const created = await app.vault.create(filePath, combined);
 
+        await app.fileManager.processFrontMatter(created, (frontmatter) => {
+          frontmatter.show = "";
+          if (website) {
+            frontmatter.website = website;
+          }
+        });
+
         if (targetType === CRMFileType.TASK) {
           try {
             const selfParticipant = resolveSelfPerson(app, created.path);
