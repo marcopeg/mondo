@@ -218,7 +218,7 @@
   position: fixed;
   right: 0.8rem;
   bottom: 3rem;
-  z-index: var(--layer-tooltip, 400); /* keep below mobile side panels */
+  z-index: 1;
   pointer-events: none;
 }
 
