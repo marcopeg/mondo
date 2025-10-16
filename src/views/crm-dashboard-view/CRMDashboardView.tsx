@@ -93,16 +93,16 @@ export const CRMDashboardView = () => {
     <div className="p-4 space-y-6">
       <Typography variant="h1">CRM Dashboard</Typography>
       <div className="flex flex-col gap-4">
-        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-stretch sm:gap-3">
+        <div className="flex w-full flex-row flex-nowrap items-stretch gap-2 sm:flex-row sm:flex-wrap sm:gap-3">
           {quickActions.map((action) => (
             <Button
               key={action.key}
-              className="mod-cta flex-1"
-              fullWidth
+              aria-label={action.label}
+              className="mod-cta flex flex-1 items-center justify-center sm:justify-start"
               icon={action.icon}
               onClick={action.onClick}
             >
-              {action.label}
+              <span className="hidden sm:inline">{action.label}</span>
             </Button>
           ))}
         </div>
