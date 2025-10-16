@@ -20,9 +20,7 @@ const projectConfig: CRMEntityConfig<
   icon: "folder-git-2",
   dashboard: {},
   settings: {
-    template: {
-      default: template,
-    },
+    template,
   },
   list: {
     columns: ["show"],

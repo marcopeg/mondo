@@ -23,9 +23,7 @@ const personConfig: CRMEntityConfig<
   aliases: ["people"],
   dashboard: {},
   settings: {
-    template: {
-      default: template,
-    },
+    template,
   },
   list: {
     columns: ["show", "company", "role", "team", "location"],

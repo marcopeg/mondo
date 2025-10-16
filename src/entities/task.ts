@@ -14,9 +14,7 @@ const taskConfig: CRMEntityConfig<"task"> = {
   icon: "check-square",
   dashboard: {},
   settings: {
-    template: {
-      default: template,
-    },
+    template,
   },
   list: {
     columns: ["show", "participants", "status"],

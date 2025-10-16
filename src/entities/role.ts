@@ -11,9 +11,7 @@ const roleConfig: CRMEntityConfig<
   icon: "briefcase",
   dashboard: {},
   settings: {
-    template: {
-      default: DEFAULT_TEMPLATE,
-    },
+    template: DEFAULT_TEMPLATE,
   },
   list: {
     columns: ["show"],

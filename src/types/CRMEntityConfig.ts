@@ -4,9 +4,7 @@ export interface CRMEntityDashboardConfig {
 
 export interface CRMEntitySettingsConfig {
   entity?: Record<string, never>;
-  template: {
-    default: string;
-  };
+  template: string;
 }
 
 export type CRMEntityListSortDirection = "asc" | "desc";

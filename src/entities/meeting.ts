@@ -29,9 +29,7 @@ const meetingConfig: CRMEntityConfig<
   icon: "calendar-clock",
   dashboard: {},
   settings: {
-    template: {
-      default: template,
-    },
+    template,
   },
   list: {
     columns: ["date_time", "participants"],

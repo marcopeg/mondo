@@ -13,9 +13,7 @@ const gearConfig: CRMEntityConfig<"gear"> = {
   icon: "settings",
   dashboard: {},
   settings: {
-    template: {
-      default: template,
-    },
+    template,
   },
   list: {
     columns: ["show", "owner", "location"],

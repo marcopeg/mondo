@@ -27,9 +27,7 @@ const factConfig: CRMEntityConfig<
   icon: "bookmark",
   dashboard: {},
   settings: {
-    template: {
-      default: template,
-    },
+    template,
   },
   list: {
     columns: ["datetime", "show"],

@@ -19,9 +19,7 @@ const teamConfig: CRMEntityConfig<
   icon: "users",
   dashboard: {},
   settings: {
-    template: {
-      default: template,
-    },
+    template,
   },
   list: {
     columns: ["show", "company", "area"],

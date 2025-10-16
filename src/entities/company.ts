@@ -20,9 +20,7 @@ const companyConfig: CRMEntityConfig<
   icon: "building-2",
   dashboard: {},
   settings: {
-    template: {
-      default: template,
-    },
+    template,
   },
   list: {
     columns: ["show", "location"],

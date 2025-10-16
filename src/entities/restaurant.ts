@@ -14,9 +14,7 @@ const restaurantConfig: CRMEntityConfig<"restaurant"> = {
   icon: "utensils",
   dashboard: {},
   settings: {
-    template: {
-      default: template,
-    },
+    template,
   },
   list: {
     columns: ["show", "location"],
