@@ -5,8 +5,17 @@ import { TFile } from "obsidian";
 const isAlreadyExistsError = (
   error: unknown,
   target: "folder" | "file"
-): boolean =>
-  error instanceof Error && error.message.includes(`${target} already exists`);
+): boolean => {
+  if (!(error instanceof Error)) {
+    return false;
+  }
+  const msg = (error.message ?? "").toLowerCase();
+  // Obsidian error messages can be "Folder already exists." / "File already exists."
+  // Normalize case and detect both specific and generic variants.
+  return (
+    msg.includes(`${target} already exists`) || msg.includes("already exists")
+  );
+};
 
 const normalizeFolder = (value: string | null | undefined): string => {
   if (!value) {
@@ -317,7 +326,9 @@ export class DailyNoteTracker {
       "",
     ].join("\n");
 
-  private getOrCreateDailyNote = async (dateKey: string): Promise<TFile | null> => {
+  private getOrCreateDailyNote = async (
+    dateKey: string
+  ): Promise<TFile | null> => {
     const existing = this.locateDailyNote(dateKey);
     if (existing) {
       return existing;
@@ -509,7 +520,9 @@ export class DailyNoteTracker {
               (record) => record.canonical !== file.path
             );
 
-            frontmatter.createdToday = created.records.map((record) => record.raw);
+            frontmatter.createdToday = created.records.map(
+              (record) => record.raw
+            );
             frontmatter.changedToday = filteredChanged.map(
               (record) => record.raw
             );
@@ -566,7 +579,9 @@ export class DailyNoteTracker {
               changed.set.add(file.path);
             }
 
-            frontmatter.createdToday = created.records.map((record) => record.raw);
+            frontmatter.createdToday = created.records.map(
+              (record) => record.raw
+            );
             frontmatter.changedToday = changed.records.map(
               (record) => record.raw
             );
