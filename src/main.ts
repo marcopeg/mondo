@@ -31,7 +31,6 @@ import {
   CRMFileType,
   CRM_FILE_TYPES,
   getCRMEntityConfig,
-  isCRMFileType,
 } from "@/types/CRMFileType";
 import {
   DEFAULT_CRM_JOURNAL_SETTINGS,
@@ -80,59 +79,7 @@ export default class CRM extends Plugin {
   private audioTranscriptionManager: AudioTranscriptionManager | null = null;
   private voiceoverManager: VoiceoverManager | null = null;
   private noteDictationManager: NoteDictationManager | null = null;
-  private pendingGeolocUpdates: Map<string, number> = new Map();
   private dailyNoteTracker: DailyNoteTracker | null = null;
-
-  private scheduleGeolocCapture = (path: string) => {
-    if (this.pendingGeolocUpdates.has(path)) {
-      return;
-    }
-
-    this.pendingGeolocUpdates.set(path, 0);
-
-    window.setTimeout(() => {
-      void this.tryApplyGeolocation(path);
-    }, 500);
-  };
-
-  private tryApplyGeolocation = async (path: string): Promise<void> => {
-    const attempts = this.pendingGeolocUpdates.get(path);
-    if (attempts === undefined) {
-      return;
-    }
-
-    const abstract = this.app.vault.getAbstractFileByPath(path);
-    if (!(abstract instanceof TFile) || abstract.extension !== "md") {
-      this.pendingGeolocUpdates.delete(path);
-      return;
-    }
-
-    const cache = this.app.metadataCache.getFileCache(abstract);
-    const frontmatter = cache?.frontmatter as
-      | Record<string, unknown>
-      | undefined;
-
-    if (!frontmatter) {
-      if (attempts < 10) {
-        this.pendingGeolocUpdates.set(path, attempts + 1);
-        window.setTimeout(() => {
-          void this.tryApplyGeolocation(path);
-        }, 1000);
-      } else {
-        this.pendingGeolocUpdates.delete(path);
-      }
-      return;
-    }
-
-    const type = frontmatter.type;
-    if (typeof type !== "string" || !isCRMFileType(type)) {
-      this.pendingGeolocUpdates.delete(path);
-      return;
-    }
-
-    await this.applyGeolocationToFile(abstract, { notify: false });
-    this.pendingGeolocUpdates.delete(path);
-  };
 
   private applyGeolocationToFile = async (
     file: TFile,
@@ -242,7 +189,6 @@ export default class CRM extends Plugin {
           return;
         }
 
-        this.scheduleGeolocCapture(abstract.path);
         this.dailyNoteTracker?.handleFileCreated(abstract);
       })
     );
