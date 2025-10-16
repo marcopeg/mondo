@@ -16,6 +16,7 @@ type ButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> & {
   fullWidth?: boolean;
   iconClassName?: string;
   tone?: ButtonTone; // visual tone for text/icon color (link variant primarily)
+  pressed?: boolean; // render the button as an active/pressed toggle state
 };
 
 export const Button: React.FC<ButtonProps> = ({
@@ -28,6 +29,7 @@ export const Button: React.FC<ButtonProps> = ({
   fullWidth = false,
   iconClassName,
   tone = "default",
+  pressed,
   ...rest
 }) => {
   const isStart = iconPosition === "start";
@@ -59,6 +61,7 @@ export const Button: React.FC<ButtonProps> = ({
         return undefined;
     }
   })();
+  const isPressed = pressed === true;
   const baseClasses = isLinkVariant
     ? [
         "crm-button-link",
@@ -74,7 +77,17 @@ export const Button: React.FC<ButtonProps> = ({
     baseClasses.push("w-full");
   }
 
-  const classes = [...baseClasses, className].filter(Boolean).join(" ");
+  const classes = [...baseClasses, className, isPressed ? "crm-button--pressed" : null]
+    .filter(Boolean)
+    .join(" ");
+
+  const pressedAttributes =
+    typeof pressed === "boolean"
+      ? ({
+          "aria-pressed": pressed,
+          "data-pressed": pressed ? "true" : "false",
+        } as const)
+      : {};
 
   // Compose styles: for link, default underline/transparent, merge caller props, apply tone color if provided
   const callerStyle = (rest.style as React.CSSProperties) || {};
@@ -95,14 +108,26 @@ export const Button: React.FC<ButtonProps> = ({
   // If `to` is provided, render a Link instead of a native button so it behaves as navigation
   if (to) {
     // If `to` is provided we'll render a native button that behaves like a link via useLink
-    const { onClick, disabled, "aria-label": ariaLabel, title } = rest as any;
+    const restProps = { ...rest } as React.ButtonHTMLAttributes<HTMLButtonElement> & {
+      [key: string]: unknown;
+    };
+    const onClick = restProps.onClick as
+      | React.MouseEventHandler<HTMLButtonElement>
+      | undefined;
+    const disabled = restProps.disabled as boolean | undefined;
+    const title = restProps.title as string | undefined;
+    const ariaLabel = restProps["aria-label"] as string | undefined;
+    delete restProps.onClick;
+    delete restProps.disabled;
+    delete restProps.title;
+    delete restProps["aria-label"];
     const ref = React.useRef<HTMLButtonElement>(null);
     useLink(ref as any, to, {
       onClick: (e: MouseEvent) => onClick && onClick(e as any),
       disabled,
     });
 
-    const [isHover, setIsHover] = React.useState(false);
+    const [, setIsHover] = React.useState(false);
 
     const linkStyles: React.CSSProperties = isLinkVariant
       ? {
@@ -129,6 +154,8 @@ export const Button: React.FC<ButtonProps> = ({
         style={linkStyles}
         onMouseEnter={() => setIsHover(true)}
         onMouseLeave={() => setIsHover(false)}
+        {...restProps}
+        {...pressedAttributes}
       >
         {content}
       </button>
@@ -136,7 +163,12 @@ export const Button: React.FC<ButtonProps> = ({
   }
 
   return (
-    <button className={classes} style={linkStyle} {...(rest as any)}>
+    <button
+      className={classes}
+      style={linkStyle}
+      {...(rest as any)}
+      {...pressedAttributes}
+    >
       {content}
     </button>
   );

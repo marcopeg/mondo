@@ -65,10 +65,14 @@ const toRecentNote = (cached: TCachedFile, type: CRMFileType): RecentCRMNote => 
 
 const collectRecentNotes = (
   manager: CRMFileManager,
-  limit: number
+  limit: number,
+  type?: CRMFileType | null
 ): RecentCRMNotesResult => {
-  const entries = CRM_FILE_TYPES.flatMap((type) =>
-    manager.getFiles(type).map((cached) => toRecentNote(cached, type))
+  const types = type ? [type] : CRM_FILE_TYPES;
+  const entries = types.flatMap((entryType) =>
+    manager
+      .getFiles(entryType)
+      .map((cached) => toRecentNote(cached, entryType))
   );
 
   entries.sort(
@@ -86,7 +90,8 @@ const collectRecentNotes = (
 };
 
 export const useRecentCRMNotes = (
-  limit = 10
+  limit = 10,
+  type?: CRMFileType | null
 ): RecentCRMNotesResult => {
   const app = useApp();
   const [result, setResult] = useState<RecentCRMNotesResult>({
@@ -99,7 +104,7 @@ export const useRecentCRMNotes = (
     const manager = CRMFileManager.getInstance(app);
 
     const update = () => {
-      setResult(collectRecentNotes(manager, limit));
+      setResult(collectRecentNotes(manager, limit, type));
     };
 
     update();
@@ -113,7 +118,7 @@ export const useRecentCRMNotes = (
     return () => {
       manager.removeListener(listener);
     };
-  }, [app, limit]);
+  }, [app, limit, type]);
 
   return result;
 };
