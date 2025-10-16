@@ -3,7 +3,6 @@ import { Card } from "@/components/ui/Card";
 import { Stack } from "@/components/ui/Stack";
 import { Typography } from "@/components/ui/Typography";
 import Link from "@/components/ui/Link";
-import Badge from "@/components/ui/Badge";
 import Button from "@/components/ui/Button";
 import { useFiles } from "@/hooks/use-files";
 import { useApp } from "@/hooks/use-app";
@@ -194,24 +193,16 @@ export const FactsLinks = ({ file, config }: FactsLinksProps) => {
     })();
   }, [app, file, linkRule]);
 
-  const factCount = sortedFacts.length;
   const actions = [
-    {
-      key: "fact-count",
-      content: (
-        <Badge
-          aria-label={`${factCount} fact${factCount === 1 ? "" : "s"}`}
-        >
-          {factCount}
-        </Badge>
-      ),
-    },
     {
       key: "fact-create",
       content: (
-        <Button variant="link" icon="plus" onClick={handleCreateFact}>
-          + New Fact
-        </Button>
+        <Button
+          variant="link"
+          icon="plus"
+          aria-label="Create fact"
+          onClick={handleCreateFact}
+        />
       ),
     },
   ];

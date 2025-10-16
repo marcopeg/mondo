@@ -10,7 +10,6 @@ import { matchesPropertyLink } from "@/utils/matchesPropertyLink";
 import { createMeetingForPerson } from "@/utils/createMeetingForPerson";
 import type { TCachedFile } from "@/types/TCachedFile";
 import type { App } from "obsidian";
-import Badge from "@/components/ui/Badge";
 import Button from "@/components/ui/Button";
 
 export const PersonLinks = () => {
@@ -127,29 +126,17 @@ export const PersonLinks = () => {
     }
   })();
 
-  const meetingCount = meetingsList.length;
   const meetingActions = [
-    {
-      key: "meeting-count",
-      content: (
-        <Badge
-          aria-label={`${meetingCount} meeting${meetingCount === 1 ? "" : "s"}`}
-        >
-          {meetingCount}
-        </Badge>
-      ),
-    },
     {
       key: "meeting-create",
       content: (
         <Button
           variant="link"
           icon="plus"
+          aria-label="Create meeting"
           onClick={handleAddMeetingAction}
           disabled={!file?.file}
-        >
-          + New Meeting
-        </Button>
+        />
       ),
     },
   ];
