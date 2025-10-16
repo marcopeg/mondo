@@ -13,16 +13,16 @@ import type { CRMEntityConfig } from "@/types/CRMEntityConfig";
 
 const ENTITIES = [
   person,
-  role,
-  team,
-  company,
-  location,
-  restaurant,
+  fact,
   task,
   project,
+  company,
+  team,
   meeting,
+  role,
+  location,
+  restaurant,
   gear,
-  fact,
 ] as const;
 
 type EntityConfig = (typeof ENTITIES)[number];
@@ -37,16 +37,16 @@ const buildEntityRecord = () =>
 
 export const CRM_ENTITIES = buildEntityRecord();
 
-export const CRM_ENTITY_TYPES = ENTITIES.map((entity) => entity.type) as CRMEntityType[];
+export const CRM_ENTITY_TYPES = ENTITIES.map(
+  (entity) => entity.type
+) as CRMEntityType[];
 
 export const CRM_ENTITY_TYPE_SET = new Set(CRM_ENTITY_TYPES);
 
 export const isCRMEntityType = (value: string): value is CRMEntityType =>
   CRM_ENTITY_TYPE_SET.has(value as CRMEntityType);
 
-export const resolveCRMEntityType = (
-  value: string
-): CRMEntityType | null => {
+export const resolveCRMEntityType = (value: string): CRMEntityType | null => {
   if (!value) return null;
   const normalized = value.trim().toLowerCase();
   if (isCRMEntityType(normalized)) {
