@@ -89,7 +89,8 @@ export const QuickEntity = ({ type, placeholder }: QuickEntityProps) => {
           const now = new Date();
           const slug = slugify(base) || safeBase.toLowerCase();
           const settings = (pluginInstance as any)?.settings || {};
-          const templateSource = getTemplateForType(
+          const templateSource = await getTemplateForType(
+            app,
             (settings.templates || {}) as Partial<Record<CRMFileType, string>>,
             entityType
           );

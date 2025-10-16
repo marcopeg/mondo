@@ -3,6 +3,7 @@ import {
   Setting,
   App,
   TFolder,
+  TFile,
   AbstractInputSuggest,
   Notice,
   type ExtraButtonComponent,
@@ -15,7 +16,6 @@ import {
   CRM_FILE_TYPES,
   getCRMEntityConfig,
 } from "@/types/CRMFileType";
-import { CRM_DEFAULT_TEMPLATES } from "@/templates";
 
 // Settings tab for CRM plugin
 export class CRMSettingsTab extends PluginSettingTab {
@@ -105,6 +105,84 @@ export class CRMSettingsTab extends PluginSettingTab {
           (this as any).close();
         } catch (e) {
           // ignore
+        }
+      }
+    }
+
+    class MarkdownFileSuggest extends AbstractInputSuggest<TFile> {
+      private readonly onPick?: (file: TFile) => void | Promise<void>;
+
+      constructor(
+        app: App,
+        inputEl: HTMLInputElement,
+        onPick?: (file: TFile) => void | Promise<void>
+      ) {
+        super(app, inputEl);
+        this.onPick = onPick;
+      }
+
+      getSuggestions(query: string): TFile[] {
+        const files = this.app.vault.getMarkdownFiles();
+        if (!query) {
+          return files.slice(0, 50);
+        }
+
+        const normalized = query.toLowerCase();
+        return files.filter((file) =>
+          file.path.toLowerCase().includes(normalized)
+        );
+      }
+
+      renderSuggestion(file: TFile, el: HTMLElement) {
+        el.setText(file.path);
+      }
+
+      selectSuggestion(file: TFile) {
+        if (this.onPick) {
+          try {
+            void this.onPick(file);
+          } catch (error) {
+            // ignore persistence issues triggered during suggestion pick
+          }
+        } else {
+          const input = (this as any).inputEl as HTMLInputElement | undefined;
+          if (input) {
+            input.value = file.path;
+            input.dispatchEvent(new Event("input", { bubbles: true }));
+            input.dispatchEvent(new Event("change", { bubbles: true }));
+          }
+        }
+
+        try {
+          (this as any).close();
+        } catch (error) {
+          // ignore inability to close suggest UI
+        }
+      }
+    }
+
+    class TemplatePickerModal extends FuzzySuggestModal<TFile> {
+      private readonly onSelect: (file: TFile) => void | Promise<void>;
+
+      constructor(app: App, onSelect: (file: TFile) => void | Promise<void>) {
+        super(app);
+        this.onSelect = onSelect;
+        this.setPlaceholder("Select a template note");
+      }
+
+      getItems(): TFile[] {
+        return this.app.vault.getMarkdownFiles();
+      }
+
+      getItemText(file: TFile): string {
+        return file.path;
+      }
+
+      onChooseItem(file: TFile, _evt?: MouseEvent | KeyboardEvent) {
+        try {
+          void this.onSelect(file);
+        } catch (error) {
+          // ignore persistence errors raised by selection handler
         }
       }
     }
@@ -533,24 +611,106 @@ export class CRMSettingsTab extends PluginSettingTab {
         }
       );
 
+      const getStoredTemplatePath = (): string =>
+        ((this.plugin as any).settings.templates?.[type] ?? "") as string;
+
+      const persistTemplatePath = async (raw: string) => {
+        (this.plugin as any).settings.templates =
+          (this.plugin as any).settings.templates || {};
+
+        const normalized =
+          raw.includes("\n") || raw.includes("{{") || raw.includes("---")
+            ? raw
+            : raw.trim();
+        const current =
+          ((this.plugin as any).settings.templates?.[type] ?? "") as string;
+
+        if (current === normalized) {
+          return;
+        }
+
+        (this.plugin as any).settings.templates[type] = normalized;
+        await (this.plugin as any).saveSettings();
+      };
+
+      let syncTemplateInput = false;
+      let applyTemplateInput: ((value: string) => void) | null = null;
+
+      const updateTemplatePath = async (value: string) => {
+        await persistTemplatePath(value);
+        if (applyTemplateInput) {
+          applyTemplateInput(value);
+        }
+      };
+
       new Setting(fields)
         .setName("Template")
         .setDesc(
           templateHelper || `Template for new ${label.toLowerCase()} notes.`
         )
-        .addTextArea((textarea) => {
-          textarea
-            .setPlaceholder(CRM_DEFAULT_TEMPLATES[type])
-            .setValue((this.plugin as any).settings.templates?.[type] ?? "")
-            .onChange(async (value) => {
-              (this.plugin as any).settings.templates =
-                (this.plugin as any).settings.templates || {};
-              (this.plugin as any).settings.templates[type] = value;
-              await (this.plugin as any).saveSettings();
+        .addSearch((search) => {
+          const showPicker = () => {
+            const modal = new TemplatePickerModal(this.app, async (file) => {
+              await updateTemplatePath(file.path);
             });
 
-          textarea.inputEl.rows = 6;
-          textarea.inputEl.addClass("crm-settings-template");
+            modal.open();
+          };
+
+          search
+            .setPlaceholder("Select a template note…")
+            .setValue(getStoredTemplatePath())
+            .onChange(async (value) => {
+              if (syncTemplateInput) {
+                return;
+              }
+
+              await persistTemplatePath(value);
+            });
+
+          applyTemplateInput = (value: string) => {
+            syncTemplateInput = true;
+            try {
+              search.setValue(value);
+            } catch (error) {
+              search.inputEl.value = value;
+              search.inputEl.dispatchEvent(
+                new Event("input", { bubbles: true })
+              );
+              search.inputEl.dispatchEvent(
+                new Event("change", { bubbles: true })
+              );
+            } finally {
+              syncTemplateInput = false;
+            }
+          };
+
+          const buttonEl = (search as any).buttonEl as
+            | HTMLButtonElement
+            | undefined;
+
+          if (buttonEl) {
+            buttonEl.setAttribute("aria-label", "Browse template notes");
+            buttonEl.addEventListener("click", (event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              showPicker();
+            });
+          }
+
+          try {
+            const suggester = new MarkdownFileSuggest(
+              this.app,
+              search.inputEl as HTMLInputElement,
+              async (file) => {
+                await updateTemplatePath(file.path);
+              }
+            );
+            (this as any)._suggesters = (this as any)._suggesters || [];
+            (this as any)._suggesters.push(suggester);
+          } catch (error) {
+            // ignore suggest attachment issues
+          }
         });
 
       if (type === CRMFileType.PERSON) {

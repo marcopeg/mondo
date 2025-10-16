@@ -1,3 +1,4 @@
+import { App, TFile } from "obsidian";
 import { CRMFileType } from "@/types/CRMFileType";
 import { getDefaultTemplate } from "@/templates";
 
@@ -48,14 +49,54 @@ const formatDateTime = (isoString: string, format: string): string => {
 
 const ensureTemplate = (type: CRMFileType): string => getDefaultTemplate(type);
 
-export const getTemplateForType = (
+export const getTemplateForType = async (
+  app: App,
   templates: Partial<Record<CRMFileType, string>> | undefined,
   type: CRMFileType
-): string => {
+): Promise<string> => {
   const userTemplate = templates?.[type];
-  if (typeof userTemplate === "string" && userTemplate.trim().length > 0) {
-    return userTemplate;
+
+  if (typeof userTemplate === "string") {
+    const rawTemplate = userTemplate;
+
+    if (
+      rawTemplate.includes("\n") ||
+      rawTemplate.includes("{{") ||
+      rawTemplate.includes("---")
+    ) {
+      return rawTemplate;
+    }
+
+    const trimmed = rawTemplate.trim();
+    if (trimmed.length > 0) {
+      const lookupPath =
+        trimmed.endsWith(".md") || trimmed.endsWith(".MD")
+          ? trimmed
+          : `${trimmed}.md`;
+
+      const candidate = app.vault.getAbstractFileByPath(trimmed);
+      const candidateWithExt =
+        candidate instanceof TFile
+          ? candidate
+          : (app.vault.getAbstractFileByPath(lookupPath) as TFile | null);
+
+      if (candidateWithExt instanceof TFile) {
+        try {
+          return await app.vault.cachedRead(candidateWithExt);
+        } catch (error) {
+          console.error(
+            `CRM: failed to read template file at "${candidateWithExt.path}"`,
+            error
+          );
+        }
+      } else {
+        console.warn(
+          `CRM: template note "${trimmed}" was not found; falling back to default template.`
+        );
+      }
+    }
   }
+
   return ensureTemplate(type);
 };
 

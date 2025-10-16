@@ -161,7 +161,8 @@ export const ParticipantsAssignmentLinks = ({
       if (!personFile) {
         const now = new Date();
         const isoTimestamp = now.toISOString();
-        const templateSource = getTemplateForType(
+        const templateSource = await getTemplateForType(
+          app,
           settings.templates,
           CRMFileType.PERSON
         );

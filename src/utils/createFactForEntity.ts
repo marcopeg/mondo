@@ -107,7 +107,8 @@ export const createFactForEntity = async ({
   let factFile = app.vault.getAbstractFileByPath(filePath) as TFile | null;
 
   if (!factFile) {
-    const templateSource = getTemplateForType(
+    const templateSource = await getTemplateForType(
+      app,
       settings.templates,
       CRMFileType.FACT
     );
