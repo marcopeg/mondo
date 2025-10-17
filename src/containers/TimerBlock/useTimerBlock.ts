@@ -98,7 +98,50 @@ const triggerShortBeep = (mode: HepticMode) => {
   }
 };
 
-const triggerLongBeep = (mode: HepticMode) => {
+const triggerHappyChime = (mode: HepticMode) => {
+  if (mode === "vibration") {
+    if (typeof navigator !== "undefined" && typeof navigator.vibrate === "function") {
+      navigator.vibrate([140, 80, 200]);
+    }
+
+    return;
+  }
+
+  const AudioContextConstructor = getAudioContextConstructor();
+
+  if (!AudioContextConstructor) {
+    return;
+  }
+
+  try {
+    const context = new AudioContextConstructor();
+    const oscillator = context.createOscillator();
+    const gain = context.createGain();
+    const now = context.currentTime;
+
+    oscillator.type = "triangle";
+    oscillator.frequency.setValueAtTime(523.25, now);
+    oscillator.frequency.linearRampToValueAtTime(659.25, now + 0.18);
+    gain.gain.setValueAtTime(0.16, now);
+
+    oscillator.connect(gain);
+    gain.connect(context.destination);
+
+    const duration = 0.4;
+
+    oscillator.start(now);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+    oscillator.stop(now + duration);
+
+    oscillator.addEventListener("ended", () => {
+      context.close().catch(() => undefined);
+    });
+  } catch (error) {
+    // Silently ignore audio errors
+  }
+};
+
+const triggerRestCue = (mode: HepticMode) => {
   if (mode === "vibration") {
     if (typeof navigator !== "undefined" && typeof navigator.vibrate === "function") {
       navigator.vibrate([250, 100, 250]);
@@ -117,19 +160,20 @@ const triggerLongBeep = (mode: HepticMode) => {
     const context = new AudioContextConstructor();
     const oscillator = context.createOscillator();
     const gain = context.createGain();
+    const now = context.currentTime;
 
     oscillator.type = "sine";
-    oscillator.frequency.setValueAtTime(660, context.currentTime);
-    gain.gain.setValueAtTime(0.2, context.currentTime);
+    oscillator.frequency.setValueAtTime(660, now);
+    gain.gain.setValueAtTime(0.2, now);
 
     oscillator.connect(gain);
     gain.connect(context.destination);
 
     const duration = 0.5;
 
-    oscillator.start();
-    gain.gain.exponentialRampToValueAtTime(0.0001, context.currentTime + duration);
-    oscillator.stop(context.currentTime + duration);
+    oscillator.start(now);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+    oscillator.stop(now + duration);
 
     oscillator.addEventListener("ended", () => {
       context.close().catch(() => undefined);
@@ -190,20 +234,31 @@ export const useTimerBlock = (props: TimerBlockProps): TimerBlockState => {
     }
 
     if (remainingSeconds === 0) {
-      triggerLongBeep(hepticMode);
-
       setPhase((currentPhase) => {
-        if (currentPhase === "work" && intervalSeconds > 0) {
-          setRemainingSeconds(intervalSeconds);
+        if (currentPhase === "work") {
+          if (intervalSeconds > 0) {
+            triggerRestCue(hepticMode);
+            setRemainingSeconds(intervalSeconds);
 
-          return "rest";
+            return "rest";
+          }
+
+          triggerHappyChime(hepticMode);
+          setRemainingSeconds(durationSeconds);
+
+          return "work";
         }
 
+        triggerHappyChime(hepticMode);
         setRemainingSeconds(durationSeconds);
 
         return "work";
       });
-    } else if (remainingSeconds <= 3) {
+
+      return;
+    }
+
+    if (remainingSeconds > 0 && remainingSeconds <= 3) {
       triggerShortBeep(hepticMode);
     }
   }, [durationSeconds, hepticMode, intervalSeconds, isRunning, remainingSeconds]);
@@ -214,6 +269,7 @@ export const useTimerBlock = (props: TimerBlockProps): TimerBlockState => {
     }
 
     stopFeedback(hepticMode);
+    triggerHappyChime(hepticMode);
     setPhase("work");
     setRemainingSeconds(durationSeconds);
     setIsRunning(true);
