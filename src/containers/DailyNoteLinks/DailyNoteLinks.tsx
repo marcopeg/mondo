@@ -211,7 +211,13 @@ const DailyNoteListCard = ({
   showCount = false,
 }: DailyNoteListCardProps) => {
   return (
-    <Card title={title} icon={icon}>
+    <Card
+      title={title}
+      icon={icon}
+      collapsible
+      collapsed
+      collapseOnHeaderClick
+    >
       {entries.length === 0 ? (
         <Typography variant="body" className="text-muted">
           None
