@@ -35,6 +35,8 @@ List of the possible values of the attribute "type":
 - project
 - meeting
 
+Refer to [DYNAMIC_LINKS.md](./DYNAMIC_LINKS.md) for detailed guidance on maintaining Entity Links panels and adding new ones.
+
 # TypeScript
 
 ## Do

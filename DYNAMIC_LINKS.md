@@ -1,9 +1,9 @@
 # Dynamic Links Panels — How to Add Custom Components
 
-This guide explains how to add custom panels to CRM entity notes using the DynamicEntityLinks system. These panels show up inline when viewing a note with a CRM entity `type` in frontmatter, e.g. `type: person`.
+This guide explains how to add custom panels to CRM entity notes using the EntityLinks system. These panels show up inline when viewing a note with a CRM entity `type` in frontmatter, e.g. `type: person`.
 
 - Injected area is created by the plugin when opening a Markdown file: see `src/events/inject-crm-links.tsx`.
-- For CRM entity types, it renders `DynamicEntityLinks`: `src/containers/DynamicEntityLinks/DynamicEntityLinks.tsx`.
+- For CRM entity types, it renders `EntityLinks`: `src/containers/EntityLinks/EntityLinks.tsx`.
 - The set of panels shown for a given entity type is controlled by that entity’s config: `src/entities/<entity>.ts` as `links: [...]`.
 
 If you want to add a new panel, you’ll create a component, register it in a central registry, and reference it from the target entity’s `links` list.
@@ -12,8 +12,8 @@ If you want to add a new panel, you’ll create a component, register it in a ce
 
 - Rendering entrypoint: `inject-crm-links.tsx`
   - Determines the current file and its frontmatter `type`.
-  - For CRM types, renders `<DynamicEntityLinks />` within React providers (`AppProvider` + `EntityFileProvider`).
-- Dynamic renderer: `src/containers/DynamicEntityLinks/DynamicEntityLinks.tsx`
+  - For CRM types, renders `<EntityLinks />` within React providers (`AppProvider` + `EntityFileProvider`).
+- Dynamic renderer: `src/containers/EntityLinks/EntityLinks.tsx`
   - Reads the focused file via `useEntityFile()`.
   - Loads the entity config from `CRM_ENTITIES`.
   - Iterates `entityConfig.links` and, for each item `{ type: string, ...config }`, picks a component from `entityMap[type]`.
@@ -21,6 +21,20 @@ If you want to add a new panel, you’ll create a component, register it in a ce
 - Entity configs: `src/entities/*.ts`
   - Define `links: TLink[]` where `TLink` is a union of link configuration shapes, e.g. `{ type: "meetings"; collapsed?: boolean }`.
   - You can add your own `{ type: "my-custom"; ... }` link entry.
+
+### Folder layout
+
+```
+src/containers/EntityLinks/
+  EntityLinks.tsx        # orchestrator (registry + renderer)
+  index.ts               # public export
+  panels/                # one file per panel implementation
+    MeetingsLinks.tsx
+    ProjectsLinks.tsx
+    ...
+```
+
+Keep shared utilities that are only used by panels next to the panels (e.g. create a `panels/utils/` folder) so the feature stays self-contained.
 
 ## Conventions and Building Blocks
 
@@ -38,7 +52,7 @@ If you want to add a new panel, you’ll create a component, register it in a ce
 
 ### 1) Create your panel component
 
-Location: `src/containers/DynamicEntityLinks/<YourPanel>.tsx`
+Location: `src/containers/EntityLinks/panels/<YourPanel>.tsx`
 
 Component contract:
 
@@ -84,9 +98,9 @@ Tips:
 - Use `Card`’s `collapsible` and `collapsed` props to match existing UX.
 - Use Tailwind utility classes; Obsidian theme variables handle colors.
 
-### 2) Register the component type in the Dynamic registry
+### 2) Register the component type in the EntityLinks registry
 
-Open `src/containers/DynamicEntityLinks/DynamicEntityLinks.tsx` and:
+Open `src/containers/EntityLinks/EntityLinks.tsx` and:
 
 - Import your component.
 - Add a key to `entityMap` with your chosen type string.
@@ -94,7 +108,7 @@ Open `src/containers/DynamicEntityLinks/DynamicEntityLinks.tsx` and:
 Example:
 
 ```tsx
-import { MyCustomLinks } from "./MyCustomLinks";
+import { MyCustomLinks } from "./panels/MyCustomLinks";
 
 const entityMap: Record<string, React.ComponentType<LinkPanelProps>> = {
   // existing entries...
@@ -140,9 +154,9 @@ Repeat for other entities if you want the same panel elsewhere.
 
 ## Example: Add a "Contacts" panel to Company
 
-1. Create `src/containers/DynamicEntityLinks/ContactsLinks.tsx` using the skeleton.
-2. Register it in `DynamicEntityLinks.tsx`:
-   - `import { ContactsLinks } from "./ContactsLinks";`
+1. Create `src/containers/EntityLinks/panels/ContactsLinks.tsx` using the skeleton.
+2. Register it in `EntityLinks.tsx`:
+   - `import { ContactsLinks } from "./panels/ContactsLinks";`
    - `entityMap["contacts"] = ContactsLinks;`
 3. Edit `src/entities/company.ts`:
    - Extend the `CRMEntityConfig` union with `| { type: "contacts"; collapsed?: boolean }`.
@@ -165,13 +179,13 @@ Repeat for other entities if you want the same panel elsewhere.
 
 ## Troubleshooting
 
-- "DynamicEntityLinks: current file is missing a frontmatter type"
+- "EntityLinks: current file is missing a frontmatter type"
   - Add `type: <entity>` to the file’s frontmatter.
-- "DynamicEntityLinks: unknown entity type"
+- "EntityLinks: unknown entity type"
   - The `type` in frontmatter must match one of `CRM_ENTITY_TYPES` (see `src/entities/index.ts`).
-- "DynamicEntityLinks: no renderer registered for link type \"<x>\""
+- "EntityLinks: no renderer registered for link type \"<x>\""
   - You added a `{ type: "<x>" }` to `links` but didn’t register it in `entityMap`.
-- "DynamicEntityLinks: no link configuration defined for \"<entity>\""
+- "EntityLinks: no link configuration defined for \"<entity>\""
   - The entity config has an empty `links` array. Add at least one link entry.
 - Panel doesn’t collapse as expected
   - Ensure you pass `collapsed: true` in the entity `links` entry and wire `collapsed={(config as any)?.collapsed}` to `Card`.
@@ -193,7 +207,7 @@ yarn dev
 
 - Injection and rendering:
   - `src/events/inject-crm-links.tsx`
-  - `src/containers/DynamicEntityLinks/DynamicEntityLinks.tsx`
+  - `src/containers/EntityLinks/EntityLinks.tsx`
 - Entity configs:
   - `src/entities/*.ts` (e.g. `person.ts`, `company.ts`)
 - Types:
