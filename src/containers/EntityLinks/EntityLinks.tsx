@@ -3,18 +3,18 @@ import { InlineError } from "@/components/InlineError";
 import { CRM_ENTITIES, isCRMEntityType } from "@/entities";
 import type { TCachedFile } from "@/types/TCachedFile";
 import type { CRMEntityLinkConfig } from "@/types/CRMEntityConfig";
-import { TeammatesLinks } from "./TeammatesLinks";
-import { TeamMembersLinks } from "./TeamMembersLinks";
-import { MeetingsLinks } from "./MeetingsLinks";
-import { TeamsLinks } from "./TeamsLinks";
-import { EmployeesLinks } from "./EmployeesLinks";
-import { ProjectsLinks } from "./ProjectsLinks";
-import { ParticipantTasksLinks } from "./ParticipantTasksLinks";
-import { RolePeopleLinks } from "./RolePeopleLinks";
-import { RoleTasksLinks } from "./RoleTasksLinks";
 import { Stack } from "@/components/ui/Stack";
-import { ParticipantsAssignmentLinks } from "./ParticipantsAssignmentLinks";
-import { FactsLinks } from "./FactsLinks";
+import { TeammatesLinks } from "./panels/TeammatesLinks";
+import { TeamMembersLinks } from "./panels/TeamMembersLinks";
+import { MeetingsLinks } from "./panels/MeetingsLinks";
+import { TeamsLinks } from "./panels/TeamsLinks";
+import { EmployeesLinks } from "./panels/EmployeesLinks";
+import { ProjectsLinks } from "./panels/ProjectsLinks";
+import { ParticipantTasksLinks } from "./panels/ParticipantTasksLinks";
+import { RolePeopleLinks } from "./panels/RolePeopleLinks";
+import { RoleTasksLinks } from "./panels/RoleTasksLinks";
+import { ParticipantsAssignmentLinks } from "./panels/ParticipantsAssignmentLinks";
+import { FactsLinks } from "./panels/FactsLinks";
 
 type LinkPanelProps = {
   file: TCachedFile;
@@ -36,10 +36,10 @@ const entityMap: Record<string, React.ComponentType<LinkPanelProps>> = {
 };
 
 const renderMissingConfigError = (message: string, key?: React.Key) => (
-  <InlineError key={key} message={`DynamicEntityLinks: ${message}`} />
+  <InlineError key={key} message={`EntityLinks: ${message}`} />
 );
 
-export const DynamicEntityLinks = () => {
+export const EntityLinks = () => {
   const { file } = useEntityFile();
   if (!file) {
     return null;

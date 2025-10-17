@@ -3,7 +3,7 @@ import { createRoot, Root } from "react-dom/client";
 import { Plugin, WorkspaceLeaf, MarkdownView, TFile } from "obsidian";
 import { AppProvider } from "@/context/AppProvider";
 import { EntityFileProvider } from "@/context/EntityFileProvider";
-import { EntityLinks } from "@/containers/DynamicEntityLinks";
+import { EntityLinks } from "@/containers/EntityLinks";
 import DailyNoteLinks from "@/containers/DailyNoteLinks";
 import { isCRMFileType, isSpecialCRMType } from "@/types/CRMFileType";
 import type { TCachedFile } from "@/types/TCachedFile";
