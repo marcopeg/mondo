@@ -31,8 +31,8 @@ const toDateObject = (dateValue: unknown, timeValue?: unknown): Date | null => {
     timeString && !hasExplicitTime
       ? `${dateString}T${timeString}`
       : dateString.includes("T")
-        ? dateString
-        : `${dateString}T00:00`;
+      ? dateString
+      : `${dateString}T00:00`;
 
   const parsed = new Date(isoCandidate);
   if (!Number.isNaN(parsed.getTime())) {
@@ -43,30 +43,31 @@ const toDateObject = (dateValue: unknown, timeValue?: unknown): Date | null => {
   return Number.isNaN(fallback.getTime()) ? null : fallback;
 };
 
-const columnRules: Partial<Record<string, (row: CRMEntityListRow) => unknown>> = {
-  date_time: (row) => {
-    const frontmatter = row.frontmatter ?? {};
-    const parsed = toDateObject(frontmatter.date, frontmatter.time);
-    if (parsed) {
-      return parsed;
-    }
-
-    const fallback = frontmatter.date_time;
-    if (fallback instanceof Date) {
-      return Number.isNaN(fallback.getTime()) ? undefined : fallback;
-    }
-    if (typeof fallback === "string") {
-      const fallbackParsed = toDateObject(fallback);
-      if (fallbackParsed) {
-        return fallbackParsed;
+const columnRules: Partial<Record<string, (row: CRMEntityListRow) => unknown>> =
+  {
+    date_time: (row) => {
+      const frontmatter = row.frontmatter ?? {};
+      const parsed = toDateObject(frontmatter.date, frontmatter.time);
+      if (parsed) {
+        return parsed;
       }
-      const trimmed = fallback.trim();
-      return trimmed.length > 0 ? trimmed : undefined;
-    }
 
-    return undefined;
-  },
-};
+      const fallback = frontmatter.date_time;
+      if (fallback instanceof Date) {
+        return Number.isNaN(fallback.getTime()) ? undefined : fallback;
+      }
+      if (typeof fallback === "string") {
+        const fallbackParsed = toDateObject(fallback);
+        if (fallbackParsed) {
+          return fallbackParsed;
+        }
+        const trimmed = fallback.trim();
+        return trimmed.length > 0 ? trimmed : undefined;
+      }
+
+      return undefined;
+    },
+  };
 
 const formatFrontmatterValue = (value: unknown): string => {
   if (value === null || value === undefined) return "";
@@ -78,10 +79,7 @@ const formatFrontmatterValue = (value: unknown): string => {
   return String(value);
 };
 
-const getColumnRawValue = (
-  row: CRMEntityListRow,
-  column: string
-): unknown => {
+const getColumnRawValue = (row: CRMEntityListRow, column: string): unknown => {
   if (!column) return "";
 
   if (column === DEFAULT_COLUMN) {
@@ -107,7 +105,7 @@ const getColumnRawValue = (
   return row.frontmatter?.[column];
 };
 
-export const useCRMEntityPanel = (entityType: CRMFileType) => {
+export const useEntityPanels = (entityType: CRMFileType) => {
   const files = useFiles(entityType);
 
   const { columns, rows } = useMemo(() => {
@@ -131,10 +129,7 @@ export const useCRMEntityPanel = (entityType: CRMFileType) => {
 
     const rows = files.map<CRMEntityListRow>((cached) => {
       const { file, cache } = cached;
-      const frontmatter = (cache?.frontmatter ?? {}) as Record<
-        string,
-        unknown
-      >;
+      const frontmatter = (cache?.frontmatter ?? {}) as Record<string, unknown>;
 
       const explicitTitle = frontmatter?.show;
       const baseName = file.basename ?? file.name;

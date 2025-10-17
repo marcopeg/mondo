@@ -1,6 +1,6 @@
 import type { FC } from "react";
 import { CRMFileType, getCRMEntityConfig } from "@/types/CRMFileType";
-import { useCRMEntityPanel } from "./useCRMEntityPanel";
+import { useEntityPanels } from "./useEntityPanels";
 import { EntityGrid } from "./components/EntityGrid";
 
 type EntityViewProps = {
@@ -8,7 +8,7 @@ type EntityViewProps = {
 };
 
 export const EntityView: FC<EntityViewProps> = ({ entityType }) => {
-  const { columns, rows } = useCRMEntityPanel(entityType);
+  const { columns, rows } = useEntityPanels(entityType);
   const config = getCRMEntityConfig(entityType);
   const title = config?.name ?? entityType;
 

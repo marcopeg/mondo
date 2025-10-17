@@ -1,7 +1,7 @@
 import {
   getDisplayValue,
   type CRMEntityListRow,
-} from "@/views/entity-panel-view/useCRMEntityPanel";
+} from "@/views/entity-panel-view/useEntityPanels";
 import {
   EntityCell,
   EntityCoverCell,

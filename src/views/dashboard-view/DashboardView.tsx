@@ -7,7 +7,7 @@ import QuickLog from "./QuickLogEntry";
 import QuickTask from "./QuickTaskEntry";
 import { CRM_ENTITY_CONFIG_LIST } from "@/entities";
 import EntityPicker from "./components/EntityPicker";
-import RecentNotes from "./RecentCRMNotes";
+import RecentNotes from "./RecentNotes";
 import QuickTasks from "./QuickTasks";
 import { useSetting } from "@/hooks/use-setting";
 import { resolveSelfPerson } from "@/utils/selfPerson";

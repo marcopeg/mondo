@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { TFile } from "obsidian";
 import { useApp } from "@/hooks/use-app";
-import type { CRMEntityListRow } from "@/views/entity-panel-view/useCRMEntityPanel";
+import type { CRMEntityListRow } from "@/views/entity-panel-view/useEntityPanels";
 import { CRMFileLink } from "../../CRMFileLink";
 
 const extractEntries = (value: unknown): string[] => {
