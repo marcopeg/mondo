@@ -158,7 +158,6 @@
   border-radius: 0 !important;
 }
 
-
 .crm-settings-entities-collapsible {
   margin-bottom: 1.5rem;
 }
@@ -527,4 +526,43 @@
   to {
     transform: rotate(360deg);
   }
+}
+
+/* Journal navigation buttons (prev/next arrows in focus mode) */
+.crm-focus-mode-nav-btn {
+  position: fixed;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 100;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  padding: 0;
+  border: none;
+  border-radius: 0.5rem;
+  background: var(--background-modifier-border-hover);
+  color: var(--text-normal);
+  cursor: pointer;
+  transition: background-color 0.18s ease, color 0.18s ease;
+  opacity: 0.7;
+}
+
+.crm-focus-mode-nav-btn:hover {
+  background: var(--interactive-accent);
+  color: var(--text-on-accent);
+  opacity: 1;
+}
+
+.crm-focus-mode-nav-btn:active {
+  transform: translateY(-50%) scale(0.95);
+}
+
+#crm-focus-mode-nav-prev-btn {
+  left: 1rem;
+}
+
+#crm-focus-mode-nav-next-btn {
+  right: 1rem;
 }
