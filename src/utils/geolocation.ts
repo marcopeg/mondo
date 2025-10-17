@@ -1,4 +1,4 @@
-export type GeolocationFrontmatter = {
+export type GeolocationData = {
   lat: number;
   lon: number;
   accuracy: number;
@@ -22,21 +22,41 @@ const ensureNavigator = () => {
   return navigator.geolocation;
 };
 
-const requestPosition = async (): Promise<GeolocationPosition> => {
+const requestPosition = async (
+  signal?: AbortSignal
+): Promise<GeolocationPosition> => {
   const geolocation = ensureNavigator();
 
   return new Promise((resolve, reject) => {
+    let aborted = false;
+
+    if (signal) {
+      if (signal.aborted) {
+        reject(new Error("Geolocation request cancelled."));
+        return;
+      }
+
+      signal.addEventListener("abort", () => {
+        aborted = true;
+        reject(new Error("Geolocation request cancelled."));
+      });
+    }
+
     geolocation.getCurrentPosition(
       (position) => {
-        resolve(position);
+        if (!aborted) {
+          resolve(position);
+        }
       },
       (error) => {
-        reject(new Error(error.message || "Unable to retrieve geolocation."));
+        if (!aborted) {
+          reject(new Error(error.message || "Unable to retrieve geolocation."));
+        }
       },
       {
-        enableHighAccuracy: true,
-        timeout: 15000,
-        maximumAge: 60000,
+        enableHighAccuracy: false,
+        timeout: 5000,
+        maximumAge: 300000,
       }
     );
   });
@@ -44,10 +64,10 @@ const requestPosition = async (): Promise<GeolocationPosition> => {
 
 const positionToFrontmatter = (
   position: GeolocationPosition
-): GeolocationFrontmatter => {
+): GeolocationData => {
   const { coords, timestamp } = position;
 
-  const geoloc: GeolocationFrontmatter = {
+  const geoloc: GeolocationData = {
     lat: roundTo(coords.latitude, 6),
     lon: roundTo(coords.longitude, 6),
     accuracy: roundTo(coords.accuracy, 1),
@@ -82,9 +102,11 @@ type IPGeolocationPayload = {
 
 const FALLBACK_ENDPOINT = "https://ipapi.co/json/";
 
-const requestFallbackGeolocation = async (): Promise<GeolocationFrontmatter> => {
+const requestFallbackGeolocation = async (): Promise<GeolocationData> => {
   if (typeof fetch === "undefined") {
-    throw new Error("Fallback geolocation is not available in this environment.");
+    throw new Error(
+      "Fallback geolocation is not available in this environment."
+    );
   }
 
   const controller =
@@ -107,7 +129,10 @@ const requestFallbackGeolocation = async (): Promise<GeolocationFrontmatter> => 
 
     const payload = (await response.json()) as IPGeolocationPayload;
 
-    if (typeof payload.latitude !== "number" || typeof payload.longitude !== "number") {
+    if (
+      typeof payload.latitude !== "number" ||
+      typeof payload.longitude !== "number"
+    ) {
       throw new Error("Fallback geolocation service returned invalid data.");
     }
 
@@ -144,9 +169,11 @@ const requestFallbackGeolocation = async (): Promise<GeolocationFrontmatter> => 
   }
 };
 
-export const requestGeolocation = async (): Promise<GeolocationFrontmatter> => {
+export const requestGeolocation = async (
+  signal?: AbortSignal
+): Promise<GeolocationData> => {
   try {
-    const position = await requestPosition();
+    const position = await requestPosition(signal);
     return positionToFrontmatter(position);
   } catch (primaryError) {
     try {
@@ -161,7 +188,9 @@ export const requestGeolocation = async (): Promise<GeolocationFrontmatter> => {
           ? primaryError.message
           : "Unable to retrieve geolocation.";
 
-      throw new Error(`${primaryMessage} (fallback failed: ${fallbackMessage})`);
+      throw new Error(
+        `${primaryMessage} (fallback failed: ${fallbackMessage})`
+      );
     }
   }
 };

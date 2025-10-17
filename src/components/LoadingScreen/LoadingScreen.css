@@ -1,0 +1,74 @@
+.crm-loading-screen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: inherit;
+}
+
+.crm-loading-screen__overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: var(--interactive-accent);
+  opacity: 0.95;
+  z-index: 1;
+}
+
+.crm-loading-screen__content {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+  pointer-events: auto;
+}
+
+.crm-loading-screen__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform: translateY(-33vh);
+}
+
+.crm-loading-screen__icon span {
+  width: 4rem !important;
+  height: 4rem !important;
+}
+
+.crm-loading-screen__text {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--text-on-accent);
+  text-align: center;
+}
+
+.crm-loading-screen__cancel-button {
+  margin-top: 1rem;
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--text-on-accent);
+  border-radius: 0.25rem;
+  background-color: transparent;
+  color: var(--text-on-accent);
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.crm-loading-screen__cancel-button:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.crm-loading-screen__cancel-button:active {
+  transform: scale(0.98);
+}

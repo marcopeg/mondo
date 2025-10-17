@@ -81,15 +81,30 @@ export default class CRM extends Plugin {
   private voiceoverManager: VoiceoverManager | null = null;
   private noteDictationManager: NoteDictationManager | null = null;
   private dailyNoteTracker: DailyNoteTracker | null = null;
+  private geolocationAbortController: AbortController | null = null;
 
   private applyGeolocationToFile = async (
     file: TFile,
     { notify }: { notify: boolean }
   ): Promise<boolean> => {
+    this.geolocationAbortController = new AbortController();
+
     try {
-      const geoloc = await requestGeolocation();
+      console.log("CRM: Requesting geolocation...");
+
+      // Show loading indicator using Notice
+      const notice = new Notice("Getting your location...", 0);
+
+      const geoloc = await requestGeolocation(
+        this.geolocationAbortController.signal
+      );
+      console.log("CRM: Geolocation received:", geoloc);
+
+      notice.hide();
+
       await this.app.fileManager.processFrontMatter(file, (fm) => {
-        fm.geoloc = geoloc;
+        console.log("CRM: Processing frontmatter for file:", file.path);
+        fm.location = geoloc;
       });
 
       if (notify) {
@@ -105,10 +120,16 @@ export default class CRM extends Plugin {
           error instanceof Error && error.message
             ? error.message
             : "Unable to capture geolocation.";
-        new Notice(`Geolocation failed: ${message}`);
+
+        // Don't show error if user cancelled
+        if (message !== "Geolocation request cancelled.") {
+          new Notice(`Geolocation failed: ${message}`);
+        }
       }
 
       return false;
+    } finally {
+      this.geolocationAbortController = null;
     }
   };
 
@@ -286,7 +307,28 @@ export default class CRM extends Plugin {
         }
 
         if (!checking) {
+          console.log(
+            "CRM: add-geolocation command triggered for file:",
+            file.path
+          );
           void this.applyGeolocationToFile(file, { notify: true });
+        }
+
+        return true;
+      },
+    });
+
+    this.addCommand({
+      id: "cancel-geolocation",
+      name: "Cancel Geolocation Request",
+      checkCallback: (checking) => {
+        if (checking) {
+          return this.geolocationAbortController !== null;
+        }
+
+        if (this.geolocationAbortController) {
+          this.geolocationAbortController.abort();
+          this.geolocationAbortController = null;
         }
 
         return true;
