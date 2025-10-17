@@ -1,7 +1,7 @@
 import { ItemView, type ViewStateResult, WorkspaceLeaf } from "obsidian";
 import { createRoot, type Root } from "react-dom/client";
 import { AppProvider } from "@/context/AppProvider";
-import { CRMEntityPanelView } from "./CRMEntityPanelView";
+import { EntityView } from "./EntityView";
 import { CRMFileType, getCRMEntityConfig } from "@/types/CRMFileType";
 
 export const ENTITY_PANEL_VIEW = "entity-panel-view";
@@ -87,7 +87,7 @@ export class CRMEntityPanelViewWrapper extends ItemView {
 
     this.root.render(
       <AppProvider app={this.app}>
-        <CRMEntityPanelView entityType={this.entityType} />
+        <EntityView entityType={this.entityType} />
       </AppProvider>
     );
   }

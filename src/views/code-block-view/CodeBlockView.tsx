@@ -3,16 +3,16 @@ import type { ComponentType } from "react";
 import { JournalNav } from "@/containers/JournalNav";
 import HabitTracker from "@/containers/HabitTracker";
 
-type CRMInlineBlockProps = Record<string, string>;
+type CodeBlockProps = Record<string, string>;
 
-const blocksMap: Record<string, ComponentType<CRMInlineBlockProps>> = {
-  "journal-nav": JournalNav as ComponentType<CRMInlineBlockProps>,
-  habits: HabitTracker as ComponentType<CRMInlineBlockProps>,
+const blocksMap: Record<string, ComponentType<CodeBlockProps>> = {
+  "journal-nav": JournalNav as ComponentType<CodeBlockProps>,
+  habits: HabitTracker as ComponentType<CodeBlockProps>,
 };
 
-const parseInlineQuery = (query: string): CRMInlineBlockProps => {
+const parseInlineQuery = (query: string): CodeBlockProps => {
   const params = new URLSearchParams(query);
-  const result: CRMInlineBlockProps = {};
+  const result: CodeBlockProps = {};
 
   params.forEach((value, key) => {
     if (key) {
@@ -25,7 +25,7 @@ const parseInlineQuery = (query: string): CRMInlineBlockProps => {
 
 const parseBlockSource = (
   raw: string
-): { blockKey: string; props: CRMInlineBlockProps } => {
+): { blockKey: string; props: CodeBlockProps } => {
   const lines = raw
     .split(/\r?\n/)
     .map((line) => line.trim())
@@ -44,11 +44,11 @@ const parseBlockSource = (
   const inlineQuery =
     questionMarkIndex !== -1 ? firstLine.slice(questionMarkIndex + 1) : "";
 
-  const baseProps: CRMInlineBlockProps = inlineQuery
+  const baseProps: CodeBlockProps = inlineQuery
     ? parseInlineQuery(inlineQuery)
     : {};
 
-  const props = rest.reduce<CRMInlineBlockProps>(
+  const props = rest.reduce<CodeBlockProps>(
     (acc, line) => {
       const colonIndex = line.indexOf(":");
       const equalsIndex = line.indexOf("=");
@@ -74,7 +74,7 @@ const parseBlockSource = (
   return { blockKey, props };
 };
 
-export const CRMInlineView = ({ source }: { source: string }) => {
+export const CodeBlockView = ({ source }: { source: string }) => {
   const { blockKey, props } = parseBlockSource(source);
   const BlockComponent = blockKey ? blocksMap[blockKey] : undefined;
 
@@ -85,7 +85,7 @@ export const CRMInlineView = ({ source }: { source: string }) => {
   }
 
   const { key: keyProp, ...restProps } = props;
-  const componentProps: CRMInlineBlockProps =
+  const componentProps: CodeBlockProps =
     keyProp !== undefined
       ? { ...restProps, blockKey: keyProp, inlineKey: keyProp }
       : restProps;

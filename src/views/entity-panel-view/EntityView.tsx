@@ -3,13 +3,11 @@ import { CRMFileType, getCRMEntityConfig } from "@/types/CRMFileType";
 import { useCRMEntityPanel } from "./useCRMEntityPanel";
 import { EntityGrid } from "./components/EntityGrid";
 
-type CRMEntityPanelViewProps = {
+type EntityViewProps = {
   entityType: CRMFileType;
 };
 
-export const CRMEntityPanelView: FC<CRMEntityPanelViewProps> = ({
-  entityType,
-}) => {
+export const EntityView: FC<EntityViewProps> = ({ entityType }) => {
   const { columns, rows } = useCRMEntityPanel(entityType);
   const config = getCRMEntityConfig(entityType);
   const title = config?.name ?? entityType;

@@ -1,7 +1,7 @@
 import { App, MarkdownPostProcessorContext } from "obsidian";
 import { createRoot } from "react-dom/client";
 import { AppProvider } from "@/context/AppProvider";
-import { CRMInlineView } from "./CRMInlineView";
+import { CodeBlockView } from "./CodeBlockView";
 
 export class CRMInlineViewWrapper {
   constructor(
@@ -14,7 +14,7 @@ export class CRMInlineViewWrapper {
     const root = createRoot(el);
     root.render(
       <AppProvider app={app}>
-        <CRMInlineView source={source} />
+        <CodeBlockView source={source} />
       </AppProvider>
     );
 

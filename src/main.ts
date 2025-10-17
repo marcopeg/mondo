@@ -17,8 +17,8 @@ import {
   ENTITY_PANEL_VIEW,
   type CRMEntityPanelViewState,
 } from "@/views/entity-panel-view/wrapper";
-import { CRMInlineViewWrapper } from "@/views/inline-view/wrapper";
-import { CRMSettingsTab } from "@/views/settings/CRMSettingsTab";
+import { CRMInlineViewWrapper } from "@/views/code-block-view/wrapper";
+import { SettingsView } from "@/views/settings/SettingsView";
 import { CRMFileManager } from "@/utils/CRMFileManager";
 import { AudioTranscriptionManager } from "@/utils/AudioTranscriptionManager";
 import { VoiceoverManager } from "@/utils/VoiceoverManager";
@@ -156,7 +156,7 @@ export default class CRM extends Plugin {
     console.log("CRM: Loading plugin");
 
     // Initialize settings
-    this.addSettingTab(new CRMSettingsTab(this.app, this));
+    this.addSettingTab(new SettingsView(this.app, this));
     await this.loadSettings();
 
     registerDictationIcon();

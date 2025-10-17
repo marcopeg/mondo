@@ -17,8 +17,8 @@ import {
   getCRMEntityConfig,
 } from "@/types/CRMFileType";
 
-// Settings tab for CRM plugin
-export class CRMSettingsTab extends PluginSettingTab {
+// Settings view for CRM plugin
+export class SettingsView extends PluginSettingTab {
   plugin: CRM;
 
   constructor(app: App, plugin: CRM) {

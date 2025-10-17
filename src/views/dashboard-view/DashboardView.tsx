@@ -12,7 +12,7 @@ import QuickTasks from "./QuickTasks";
 import { useSetting } from "@/hooks/use-setting";
 import { resolveSelfPerson } from "@/utils/selfPerson";
 
-export const CRMDashboardView = () => {
+export const DashboardView = () => {
   const app = useApp();
   const [_, setTick] = useState(0);
   const selfPersonPath = useSetting<string>("selfPersonPath", "");

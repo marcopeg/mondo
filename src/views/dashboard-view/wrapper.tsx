@@ -1,7 +1,7 @@
 import { ItemView, WorkspaceLeaf } from "obsidian";
 import { createRoot, Root } from "react-dom/client";
 import { AppProvider } from "@/context/AppProvider";
-import { CRMDashboardView } from "./CRMDashboardView";
+import { DashboardView } from "./DashboardView";
 
 export const DASHBOARD_VIEW = "dashboard-view";
 
@@ -29,7 +29,7 @@ export class CRMDashboardViewWrapper extends ItemView {
     this.root = createRoot(this.contentEl);
     this.root.render(
       <AppProvider app={this.app}>
-        <CRMDashboardView />
+        <DashboardView />
       </AppProvider>
     );
   }
