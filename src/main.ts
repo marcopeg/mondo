@@ -90,20 +90,16 @@ export default class CRM extends Plugin {
     this.geolocationAbortController = new AbortController();
 
     try {
-      console.log("CRM: Requesting geolocation...");
-
       // Show loading indicator using Notice
       const notice = new Notice("Getting your location...", 0);
 
       const geoloc = await requestGeolocation(
         this.geolocationAbortController.signal
       );
-      console.log("CRM: Geolocation received:", geoloc);
 
       notice.hide();
 
       await this.app.fileManager.processFrontMatter(file, (fm) => {
-        console.log("CRM: Processing frontmatter for file:", file.path);
         fm.location = geoloc;
       });
 
@@ -307,10 +303,6 @@ export default class CRM extends Plugin {
         }
 
         if (!checking) {
-          console.log(
-            "CRM: add-geolocation command triggered for file:",
-            file.path
-          );
           void this.applyGeolocationToFile(file, { notify: true });
         }
 
