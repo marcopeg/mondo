@@ -1,1 +1,1 @@
-export { RecentCRMNotes as default } from "./RecentCRMNotes";
+export { RecentNotes as default } from "./RecentCRMNotes";

@@ -8,7 +8,7 @@ import Stack from "@/components/ui/Stack";
 import type CRM from "@/main";
 import { addDailyLog } from "@/commands/daily.addLog";
 
-const QuickLogEntry = () => {
+const QuickLog = () => {
   const app = useApp();
   const [quickLogText, setQuickLogText] = useState("");
   const [isLogging, setIsLogging] = useState(false);
@@ -28,9 +28,7 @@ const QuickLogEntry = () => {
       return;
     }
 
-    const plugin = (app as any).plugins?.getPlugin?.("crm") as
-      | CRM
-      | undefined;
+    const plugin = (app as any).plugins?.getPlugin?.("crm") as CRM | undefined;
     if (!plugin) {
       new Notice("CRM plugin is not ready yet");
       focusInput();
@@ -43,7 +41,7 @@ const QuickLogEntry = () => {
       setQuickLogText("");
       focusInput();
     } catch (error) {
-      console.error("QuickLogEntry: failed to append daily log", error);
+      console.error("QuickLog: failed to append daily log", error);
       new Notice("Failed to append daily log entry");
       focusInput();
     } finally {
@@ -74,10 +72,7 @@ const QuickLogEntry = () => {
           aria-label="Add log"
           disabled={isLogging || !quickLogText.trim()}
         >
-          <Icon
-            name="send"
-            className="w-5 h-5 sm:hidden mr-0"
-          />
+          <Icon name="send" className="w-5 h-5 sm:hidden mr-0" />
           <span className="hidden sm:inline">Add Log</span>
         </Button>
       </Stack>
@@ -85,4 +80,4 @@ const QuickLogEntry = () => {
   );
 };
 
-export default QuickLogEntry;
+export default QuickLog;

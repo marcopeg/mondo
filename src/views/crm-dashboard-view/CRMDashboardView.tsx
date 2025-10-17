@@ -3,11 +3,11 @@ import { useApp } from "@/hooks/use-app";
 import { Typography } from "@/components/ui/Typography";
 import Button from "@/components/ui/Button";
 import Separator from "@/components/ui/Separator";
-import QuickLogEntry from "./QuickLogEntry";
-import QuickTaskEntry from "./QuickTaskEntry";
+import QuickLog from "./QuickLogEntry";
+import QuickTask from "./QuickTaskEntry";
 import { CRM_ENTITY_CONFIG_LIST } from "@/entities";
 import EntityPicker from "./components/EntityPicker";
-import RecentCRMNotes from "./RecentCRMNotes";
+import RecentNotes from "./RecentCRMNotes";
 import QuickTasks from "./QuickTasks";
 import { useSetting } from "@/hooks/use-setting";
 import { resolveSelfPerson } from "@/utils/selfPerson";
@@ -107,14 +107,14 @@ export const CRMDashboardView = () => {
         </div>
         <div className="grid grid-cols-1 gap-2 lg:grid-cols-2 lg:gap-4">
           <div className="w-full">
-            <QuickLogEntry />
+            <QuickLog />
           </div>
           <div className="w-full">
-            <QuickTaskEntry />
+            <QuickTask />
           </div>
         </div>
       </div>
-      <RecentCRMNotes />
+      <RecentNotes />
       <QuickTasks collapsed />
       <Separator spacing={4} />
       <div className="mt-4 grid grid-cols-1 gap-y-8 gap-x-16 md:grid-cols-2 xl:grid-cols-3">

@@ -8,7 +8,7 @@ import Stack from "@/components/ui/Stack";
 import type CRM from "@/main";
 import { addDailyLog } from "@/commands/daily.addLog";
 
-const QuickTaskEntry = () => {
+const QuickTask = () => {
   const app = useApp();
   const [quickLogText, setQuickLogText] = useState("");
   const [isLogging, setIsLogging] = useState(false);
@@ -28,9 +28,7 @@ const QuickTaskEntry = () => {
       return;
     }
 
-    const plugin = (app as any).plugins?.getPlugin?.("crm") as
-      | CRM
-      | undefined;
+    const plugin = (app as any).plugins?.getPlugin?.("crm") as CRM | undefined;
     if (!plugin) {
       new Notice("CRM plugin is not ready yet");
       focusInput();
@@ -43,7 +41,7 @@ const QuickTaskEntry = () => {
       setQuickLogText("");
       focusInput();
     } catch (error) {
-      console.error("QuickTaskEntry: failed to append daily task", error);
+      console.error("QuickTask: failed to append daily task", error);
       new Notice("Failed to append daily task entry");
       focusInput();
     } finally {
@@ -89,4 +87,4 @@ const QuickTaskEntry = () => {
   );
 };
 
-export default QuickTaskEntry;
+export default QuickTask;

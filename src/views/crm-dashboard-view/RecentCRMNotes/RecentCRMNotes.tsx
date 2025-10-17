@@ -22,7 +22,7 @@ const DATE_FORMAT_OPTIONS: Intl.DateTimeFormatOptions = {
 const useDateFormatter = () =>
   useMemo(() => new Intl.DateTimeFormat(undefined, DATE_FORMAT_OPTIONS), []);
 
-export const RecentCRMNotes = () => {
+export const RecentNotes = () => {
   const [limit, setLimit] = useState(5);
   const [selectedType, setSelectedType] = useState<CRMFileType | null>(null);
   const { notes, hasMore } = useRecentCRMNotes(limit, selectedType);
