@@ -32,6 +32,7 @@ import {
   CRM_FILE_TYPES,
   getCRMEntityConfig,
 } from "@/types/CRMFileType";
+import { CRM_ENTITY_TYPES } from "@/entities";
 import {
   DEFAULT_CRM_JOURNAL_SETTINGS,
   DEFAULT_CRM_DAILY_SETTINGS,
@@ -253,6 +254,7 @@ export default class CRM extends Plugin {
       hotkeys: [{ modifiers: ["Mod", "Shift"], key: "j" }],
       callback: async () => {
         try {
+          console.log("Opening journal...");
           await openJournal(this.app, this);
         } catch (e) {
           console.error("CRM: Failed to open journal:", e);
@@ -320,7 +322,7 @@ export default class CRM extends Plugin {
       },
     });
 
-    CRM_FILE_TYPES.forEach((fileType) => {
+    CRM_ENTITY_TYPES.forEach((fileType) => {
       const config = getCRMEntityConfig(fileType);
       const label = config?.name ?? fileType;
       this.addCommand({
