@@ -7,9 +7,11 @@ import { Icon } from "@/components/ui/Icon";
 import Button from "@/components/ui/Button";
 import ButtonGroup from "@/components/ui/ButtonGroup";
 import Switch from "@/components/ui/Switch";
+import { Separator } from "@/components/ui/Separator";
 import { CRM_ENTITY_CONFIG_LIST } from "@/entities";
 import { getCRMEntityConfig, type CRMFileType } from "@/types/CRMFileType";
 import { useRelevantNotes } from "./useRelevantNotes";
+import { useRecentCRMNotes } from "@/hooks/use-recent-crm-notes";
 
 const formatReferenceCount = (count: number): string => {
   if (count === 1) {
@@ -41,39 +43,43 @@ const formatDateForDisplay = (value: string | null): string | null => {
   return new Date(parsed).toISOString().slice(0, 10);
 };
 
-type NotesMode = "all" | "changed";
+type NotesMode = "hits" | "history";
 
-const countForMode = (
-  note: ReturnType<typeof useRelevantNotes>[number],
-  mode: NotesMode
-): number => {
-  const { created, modified, opened } = note.counts;
-  if (mode === "all") {
-    return created + modified + opened;
-  }
-  return created + modified;
+const getTotalHits = (note: ReturnType<typeof useRelevantNotes>[number]) =>
+  note.counts.created + note.counts.modified + note.counts.opened;
+
+const DATE_FORMAT_OPTIONS: Intl.DateTimeFormatOptions = {
+  year: "numeric",
+  month: "short",
+  day: "numeric",
+  hour: "2-digit",
+  minute: "2-digit",
 };
 
 export const RelevantNotes = () => {
   const [selectedType, setSelectedType] = useState<CRMFileType | null>(null);
-  const [mode, setMode] = useState<NotesMode>("all");
-  const [visibleCount, setVisibleCount] = useState(5);
-  const notes = useRelevantNotes(10);
+  const [mode, setMode] = useState<NotesMode>("hits");
+  const [hitsVisibleCount, setHitsVisibleCount] = useState(5);
+  const [historyLimit, setHistoryLimit] = useState(5);
+  const hitsNotes = useRelevantNotes(25);
+  const {
+    notes: historyNotes,
+    hasMore: historyHasMore,
+  } = useRecentCRMNotes(historyLimit, selectedType);
+  const dateFormatter = useMemo(
+    () => new Intl.DateTimeFormat(undefined, DATE_FORMAT_OPTIONS),
+    []
+  );
 
-  const filteredNotes = useMemo(() => {
+  const filteredHits = useMemo(() => {
     const scoped = selectedType
-      ? notes.filter((note) => note.type === selectedType)
-      : notes;
+      ? hitsNotes.filter((note) => note.type === selectedType)
+      : hitsNotes;
 
-    const relevant =
-      mode === "changed"
-        ? scoped.filter((note) => note.counts.created + note.counts.modified > 0)
-        : scoped;
-
-    const sorted = [...relevant];
+    const sorted = [...scoped];
     sorted.sort((left, right) => {
-      const rightCount = countForMode(right, mode);
-      const leftCount = countForMode(left, mode);
+      const rightCount = getTotalHits(right);
+      const leftCount = getTotalHits(left);
       if (rightCount !== leftCount) {
         return rightCount - leftCount;
       }
@@ -81,30 +87,45 @@ export const RelevantNotes = () => {
     });
 
     return sorted;
-  }, [mode, notes, selectedType]);
+  }, [hitsNotes, selectedType]);
 
-  useEffect(() => {
-    setVisibleCount(5);
-  }, [mode, selectedType, notes]);
-
-  const visibleNotes = useMemo(
-    () => filteredNotes.slice(0, visibleCount),
-    [filteredNotes, visibleCount]
+  const visibleHits = useMemo(
+    () => filteredHits.slice(0, hitsVisibleCount),
+    [filteredHits, hitsVisibleCount]
   );
 
-  const hasMore = filteredNotes.length > visibleCount;
+  const hitsHasMore = filteredHits.length > hitsVisibleCount;
+
+  useEffect(() => {
+    setHitsVisibleCount(5);
+    setHistoryLimit(5);
+  }, [selectedType]);
+
+  useEffect(() => {
+    if (mode === "hits") {
+      setHitsVisibleCount(5);
+    } else {
+      setHistoryLimit(5);
+    }
+  }, [mode]);
 
   const toggleFilter = useCallback((type: CRMFileType) => {
     setSelectedType((previous) => (previous === type ? null : type));
   }, []);
 
   const handleModeChange = useCallback((checked: boolean) => {
-    setMode(checked ? "changed" : "all");
+    setMode(checked ? "history" : "hits");
   }, []);
 
   const handleLoadMore = useCallback(() => {
-    setVisibleCount((previous) => previous + 5);
-  }, []);
+    if (mode === "history") {
+      setHistoryLimit((previous) => previous + 5);
+      return;
+    }
+    setHitsVisibleCount((previous) => previous + 5);
+  }, [mode]);
+
+  const hasMore = mode === "history" ? historyHasMore : hitsHasMore;
 
   const filterButtons = useMemo(
     () =>
@@ -115,6 +136,11 @@ export const RelevantNotes = () => {
       })),
     []
   );
+
+  const emptyStateMessage =
+    mode === "history"
+      ? "No CRM notes found yet."
+      : "No referenced notes found yet.";
 
   return (
     <Card
@@ -147,28 +173,77 @@ export const RelevantNotes = () => {
             </ButtonGroup>
           </div>
           <Switch
-            checked={mode === "changed"}
+            checked={mode === "history"}
             onCheckedChange={handleModeChange}
-            uncheckedLabel="all"
-            checkedLabel="changed"
+            uncheckedLabel="hits"
+            checkedLabel="history"
             aria-label="Toggle relevant notes mode"
             className="flex-shrink-0"
           />
         </Stack>
-        {filteredNotes.length === 0 ? (
+        {(mode === "history"
+          ? historyNotes.length === 0
+          : filteredHits.length === 0) ? (
           <Typography
             variant="body"
             className="text-sm text-[var(--text-muted)]"
           >
-            No referenced notes found yet.
+            {emptyStateMessage}
           </Typography>
+        ) : mode === "history" ? (
+          <>
+            {historyNotes.map((note) => {
+              const config = getCRMEntityConfig(note.type);
+              const entityName = config?.name ?? note.type;
+              const iconName = config?.icon;
+              return (
+                <div
+                  key={note.path}
+                  className="flex flex-col gap-1 rounded-sm border border-transparent p-2 hover:border-[var(--background-modifier-border-hover)] hover:bg-[var(--background-modifier-hover)]"
+                >
+                  <Stack direction="row" align="center" justify="space-between">
+                    <Stack direction="row" align="center" gap={1}>
+                      {iconName && <Icon name={iconName} />}
+                      <Link
+                        to={note.path}
+                        className="text-sm font-medium text-[var(--text-accent)] hover:underline"
+                      >
+                        {note.label}
+                      </Link>
+                    </Stack>
+                    <span className="text-xs uppercase tracking-wide text-[var(--text-muted)]">
+                      {entityName}
+                    </span>
+                  </Stack>
+                  <span className="text-xs text-[var(--text-muted)]">
+                    Last updated {dateFormatter.format(note.modified)}
+                  </span>
+                </div>
+              );
+            })}
+            {hasMore ? (
+              <div className="flex w-full flex-col gap-2 pt-1">
+                <Separator />
+                <Button
+                  onClick={handleLoadMore}
+                  className="text-xs px-2 py-2"
+                  type="button"
+                  variant="link"
+                  fullWidth
+                  aria-label="Load more recent notes"
+                >
+                  Load more
+                </Button>
+              </div>
+            ) : null}
+          </>
         ) : (
           <>
-            {visibleNotes.map((note) => {
+            {visibleHits.map((note) => {
               const entityName = note.type
                 ? getCRMEntityConfig(note.type)?.name ?? note.type
                 : "note";
-              const totalReferences = countForMode(note, mode);
+              const totalReferences = getTotalHits(note);
               const lastOpened = formatDateForDisplay(note.lastOpened);
               const lastModified = formatDateForDisplay(
                 note.lastModified ?? note.lastCreated
