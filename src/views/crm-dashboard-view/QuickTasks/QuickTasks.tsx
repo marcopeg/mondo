@@ -60,7 +60,9 @@ export const QuickTasks: React.FC<{ collapsed?: boolean }> = ({
   );
 
   const openTasksCount = tasks.length;
-  const badgeLabel = `${openTasksCount} open task${openTasksCount === 1 ? "" : "s"}`;
+  const badgeLabel = `${openTasksCount} open task${
+    openTasksCount === 1 ? "" : "s"
+  }`;
 
   return (
     <Card

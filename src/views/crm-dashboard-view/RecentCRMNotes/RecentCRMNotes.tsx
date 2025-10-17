@@ -72,7 +72,10 @@ export const RecentCRMNotes = () => {
           </ButtonGroup>
         </div>
         {notes.length === 0 ? (
-          <Typography variant="body" className="text-sm text-[var(--text-muted)]">
+          <Typography
+            variant="body"
+            className="text-sm text-[var(--text-muted)]"
+          >
             No CRM notes found yet.
           </Typography>
         ) : (
