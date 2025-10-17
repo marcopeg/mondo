@@ -707,7 +707,6 @@
   stroke: var(--interactive-accent);
   stroke-width: 6;
   stroke-linecap: round;
-  transition: stroke-dashoffset 1s linear;
 }
 
 .crm-timer-block--resting .crm-timer-block__progress-indicator {

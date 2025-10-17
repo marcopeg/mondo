@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 type TimerPhase = "work" | "rest";
 type HepticMode = "audio" | "vibration";
@@ -202,11 +202,25 @@ export const useTimerBlock = (props: TimerBlockProps): TimerBlockState => {
   const [isRunning, setIsRunning] = useState(false);
   const [phase, setPhase] = useState<TimerPhase>("work");
   const [remainingSeconds, setRemainingSeconds] = useState(durationSeconds);
+  const [progress, setProgress] = useState(1);
+  const phaseDurationRef = useRef(Math.max(durationSeconds || 1, 1));
+  const phaseStartTimeRef = useRef<number | null>(null);
+  const animationFrameRef = useRef<number | null>(null);
+
+  const getNow = useCallback(() => {
+    if (typeof performance !== "undefined" && typeof performance.now === "function") {
+      return performance.now();
+    }
+
+    return Date.now();
+  }, []);
 
   useEffect(() => {
     if (!isRunning) {
       setPhase("work");
       setRemainingSeconds(durationSeconds);
+      setProgress(1);
+      phaseStartTimeRef.current = null;
     }
   }, [durationSeconds, isRunning]);
 
@@ -239,18 +253,24 @@ export const useTimerBlock = (props: TimerBlockProps): TimerBlockState => {
           if (intervalSeconds > 0) {
             triggerRestCue(hepticMode);
             setRemainingSeconds(intervalSeconds);
+            setProgress(1);
+            phaseStartTimeRef.current = null;
 
             return "rest";
           }
 
           triggerHappyChime(hepticMode);
           setRemainingSeconds(durationSeconds);
+          setProgress(1);
+          phaseStartTimeRef.current = null;
 
           return "work";
         }
 
         triggerHappyChime(hepticMode);
         setRemainingSeconds(durationSeconds);
+        setProgress(1);
+        phaseStartTimeRef.current = null;
 
         return "work";
       });
@@ -272,6 +292,8 @@ export const useTimerBlock = (props: TimerBlockProps): TimerBlockState => {
     triggerHappyChime(hepticMode);
     setPhase("work");
     setRemainingSeconds(durationSeconds);
+    setProgress(1);
+    phaseStartTimeRef.current = null;
     setIsRunning(true);
   }, [durationSeconds, hepticMode]);
 
@@ -279,6 +301,8 @@ export const useTimerBlock = (props: TimerBlockProps): TimerBlockState => {
     setIsRunning(false);
     setPhase("work");
     setRemainingSeconds(durationSeconds);
+    setProgress(1);
+    phaseStartTimeRef.current = null;
     stopFeedback(hepticMode);
   }, [durationSeconds, hepticMode]);
 
@@ -307,14 +331,64 @@ export const useTimerBlock = (props: TimerBlockProps): TimerBlockState => {
     return durationSeconds || 1;
   }, [durationSeconds, intervalSeconds, phase]);
 
-  const progress = useMemo(() => {
-    const denominator = Math.max(activePhaseDuration, 1);
-    const numerator = isRunning
-      ? Math.min(Math.max(remainingSeconds, 0), denominator)
-      : denominator;
+  useEffect(() => {
+    phaseDurationRef.current = Math.max(activePhaseDuration, 1);
 
-    return numerator / denominator;
-  }, [activePhaseDuration, isRunning, remainingSeconds]);
+    if (isRunning) {
+      phaseStartTimeRef.current = getNow();
+      setProgress(1);
+      return;
+    }
+
+    phaseStartTimeRef.current = null;
+    setProgress(1);
+  }, [activePhaseDuration, getNow, isRunning, phase]);
+
+  useEffect(() => {
+    if (!isRunning) {
+      if (animationFrameRef.current !== null) {
+        window.cancelAnimationFrame(animationFrameRef.current);
+        animationFrameRef.current = null;
+      }
+
+      return;
+    }
+
+    let isCancelled = false;
+
+    const tick = () => {
+      if (isCancelled) {
+        return;
+      }
+
+      const durationMs = Math.max(phaseDurationRef.current * 1000, 1);
+      const now = getNow();
+      const start = phaseStartTimeRef.current ?? now;
+
+      if (phaseStartTimeRef.current === null) {
+        phaseStartTimeRef.current = start;
+      }
+
+      const elapsed = now - start;
+      const remaining = Math.max(durationMs - elapsed, 0);
+      const ratio = Math.max(0, Math.min(1, remaining / durationMs));
+
+      setProgress(ratio);
+
+      animationFrameRef.current = window.requestAnimationFrame(tick);
+    };
+
+    animationFrameRef.current = window.requestAnimationFrame(tick);
+
+    return () => {
+      isCancelled = true;
+
+      if (animationFrameRef.current !== null) {
+        window.cancelAnimationFrame(animationFrameRef.current);
+        animationFrameRef.current = null;
+      }
+    };
+  }, [getNow, isRunning, phase]);
 
   return {
     canStart: durationSeconds > 0,
