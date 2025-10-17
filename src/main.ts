@@ -101,11 +101,13 @@ export default class CRM extends Plugin {
       notice.hide();
 
       await this.app.fileManager.processFrontMatter(file, (fm) => {
-        fm.location = geoloc;
+        // Store as strings with dots to ensure international compatibility
+        fm.lat = String(geoloc.lat).replace(",", ".");
+        fm.lon = String(geoloc.lon).replace(",", ".");
       });
 
       if (notify) {
-        new Notice("Geolocation saved to frontmatter.");
+        new Notice("Geolocation saved.");
       }
 
       return true;

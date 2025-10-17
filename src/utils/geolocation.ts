@@ -1,12 +1,6 @@
 export type GeolocationData = {
   lat: number;
   lon: number;
-  accuracy: number;
-  timestamp: string;
-  altitude?: number;
-  altitudeAccuracy?: number;
-  heading?: number;
-  speed?: number;
 };
 
 const roundTo = (value: number, precision: number) => {
@@ -20,6 +14,43 @@ const ensureNavigator = () => {
   }
 
   return navigator.geolocation;
+};
+
+// Cache for storing geolocation with timestamp
+let cachedGeolocation: {
+  lat: number;
+  lon: number;
+  timestamp: number;
+} | null = null;
+
+const CACHE_DURATION_MS = 5 * 60 * 1000; // 5 minutes
+
+const getCachedGeolocation = (): GeolocationData | null => {
+  if (!cachedGeolocation) {
+    return null;
+  }
+
+  const now = Date.now();
+  const age = now - cachedGeolocation.timestamp;
+
+  if (age > CACHE_DURATION_MS) {
+    // Cache expired
+    cachedGeolocation = null;
+    return null;
+  }
+
+  return {
+    lat: cachedGeolocation.lat,
+    lon: cachedGeolocation.lon,
+  };
+};
+
+const setCachedGeolocation = (lat: number, lon: number): void => {
+  cachedGeolocation = {
+    lat,
+    lon,
+    timestamp: Date.now(),
+  };
 };
 
 const requestPosition = async (
@@ -62,35 +93,15 @@ const requestPosition = async (
   });
 };
 
-const positionToFrontmatter = (
+const positionToGeolocation = (
   position: GeolocationPosition
 ): GeolocationData => {
-  const { coords, timestamp } = position;
+  const { coords } = position;
 
-  const geoloc: GeolocationData = {
+  return {
     lat: roundTo(coords.latitude, 6),
     lon: roundTo(coords.longitude, 6),
-    accuracy: roundTo(coords.accuracy, 1),
-    timestamp: new Date(timestamp || Date.now()).toISOString(),
   };
-
-  if (typeof coords.altitude === "number") {
-    geoloc.altitude = roundTo(coords.altitude, 1);
-  }
-
-  if (typeof coords.altitudeAccuracy === "number") {
-    geoloc.altitudeAccuracy = roundTo(coords.altitudeAccuracy, 1);
-  }
-
-  if (typeof coords.heading === "number" && !Number.isNaN(coords.heading)) {
-    geoloc.heading = roundTo(coords.heading, 1);
-  }
-
-  if (typeof coords.speed === "number" && !Number.isNaN(coords.speed)) {
-    geoloc.speed = roundTo(coords.speed, 2);
-  }
-
-  return geoloc;
 };
 
 type IPGeolocationPayload = {
@@ -136,23 +147,9 @@ const requestFallbackGeolocation = async (): Promise<GeolocationData> => {
       throw new Error("Fallback geolocation service returned invalid data.");
     }
 
-    const accuracyCandidate = (() => {
-      if (typeof payload.accuracy === "number") {
-        return payload.accuracy;
-      }
-
-      if (typeof payload.accuracy_radius === "number") {
-        return payload.accuracy_radius * 1000;
-      }
-
-      return 50000;
-    })();
-
     return {
       lat: roundTo(payload.latitude, 6),
       lon: roundTo(payload.longitude, 6),
-      accuracy: roundTo(accuracyCandidate, 1),
-      timestamp: new Date().toISOString(),
     };
   } catch (error) {
     if (error instanceof Error && error.name === "AbortError") {
@@ -172,12 +169,22 @@ const requestFallbackGeolocation = async (): Promise<GeolocationData> => {
 export const requestGeolocation = async (
   signal?: AbortSignal
 ): Promise<GeolocationData> => {
+  // Check cache first
+  const cached = getCachedGeolocation();
+  if (cached) {
+    return cached;
+  }
+
   try {
     const position = await requestPosition(signal);
-    return positionToFrontmatter(position);
+    const geoloc = positionToGeolocation(position);
+    setCachedGeolocation(geoloc.lat, geoloc.lon);
+    return geoloc;
   } catch (primaryError) {
     try {
-      return await requestFallbackGeolocation();
+      const geoloc = await requestFallbackGeolocation();
+      setCachedGeolocation(geoloc.lat, geoloc.lon);
+      return geoloc;
     } catch (fallbackError) {
       const fallbackMessage =
         fallbackError instanceof Error
