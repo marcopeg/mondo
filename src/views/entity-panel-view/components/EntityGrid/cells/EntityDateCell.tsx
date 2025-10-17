@@ -1,4 +1,4 @@
-import type { CRMEntityListRow } from "@/views/crm-entity-panel-view/useCRMEntityPanel";
+import type { CRMEntityListRow } from "@/views/entity-panel-view/useCRMEntityPanel";
 import { CRMFileLink } from "../../CRMFileLink";
 
 type EntityDateCellProps = {

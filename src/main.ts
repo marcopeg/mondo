@@ -10,15 +10,15 @@ import {
 } from "obsidian";
 import {
   CRMDashboardViewWrapper,
-  CRM_DASHBOARD_VIEW,
-} from "@/views/crm-dashboard-view/wrapper";
+  DASHBOARD_VIEW,
+} from "@/views/dashboard-view/wrapper";
 import {
   CRMEntityPanelViewWrapper,
-  CRM_ENTITY_PANEL_VIEW,
+  ENTITY_PANEL_VIEW,
   type CRMEntityPanelViewState,
-} from "@/views/crm-entity-panel-view/wrapper";
-import { CRMInlineViewWrapper } from "@/views/crm-inline-view/wrapper";
-import { CRMSettingsTab } from "@/views/crm-settings/CRMSettingsTab";
+} from "@/views/entity-panel-view/wrapper";
+import { CRMInlineViewWrapper } from "@/views/inline-view/wrapper";
+import { CRMSettingsTab } from "@/views/settings/CRMSettingsTab";
 import { CRMFileManager } from "@/utils/CRMFileManager";
 import { AudioTranscriptionManager } from "@/utils/AudioTranscriptionManager";
 import { VoiceoverManager } from "@/utils/VoiceoverManager";
@@ -207,7 +207,7 @@ export default class CRM extends Plugin {
       id: "open-dashboard",
       name: "Open CRM Dashboard",
       hotkeys: [{ modifiers: ["Mod", "Shift"], key: "m" }], // Cmd/Ctrl+Shift+M (user can change later)
-      callback: () => this.showPanel(CRM_DASHBOARD_VIEW, "main"),
+      callback: () => this.showPanel(DASHBOARD_VIEW, "main"),
     });
 
     this.addCommand({
@@ -386,12 +386,12 @@ export default class CRM extends Plugin {
     // );
 
     this.registerView(
-      CRM_DASHBOARD_VIEW,
+      DASHBOARD_VIEW,
       (leaf) => new CRMDashboardViewWrapper(leaf, CRM_ICON)
     );
 
     this.registerView(
-      CRM_ENTITY_PANEL_VIEW,
+      ENTITY_PANEL_VIEW,
       (leaf) => new CRMEntityPanelViewWrapper(leaf, CRM_ICON)
     );
 
@@ -470,10 +470,10 @@ export default class CRM extends Plugin {
     fileManager.cleanup();
 
     this.app.workspace
-      .getLeavesOfType(CRM_DASHBOARD_VIEW)
+      .getLeavesOfType(DASHBOARD_VIEW)
       .forEach((leaf) => leaf.detach());
     this.app.workspace
-      .getLeavesOfType(CRM_ENTITY_PANEL_VIEW)
+      .getLeavesOfType(ENTITY_PANEL_VIEW)
       .forEach((leaf) => leaf.detach());
 
     disposeCRMLinkInjections();
@@ -562,7 +562,7 @@ export default class CRM extends Plugin {
       console.warn("CRM: attempted to open panel for unknown type", entityType);
       return;
     }
-    await this.showPanel(CRM_ENTITY_PANEL_VIEW, "main", {
+    await this.showPanel(ENTITY_PANEL_VIEW, "main", {
       state,
       reuseMatching: (leaf) => {
         const viewState = leaf.getViewState();
@@ -624,9 +624,9 @@ export default class CRM extends Plugin {
     const hasAnyNote = ws.getLeavesOfType("markdown").length > 0;
 
     if (!hasAnyNote) {
-      const dashboardOpen = ws.getLeavesOfType(CRM_DASHBOARD_VIEW).length > 0;
+      const dashboardOpen = ws.getLeavesOfType(DASHBOARD_VIEW).length > 0;
       if (!dashboardOpen) {
-        await this.showPanel(CRM_DASHBOARD_VIEW, "main");
+        await this.showPanel(DASHBOARD_VIEW, "main");
       }
 
       ws.leftSplit?.expand?.();
@@ -641,7 +641,7 @@ export default class CRM extends Plugin {
       activeLeaf?.getViewState?.()?.type ??
       null;
 
-    if (focusedTab === "crm-dashboard-view") {
+    if (focusedTab === "dashboard-view") {
       ws.rightSplit?.collapse?.();
     }
 
@@ -670,7 +670,7 @@ export default class CRM extends Plugin {
     if (!focusOnDashboard) return;
     if (this.hasFocusedDashboardOnStartup) return;
     this.hasFocusedDashboardOnStartup = true;
-    await this.showPanel(CRM_DASHBOARD_VIEW, "main");
+    await this.showPanel(DASHBOARD_VIEW, "main");
   }
 
   getVoiceoverManager = () => this.voiceoverManager;

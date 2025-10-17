@@ -2,12 +2,9 @@ import { ItemView, type ViewStateResult, WorkspaceLeaf } from "obsidian";
 import { createRoot, type Root } from "react-dom/client";
 import { AppProvider } from "@/context/AppProvider";
 import { CRMEntityPanelView } from "./CRMEntityPanelView";
-import {
-  CRMFileType,
-  getCRMEntityConfig,
-} from "@/types/CRMFileType";
+import { CRMFileType, getCRMEntityConfig } from "@/types/CRMFileType";
 
-export const CRM_ENTITY_PANEL_VIEW = "crm-entity-panel-view";
+export const ENTITY_PANEL_VIEW = "entity-panel-view";
 
 export type CRMEntityPanelViewState = {
   entityType: CRMFileType;
@@ -25,7 +22,7 @@ export class CRMEntityPanelViewWrapper extends ItemView {
   }
 
   getViewType() {
-    return CRM_ENTITY_PANEL_VIEW;
+    return ENTITY_PANEL_VIEW;
   }
 
   getDisplayText() {

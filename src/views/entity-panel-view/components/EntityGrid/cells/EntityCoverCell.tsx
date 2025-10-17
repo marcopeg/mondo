@@ -1,7 +1,7 @@
 import { useMemo, useCallback } from "react";
 import { TFile } from "obsidian";
 import { useApp } from "@/hooks/use-app";
-import type { CRMEntityListRow } from "@/views/crm-entity-panel-view/useCRMEntityPanel";
+import type { CRMEntityListRow } from "@/views/entity-panel-view/useCRMEntityPanel";
 
 const extractFirstEntry = (value: unknown): string | null => {
   if (!value) return null;

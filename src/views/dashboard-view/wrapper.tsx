@@ -3,7 +3,7 @@ import { createRoot, Root } from "react-dom/client";
 import { AppProvider } from "@/context/AppProvider";
 import { CRMDashboardView } from "./CRMDashboardView";
 
-export const CRM_DASHBOARD_VIEW = "crm-dashboard-view";
+export const DASHBOARD_VIEW = "dashboard-view";
 
 export class CRMDashboardViewWrapper extends ItemView {
   private root: Root | null = null;
@@ -15,7 +15,7 @@ export class CRMDashboardViewWrapper extends ItemView {
   }
 
   getViewType() {
-    return CRM_DASHBOARD_VIEW;
+    return DASHBOARD_VIEW;
   }
   getDisplayText() {
     return "CRM Dashboard";
