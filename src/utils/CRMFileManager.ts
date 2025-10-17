@@ -1,6 +1,10 @@
 import { TFile, App, EventRef } from "obsidian";
 import { TCachedFile } from "@/types/TCachedFile";
-import { CRMFileType, CRM_FILE_TYPES, isCRMFileType } from "@/types/CRMFileType";
+import {
+  CRMFileType,
+  CRM_FILE_TYPES,
+  isCRMFileType,
+} from "@/types/CRMFileType";
 
 /**
  * Event emitted when the CRM files list changes
@@ -290,11 +294,30 @@ export class CRMFileManager {
     const currentFiles = this.files.get(fileType) || [];
 
     // Check if file already exists (deduplicate by path)
-    const exists = currentFiles.some(
+    const existingIndex = currentFiles.findIndex(
       (cached) => cached.file.path === file.path
     );
-    if (exists) {
-      return false; // Already exists, no change
+
+    if (existingIndex !== -1) {
+      const existing = currentFiles[existingIndex];
+      let hasChanged = false;
+
+      if (existing.file !== file) {
+        existing.file = file;
+        hasChanged = true;
+      }
+
+      if (existing.cache !== cache) {
+        existing.cache = cache || undefined;
+        hasChanged = true;
+      }
+
+      if (hasChanged) {
+        currentFiles[existingIndex] = existing;
+        this.files.set(fileType, currentFiles);
+      }
+
+      return hasChanged;
     }
 
     const cachedFile: TCachedFile = {

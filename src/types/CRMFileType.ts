@@ -5,10 +5,12 @@ import {
   type CRMEntityType,
 } from "@/entities";
 
+const SPECIAL_CRM_TYPES = ["log", "journal"] as const;
+
 /**
  * Special built-in types that are not entities but have special handling
  */
-export type SpecialCRMType = "log" | "journal";
+export type SpecialCRMType = (typeof SPECIAL_CRM_TYPES)[number];
 
 /**
  * All CRM-recognized file types (entities + special types)
@@ -29,11 +31,13 @@ export const CRMFileType = Object.freeze(
   }, {} as Record<string, CRMEntityType>)
 ) as CRMFileTypeConst;
 
-export const CRM_FILE_TYPES = [...CRM_ENTITY_TYPES];
+export const CRM_FILE_TYPES: CRMFileType[] = [
+  ...CRM_ENTITY_TYPES,
+  ...SPECIAL_CRM_TYPES,
+];
 
 export const CRM_FILE_TYPE_LOOKUP = CRM_ENTITY_TYPE_SET;
-
-const SPECIAL_CRM_TYPES = new Set<SpecialCRMType>(["log", "journal"]);
+const SPECIAL_CRM_TYPE_SET = new Set<SpecialCRMType>(SPECIAL_CRM_TYPES);
 
 /**
  * Check if a type is a CRM entity type (excludes special types like log, journal)
@@ -45,7 +49,7 @@ export const isCRMEntityType = (type: string): type is CRMEntityType =>
  * Check if a type is a special CRM type (log, journal, etc.)
  */
 export const isSpecialCRMType = (type: string): type is SpecialCRMType =>
-  SPECIAL_CRM_TYPES.has(type as SpecialCRMType);
+  SPECIAL_CRM_TYPE_SET.has(type as SpecialCRMType);
 
 /**
  * Check if a type is any recognized CRM type (entity or special)
