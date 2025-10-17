@@ -90,15 +90,15 @@ export default class CRM extends Plugin {
   ): Promise<boolean> => {
     this.geolocationAbortController = new AbortController();
 
+    let notice: Notice | null = null;
+
     try {
       // Show loading indicator using Notice
-      const notice = new Notice("Getting your location...", 0);
+      notice = new Notice("Getting your location...", 0);
 
       const geoloc = await requestGeolocation(
         this.geolocationAbortController.signal
       );
-
-      notice.hide();
 
       await this.app.fileManager.processFrontMatter(file, (fm) => {
         // Store as strings with dots to ensure international compatibility
@@ -128,6 +128,7 @@ export default class CRM extends Plugin {
 
       return false;
     } finally {
+      notice?.hide();
       this.geolocationAbortController = null;
     }
   };
