@@ -71,7 +71,34 @@ export const TimerBlock: FC<TimerBlockProps> = (props) => {
     }
   };
 
-  const buttonPhaseLabel = isResting ? "rest" : "go";
+  const phaseLabel = isResting ? "rest" : "go";
+
+  const buttonIcon = useMemo(() => {
+    if (isRunning) {
+      return (
+        <svg
+          className="crm-timer-block__button-icon"
+          viewBox="0 0 24 24"
+          xmlns="http://www.w3.org/2000/svg"
+          aria-hidden
+        >
+          <rect x="6" y="5" width="5" height="14" rx="1.5" />
+          <rect x="13" y="5" width="5" height="14" rx="1.5" />
+        </svg>
+      );
+    }
+
+    return (
+      <svg
+        className="crm-timer-block__button-icon"
+        viewBox="0 0 24 24"
+        xmlns="http://www.w3.org/2000/svg"
+        aria-hidden
+      >
+        <path d="M8 5.5v13l10-6.5Z" />
+      </svg>
+    );
+  }, [isRunning]);
 
   return (
     <div
@@ -80,7 +107,10 @@ export const TimerBlock: FC<TimerBlockProps> = (props) => {
     >
       <div className="crm-timer-block__heading">
         <div className="crm-timer-block__title">{displayTitle}</div>
-        <div className={statusClassName} aria-live="polite">
+        <div className={statusClassName}>
+          {phaseLabel}
+        </div>
+        <div className="crm-timer-block__phase" aria-live="polite">
           {currentLabel}
         </div>
       </div>
@@ -117,9 +147,7 @@ export const TimerBlock: FC<TimerBlockProps> = (props) => {
           />
         </svg>
         <span className="crm-timer-block__button-content">
-          <span className="crm-timer-block__button-label" aria-hidden>
-            {buttonPhaseLabel}
-          </span>
+          {buttonIcon}
           <span className="crm-timer-block__countdown">{formattedRemaining}</span>
         </span>
       </button>

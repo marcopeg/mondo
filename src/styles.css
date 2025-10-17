@@ -675,6 +675,16 @@
   gap: 0.35rem;
 }
 
+.crm-timer-block__button-icon {
+  width: 2rem;
+  height: 2rem;
+}
+
+.crm-timer-block__button-icon path,
+.crm-timer-block__button-icon rect {
+  fill: currentColor;
+}
+
 .crm-timer-block__progress {
   position: absolute;
   inset: -0.55rem;
@@ -724,10 +734,16 @@
   font-size: 1.55rem;
 }
 
-.crm-timer-block__button-label {
-  font-size: 1.3rem;
+.crm-timer-block__phase {
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
-  letter-spacing: 0.12em;
+  color: var(--text-muted);
+}
+
+.crm-timer-block--resting .crm-timer-block__phase {
+  color: color-mix(in srgb, var(--color-orange, #d97706) 75%, var(--text-muted));
 }
 
 .crm-timer-block__meta {
