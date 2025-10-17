@@ -8,6 +8,7 @@ import QuickTask from "./QuickTaskEntry";
 import { CRM_ENTITY_CONFIG_LIST } from "@/entities";
 import EntityPicker from "./components/EntityPicker";
 import RecentNotes from "./RecentNotes";
+import RelevantNotes from "./RelevantNotes";
 import QuickTasks from "./QuickTasks";
 import { useSetting } from "@/hooks/use-setting";
 import { resolveSelfPerson } from "@/utils/selfPerson";
@@ -115,6 +116,7 @@ export const DashboardView = () => {
         </div>
       </div>
       <RecentNotes />
+      <RelevantNotes />
       <QuickTasks collapsed />
       <Separator spacing={4} />
       <div className="mt-4 grid grid-cols-1 gap-y-8 gap-x-16 md:grid-cols-2 xl:grid-cols-3">
