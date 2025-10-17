@@ -14,6 +14,7 @@ type TimerBlockState = {
   intervalSeconds: number;
   isResting: boolean;
   isRunning: boolean;
+  progress: number;
   remainingSeconds: number;
   start: () => void;
   stop: () => void;
@@ -119,15 +120,14 @@ const triggerHappyChime = (mode: HepticMode) => {
     const gain = context.createGain();
     const now = context.currentTime;
 
-    oscillator.type = "triangle";
-    oscillator.frequency.setValueAtTime(523.25, now);
-    oscillator.frequency.linearRampToValueAtTime(659.25, now + 0.18);
-    gain.gain.setValueAtTime(0.16, now);
+    oscillator.type = "sine";
+    oscillator.frequency.setValueAtTime(880, now);
+    gain.gain.setValueAtTime(0.18, now);
 
     oscillator.connect(gain);
     gain.connect(context.destination);
 
-    const duration = 0.4;
+    const duration = 0.5;
 
     oscillator.start(now);
     gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
@@ -295,6 +295,27 @@ export const useTimerBlock = (props: TimerBlockProps): TimerBlockState => {
     return title;
   }, [isRunning, phase, title]);
 
+  const activePhaseDuration = useMemo(() => {
+    if (phase === "rest") {
+      if (intervalSeconds > 0) {
+        return intervalSeconds;
+      }
+
+      return durationSeconds || 1;
+    }
+
+    return durationSeconds || 1;
+  }, [durationSeconds, intervalSeconds, phase]);
+
+  const progress = useMemo(() => {
+    const denominator = Math.max(activePhaseDuration, 1);
+    const numerator = isRunning
+      ? Math.min(Math.max(remainingSeconds, 0), denominator)
+      : denominator;
+
+    return numerator / denominator;
+  }, [activePhaseDuration, isRunning, remainingSeconds]);
+
   return {
     canStart: durationSeconds > 0,
     currentLabel,
@@ -304,6 +325,7 @@ export const useTimerBlock = (props: TimerBlockProps): TimerBlockState => {
     intervalSeconds,
     isResting: phase === "rest",
     isRunning,
+    progress,
     remainingSeconds: isRunning ? remainingSeconds : durationSeconds,
     start,
     stop,

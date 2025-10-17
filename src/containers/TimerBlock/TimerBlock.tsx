@@ -1,7 +1,10 @@
-import { type FC, useMemo } from "react";
+import { type CSSProperties, type FC, useMemo } from "react";
 import { useTimerBlock } from "./useTimerBlock";
 
 type TimerBlockProps = Record<string, string>;
+
+const PROGRESS_RADIUS = 54;
+const PROGRESS_CIRCUMFERENCE = 2 * Math.PI * PROGRESS_RADIUS;
 
 export const TimerBlock: FC<TimerBlockProps> = (props) => {
   const {
@@ -13,6 +16,7 @@ export const TimerBlock: FC<TimerBlockProps> = (props) => {
     intervalSeconds,
     isResting,
     isRunning,
+    progress,
     start,
     stop,
   } = useTimerBlock(props);
@@ -40,6 +44,16 @@ export const TimerBlock: FC<TimerBlockProps> = (props) => {
 
     return classes.join(" ");
   }, [isResting]);
+
+  const progressStrokeStyle = useMemo<CSSProperties>(() => {
+    const safeProgress = Math.min(Math.max(progress, 0), 1);
+    const dashOffset = (1 - safeProgress) * PROGRESS_CIRCUMFERENCE;
+
+    return {
+      strokeDasharray: `${PROGRESS_CIRCUMFERENCE}`,
+      strokeDashoffset: `${dashOffset}`,
+    };
+  }, [progress]);
 
   const handleToggle = () => {
     if (isRunning) {
@@ -71,10 +85,32 @@ export const TimerBlock: FC<TimerBlockProps> = (props) => {
             : `Start ${displayTitle} timer`
         }
       >
-        <span className="crm-timer-block__button-icon" aria-hidden>
-          {isRunning ? "■" : "▶"}
+        <svg
+          className="crm-timer-block__progress"
+          viewBox="0 0 120 120"
+          xmlns="http://www.w3.org/2000/svg"
+          aria-hidden
+        >
+          <circle
+            className="crm-timer-block__progress-track"
+            cx="60"
+            cy="60"
+            r={PROGRESS_RADIUS}
+          />
+          <circle
+            className="crm-timer-block__progress-indicator"
+            cx="60"
+            cy="60"
+            r={PROGRESS_RADIUS}
+            style={progressStrokeStyle}
+          />
+        </svg>
+        <span className="crm-timer-block__button-content">
+          <span className="crm-timer-block__button-icon" aria-hidden>
+            {isRunning ? "■" : "▶"}
+          </span>
+          <span className="crm-timer-block__countdown">{formattedRemaining}</span>
         </span>
-        <span className="crm-timer-block__countdown">{formattedRemaining}</span>
       </button>
       <div className="crm-timer-block__meta">
         <span className="crm-timer-block__meta-duration">{`${durationSeconds}s`}</span>

@@ -631,10 +631,8 @@
   border-radius: 9999px;
   border: 2px solid transparent;
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 0.35rem;
   font-size: 1rem;
   font-weight: 700;
   cursor: pointer;
@@ -648,6 +646,8 @@
   box-shadow: 0 0.7rem 1.6rem color-mix(in srgb, var(--interactive-accent) 35%, transparent);
   background: var(--background-primary);
   color: var(--interactive-accent);
+  position: relative;
+  overflow: visible;
 }
 
 .crm-timer-block__button--start {
@@ -671,6 +671,47 @@
 
 .crm-timer-block--resting .crm-timer-block__button:not(:disabled) {
   transform: scale(1.01);
+}
+
+.crm-timer-block__button-content {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+}
+
+.crm-timer-block__progress {
+  position: absolute;
+  inset: -0.55rem;
+  width: calc(100% + 1.1rem);
+  height: calc(100% + 1.1rem);
+  pointer-events: none;
+  transform: rotate(-90deg);
+  filter: drop-shadow(
+    0 0.35rem 0.9rem color-mix(in srgb, var(--interactive-accent) 28%, transparent)
+  );
+}
+
+.crm-timer-block__progress-track {
+  fill: none;
+  stroke: color-mix(in srgb, var(--interactive-accent) 32%, transparent);
+  stroke-opacity: 0.35;
+  stroke-width: 6;
+}
+
+.crm-timer-block__progress-indicator {
+  fill: none;
+  stroke: var(--interactive-accent);
+  stroke-width: 6;
+  stroke-linecap: round;
+  transition: stroke-dashoffset 1s linear;
+}
+
+.crm-timer-block--resting .crm-timer-block__progress-indicator {
+  stroke: color-mix(in srgb, var(--color-orange, #d97706) 85%, var(--interactive-accent));
 }
 
 .crm-timer-block__button:disabled {
