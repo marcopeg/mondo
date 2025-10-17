@@ -86,12 +86,6 @@ const resolveRenderer = (
   path: string,
   plugin: Plugin
 ): RendererComponent | null => {
-  console.log(
-    "[inject-crm-links] resolveRenderer called with type:",
-    type,
-    "path:",
-    path
-  );
   if (!type) {
     return null;
   }
@@ -103,20 +97,15 @@ const resolveRenderer = (
   // Special CRM types (log, journal, etc.)
   if (isSpecialCRMType(type)) {
     if (type === "log") {
-      console.log("[inject-crm-links] Type is log, returning DailyNoteLinks");
       return DailyNoteLinks;
     }
     if (type === "journal") {
-      console.log(
-        "[inject-crm-links] Type is journal (reserved for future use)"
-      );
       return null; // Journal support can be added later
     }
     return null;
   }
 
   // CRM entities
-  console.log("[inject-crm-links] Type is CRM entity type:", type);
   return EntityLinks;
 };
 

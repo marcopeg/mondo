@@ -191,6 +191,9 @@ const buildOpenedEntries = (
     entries.push(entry);
   });
 
+  // Sort by count descending
+  entries.sort((a, b) => (b.count ?? 0) - (a.count ?? 0));
+
   return entries;
 };
 
@@ -207,33 +210,35 @@ const DailyNoteListCard = ({
   entries,
   showCount = false,
 }: DailyNoteListCardProps) => {
-  if (entries.length === 0) {
-    return null;
-  }
-
   return (
     <Card title={title} icon={icon}>
-      <Stack direction="column" gap={2}>
-        {entries.map((entry) => (
-          <Stack
-            key={entry.path}
-            direction="row"
-            align="center"
-            gap={2}
-            className="items-center"
-          >
-            <Icon name={entry.icon} />
-            <Link to={entry.path}>
-              <Typography variant="body">
-                {entry.display}
-                {showCount && typeof entry.count === "number"
-                  ? ` (x${entry.count})`
-                  : null}
-              </Typography>
-            </Link>
-          </Stack>
-        ))}
-      </Stack>
+      {entries.length === 0 ? (
+        <Typography variant="body" className="text-muted">
+          None
+        </Typography>
+      ) : (
+        <Stack direction="column" gap={2}>
+          {entries.map((entry) => (
+            <Stack
+              key={entry.path}
+              direction="row"
+              align="center"
+              gap={2}
+              className="items-center"
+            >
+              <Icon name={entry.icon} />
+              <Link to={entry.path}>
+                <Typography variant="body">
+                  {entry.display}
+                  {showCount && typeof entry.count === "number"
+                    ? ` (x${entry.count})`
+                    : null}
+                </Typography>
+              </Link>
+            </Stack>
+          ))}
+        </Stack>
+      )}
     </Card>
   );
 };
@@ -246,20 +251,12 @@ export const DailyNoteLinks = () => {
   const sourcePath = cachedFile?.file?.path ?? null;
 
   if (!cachedFile || !cachedFile.file || !sourcePath) {
-    console.log("[DailyNoteLinks] No cached file or source path");
     return null;
   }
 
   const frontmatter = cachedFile.cache?.frontmatter as
     | Record<string, unknown>
     | undefined;
-
-  console.log(
-    "[DailyNoteLinks] Rendering for:",
-    sourcePath,
-    "frontmatter:",
-    frontmatter
-  );
 
   const createdEntries = useMemo(() => {
     if (!frontmatter) {
@@ -285,24 +282,15 @@ export const DailyNoteLinks = () => {
     if (!frontmatter) {
       return [] as DailyEntry[];
     }
-    const excluded = new Set(
-      [...createdEntries, ...changedEntries].map((entry) => entry.path)
-    );
+    const excluded = new Set<string>();
+    excluded.add(sourcePath);
     return buildOpenedEntries(
       frontmatter.openedToday,
       app,
       sourcePath,
       excluded
     );
-  }, [app, frontmatter, sourcePath, createdEntries, changedEntries]);
-
-  if (
-    createdEntries.length === 0 &&
-    changedEntries.length === 0 &&
-    openedEntries.length === 0
-  ) {
-    return null;
-  }
+  }, [app, frontmatter, sourcePath]);
 
   return (
     <Stack direction="column" gap={2}>
