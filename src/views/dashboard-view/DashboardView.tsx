@@ -7,7 +7,6 @@ import QuickLog from "./QuickLogEntry";
 import QuickTask from "./QuickTaskEntry";
 import { CRM_ENTITY_CONFIG_LIST } from "@/entities";
 import EntityPicker from "./components/EntityPicker";
-import RecentNotes from "./RecentNotes";
 import RelevantNotes from "./RelevantNotes";
 import QuickTasks from "./QuickTasks";
 import { useSetting } from "@/hooks/use-setting";
@@ -133,7 +132,7 @@ export const DashboardView = () => {
   const shouldExpandQuickTasksOnMobile =
     inboxTasksState.isLoading || inboxTasksState.tasks.length > 0;
   const quickTasksCollapsed = isDesktop ? false : !shouldExpandQuickTasksOnMobile;
-  const recentNotesCollapsed = isDesktop ? false : shouldExpandQuickTasksOnMobile;
+  const relevantNotesCollapsed = isDesktop ? false : shouldExpandQuickTasksOnMobile;
 
   return (
     <div className="p-4 space-y-6">
@@ -161,9 +160,8 @@ export const DashboardView = () => {
           </div>
         </div>
       </div>
-      <RelevantNotes />
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 lg:items-start">
-        <RecentNotes collapsed={recentNotesCollapsed} />
+        <RelevantNotes collapsed={relevantNotesCollapsed} />
         <QuickTasks collapsed={quickTasksCollapsed} state={inboxTasksState} />
       </div>
       <Separator spacing={4} />
