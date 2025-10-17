@@ -13,5 +13,11 @@ export const CRM_DEFAULT_TEMPLATES = Object.freeze(
   )
 ) as Readonly<Record<CRMEntityType, string>>;
 
-export const getDefaultTemplate = (type: CRMFileType): string =>
-  CRM_DEFAULT_TEMPLATES[type] ?? DEFAULT_TEMPLATE;
+export const getDefaultTemplate = (type: CRMFileType): string => {
+  // Only entity types have default templates
+  // Special types like "log" and "journal" use the default
+  if (type in CRM_DEFAULT_TEMPLATES) {
+    return CRM_DEFAULT_TEMPLATES[type as CRMEntityType];
+  }
+  return DEFAULT_TEMPLATE;
+};

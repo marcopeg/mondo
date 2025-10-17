@@ -16,8 +16,13 @@ type EntityFileProviderProps = React.PropsWithChildren<{
   path?: string;
 }>;
 
-export const EntityFileProvider = ({ path, children }: EntityFileProviderProps) => (
-  <EntityFileContext.Provider value={{ path }}>{children}</EntityFileContext.Provider>
+export const EntityFileProvider = ({
+  path,
+  children,
+}: EntityFileProviderProps) => (
+  <EntityFileContext.Provider value={{ path }}>
+    {children}
+  </EntityFileContext.Provider>
 );
 
 const useManagerFile = (path: string | undefined): TCachedFile | undefined => {
@@ -58,9 +63,11 @@ export const useEntityFile = (): { file?: TCachedFile } => {
   const context = useContext(EntityFileContext);
   const cached = useManagerFile(context?.path);
 
-  if (context?.path) {
+  // If we have a cached file from the manager, use it
+  if (cached) {
     return { file: cached };
   }
 
+  // Otherwise fall back to the active tab
   return fallback;
 };

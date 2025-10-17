@@ -53,7 +53,10 @@ const resolveLinkTarget = (
     return { file: null, alias: null };
   }
 
-  const file = app.metadataCache.getFirstLinkpathDest(cleanedTarget, sourcePath);
+  const file = app.metadataCache.getFirstLinkpathDest(
+    cleanedTarget,
+    sourcePath
+  );
   if (!file) {
     return { file: null, alias: null };
   }
@@ -141,7 +144,8 @@ const buildOpenedEntries = (
       link = value.trim();
     } else if (value && typeof value === "object") {
       const objectValue = value as Record<string, unknown>;
-      const maybeLink = objectValue.link ?? objectValue.raw ?? objectValue.value;
+      const maybeLink =
+        objectValue.link ?? objectValue.raw ?? objectValue.value;
       if (typeof maybeLink === "string" && maybeLink.trim()) {
         link = maybeLink.trim();
       }
@@ -242,12 +246,20 @@ export const DailyNoteLinks = () => {
   const sourcePath = cachedFile?.file?.path ?? null;
 
   if (!cachedFile || !cachedFile.file || !sourcePath) {
+    console.log("[DailyNoteLinks] No cached file or source path");
     return null;
   }
 
   const frontmatter = cachedFile.cache?.frontmatter as
     | Record<string, unknown>
     | undefined;
+
+  console.log(
+    "[DailyNoteLinks] Rendering for:",
+    sourcePath,
+    "frontmatter:",
+    frontmatter
+  );
 
   const createdEntries = useMemo(() => {
     if (!frontmatter) {
@@ -261,7 +273,12 @@ export const DailyNoteLinks = () => {
       return [] as DailyEntry[];
     }
     const createdPaths = new Set(createdEntries.map((entry) => entry.path));
-    return buildEntries(frontmatter.changedToday, app, sourcePath, createdPaths);
+    return buildEntries(
+      frontmatter.changedToday,
+      app,
+      sourcePath,
+      createdPaths
+    );
   }, [app, frontmatter, sourcePath, createdEntries]);
 
   const openedEntries = useMemo(() => {
@@ -271,7 +288,12 @@ export const DailyNoteLinks = () => {
     const excluded = new Set(
       [...createdEntries, ...changedEntries].map((entry) => entry.path)
     );
-    return buildOpenedEntries(frontmatter.openedToday, app, sourcePath, excluded);
+    return buildOpenedEntries(
+      frontmatter.openedToday,
+      app,
+      sourcePath,
+      excluded
+    );
   }, [app, frontmatter, sourcePath, createdEntries, changedEntries]);
 
   if (
@@ -284,8 +306,16 @@ export const DailyNoteLinks = () => {
 
   return (
     <Stack direction="column" gap={2}>
-      <DailyNoteListCard title="Created Today" icon="sparkles" entries={createdEntries} />
-      <DailyNoteListCard title="Changed Today" icon="history" entries={changedEntries} />
+      <DailyNoteListCard
+        title="Created Today"
+        icon="sparkles"
+        entries={createdEntries}
+      />
+      <DailyNoteListCard
+        title="Changed Today"
+        icon="history"
+        entries={changedEntries}
+      />
       <DailyNoteListCard
         title="Opened Today"
         icon="eye"

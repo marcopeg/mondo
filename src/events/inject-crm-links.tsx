@@ -5,7 +5,7 @@ import { AppProvider } from "@/context/AppProvider";
 import { EntityFileProvider } from "@/context/EntityFileProvider";
 import { EntityLinks } from "@/containers/DynamicEntityLinks";
 import DailyNoteLinks from "@/containers/DailyNoteLinks";
-import { isCRMFileType } from "@/types/CRMFileType";
+import { isCRMFileType, isSpecialCRMType } from "@/types/CRMFileType";
 import type { TCachedFile } from "@/types/TCachedFile";
 import { getLeafFilePath } from "./inject-journal-nav";
 
@@ -79,20 +79,6 @@ const createInjectionNode = (path: string) => {
   return wrapper;
 };
 
-const normalizeFolder = (value: string | null | undefined): string => {
-  if (!value || value === "/") {
-    return "";
-  }
-  return value.replace(/^\/+|\/+$/g, "");
-};
-
-const isInFolder = (path: string, folder: string): boolean => {
-  if (!folder) {
-    return true;
-  }
-  return path === folder || path.startsWith(`${folder}/`);
-};
-
 type RendererComponent = React.ComponentType;
 
 const resolveRenderer = (
@@ -100,22 +86,38 @@ const resolveRenderer = (
   path: string,
   plugin: Plugin
 ): RendererComponent | null => {
+  console.log(
+    "[inject-crm-links] resolveRenderer called with type:",
+    type,
+    "path:",
+    path
+  );
   if (!type) {
     return null;
   }
 
-  if (isCRMFileType(type)) {
-    return EntityLinks;
+  if (!isCRMFileType(type)) {
+    return null;
   }
 
-  if (type === "log") {
-    const inbox = normalizeFolder((plugin as any).settings?.inbox ?? "Inbox");
-    if (isInFolder(path, inbox)) {
+  // Special CRM types (log, journal, etc.)
+  if (isSpecialCRMType(type)) {
+    if (type === "log") {
+      console.log("[inject-crm-links] Type is log, returning DailyNoteLinks");
       return DailyNoteLinks;
     }
+    if (type === "journal") {
+      console.log(
+        "[inject-crm-links] Type is journal (reserved for future use)"
+      );
+      return null; // Journal support can be added later
+    }
+    return null;
   }
 
-  return null;
+  // CRM entities
+  console.log("[inject-crm-links] Type is CRM entity type:", type);
+  return EntityLinks;
 };
 
 const renderReact = (
