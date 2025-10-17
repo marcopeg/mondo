@@ -47,6 +47,7 @@ import {
   disposeCRMLinkInjections,
 } from "@/events/inject-crm-links";
 import { requestGeolocation } from "@/utils/geolocation";
+import { buildVoiceoverText } from "@/utils/buildVoiceoverText";
 import DailyNoteTracker from "@/utils/DailyNoteTracker";
 
 // Dev purposes: set to true to always focus on dashboard on startup
@@ -328,8 +329,8 @@ export default class CRM extends Plugin {
     });
 
     this.addCommand({
-      id: "generate-note-voiceover",
-      name: "Generate Note's Voiceover",
+      id: "generate-voiceover",
+      name: "Generate Voiceover",
       checkCallback: (checking) => {
         const file = this.app.workspace.getActiveFile();
         if (!file || file.extension !== "md") {
@@ -343,11 +344,20 @@ export default class CRM extends Plugin {
               this.app.workspace.getActiveViewOfType(MarkdownView);
             const activeEditor =
               activeView?.file?.path === file.path ? activeView.editor : null;
-            const combinedContent = `${file.basename}\n\n${content}`.trim();
+            const selection = activeEditor?.getSelection?.() ?? "";
+
+            // If there's a selection, use it; otherwise use the entire note
+            const selectedText = selection.trim() ? selection : null;
+            const voiceoverText = buildVoiceoverText(
+              content,
+              file,
+              selectedText
+            );
+
             void this.voiceoverManager?.generateVoiceover(
               file,
               activeEditor ?? null,
-              combinedContent
+              voiceoverText
             );
           })();
         }
@@ -469,11 +479,14 @@ export default class CRM extends Plugin {
           item.setTitle("Generate voiceover");
           item.setIcon("file-audio");
           item.onClick(() => {
-            void this.voiceoverManager?.generateVoiceover(
-              file,
-              resolvedEditor,
-              selection
-            );
+            const selection = resolvedEditor?.getSelection?.() ?? "";
+            if (selection.trim()) {
+              void this.voiceoverManager?.generateVoiceover(
+                file,
+                resolvedEditor,
+                selection
+              );
+            }
           });
         });
       })
@@ -522,11 +535,11 @@ export default class CRM extends Plugin {
               this.app.workspace.getActiveViewOfType(MarkdownView);
             const activeEditor =
               activeView?.file?.path === file.path ? activeView.editor : null;
-            const combinedContent = `${file.basename}\n\n${content}`.trim();
+            const voiceoverText = buildVoiceoverText(content, file);
             void this.voiceoverManager?.generateVoiceover(
               file,
               activeEditor ?? null,
-              combinedContent
+              voiceoverText
             );
           })();
         });
