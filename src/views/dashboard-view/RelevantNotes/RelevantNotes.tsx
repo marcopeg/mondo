@@ -45,6 +45,10 @@ const formatDateForDisplay = (value: string | null): string | null => {
 
 type NotesMode = "hits" | "history";
 
+type RelevantNotesProps = {
+  collapsed?: boolean;
+};
+
 const getTotalHits = (note: ReturnType<typeof useRelevantNotes>[number]) =>
   note.counts.created + note.counts.modified + note.counts.opened;
 
@@ -56,7 +60,7 @@ const DATE_FORMAT_OPTIONS: Intl.DateTimeFormatOptions = {
   minute: "2-digit",
 };
 
-export const RelevantNotes = () => {
+export const RelevantNotes = ({ collapsed = false }: RelevantNotesProps) => {
   const [selectedType, setSelectedType] = useState<CRMFileType | null>(null);
   const [mode, setMode] = useState<NotesMode>("hits");
   const [hitsVisibleCount, setHitsVisibleCount] = useState(5);
@@ -147,7 +151,7 @@ export const RelevantNotes = () => {
       title="Relevant Notes"
       icon="target"
       collapsible
-      collapsed
+      collapsed={collapsed}
       collapseOnHeaderClick
     >
       <Stack direction="column" gap={3} className="w-full">
@@ -230,7 +234,7 @@ export const RelevantNotes = () => {
                   type="button"
                   variant="link"
                   fullWidth
-                  aria-label="Load more recent notes"
+                  aria-label="Load more history notes"
                 >
                   Load more
                 </Button>
@@ -292,10 +296,14 @@ export const RelevantNotes = () => {
               );
             })}
             {hasMore ? (
-              <div className="pt-1">
+              <div className="flex w-full flex-col gap-2 pt-1">
+                <Separator />
                 <Button
                   onClick={handleLoadMore}
-                  className="w-full justify-center"
+                  className="text-xs px-2 py-2"
+                  type="button"
+                  variant="link"
+                  fullWidth
                   aria-label="Load more relevant notes"
                 >
                   Load more
