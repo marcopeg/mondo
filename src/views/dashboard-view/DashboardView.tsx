@@ -8,6 +8,7 @@ import QuickTask from "./QuickTaskEntry";
 import { CRM_ENTITY_CONFIG_LIST } from "@/entities";
 import EntityPicker from "./components/EntityPicker";
 import RecentNotes from "./RecentNotes";
+import RelevantNotes from "./RelevantNotes";
 import QuickTasks from "./QuickTasks";
 import { useSetting } from "@/hooks/use-setting";
 import { resolveSelfPerson } from "@/utils/selfPerson";
@@ -160,6 +161,7 @@ export const DashboardView = () => {
           </div>
         </div>
       </div>
+      <RelevantNotes />
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 lg:items-start">
         <RecentNotes collapsed={recentNotesCollapsed} />
         <QuickTasks collapsed={quickTasksCollapsed} state={inboxTasksState} />

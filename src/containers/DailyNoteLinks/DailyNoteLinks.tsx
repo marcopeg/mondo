@@ -6,8 +6,11 @@ import { Stack } from "@/components/ui/Stack";
 import Typography from "@/components/ui/Typography";
 import Link from "@/components/ui/Link";
 import { Icon } from "@/components/ui/Icon";
-import { CRM_ENTITIES, isCRMEntityType } from "@/entities";
-import type { App, TFile } from "obsidian";
+import {
+  extractDailyLinkReferences,
+  extractDailyOpenedReferences,
+  type DailyNoteReference,
+} from "@/utils/daily-note-references";
 
 type DailyEntry = {
   path: string;
@@ -16,186 +19,12 @@ type DailyEntry = {
   count?: number;
 };
 
-const DEFAULT_ICON = "file-text";
-
-const normalizeLinkValues = (raw: unknown): string[] => {
-  if (Array.isArray(raw)) {
-    return raw
-      .filter((value): value is string => typeof value === "string")
-      .map((value) => value.trim())
-      .filter((value) => value.length > 0);
-  }
-
-  if (typeof raw === "string" && raw.trim()) {
-    return [raw.trim()];
-  }
-
-  return [];
-};
-
-const resolveLinkTarget = (
-  value: string,
-  app: App,
-  sourcePath: string
-): { file: TFile | null; alias: string | null } => {
-  let inner = value.trim();
-  if (!inner) {
-    return { file: null, alias: null };
-  }
-
-  if (inner.startsWith("[[") && inner.endsWith("]]")) {
-    inner = inner.slice(2, -2);
-  }
-
-  const [target, alias] = inner.split("|");
-  const cleanedTarget = target.split("#")[0]?.trim() ?? "";
-  if (!cleanedTarget) {
-    return { file: null, alias: null };
-  }
-
-  const file = app.metadataCache.getFirstLinkpathDest(
-    cleanedTarget,
-    sourcePath
-  );
-  if (!file) {
-    return { file: null, alias: null };
-  }
-
-  return { file, alias: alias ? alias.trim() : null };
-};
-
-const getIconForFile = (file: TFile, app: App): string => {
-  const cache = app.metadataCache.getFileCache(file);
-  const type = cache?.frontmatter?.type;
-  if (typeof type === "string") {
-    const normalized = type.trim().toLowerCase();
-    if (isCRMEntityType(normalized)) {
-      return CRM_ENTITIES[normalized]?.icon ?? DEFAULT_ICON;
-    }
-  }
-  return DEFAULT_ICON;
-};
-
-const getDisplayLabel = (
-  file: TFile,
-  alias: string | null,
-  app: App,
-  sourcePath: string
-): string => {
-  if (alias && alias.length > 0) {
-    return alias;
-  }
-  return app.metadataCache.fileToLinktext(file, sourcePath, false);
-};
-
-const buildEntries = (
-  raw: unknown,
-  app: App,
-  sourcePath: string,
-  excludedPaths: Set<string>
-): DailyEntry[] => {
-  const values = normalizeLinkValues(raw);
-  if (!values.length) {
-    return [];
-  }
-
-  const seen = new Set<string>();
-  const entries: DailyEntry[] = [];
-
-  values.forEach((value) => {
-    const { file, alias } = resolveLinkTarget(value, app, sourcePath);
-    if (!file) {
-      return;
-    }
-    if (excludedPaths.has(file.path) || seen.has(file.path)) {
-      return;
-    }
-    seen.add(file.path);
-
-    entries.push({
-      path: file.path,
-      display: getDisplayLabel(file, alias, app, sourcePath),
-      icon: getIconForFile(file, app),
-    });
-  });
-
-  return entries;
-};
-
-const buildOpenedEntries = (
-  raw: unknown,
-  app: App,
-  sourcePath: string,
-  excludedPaths: Set<string>
-): DailyEntry[] => {
-  if (!raw) {
-    return [];
-  }
-
-  const values = Array.isArray(raw) ? raw : [raw];
-  const entries: DailyEntry[] = [];
-  const seen = new Map<string, DailyEntry>();
-
-  values.forEach((value) => {
-    let link: string | null = null;
-    let count = 1;
-
-    if (typeof value === "string") {
-      link = value.trim();
-    } else if (value && typeof value === "object") {
-      const objectValue = value as Record<string, unknown>;
-      const maybeLink =
-        objectValue.link ?? objectValue.raw ?? objectValue.value;
-      if (typeof maybeLink === "string" && maybeLink.trim()) {
-        link = maybeLink.trim();
-      }
-      const maybeCount = objectValue.count;
-      if (typeof maybeCount === "number" && Number.isFinite(maybeCount)) {
-        const normalized = Math.floor(maybeCount);
-        if (normalized > 0) {
-          count = normalized;
-        }
-      } else if (typeof maybeCount === "string") {
-        const parsed = Number.parseInt(maybeCount, 10);
-        if (Number.isFinite(parsed) && parsed > 0) {
-          count = parsed;
-        }
-      }
-    }
-
-    if (!link) {
-      return;
-    }
-
-    const { file, alias } = resolveLinkTarget(link, app, sourcePath);
-    if (!file) {
-      return;
-    }
-    if (excludedPaths.has(file.path)) {
-      return;
-    }
-
-    const existing = seen.get(file.path);
-    if (existing) {
-      existing.count = (existing.count ?? 0) + count;
-      return;
-    }
-
-    const entry: DailyEntry = {
-      path: file.path,
-      display: getDisplayLabel(file, alias, app, sourcePath),
-      icon: getIconForFile(file, app),
-      count,
-    };
-    seen.set(file.path, entry);
-    entries.push(entry);
-  });
-
-  // Sort by count descending
-  entries.sort((a, b) => (b.count ?? 0) - (a.count ?? 0));
-
-  return entries;
-};
+const toDailyEntry = (reference: DailyNoteReference): DailyEntry => ({
+  path: reference.path,
+  display: reference.label,
+  icon: reference.icon,
+  count: reference.count,
+});
 
 type DailyNoteListCardProps = {
   title: string;
@@ -268,21 +97,30 @@ export const DailyNoteLinks = () => {
     if (!frontmatter) {
       return [] as DailyEntry[];
     }
-    return buildEntries(frontmatter.createdToday, app, sourcePath, new Set());
+    const excluded = new Set<string>([sourcePath]);
+    return extractDailyLinkReferences(
+      frontmatter.createdToday,
+      app,
+      sourcePath,
+      excluded
+    ).map(toDailyEntry);
   }, [app, frontmatter, sourcePath]);
 
   const changedEntries = useMemo(() => {
     if (!frontmatter) {
       return [] as DailyEntry[];
     }
-    const createdPaths = new Set(createdEntries.map((entry) => entry.path));
-    return buildEntries(
+    const excluded = new Set<string>([
+      sourcePath,
+      ...createdEntries.map((entry) => entry.path),
+    ]);
+    return extractDailyLinkReferences(
       frontmatter.changedToday,
       app,
       sourcePath,
-      createdPaths
-    );
-  }, [app, frontmatter, sourcePath, createdEntries]);
+      excluded
+    ).map(toDailyEntry);
+  }, [app, createdEntries, frontmatter, sourcePath]);
 
   const openedEntries = useMemo(() => {
     if (!frontmatter) {
@@ -290,12 +128,12 @@ export const DailyNoteLinks = () => {
     }
     const excluded = new Set<string>();
     excluded.add(sourcePath);
-    return buildOpenedEntries(
+    return extractDailyOpenedReferences(
       frontmatter.openedToday,
       app,
       sourcePath,
       excluded
-    );
+    ).map(toDailyEntry);
   }, [app, frontmatter, sourcePath]);
 
   return (
