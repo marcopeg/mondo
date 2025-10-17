@@ -401,7 +401,8 @@ export default class CRM extends Plugin {
       await this.syncPanels();
     });
     this.registerEvent(
-      this.app.workspace.on("file-open", () => {
+      this.app.workspace.on("file-open", (file) => {
+        this.dailyNoteTracker?.handleFileOpened(file);
         void this.syncPanels();
       })
     );

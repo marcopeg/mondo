@@ -13,6 +13,7 @@ type DailyEntry = {
   path: string;
   display: string;
   icon: string;
+  count?: number;
 };
 
 const DEFAULT_ICON = "file-text";
@@ -118,13 +119,90 @@ const buildEntries = (
   return entries;
 };
 
+const buildOpenedEntries = (
+  raw: unknown,
+  app: App,
+  sourcePath: string,
+  excludedPaths: Set<string>
+): DailyEntry[] => {
+  if (!raw) {
+    return [];
+  }
+
+  const values = Array.isArray(raw) ? raw : [raw];
+  const entries: DailyEntry[] = [];
+  const seen = new Map<string, DailyEntry>();
+
+  values.forEach((value) => {
+    let link: string | null = null;
+    let count = 1;
+
+    if (typeof value === "string") {
+      link = value.trim();
+    } else if (value && typeof value === "object") {
+      const objectValue = value as Record<string, unknown>;
+      const maybeLink = objectValue.link ?? objectValue.raw ?? objectValue.value;
+      if (typeof maybeLink === "string" && maybeLink.trim()) {
+        link = maybeLink.trim();
+      }
+      const maybeCount = objectValue.count;
+      if (typeof maybeCount === "number" && Number.isFinite(maybeCount)) {
+        const normalized = Math.floor(maybeCount);
+        if (normalized > 0) {
+          count = normalized;
+        }
+      } else if (typeof maybeCount === "string") {
+        const parsed = Number.parseInt(maybeCount, 10);
+        if (Number.isFinite(parsed) && parsed > 0) {
+          count = parsed;
+        }
+      }
+    }
+
+    if (!link) {
+      return;
+    }
+
+    const { file, alias } = resolveLinkTarget(link, app, sourcePath);
+    if (!file) {
+      return;
+    }
+    if (excludedPaths.has(file.path)) {
+      return;
+    }
+
+    const existing = seen.get(file.path);
+    if (existing) {
+      existing.count = (existing.count ?? 0) + count;
+      return;
+    }
+
+    const entry: DailyEntry = {
+      path: file.path,
+      display: getDisplayLabel(file, alias, app, sourcePath),
+      icon: getIconForFile(file, app),
+      count,
+    };
+    seen.set(file.path, entry);
+    entries.push(entry);
+  });
+
+  return entries;
+};
+
 type DailyNoteListCardProps = {
   title: string;
   icon: string;
   entries: DailyEntry[];
+  showCount?: boolean;
 };
 
-const DailyNoteListCard = ({ title, icon, entries }: DailyNoteListCardProps) => {
+const DailyNoteListCard = ({
+  title,
+  icon,
+  entries,
+  showCount = false,
+}: DailyNoteListCardProps) => {
   if (entries.length === 0) {
     return null;
   }
@@ -142,7 +220,12 @@ const DailyNoteListCard = ({ title, icon, entries }: DailyNoteListCardProps) => 
           >
             <Icon name={entry.icon} />
             <Link to={entry.path}>
-              <Typography variant="body">{entry.display}</Typography>
+              <Typography variant="body">
+                {entry.display}
+                {showCount && typeof entry.count === "number"
+                  ? ` (x${entry.count})`
+                  : null}
+              </Typography>
             </Link>
           </Stack>
         ))}
@@ -181,7 +264,21 @@ export const DailyNoteLinks = () => {
     return buildEntries(frontmatter.changedToday, app, sourcePath, createdPaths);
   }, [app, frontmatter, sourcePath, createdEntries]);
 
-  if (createdEntries.length === 0 && changedEntries.length === 0) {
+  const openedEntries = useMemo(() => {
+    if (!frontmatter) {
+      return [] as DailyEntry[];
+    }
+    const excluded = new Set(
+      [...createdEntries, ...changedEntries].map((entry) => entry.path)
+    );
+    return buildOpenedEntries(frontmatter.openedToday, app, sourcePath, excluded);
+  }, [app, frontmatter, sourcePath, createdEntries, changedEntries]);
+
+  if (
+    createdEntries.length === 0 &&
+    changedEntries.length === 0 &&
+    openedEntries.length === 0
+  ) {
     return null;
   }
 
@@ -189,6 +286,12 @@ export const DailyNoteLinks = () => {
     <Stack direction="column" gap={2}>
       <DailyNoteListCard title="Created Today" icon="sparkles" entries={createdEntries} />
       <DailyNoteListCard title="Changed Today" icon="history" entries={changedEntries} />
+      <DailyNoteListCard
+        title="Opened Today"
+        icon="eye"
+        entries={openedEntries}
+        showCount
+      />
     </Stack>
   );
 };
