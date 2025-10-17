@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useApp } from "@/hooks/use-app";
 import { Typography } from "@/components/ui/Typography";
 import Button from "@/components/ui/Button";
@@ -12,6 +12,45 @@ import RelevantNotes from "./RelevantNotes";
 import QuickTasks from "./QuickTasks";
 import { useSetting } from "@/hooks/use-setting";
 import { resolveSelfPerson } from "@/utils/selfPerson";
+import { useInboxTasks } from "@/hooks/use-inbox-tasks";
+
+const useMediaQuery = (query: string) => {
+  const getMatches = useCallback(() => {
+    if (typeof window === "undefined") {
+      return false;
+    }
+    return window.matchMedia(query).matches;
+  }, [query]);
+
+  const [matches, setMatches] = useState<boolean>(() => getMatches());
+
+  useEffect(() => {
+    setMatches(getMatches());
+
+    if (typeof window === "undefined") {
+      return () => {};
+    }
+
+    const mediaQueryList = window.matchMedia(query);
+    const listener = (event: MediaQueryListEvent) => {
+      setMatches(event.matches);
+    };
+
+    if (typeof mediaQueryList.addEventListener === "function") {
+      mediaQueryList.addEventListener("change", listener);
+      return () => {
+        mediaQueryList.removeEventListener("change", listener);
+      };
+    }
+
+    mediaQueryList.addListener(listener);
+    return () => {
+      mediaQueryList.removeListener(listener);
+    };
+  }, [getMatches, query]);
+
+  return matches;
+};
 
 export const DashboardView = () => {
   const app = useApp();
@@ -89,6 +128,13 @@ export const DashboardView = () => {
     [onOpenJournal, onOpenMe, onOpenToday, selfPerson]
   );
 
+  const inboxTasksState = useInboxTasks();
+  const isDesktop = useMediaQuery("(min-width: 1024px)");
+  const shouldExpandQuickTasksOnMobile =
+    inboxTasksState.isLoading || inboxTasksState.tasks.length > 0;
+  const quickTasksCollapsed = isDesktop ? false : !shouldExpandQuickTasksOnMobile;
+  const recentNotesCollapsed = isDesktop ? false : shouldExpandQuickTasksOnMobile;
+
   return (
     <div className="p-4 space-y-6">
       <Typography variant="h1">CRM Dashboard</Typography>
@@ -115,10 +161,13 @@ export const DashboardView = () => {
           </div>
         </div>
       </div>
-      <RecentNotes />
       <RelevantNotes />
-      <QuickTasks collapsed />
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 lg:items-start">
+        <RecentNotes collapsed={recentNotesCollapsed} />
+        <QuickTasks collapsed={quickTasksCollapsed} state={inboxTasksState} />
+      </div>
       <Separator spacing={4} />
+      <Typography variant="h1">CRM Entities</Typography>
       <div className="mt-4 grid grid-cols-1 gap-y-8 gap-x-16 md:grid-cols-2 xl:grid-cols-3">
         {quickPickSections.map((section) => (
           <EntityPicker

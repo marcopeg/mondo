@@ -22,7 +22,11 @@ const DATE_FORMAT_OPTIONS: Intl.DateTimeFormatOptions = {
 const useDateFormatter = () =>
   useMemo(() => new Intl.DateTimeFormat(undefined, DATE_FORMAT_OPTIONS), []);
 
-export const RecentNotes = () => {
+type RecentNotesProps = {
+  collapsed?: boolean;
+};
+
+export const RecentNotes = ({ collapsed = true }: RecentNotesProps) => {
   const [limit, setLimit] = useState(5);
   const [selectedType, setSelectedType] = useState<CRMFileType | null>(null);
   const { notes, hasMore } = useRecentCRMNotes(limit, selectedType);
@@ -47,7 +51,7 @@ export const RecentNotes = () => {
       title="Last Updates"
       icon="clock"
       collapsible
-      collapsed
+      collapsed={collapsed}
       collapseOnHeaderClick
     >
       <Stack direction="column" gap={3} className="w-full">

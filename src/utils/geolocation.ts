@@ -1,3 +1,5 @@
+import { Platform } from "obsidian";
+
 export type GeolocationData = {
   lat: number;
   lon: number;
@@ -53,40 +55,82 @@ const setCachedGeolocation = (lat: number, lon: number): void => {
   };
 };
 
+const DEFAULT_POSITION_TIMEOUT_MS = 5000;
+const MOBILE_POSITION_TIMEOUT_MS = 10000;
+
 const requestPosition = async (
   signal?: AbortSignal
 ): Promise<GeolocationPosition> => {
   const geolocation = ensureNavigator();
+  const timeoutMs = Platform.isMobileApp
+    ? MOBILE_POSITION_TIMEOUT_MS
+    : DEFAULT_POSITION_TIMEOUT_MS;
 
   return new Promise((resolve, reject) => {
-    let aborted = false;
+    let completed = false;
+    let timeoutHandle: number | undefined;
+
+    const clearTimeoutHandle = () => {
+      if (typeof timeoutHandle === "number") {
+        if (typeof window !== "undefined") {
+          window.clearTimeout(timeoutHandle);
+        } else {
+          clearTimeout(timeoutHandle);
+        }
+        timeoutHandle = undefined;
+      }
+    };
+
+    if (Platform.isMobileApp && typeof window !== "undefined") {
+      timeoutHandle = window.setTimeout(() => {
+        if (!completed) {
+          completed = true;
+          reject(new Error("Geolocation request timed out."));
+        }
+      }, timeoutMs);
+    }
+
+    const cancelWithMessage = (message: string) => {
+      if (!completed) {
+        completed = true;
+        clearTimeoutHandle();
+        reject(new Error(message));
+      }
+    };
 
     if (signal) {
       if (signal.aborted) {
-        reject(new Error("Geolocation request cancelled."));
+        cancelWithMessage("Geolocation request cancelled.");
         return;
       }
 
-      signal.addEventListener("abort", () => {
-        aborted = true;
-        reject(new Error("Geolocation request cancelled."));
-      });
+      const abortHandler = () => {
+        cancelWithMessage("Geolocation request cancelled.");
+      };
+
+      signal.addEventListener("abort", abortHandler, { once: true });
     }
 
     geolocation.getCurrentPosition(
       (position) => {
-        if (!aborted) {
+        if (!completed) {
+          completed = true;
+          clearTimeoutHandle();
           resolve(position);
         }
       },
       (error) => {
-        if (!aborted) {
-          reject(new Error(error.message || "Unable to retrieve geolocation."));
+        if (!completed) {
+          completed = true;
+          clearTimeoutHandle();
+          reject(
+            new Error(error.message || "Unable to retrieve geolocation.")
+          );
         }
       },
       {
         enableHighAccuracy: false,
-        timeout: 5000,
+        timeout: timeoutMs,
         maximumAge: 300000,
       }
     );

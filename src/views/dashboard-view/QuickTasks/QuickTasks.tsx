@@ -9,10 +9,18 @@ import SplitButton from "@/components/ui/SplitButton";
 import { Separator } from "@/components/ui/Separator";
 import Badge from "@/components/ui/Badge";
 
-export const QuickTasks: React.FC<{ collapsed?: boolean }> = ({
-  collapsed = false,
-}) => {
-  const { tasks, isLoading, toggleTask, promoteTask } = useInboxTasks();
+type UseInboxTasksState = ReturnType<typeof useInboxTasks>;
+
+type QuickTasksCardProps = {
+  collapsed: boolean;
+  state: UseInboxTasksState;
+};
+
+const QuickTasksCard = ({
+  collapsed,
+  state,
+}: QuickTasksCardProps) => {
+  const { tasks, isLoading, toggleTask, promoteTask } = state;
   const [visible, setVisible] = useState(10);
   const [pending, setPending] = useState<Record<string, boolean>>({});
   const dateFormatter = useMemo(
@@ -195,4 +203,21 @@ export const QuickTasks: React.FC<{ collapsed?: boolean }> = ({
       )}
     </Card>
   );
+};
+
+type QuickTasksProps = {
+  collapsed?: boolean;
+  state?: UseInboxTasksState;
+};
+
+export const QuickTasks = ({
+  collapsed = false,
+  state,
+}: QuickTasksProps) => {
+  if (state) {
+    return <QuickTasksCard collapsed={collapsed} state={state} />;
+  }
+
+  const hookState = useInboxTasks();
+  return <QuickTasksCard collapsed={collapsed} state={hookState} />;
 };

@@ -1,7 +1,11 @@
 import { DEFAULT_TEMPLATE } from "./default-template";
 import type { CRMEntityConfig } from "@/types/CRMEntityConfig";
 
-const locationConfig: CRMEntityConfig<"location"> = {
+const locationConfig: CRMEntityConfig<
+  "location",
+  | { type: "location-people"; collapsed?: boolean }
+  | { type: "location-companies"; collapsed?: boolean }
+> = {
   type: "location",
   name: "Locations",
   icon: "map-pin",
@@ -12,6 +16,15 @@ const locationConfig: CRMEntityConfig<"location"> = {
   list: {
     columns: ["show"],
   },
+  links: [
+    {
+      type: "location-people",
+    },
+    {
+      type: "location-companies",
+      collapsed: true,
+    },
+  ],
 };
 
 export default locationConfig;
