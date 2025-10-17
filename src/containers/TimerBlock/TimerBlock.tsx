@@ -37,7 +37,9 @@ export const TimerBlock: FC<TimerBlockProps> = (props) => {
     const classes = ["crm-timer-block__button"];
 
     classes.push(
-      isResting ? "crm-timer-block__button--rest" : "crm-timer-block__button--go"
+      isResting
+        ? "crm-timer-block__button--rest"
+        : "crm-timer-block__button--go"
     );
 
     return classes.join(" ");
@@ -47,7 +49,9 @@ export const TimerBlock: FC<TimerBlockProps> = (props) => {
     const classes = ["crm-timer-block__status"];
 
     classes.push(
-      isResting ? "crm-timer-block__status--rest" : "crm-timer-block__status--work"
+      isResting
+        ? "crm-timer-block__status--rest"
+        : "crm-timer-block__status--work"
     );
 
     return classes.join(" ");
@@ -102,17 +106,14 @@ export const TimerBlock: FC<TimerBlockProps> = (props) => {
 
   return (
     <div
-      className={`crm-timer-block ${isResting ? "crm-timer-block--resting" : ""}`.trim()}
+      className={`crm-timer-block ${
+        isResting ? "crm-timer-block--resting" : ""
+      }`.trim()}
       style={accentStyle}
     >
       <div className="crm-timer-block__heading">
         <div className="crm-timer-block__title">{displayTitle}</div>
-        <div className={statusClassName}>
-          {phaseLabel}
-        </div>
-        <div className="crm-timer-block__phase" aria-live="polite">
-          {currentLabel}
-        </div>
+        <div className={statusClassName}>{phaseLabel}</div>
       </div>
       <button
         type="button"
@@ -148,7 +149,9 @@ export const TimerBlock: FC<TimerBlockProps> = (props) => {
         </svg>
         <span className="crm-timer-block__button-content">
           {buttonIcon}
-          <span className="crm-timer-block__countdown">{formattedRemaining}</span>
+          <span className="crm-timer-block__countdown">
+            {formattedRemaining}
+          </span>
         </span>
       </button>
       <div className="crm-timer-block__meta">
