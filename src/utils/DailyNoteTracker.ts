@@ -322,6 +322,7 @@ export class DailyNoteTracker {
       `date: ${dateKey}`,
       "createdToday: []",
       "changedToday: []",
+      "openedToday: []",
       "---",
       "",
     ].join("\n");
@@ -409,6 +410,76 @@ export class DailyNoteTracker {
     });
 
     return { records, set: seen };
+  };
+
+  private extractOpenedRecords = (
+    frontmatter: Record<string, unknown>,
+    key: string,
+    sourcePath: string
+  ): { records: (LinkRecord & { count: number })[]; map: Map<string, LinkRecord & { count: number }> } => {
+    const raw = frontmatter[key];
+
+    const values: unknown[] = [];
+    if (Array.isArray(raw)) {
+      raw.forEach((value) => {
+        if (typeof value === "string" || (value && typeof value === "object")) {
+          values.push(value);
+        }
+      });
+    } else if (typeof raw === "string") {
+      values.push(raw);
+    }
+
+    const records: (LinkRecord & { count: number })[] = [];
+    const map = new Map<string, LinkRecord & { count: number }>();
+
+    values.forEach((value) => {
+      let link: string | null = null;
+      let count = 1;
+
+      if (typeof value === "string") {
+        link = value.trim();
+      } else if (value && typeof value === "object") {
+        const objectValue = value as Record<string, unknown>;
+        const maybeLink = objectValue.link ?? objectValue.raw ?? objectValue.value;
+        if (typeof maybeLink === "string" && maybeLink.trim()) {
+          link = maybeLink.trim();
+        }
+        const maybeCount = objectValue.count;
+        if (typeof maybeCount === "number" && Number.isFinite(maybeCount)) {
+          const normalized = Math.floor(maybeCount);
+          if (normalized > 0) {
+            count = normalized;
+          }
+        } else if (typeof maybeCount === "string") {
+          const parsed = Number.parseInt(maybeCount, 10);
+          if (Number.isFinite(parsed) && parsed > 0) {
+            count = parsed;
+          }
+        }
+      }
+
+      if (!link) {
+        return;
+      }
+
+      const canonical = this.resolveLinkCanonical(link, sourcePath);
+      if (!canonical) {
+        return;
+      }
+
+      const existing = map.get(canonical);
+      if (existing) {
+        existing.count += count;
+        return;
+      }
+
+      const record = { raw: link, canonical, count };
+      records.push(record);
+      map.set(canonical, record);
+    });
+
+    return { records, map };
   };
 
   private resolveLinkCanonical = (
@@ -591,6 +662,69 @@ export class DailyNoteTracker {
     } catch (error) {
       console.error("DailyNoteTracker: failed to record changed note", error);
     }
+  };
+
+  private recordOpenedNote = async (
+    dateKey: string,
+    file: TFile
+  ): Promise<void> => {
+    try {
+      const dailyNote = await this.getOrCreateDailyNote(dateKey);
+      if (!dailyNote) {
+        return;
+      }
+
+      const sourcePath = dailyNote.path;
+      const wikiLink = this.buildWikiLink(file, sourcePath);
+
+      await this.withSuppressedModify(sourcePath, async () => {
+        await this.app.fileManager.processFrontMatter(
+          dailyNote,
+          (frontmatter) => {
+            this.ensureDailyNoteMetadata(frontmatter, dateKey);
+
+            const opened = this.extractOpenedRecords(
+              frontmatter,
+              "openedToday",
+              sourcePath
+            );
+
+            const existing = opened.map.get(file.path);
+            if (existing) {
+              existing.count += 1;
+            } else {
+              const record = {
+                raw: wikiLink,
+                canonical: file.path,
+                count: 1,
+              };
+              opened.records.push(record);
+              opened.map.set(file.path, record);
+            }
+
+            frontmatter.openedToday = opened.records.map((record) => ({
+              link: record.raw,
+              count: record.count,
+            }));
+          }
+        );
+      });
+    } catch (error) {
+      console.error("DailyNoteTracker: failed to record opened note", error);
+    }
+  };
+
+  public handleFileOpened = (file: TFile | null) => {
+    if (!file || file.extension !== "md") {
+      return;
+    }
+
+    if (this.isDailyNoteFile(file)) {
+      return;
+    }
+
+    const dateKey = this.formatDateKey(new Date());
+    void this.recordOpenedNote(dateKey, file);
   };
 }
 
