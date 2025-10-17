@@ -153,11 +153,13 @@ export const MeetingsLinks = ({ file, config }: MeetingsLinksProps) => {
     : [];
 
   const hasMeetings = meetings.length > 0;
+  const collapsed = (config as any)?.collapsed !== false;
 
   return (
     <Card
       collapsible
-      collapsed={Boolean((config as any)?.collapsed)}
+      collapsed={collapsed}
+      collapseOnHeaderClick
       icon="calendar"
       title="Meetings"
       subtitle={subtitle}

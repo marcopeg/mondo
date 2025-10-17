@@ -32,10 +32,13 @@ export const TeamsLinks = ({ file, config }: TeamsLinksProps) => {
     (file.cache?.frontmatter?.name as string | undefined) ??
     file.file.basename;
 
+  const collapsed = (config as any)?.collapsed !== false;
+
   return (
     <Card
       collapsible
-      collapsed={Boolean((config as any)?.collapsed)}
+      collapsed={collapsed}
+      collapseOnHeaderClick
       icon="users"
       title="Teams"
       subtitle={`Teams linked to ${companyName}`}

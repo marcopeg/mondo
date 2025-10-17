@@ -99,10 +99,13 @@ export const TeammatesLinks = ({ file, config }: TeammatesLinksProps) => {
     return null;
   }
 
+  const collapsed = (config as any)?.collapsed !== false;
+
   return (
     <Card
       collapsible
-      collapsed={Boolean((config as any)?.collapsed)}
+      collapsed={collapsed}
+      collapseOnHeaderClick
       icon="users"
       title="Teammates"
       subtitle={`People who share a team with ${file.file.basename}`}

@@ -32,10 +32,13 @@ export const EmployeesLinks = ({ file, config }: EmployeesLinksProps) => {
     (file.cache?.frontmatter?.name as string | undefined) ??
     file.file.basename;
 
+  const collapsed = (config as any)?.collapsed !== false;
+
   return (
     <Card
       collapsible
-      collapsed={Boolean((config as any)?.collapsed)}
+      collapsed={collapsed}
+      collapseOnHeaderClick
       icon="user"
       title="Employees"
       subtitle={`People employed at ${companyName}`}

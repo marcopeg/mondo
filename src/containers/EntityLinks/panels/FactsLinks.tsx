@@ -1,9 +1,8 @@
 import { useCallback, useMemo } from "react";
 import { Card } from "@/components/ui/Card";
-import { Stack } from "@/components/ui/Stack";
-import { Typography } from "@/components/ui/Typography";
-import Link from "@/components/ui/Link";
-import Button from "@/components/ui/Button";
+import { Table } from "@/components/ui/Table";
+import { Button } from "@/components/ui/Button";
+import { EntityLinksTable } from "@/components/EntityLinksTable";
 import { useFiles } from "@/hooks/use-files";
 import { useApp } from "@/hooks/use-app";
 import { CRMFileType } from "@/types/CRMFileType";
@@ -166,8 +165,14 @@ export const FactsLinks = ({ file, config }: FactsLinksProps) => {
     });
   }, [facts]);
 
+  const validFacts = useMemo(
+    () => sortedFacts.filter((factEntry) => Boolean(factEntry.file)),
+    [sortedFacts]
+  );
+
   const entityName = getEntityDisplayName(file);
   const subtitle = linkRule.subtitle(entityName);
+  const collapsed = (config as any)?.collapsed !== false;
 
   const handleCreateFact = useCallback(() => {
     if (!linkRule) {
@@ -207,52 +212,39 @@ export const FactsLinks = ({ file, config }: FactsLinksProps) => {
     },
   ];
 
-  const hasFacts = sortedFacts.length > 0;
-
   return (
     <Card
       collapsible
-      collapsed={Boolean((config as any)?.collapsed)}
+      collapsed={collapsed}
+      collapseOnHeaderClick
       icon="bookmark"
       title="Facts"
       subtitle={subtitle}
       actions={actions}
-      {...(!hasFacts ? { p: 0 } : {})}
     >
-      {hasFacts ? (
-        <Stack direction="column" gap={2}>
-          {sortedFacts.map((fact) => {
-            const factFile = fact.file;
-            if (!factFile) {
-              return null;
-            }
+      <EntityLinksTable
+        items={validFacts}
+        getKey={(factEntry) => factEntry.file!.path}
+        emptyLabel="No facts yet"
+        renderRow={(factEntry) => {
+          const factFile = factEntry.file!;
+          const label = getEntityDisplayName(factEntry);
+          const timestamp = formatFactTimestamp(factEntry);
 
-            const label = getEntityDisplayName(fact);
-            const timestamp = formatFactTimestamp(fact);
-
-            return (
-              <div
-                key={factFile.path}
-                className="rounded-sm border border-transparent p-2 hover:border-[var(--background-modifier-border-hover)] hover:bg-[var(--background-modifier-hover)]"
-              >
-                <Stack direction="column" gap={1}>
-                  <Link
-                    to={factFile.path}
-                    className="text-sm font-medium text-[var(--text-accent)] hover:underline"
-                  >
-                    {label}
-                  </Link>
-                  {timestamp && (
-                    <Typography variant="muted" className="text-xs">
-                      {timestamp}
-                    </Typography>
-                  )}
-                </Stack>
-              </div>
-            );
-          })}
-        </Stack>
-      ) : null}
+          return (
+            <>
+              <Table.Cell className="px-2 py-2 align-top">
+                <Button to={factFile.path} variant="link">
+                  {label}
+                </Button>
+              </Table.Cell>
+              <Table.Cell className="px-2 py-2 align-top text-right text-xs text-[var(--text-muted)]">
+                {timestamp || "—"}
+              </Table.Cell>
+            </>
+          );
+        }}
+      />
     </Card>
   );
 };

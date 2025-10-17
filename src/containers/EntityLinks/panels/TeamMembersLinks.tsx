@@ -28,10 +28,13 @@ export const TeamMembersLinks = ({ file, config }: TeamMembersLinksProps) => {
 
   const title = file.cache?.frontmatter?.show ?? file.file.basename;
 
+  const collapsed = (config as any)?.collapsed !== false;
+
   return (
     <Card
       collapsible
-      collapsed={Boolean((config as any)?.collapsed)}
+      collapsed={collapsed}
+      collapseOnHeaderClick
       icon="users"
       title="Members"
       subtitle={`People assigned to ${title}`}

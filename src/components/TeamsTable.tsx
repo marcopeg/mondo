@@ -1,45 +1,36 @@
 import React from "react";
-import { Table } from "@/components/ui/Table";
 import { Button } from "@/components/ui/Button";
+import { Table } from "@/components/ui/Table";
 import type { TCachedFile } from "@/types/TCachedFile";
+import { EntityLinksTable } from "@/components/EntityLinksTable";
 
 type TeamsTableProps = {
   items: TCachedFile[];
 };
 
 /**
- * Simple presentational table for teams. Shows only a single column with a link to the team file.
+ * Simple presentational table for teams.
  */
 export const TeamsTable: React.FC<TeamsTableProps> = ({ items }) => {
   return (
-    <Table>
-      <tbody>
-        {items.length > 0 ? (
-          items.map((entry) => {
-            const label =
-              entry.cache?.frontmatter?.name ??
-              entry.file.basename ??
-              entry.file.path;
+    <EntityLinksTable
+      items={items}
+      getKey={(entry) => entry.file.path}
+      renderRow={(entry) => {
+        const label =
+          entry.cache?.frontmatter?.name ??
+          entry.file.basename ??
+          entry.file.path;
 
-            return (
-              <Table.Row key={entry.file.path}>
-                <Table.Cell>
-                  <Button to={entry.file.path} variant="link">
-                    {label}
-                  </Button>
-                </Table.Cell>
-              </Table.Row>
-            );
-          })
-        ) : (
-          <Table.Row>
-            <Table.Cell>
-              <span style={{ color: "var(--text-muted)" }}>—</span>
-            </Table.Cell>
-          </Table.Row>
-        )}
-      </tbody>
-    </Table>
+        return (
+          <Table.Cell className="px-2 py-2 align-top">
+            <Button to={entry.file.path} variant="link">
+              {label}
+            </Button>
+          </Table.Cell>
+        );
+      }}
+    />
   );
 };
 

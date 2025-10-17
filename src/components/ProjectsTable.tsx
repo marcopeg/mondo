@@ -1,55 +1,42 @@
 import React from "react";
-import { Table } from "@/components/ui/Table";
 import { Button } from "@/components/ui/Button";
+import { Table } from "@/components/ui/Table";
 import type { TCachedFile } from "@/types/TCachedFile";
+import { EntityLinksTable } from "@/components/EntityLinksTable";
 
 type ProjectsTableProps = {
   items: TCachedFile[];
 };
 
 /**
- * Simple presentational table for projects. Shows project name and optionally a small subtitle if available.
+ * Simple presentational table for projects. Shows project name and optional subtitle.
  */
 export const ProjectsTable: React.FC<ProjectsTableProps> = ({ items }) => {
   return (
-    <Table>
-      <tbody>
-        {items.length > 0 ? (
-          items.map((entry) => {
-            const label =
-              entry.cache?.frontmatter?.name ??
-              entry.file.basename ??
-              entry.file.path;
-            const subtitle =
-              entry.cache?.frontmatter?.subtitle ??
-              entry.cache?.frontmatter?.description;
+    <EntityLinksTable
+      items={items}
+      getKey={(entry) => entry.file.path}
+      renderRow={(entry) => {
+        const label =
+          entry.cache?.frontmatter?.name ??
+          entry.file.basename ??
+          entry.file.path;
+        const subtitle =
+          entry.cache?.frontmatter?.subtitle ??
+          entry.cache?.frontmatter?.description;
 
-            return (
-              <Table.Row key={entry.file.path}>
-                <Table.Cell>
-                  <Button to={entry.file.path} variant="link">
-                    {label}
-                  </Button>
-                  {subtitle ? (
-                    <div
-                      style={{ color: "var(--text-muted)", fontSize: "0.9em" }}
-                    >
-                      {subtitle}
-                    </div>
-                  ) : null}
-                </Table.Cell>
-              </Table.Row>
-            );
-          })
-        ) : (
-          <Table.Row>
-            <Table.Cell>
-              <span style={{ color: "var(--text-muted)" }}>—</span>
-            </Table.Cell>
-          </Table.Row>
-        )}
-      </tbody>
-    </Table>
+        return (
+          <Table.Cell className="px-2 py-2 align-top">
+            <Button to={entry.file.path} variant="link">
+              {label}
+            </Button>
+            {subtitle ? (
+              <div className="text-xs text-[var(--text-muted)]">{String(subtitle)}</div>
+            ) : null}
+          </Table.Cell>
+        );
+      }}
+    />
   );
 };
 
