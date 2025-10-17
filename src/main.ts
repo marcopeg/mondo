@@ -211,8 +211,8 @@ export default class CRM extends Plugin {
     });
 
     this.addCommand({
-      id: "crm-transcribe-audio-note",
-      name: "Transcribe",
+      id: "transcribe-audio-note",
+      name: "Transcribe Audio Note",
       checkCallback: (checking) => {
         const file = this.app.workspace.getActiveFile();
 
@@ -262,31 +262,19 @@ export default class CRM extends Plugin {
 
     this.addCommand({
       id: "open-today",
-      name: "Open Today's Journal",
-      callback: async () => {
-        try {
-          await openDailyNote(this.app, this);
-        } catch (e) {
-          console.error("CRM: Failed to open today's journal:", e);
-        }
-      },
+      name: "Open Today's Note",
+      callback: async () => openDailyNote(this.app, this),
     });
 
     this.addCommand({
       id: "add-log",
       name: "Add Log",
       hotkeys: [{ modifiers: ["Mod", "Shift"], key: "l" }],
-      callback: async () => {
-        try {
-          await addDailyLog(this.app, this);
-        } catch (e) {
-          console.error("CRM: Failed to add daily log:", e);
-        }
-      },
+      callback: async () => addDailyLog(this.app, this),
     });
 
     this.addCommand({
-      id: "crm-add-geolocation",
+      id: "add-geolocation",
       name: "Add Geolocation to Current Note",
       checkCallback: (checking) => {
         const file = this.app.workspace.getActiveFile();
@@ -304,8 +292,8 @@ export default class CRM extends Plugin {
     });
 
     this.addCommand({
-      id: "crm-generate-voiceover-current-note",
-      name: "Generate Voiceover for Current Note",
+      id: "generate-note-voiceover",
+      name: "Generate Note's Voiceover",
       checkCallback: (checking) => {
         const file = this.app.workspace.getActiveFile();
         if (!file || file.extension !== "md") {
@@ -344,23 +332,17 @@ export default class CRM extends Plugin {
       });
     });
 
-    // this.addCommand({
-    //   id: "crm-open-side-panel",
-    //   name: "Open CRM Panel",
-    //   callback: () => this.showPanel(CRM_SIDE_VIEW, "right"),
-    // });
-
     // Journal navigation (previous / next)
     const journalMove = journalMoveFactory(this.app, this);
 
     this.addCommand({
-      id: "crm-journal-prev",
+      id: "journal-prev",
       name: "Move to Previous Journal Entry",
       callback: () => journalMove("prev"),
     });
 
     this.addCommand({
-      id: "crm-journal-next",
+      id: "journal-next",
       name: "Move to Next Journal Entry",
       callback: () => journalMove("next"),
     });

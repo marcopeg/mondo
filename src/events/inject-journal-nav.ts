@@ -77,12 +77,12 @@ const injectNav = (leaf: WorkspaceLeaf, plugin: Plugin) => {
 
   makeButton(PREV_ID, "Previous journal note", leftSvg, () => {
     const commands = (plugin.app as any).commands;
-    commands.executeCommandById("crm:crm-journal-prev");
+    commands.executeCommandById("crm:journal-prev");
   });
 
   makeButton(NEXT_ID, "Next journal note", rightSvg, () => {
     const commands = (plugin.app as any).commands;
-    commands.executeCommandById("crm:crm-journal-next");
+    commands.executeCommandById("crm:journal-next");
   });
 };
 
