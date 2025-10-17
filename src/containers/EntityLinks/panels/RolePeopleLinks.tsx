@@ -32,14 +32,16 @@ export const RolePeopleLinks = ({ file, config }: RolePeopleLinksProps) => {
 
   const roleName = getEntityDisplayName(file);
 
+  const collapsed = (config as any)?.collapsed !== false;
+
   return (
     <Card
       collapsible
-      collapsed={Boolean((config as any)?.collapsed)}
+      collapsed={collapsed}
+      collapseOnHeaderClick
       icon="users"
       title="People"
       subtitle={`People linked to ${roleName}`}
-      p={0}
     >
       <PeopleTable items={people} />
     </Card>

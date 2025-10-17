@@ -122,10 +122,13 @@ export const ProjectsLinks = ({ file, config }: ProjectsLinksProps) => {
     }
   })();
 
+  const collapsed = (config as any)?.collapsed !== false;
+
   return (
     <Card
       collapsible
-      collapsed={Boolean((config as any)?.collapsed)}
+      collapsed={collapsed}
+      collapseOnHeaderClick
       icon="folder-git-2"
       title="Projects"
       subtitle={subtitle}

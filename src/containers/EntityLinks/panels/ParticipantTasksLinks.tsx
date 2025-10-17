@@ -1,8 +1,9 @@
-import { useCallback } from "react";
+import { useCallback, useMemo } from "react";
 import { Card } from "@/components/ui/Card";
-import { Stack } from "@/components/ui/Stack";
+import { Table } from "@/components/ui/Table";
+import { Button } from "@/components/ui/Button";
 import { Typography } from "@/components/ui/Typography";
-import Link from "@/components/ui/Link";
+import { EntityLinksTable } from "@/components/EntityLinksTable";
 import { useFiles } from "@/hooks/use-files";
 import { CRMFileType } from "@/types/CRMFileType";
 import { matchesPropertyLink } from "@/utils/matchesPropertyLink";
@@ -35,7 +36,12 @@ export const ParticipantTasksLinks = ({
     ),
   });
 
-  if (tasks.length === 0) {
+  const validTasks = useMemo(
+    () => tasks.filter((task) => Boolean(task.file)),
+    [tasks]
+  );
+
+  if (validTasks.length === 0) {
     return null;
   }
 
@@ -43,46 +49,47 @@ export const ParticipantTasksLinks = ({
     (file.cache?.frontmatter?.show as string | undefined)?.trim() ||
     hostFile.basename;
 
+  const collapsed = (config as any)?.collapsed !== false;
+
   return (
     <Card
       collapsible
-      collapsed={Boolean((config as any)?.collapsed)}
+      collapsed={collapsed}
+      collapseOnHeaderClick
       icon="check-square"
       title="Tasks"
       subtitle={`Tasks referencing ${entityName}`}
     >
-      <Stack direction="column" gap={2}>
-        {tasks.map((task) => {
-          if (!task.file) {
-            return null;
-          }
+      <EntityLinksTable
+        items={validTasks}
+        getKey={(task) => task.file!.path}
+        renderRow={(task) => {
+          const taskFile = task.file!;
           const label = getTaskLabel(task);
           const status = getTaskStatus(task);
           return (
-            <div
-              key={task.file.path}
-              className="rounded-sm border border-transparent p-2 hover:border-[var(--background-modifier-border-hover)] hover:bg-[var(--background-modifier-hover)]"
-            >
-              <Stack direction="row" justify="space-between" align="center">
-                <Link
-                  to={task.file.path}
-                  className="text-sm font-medium text-[var(--text-accent)] hover:underline"
-                >
+            <>
+              <Table.Cell className="px-2 py-2 align-top">
+                <Button to={taskFile.path} variant="link">
                   {label}
-                </Link>
-                {status && (
+                </Button>
+              </Table.Cell>
+              <Table.Cell className="px-2 py-2 align-top text-right">
+                {status ? (
                   <Typography
                     variant="muted"
                     className="text-xs uppercase tracking-wide"
                   >
                     {status}
                   </Typography>
+                ) : (
+                  <span className="text-xs text-[var(--text-muted)]">—</span>
                 )}
-              </Stack>
-            </div>
+              </Table.Cell>
+            </>
           );
-        })}
-      </Stack>
+        }}
+      />
     </Card>
   );
 };
