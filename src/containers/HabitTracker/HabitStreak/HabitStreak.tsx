@@ -1,5 +1,5 @@
 import type { CSSProperties, FC } from "react";
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Button from "@/components/ui/Button";
 
 export type HabitStreakProps = {
@@ -45,10 +45,37 @@ export const HabitStreak: FC<HabitStreakProps> = ({
   showToggle = true,
 }) => {
   const checked = useMemo(() => new Set(checkedDays), [checkedDays]);
+  const [currentDate, setCurrentDate] = useState<Date>(() => new Date());
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return undefined;
+    }
+
+    const interval = window.setInterval(() => {
+      setCurrentDate((previous) => {
+        const now = new Date();
+
+        if (
+          now.getFullYear() !== previous.getFullYear() ||
+          now.getMonth() !== previous.getMonth() ||
+          now.getDate() !== previous.getDate()
+        ) {
+          return now;
+        }
+
+        return previous;
+      });
+    }, 1000);
+
+    return () => {
+      window.clearInterval(interval);
+    };
+  }, []);
 
   const days = useMemo(() => {
     const length = Math.max(1, streakLength);
-    const today = new Date();
+    const today = currentDate;
     const todayId = formatDateId(
       today.getFullYear(),
       today.getMonth(),
@@ -78,7 +105,7 @@ export const HabitStreak: FC<HabitStreakProps> = ({
     }
 
     return result;
-  }, [checked, streakLength]);
+  }, [checked, streakLength, currentDate]);
 
   return (
     <div className="flex flex-col gap-3 pt-2 pb-2">
