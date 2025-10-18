@@ -156,8 +156,8 @@ export const RelevantNotes = ({ collapsed = false }: RelevantNotesProps) => {
     >
       <Stack direction="column" gap={3} className="w-full">
         <Stack className="gap-2 flex-col sm:flex-row sm:items-center sm:justify-between">
-          <div className="-mx-1 flex-1 overflow-x-auto pb-1">
-            <ButtonGroup className="mx-1 flex-nowrap">
+          <div className="-mx-2 flex-1 overflow-x-auto pb-1 sm:mx-0">
+            <ButtonGroup className="crm-relevant-notes__filters-group flex-nowrap sm:mx-1">
               {filterButtons.map((button) => {
                 const isActive = selectedType === button.type;
                 return (

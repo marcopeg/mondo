@@ -17,16 +17,19 @@ const TimerBlockContent: FC<TimerBlockContentProps> = ({
 }) => {
   const {
     canStart,
+    currentLoop,
     currentLabel,
     displayTitle,
     durationSeconds,
     formattedElapsed,
     formattedRemaining,
+    hasFiniteLoops,
     intervalSeconds,
     isResting,
     isRunning,
     nextLabel,
     progress,
+    totalLoops,
     start,
     stop,
   } = controller;
@@ -156,14 +159,14 @@ const TimerBlockContent: FC<TimerBlockContentProps> = ({
           <span className="crm-timer-block__countdown">
             {formattedRemaining}
           </span>
+          {hasFiniteLoops ? (
+            <span className="crm-timer-block__loop">{`(${currentLoop}/${totalLoops})`}</span>
+          ) : null}
         </span>
       </button>
       <div className="crm-timer-block__meta">
         {isRunning ? (
-          <>
-            <span className="crm-timer-block__meta-label">elapsed</span>
-            <span className="crm-timer-block__meta-value">{formattedElapsed}</span>
-          </>
+          <span className="crm-timer-block__meta-value">{formattedElapsed}</span>
         ) : (
           <>
             <span className="crm-timer-block__meta-duration">{`${durationSeconds}s`}</span>

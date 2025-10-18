@@ -158,6 +158,34 @@
   border-radius: 0 !important;
 }
 
+.crm-relevant-notes__filters-group {
+  border-radius: 0;
+}
+
+.crm-relevant-notes__filters-group .crm-button-group__button--first,
+.crm-relevant-notes__filters-group .crm-button-group__button--last {
+  border-top-left-radius: 0 !important;
+  border-bottom-left-radius: 0 !important;
+  border-top-right-radius: 0 !important;
+  border-bottom-right-radius: 0 !important;
+}
+
+@media (min-width: 640px) {
+  .crm-relevant-notes__filters-group {
+    border-radius: var(--radius-s, 0.45rem);
+  }
+
+  .crm-relevant-notes__filters-group .crm-button-group__button--first {
+    border-top-left-radius: var(--radius-s, 0.45rem) !important;
+    border-bottom-left-radius: var(--radius-s, 0.45rem) !important;
+  }
+
+  .crm-relevant-notes__filters-group .crm-button-group__button--last {
+    border-top-right-radius: var(--radius-s, 0.45rem) !important;
+    border-bottom-right-radius: var(--radius-s, 0.45rem) !important;
+  }
+}
+
 .crm-settings-entities-collapsible {
   margin-bottom: 1.5rem;
 }
@@ -762,6 +790,12 @@
 .crm-timer-block__countdown {
   font-family: var(--font-monospace);
   font-size: 1.55rem;
+}
+
+.crm-timer-block__loop {
+  font-family: var(--font-monospace);
+  font-size: 0.625rem;
+  color: var(--text-muted);
 }
 
 .crm-timer-block__phase {
