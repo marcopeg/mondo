@@ -3,6 +3,7 @@ import {
   Plugin,
   Menu,
   Notice,
+  Platform,
   TAbstractFile,
   TFile,
   type ViewState,
@@ -663,7 +664,9 @@ export default class CRM extends Plugin {
         await this.showPanel(DASHBOARD_VIEW, "main");
       }
 
-      ws.leftSplit?.expand?.();
+      if (!Platform.isMobileApp) {
+        ws.leftSplit?.expand?.();
+      }
       ws.rightSplit?.collapse?.();
       document.body.classList.remove("focus-mode");
       return;
@@ -697,7 +700,9 @@ export default class CRM extends Plugin {
     }
 
     document.body.classList.remove("focus-mode");
-    ws.leftSplit?.expand?.();
+    if (!Platform.isMobileApp) {
+      ws.leftSplit?.expand?.();
+    }
   }
 
   private async focusDashboardOnStartup() {
