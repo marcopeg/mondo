@@ -753,3 +753,15 @@
   font-size: 0.85rem;
   color: var(--text-muted);
 }
+
+.crm-timer-block__meta-label {
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.crm-timer-block__meta-value {
+  font-family: var(--font-monospace);
+  font-size: 1rem;
+  color: var(--text-normal);
+}
