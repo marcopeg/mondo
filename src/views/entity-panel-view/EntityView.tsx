@@ -1,7 +1,7 @@
 import type { FC } from "react";
 import { useCallback, useMemo, useState } from "react";
-import type { App, TFile } from "obsidian";
-import { Modal, Notice } from "obsidian";
+import type { App } from "obsidian";
+import { Notice, TFile } from "obsidian";
 import { useApp } from "@/hooks/use-app";
 import { CRMFileType, getCRMEntityConfig } from "@/types/CRMFileType";
 import { normalizeFolderPath } from "@/utils/normalizeFolderPath";
@@ -15,6 +15,11 @@ type CreateEntityFileOptions = {
   app: App;
   entityType: CRMFileType;
   title: string;
+};
+
+type CreateEntityFileResult = {
+  file: TFile;
+  created: boolean;
 };
 
 const slugify = (value: string): string =>
@@ -55,7 +60,7 @@ const createEntityFile = async ({
   app,
   entityType,
   title,
-}: CreateEntityFileOptions): Promise<TFile> => {
+}: CreateEntityFileOptions): Promise<CreateEntityFileResult> => {
   const pluginInstance = (app as any)?.plugins?.plugins?.crm as
     | { settings?: Record<string, unknown> }
     | undefined;
@@ -83,15 +88,12 @@ const createEntityFile = async ({
   const buildPath = (name: string) =>
     normalizedFolder ? `${normalizedFolder}/${name}` : name;
 
-  let fileName = defaultName;
-  let filePath = buildPath(fileName);
-  let counter = 1;
+  const fileName = defaultName;
+  const filePath = buildPath(fileName);
 
-  while (app.vault.getAbstractFileByPath(filePath)) {
-    const nameWithoutExt = defaultName.replace(/\.md$/i, "");
-    fileName = `${nameWithoutExt}-${counter}.md`;
-    filePath = buildPath(fileName);
-    counter += 1;
+  const existing = app.vault.getAbstractFileByPath(filePath);
+  if (existing instanceof TFile) {
+    return { file: existing, created: false };
   }
 
   const slug = slugify(baseTitle) || sanitizedBase.toLowerCase();
@@ -123,110 +125,8 @@ const createEntityFile = async ({
     }
   }
 
-  return createdFile;
+  return { file: createdFile, created: true };
 };
-
-class CreateEntityModal extends Modal {
-  private readonly entityLabel: string;
-
-  private readonly resolveFn: (value: string | null) => void;
-
-  private inputEl: HTMLInputElement | null = null;
-
-  private hasResolved = false;
-
-  constructor(app: App, entityLabel: string, resolve: (value: string | null) => void) {
-    super(app);
-    this.entityLabel = entityLabel;
-    this.resolveFn = resolve;
-  }
-
-  onOpen = () => {
-    this.hasResolved = false;
-    const { contentEl } = this;
-    contentEl.empty();
-    contentEl.addClass("crm-entity-create-modal");
-
-    contentEl.createEl("h2", { text: `New ${this.entityLabel}` });
-
-    const form = contentEl.createEl("form", {
-      cls: "crm-entity-create-modal__form",
-    });
-
-    const input = form.createEl("input", {
-      type: "text",
-      placeholder: `${this.entityLabel} name`,
-      cls: "setting-input",
-    });
-    this.inputEl = input;
-
-    window.setTimeout(() => {
-      input.focus();
-      input.select();
-    }, 10);
-
-    input.addEventListener("keydown", (event) => {
-      if (event.key === "Escape") {
-        event.preventDefault();
-        this.closeWith(null);
-      }
-    });
-
-    form.addEventListener("submit", (event) => {
-      event.preventDefault();
-      const value = input.value.trim();
-      if (!value) {
-        new Notice(`Please enter a ${this.entityLabel.toLowerCase()} name.`);
-        return;
-      }
-      this.closeWith(value);
-    });
-
-    const actions = form.createDiv({
-      cls: "crm-entity-create-modal__actions flex justify-end gap-2",
-    });
-
-    const cancelButton = actions.createEl("button", {
-      type: "button",
-      text: "Cancel",
-      cls: "mod-cancel",
-    });
-    cancelButton.addEventListener("click", (event) => {
-      event.preventDefault();
-      this.closeWith(null);
-    });
-
-    const createButton = actions.createEl("button", {
-      type: "submit",
-      text: "Create",
-      cls: "mod-cta",
-    });
-    createButton.addClass("mod-cta");
-  };
-
-  onClose = () => {
-    this.contentEl.empty();
-    this.inputEl = null;
-    if (!this.hasResolved) {
-      this.resolveFn(null);
-    }
-  };
-
-  private closeWith = (value: string | null) => {
-    this.hasResolved = true;
-    this.resolveFn(value);
-    this.close();
-  };
-}
-
-const promptForEntityTitle = (
-  app: App,
-  entityLabel: string
-): Promise<string | null> =>
-  new Promise((resolve) => {
-    const modal = new CreateEntityModal(app, entityLabel, resolve);
-    modal.open();
-  });
 
 type EntityViewProps = {
   entityType: CRMFileType;
@@ -245,23 +145,42 @@ export const EntityView: FC<EntityViewProps> = ({ entityType }) => {
       return;
     }
 
-    const titleInput = await promptForEntityTitle(app, entityLabel);
-    if (!titleInput) {
-      return;
-    }
-
     setIsCreating(true);
 
     try {
-      const created = await createEntityFile({
+      const titleForEntity = `Untitled ${entityLabel}`;
+      const { file, created } = await createEntityFile({
         app,
         entityType,
-        title: titleInput,
+        title: titleForEntity,
       });
 
       const leaf = app.workspace.getLeaf(true);
       if (leaf) {
-        await (leaf as any).openFile(created);
+        await (leaf as any).openFile(file);
+      }
+
+      if (created && leaf) {
+        window.setTimeout(() => {
+          if (app.workspace.getActiveFile()?.path === file.path) {
+            const executed = (app as any)?.commands?.executeCommandById?.(
+              "app:rename-file"
+            );
+
+            if (!executed) {
+              const view = (leaf as any)?.view;
+              const titleEl: HTMLInputElement | undefined =
+                view?.fileView?.inputEl ?? view?.titleEl?.querySelector?.(
+                  "input"
+                );
+
+              if (titleEl) {
+                titleEl.focus();
+                titleEl.select();
+              }
+            }
+          }
+        }, 150);
       }
     } catch (error) {
       console.error("EntityView: failed to create entity file", error);
