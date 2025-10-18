@@ -118,16 +118,17 @@ const QuickTasksCard = ({
                   align="start"
                   justify="space-between"
                   gap={3}
+                  className="w-full"
                 >
                   <Stack
                     direction="row"
                     align="start"
                     gap={2}
-                    className="flex-1"
+                    className="flex-1 min-w-0"
                   >
                     <input
                       type="checkbox"
-                      className="mt-1 h-4 w-4 accent-[var(--interactive-accent)]"
+                      className="mt-1 h-4 w-4 shrink-0 accent-[var(--interactive-accent)]"
                       checked={false}
                       disabled={isBusy}
                       onChange={() => {
@@ -136,13 +137,19 @@ const QuickTasksCard = ({
                       }}
                       aria-label={`Complete task "${task.text || task.raw}"`}
                     />
-                    <Stack direction="column" gap={1} className="flex-1">
-                      <Link
-                        to={task.filePath}
-                        className="text-sm font-medium text-[var(--text-accent)] hover:underline"
-                      >
-                        {task.text || task.raw}
-                      </Link>
+                    <Stack
+                      direction="column"
+                      gap={1}
+                      className="flex-1 min-w-0"
+                    >
+                      <div className="max-w-full overflow-x-auto">
+                        <Link
+                          to={task.filePath}
+                          className="block w-full whitespace-nowrap text-sm font-medium text-[var(--text-accent)] hover:underline"
+                        >
+                          {task.text || task.raw}
+                        </Link>
+                      </div>
                       <Typography
                         variant="body"
                         className="text-xs text-[var(--text-muted)]"
