@@ -34,54 +34,62 @@ timer?duration=20&interval=0&title=Deep%20Work&color=#55aaff
 
 ```
 
-### Multi‑step Time Plan (YAML array)
+### Multi‑step Time Plan
 
 ```
 
 ```crm
 time-plan
-- title: Warmup
-  duration: 300   # 5 min work
-  pause: 60       # 1 min rest
-- title: Focus Block 1
-  duration: 1500  # 25 min work
-  pause: 300      # 5 min rest
-- title: Focus Block 2
-  duration: 1500
-  pause: 0
+title: Gym Session
+steps:
+  - title: Warmup
+    duration: 300   # 5 min work
+    pause: 60       # 1 min rest
+  - title: Focus Block 1
+    duration: 1500  # 25 min work
+    pause: 300      # 5 min rest
+  - title: Focus Block 2
+    duration: 1500
+    pause: 0
 ```
 
 ```
 
-- Each item is a step: `title`, `duration` (or `time`) and an optional `pause` (or `rest`).
-- The UI will show the current step title; during rest it shows "rest" and, if available, the next step title.
+- `title`: The overall plan title (e.g., "Gym Session")
+- `steps`: An array of steps, each with:
+  - `title` (string): Step name
+  - `duration` or `time` (number, seconds): Work duration
+  - `pause` or `rest` (number, seconds, optional): Rest after the step
+- The UI shows the current step title; during rest it shows "rest" and the next step title.
 
 ### Combine inline query + YAML
 
 ```
 
 ```crm
-time-plan?title=Morning%20Plan&loop=2
-- title: Sprint
-  time: 1200
-  rest: 120
-- title: Review
-  duration: 600
-  pause: 0
+time-plan?loop=2&color=#55aaff
+title: Morning Plan
+steps:
+  - title: Sprint
+    time: 1200
+    rest: 120
+  - title: Review
+    duration: 600
+    pause: 0
 ```
 
-```
+````
 
-- Inline query sets block-level options (`title`, `loop`).
-- YAML array defines steps.
+- Inline query sets block-level options (`loop`, `color`).
+- YAML body defines the plan title and steps array.
 
 ## All options
 
-You can pass these as inline query parameters (e.g., `timer?duration=25`) or as key/value lines in the YAML body. For `time-plan`, steps are provided as a YAML array.
+You can pass these as inline query parameters (e.g., `timer?duration=25`) or as key/value lines in the YAML body. For `time-plan`, define `steps` as a YAML array.
 
-- `title` (string): Displayed title above the timer. Defaults to `"time plan"` for `time-plan` and `"work"` for `timer`.
+- `title` (string): Displayed title above the timer. For `time-plan`, this is the overall plan title (e.g., "Gym Session"). Defaults to `"time plan"` for `time-plan` and `"work"` for `timer`.
 - `color` (string): Any CSS color (e.g., `#55aaff`, `hsl(210, 90%, 56%)`). Tints the ring and accents.
-- `duration` (number, seconds): Work duration for `timer` mode. Ignored per-step in `time-plan`.
+- `duration` (number, seconds): Work duration for `timer` mode. Ignored for `time-plan` (use per-step durations instead).
 - `interval` (number, seconds): Rest duration for `timer` mode. In `time-plan`, rest is per-step via `pause`/`rest`.
 - `step` (number, seconds): Optional cadence for short beeps during work (ignored in the final 3 seconds of a phase). Set to `0` or omit to disable.
 - `loop` (string | number): Controls repeating behavior after a cycle completes.
@@ -93,45 +101,50 @@ You can pass these as inline query parameters (e.g., `timer?duration=25`) or as 
 
 ### `time-plan` steps
 
-Provide an array of objects in YAML. Each step supports:
+For `time-plan` blocks, provide a `steps` array in YAML. Each step supports:
 
-- `title` (string)
+- `title` (string): Name of the step
 - `duration` or `time` (number, seconds) — required, must be > 0
 - `pause` or `rest` (number, seconds) — optional rest after the step
 
 Example:
 
-```
-
-- title: Pomodoro 1
-  duration: 1500
-  pause: 300
-- title: Pomodoro 2
-  time: 1500
-  rest: 300
-
-```
+```yaml
+title: Training Session
+steps:
+  - title: Pomodoro 1
+    duration: 1500
+    pause: 300
+  - title: Pomodoro 2
+    time: 1500
+    rest: 300
+````
 
 ## Behavior details
 
 ### Labels
+
 - While working: shows the step title (or "go" in simple timer).
 - While resting: shows `"rest"` and, for `time-plan`, the next step title.
 
 ### Progress ring
+
 - `progress` counts down from 1 → 0 for the current phase.
 
 ### Countdown and elapsed
+
 - The large value shows remaining time for the current/next work phase when idle. While running it shows the current phase’s remaining time.
 - Below, when running, a chronograph shows total accumulated work time across the session (hours:minutes:seconds.milliseconds).
 
 ### Audio/vibration cues
+
 - Final 3 seconds of any phase: short beep once per second.
 - Optional step cadence (`step`): short beep every N seconds during work, muted during the final 3 seconds.
 - On transition to rest: a rest cue.
 - On step change or loop restart: a chime.
 
 ### Looping
+
 - `loop=false`: stop at the end of the final phase/step.
 - `loop=true` or omitted: continue indefinitely.
 - `loop=N` (e.g., 3): repeat N times. A loop increments after finishing a full work cycle (in `time-plan`, it’s after the last step’s rest or end; in simple timer, after work+rest).
@@ -148,4 +161,7 @@ Example:
 - Use `color` to differentiate timers visually.
 - For smooth pacing, try `step=60` to get a short cue every minute during work.
 - In `time-plan`, omit `pause` to immediately progress to the next step without a rest.
+
+```
+
 ```

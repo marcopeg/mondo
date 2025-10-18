@@ -82,6 +82,39 @@ const parseBlockSource = (
     return line;
   });
 
+  // Handle legacy format: scalar properties followed by top-level list items
+  // Example (non-standard YAML): title: Gym\n- title: Step1\n  duration: 5
+  // This splits at the first list item and parses separately
+  const firstListItemIndex = normalizedLines.findIndex((line) =>
+    line.trim().startsWith("-")
+  );
+  const hasTopLevelScalars =
+    firstListItemIndex > 0 &&
+    normalizedLines
+      .slice(0, firstListItemIndex)
+      .some((line) => line.includes(":"));
+
+  if (firstListItemIndex > 0 && hasTopLevelScalars) {
+    const scalarLines = normalizedLines.slice(0, firstListItemIndex);
+    const listLines = normalizedLines.slice(firstListItemIndex);
+
+    try {
+      const scalarProps = toRecord(YAML.parse(scalarLines.join("\n")));
+      const steps = YAML.parse(listLines.join("\n"));
+
+      return {
+        blockKey,
+        props: {
+          ...baseProps,
+          ...scalarProps,
+          ...(Array.isArray(steps) && steps.length > 0 ? { steps } : {}),
+        },
+      };
+    } catch (error) {
+      // Fall through to standard parsing
+    }
+  }
+
   const yamlSource = normalizedLines.join("\n");
 
   try {
@@ -99,25 +132,28 @@ const parseBlockSource = (
 
     return { blockKey, props: { ...baseProps, ...record } };
   } catch (error) {
-    const props = rest.reduce<CodeBlockProps>((acc, line) => {
-      const colonIndex = line.indexOf(":");
-      const equalsIndex = line.indexOf("=");
-      const separatorIndex = colonIndex !== -1 ? colonIndex : equalsIndex;
-      if (separatorIndex === -1) {
+    const props = rest.reduce<CodeBlockProps>(
+      (acc, line) => {
+        const colonIndex = line.indexOf(":");
+        const equalsIndex = line.indexOf("=");
+        const separatorIndex = colonIndex !== -1 ? colonIndex : equalsIndex;
+        if (separatorIndex === -1) {
+          return acc;
+        }
+
+        const key = line.slice(0, separatorIndex).trim();
+        const value = line.slice(separatorIndex + 1).trim();
+
+        if (key.length === 0) {
+          return acc;
+        }
+
+        acc[key] = value;
+
         return acc;
-      }
-
-      const key = line.slice(0, separatorIndex).trim();
-      const value = line.slice(separatorIndex + 1).trim();
-
-      if (key.length === 0) {
-        return acc;
-      }
-
-      acc[key] = value;
-
-      return acc;
-    }, { ...baseProps });
+      },
+      { ...baseProps }
+    );
 
     return { blockKey, props };
   }
