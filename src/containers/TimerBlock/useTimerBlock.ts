@@ -44,6 +44,19 @@ const formatTime = (value: number): string => {
     .padStart(2, "0")}`;
 };
 
+type NavigatorWithWakeLock = Navigator & {
+  wakeLock?: {
+    request: (type: "screen") => Promise<ScreenWakeLockSentinel>;
+  };
+};
+
+type ScreenWakeLockSentinel = {
+  released: boolean;
+  release: () => Promise<void>;
+  addEventListener?: (type: "release", listener: () => void) => void;
+  removeEventListener?: (type: "release", listener: () => void) => void;
+};
+
 type WindowWithAudioContext = Window & {
   webkitAudioContext?: typeof AudioContext;
 };
@@ -206,6 +219,7 @@ export const useTimerBlock = (props: TimerBlockProps): TimerBlockState => {
   const phaseDurationRef = useRef(Math.max(durationSeconds || 1, 1));
   const phaseStartTimeRef = useRef<number | null>(null);
   const animationFrameRef = useRef<number | null>(null);
+  const wakeLockRef = useRef<ScreenWakeLockSentinel | null>(null);
 
   const getNow = useCallback(() => {
     if (typeof performance !== "undefined" && typeof performance.now === "function") {
@@ -224,23 +238,61 @@ export const useTimerBlock = (props: TimerBlockProps): TimerBlockState => {
     }
   }, [durationSeconds, isRunning]);
 
-  useEffect(() => {
-    if (!isRunning) {
+  const releaseWakeLock = useCallback(async () => {
+    if (!wakeLockRef.current) {
       return;
     }
 
-    if (remainingSeconds <= 0) {
+    try {
+      const sentinel = wakeLockRef.current;
+      wakeLockRef.current = null;
+      await sentinel.release();
+    } catch (error) {
+      wakeLockRef.current = null;
+    }
+  }, []);
+
+  const requestWakeLock = useCallback(async () => {
+    if (typeof navigator === "undefined") {
       return;
     }
 
-    const timeoutId = window.setTimeout(() => {
-      setRemainingSeconds((value) => (value > 0 ? value - 1 : 0));
-    }, 1000);
+    const navigatorWithWakeLock = navigator as NavigatorWithWakeLock;
 
-    return () => {
-      window.clearTimeout(timeoutId);
-    };
-  }, [isRunning, remainingSeconds]);
+    if (!navigatorWithWakeLock.wakeLock?.request) {
+      return;
+    }
+
+    if (wakeLockRef.current) {
+      return;
+    }
+
+    try {
+      const sentinel = await navigatorWithWakeLock.wakeLock.request("screen");
+
+      const handleRelease = () => {
+        wakeLockRef.current = null;
+
+        if (sentinel.removeEventListener) {
+          sentinel.removeEventListener("release", handleRelease);
+        }
+
+        if (typeof document !== "undefined" && document.visibilityState === "visible") {
+          if (isRunning) {
+            void requestWakeLock();
+          }
+        }
+      };
+
+      wakeLockRef.current = sentinel;
+
+      if (sentinel.addEventListener) {
+        sentinel.addEventListener("release", handleRelease);
+      }
+    } catch (error) {
+      wakeLockRef.current = null;
+    }
+  }, [isRunning]);
 
   useEffect(() => {
     if (!isRunning) {
@@ -295,7 +347,8 @@ export const useTimerBlock = (props: TimerBlockProps): TimerBlockState => {
     setProgress(1);
     phaseStartTimeRef.current = null;
     setIsRunning(true);
-  }, [durationSeconds, hepticMode]);
+    void requestWakeLock();
+  }, [durationSeconds, hepticMode, requestWakeLock]);
 
   const stop = useCallback(() => {
     setIsRunning(false);
@@ -304,7 +357,8 @@ export const useTimerBlock = (props: TimerBlockProps): TimerBlockState => {
     setProgress(1);
     phaseStartTimeRef.current = null;
     stopFeedback(hepticMode);
-  }, [durationSeconds, hepticMode]);
+    void releaseWakeLock();
+  }, [durationSeconds, hepticMode, releaseWakeLock]);
 
   const formattedRemaining = useMemo(
     () => formatTime(isRunning ? remainingSeconds : durationSeconds),
@@ -344,6 +398,34 @@ export const useTimerBlock = (props: TimerBlockProps): TimerBlockState => {
     setProgress(1);
   }, [activePhaseDuration, getNow, isRunning, phase]);
 
+  const recomputeTiming = useCallback(() => {
+    if (!isRunning) {
+      return;
+    }
+
+    const durationMs = Math.max(phaseDurationRef.current * 1000, 1);
+    const now = getNow();
+    const start = phaseStartTimeRef.current ?? now;
+
+    if (phaseStartTimeRef.current === null) {
+      phaseStartTimeRef.current = start;
+    }
+
+    const elapsed = now - start;
+    const remaining = Math.max(durationMs - elapsed, 0);
+    const ratio = Math.max(0, Math.min(1, remaining / durationMs));
+    const remainingSecondsEstimate = Math.ceil(remaining / 1000);
+
+    setProgress(ratio);
+    setRemainingSeconds((value) => {
+      if (!Number.isFinite(remainingSecondsEstimate)) {
+        return value;
+      }
+
+      return value === remainingSecondsEstimate ? value : remainingSecondsEstimate;
+    });
+  }, [getNow, isRunning]);
+
   useEffect(() => {
     if (!isRunning) {
       if (animationFrameRef.current !== null) {
@@ -361,19 +443,7 @@ export const useTimerBlock = (props: TimerBlockProps): TimerBlockState => {
         return;
       }
 
-      const durationMs = Math.max(phaseDurationRef.current * 1000, 1);
-      const now = getNow();
-      const start = phaseStartTimeRef.current ?? now;
-
-      if (phaseStartTimeRef.current === null) {
-        phaseStartTimeRef.current = start;
-      }
-
-      const elapsed = now - start;
-      const remaining = Math.max(durationMs - elapsed, 0);
-      const ratio = Math.max(0, Math.min(1, remaining / durationMs));
-
-      setProgress(ratio);
+      recomputeTiming();
 
       animationFrameRef.current = window.requestAnimationFrame(tick);
     };
@@ -388,7 +458,54 @@ export const useTimerBlock = (props: TimerBlockProps): TimerBlockState => {
         animationFrameRef.current = null;
       }
     };
-  }, [getNow, isRunning, phase]);
+  }, [isRunning, recomputeTiming]);
+
+  useEffect(() => {
+    if (!isRunning) {
+      return;
+    }
+
+    const intervalId = window.setInterval(() => {
+      recomputeTiming();
+    }, 1000);
+
+    return () => {
+      window.clearInterval(intervalId);
+    };
+  }, [isRunning, recomputeTiming]);
+
+  useEffect(() => {
+    if (!isRunning) {
+      void releaseWakeLock();
+
+      return;
+    }
+
+    void requestWakeLock();
+
+    if (typeof document === "undefined") {
+      return;
+    }
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        void requestWakeLock();
+        recomputeTiming();
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [isRunning, recomputeTiming, releaseWakeLock, requestWakeLock]);
+
+  useEffect(() => {
+    return () => {
+      void releaseWakeLock();
+    };
+  }, [releaseWakeLock]);
 
   return {
     canStart: durationSeconds > 0,
