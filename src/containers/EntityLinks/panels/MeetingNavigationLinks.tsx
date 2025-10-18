@@ -112,9 +112,6 @@ const getParticipants = (cached: TCachedFile): string[] => {
   );
 };
 
-const isSameFile = (a?: TCachedFile, b?: TCachedFile) =>
-  Boolean(a?.file?.path && b?.file?.path && a.file.path === b.file.path);
-
 type MeetingNavigationLinksProps = {
   config: Record<string, unknown>;
   file: TCachedFile;
@@ -198,9 +195,6 @@ export const MeetingNavigationLinks = ({ file }: MeetingNavigationLinksProps) =>
     });
   }, [people, singleParticipant]);
 
-  const previousMeeting = findPrevious();
-  const nextMeeting = findNext();
-
   const previousOneOnOne =
     singleParticipant !== undefined
       ? findPrevious((entry) =>
@@ -216,20 +210,7 @@ export const MeetingNavigationLinks = ({ file }: MeetingNavigationLinksProps) =>
           entry.participants[0] === singleParticipant
         )
       : undefined;
-
-  const resolvedPreviousOneOnOne =
-    previousMeeting && previousOneOnOne &&
-    isSameFile(previousMeeting.cached, previousOneOnOne.cached)
-      ? undefined
-      : previousOneOnOne;
-
-  const resolvedNextOneOnOne =
-    nextMeeting && nextOneOnOne &&
-    isSameFile(nextMeeting.cached, nextOneOnOne.cached)
-      ? undefined
-      : nextOneOnOne;
-
-  const hasNext = Boolean(nextMeeting || resolvedNextOneOnOne);
+  const hasNext = Boolean(nextOneOnOne);
 
   const handleCreateMeeting = useCallback(() => {
     const participantTargets: MeetingLinkTarget[] = matchedSingleParticipant
@@ -260,19 +241,26 @@ export const MeetingNavigationLinks = ({ file }: MeetingNavigationLinksProps) =>
     })();
   }, [app, file, matchedSingleParticipant]);
 
+  if (!singleParticipant) {
+    return null;
+  }
+
   if (!hasNext) {
     return (
       <Card p={0}>
         <div className="flex items-center justify-end px-3 py-2">
           <Button icon="plus" onClick={handleCreateMeeting}>
-            New Meeting
+            New 1-1
           </Button>
         </div>
       </Card>
     );
   }
 
-  const renderLink = (entry: NavigationEntry, options?: { icon?: string; iconPosition?: "start" | "end"; ariaLabel?: string; }) => (
+  const renderLink = (
+    entry: NavigationEntry,
+    options?: { icon?: string; iconPosition?: "start" | "end"; ariaLabel?: string }
+  ) => (
     <Button
       key={entry.cached.file.path}
       to={entry.cached.file.path}
@@ -297,41 +285,22 @@ export const MeetingNavigationLinks = ({ file }: MeetingNavigationLinksProps) =>
     <Card p={0}>
       <div className="flex items-center gap-4 px-3 py-2 text-sm">
         <div className="flex min-w-0 flex-1 items-center gap-2">
-          {previousMeeting ? (
-            renderLink(previousMeeting, {
-              icon: "arrow-left",
-              ariaLabel: `Previous meeting: ${previousMeeting.label}`,
-            })
-          ) : null}
-          {previousMeeting && resolvedPreviousOneOnOne ? (
-            <span className="text-xs text-[var(--text-muted)]">|</span>
-          ) : null}
-          {resolvedPreviousOneOnOne ? (
-            renderOneOnOneLink(resolvedPreviousOneOnOne, "previous")
+          {previousOneOnOne ? (
+            renderOneOnOneLink(previousOneOnOne, "previous")
           ) : null}
         </div>
 
         <div className="flex items-center gap-2 whitespace-nowrap">
           <span className="text-xs text-[var(--text-muted)]">←→</span>
           <Button icon="plus" onClick={handleCreateMeeting}>
-            New Meeting
+            New 1-1
           </Button>
           <span className="text-xs text-[var(--text-muted)]">←→</span>
         </div>
 
         <div className="flex min-w-0 flex-1 items-center justify-end gap-2">
-          {resolvedNextOneOnOne ? (
-            renderOneOnOneLink(resolvedNextOneOnOne, "next")
-          ) : null}
-          {resolvedNextOneOnOne && nextMeeting ? (
-            <span className="text-xs text-[var(--text-muted)]">|</span>
-          ) : null}
-          {nextMeeting ? (
-            renderLink(nextMeeting, {
-              icon: "arrow-right",
-              iconPosition: "end",
-              ariaLabel: `Next meeting: ${nextMeeting.label}`,
-            })
+          {nextOneOnOne ? (
+            renderOneOnOneLink(nextOneOnOne, "next")
           ) : null}
         </div>
       </div>
