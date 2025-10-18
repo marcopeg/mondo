@@ -11,6 +11,7 @@ import {
   type MeetingLinkTarget,
 } from "@/utils/createMeetingForPerson";
 import {
+  addParticipantLink,
   normalizeParticipantLink,
   parseParticipants,
 } from "@/utils/participants";
@@ -130,9 +131,18 @@ export const MeetingNavigationLinks = ({ file }: MeetingNavigationLinksProps) =>
   const people = useFiles(CRMFileType.PERSON);
 
   const currentTimestamp = useMemo(() => toTimestamp(file), [file]);
+  const rawCurrentParticipants = useMemo(() => {
+    const frontmatter = file.cache?.frontmatter as
+      | Record<string, unknown>
+      | undefined;
+    return parseParticipants(frontmatter?.participants);
+  }, [file]);
   const currentParticipants = useMemo(
-    () => getParticipants(file).filter((participant) => participant.length > 0),
-    [file]
+    () =>
+      rawCurrentParticipants
+        .map((participant) => normalizeParticipantLink(participant))
+        .filter((participant) => participant.length > 0),
+    [rawCurrentParticipants]
   );
 
   const navEntries = useMemo(() => {
@@ -184,30 +194,61 @@ export const MeetingNavigationLinks = ({ file }: MeetingNavigationLinksProps) =>
     () => (currentParticipants.length === 1 ? currentParticipants[0] : undefined),
     [currentParticipants]
   );
+  const singleParticipantKey = useMemo(
+    () => singleParticipant?.toLowerCase(),
+    [singleParticipant]
+  );
+  const singleParticipantRaw = useMemo(
+    () => (rawCurrentParticipants.length === 1 ? rawCurrentParticipants[0] : undefined),
+    [rawCurrentParticipants]
+  );
 
-  const matchedSingleParticipant = useMemo(() => {
-    if (!singleParticipant) {
+  const matchedSingleParticipant = useMemo<TCachedFile | undefined>(() => {
+    if (!singleParticipant || !singleParticipantKey) {
       return undefined;
     }
-    return people.find((candidate) => {
+
+    const matchedPerson = people.find((candidate) => {
       const candidatePath = normalizeParticipantLink(candidate.file.path);
-      return candidatePath === singleParticipant;
+      return candidatePath.toLowerCase() === singleParticipantKey;
     });
-  }, [people, singleParticipant]);
+
+    if (matchedPerson) {
+      return matchedPerson;
+    }
+
+    if (!file.file) {
+      return undefined;
+    }
+
+    const fallbackTarget = app.metadataCache.getFirstLinkpathDest(
+      singleParticipant,
+      file.file.path
+    );
+
+    if (!fallbackTarget) {
+      return undefined;
+    }
+
+    return {
+      file: fallbackTarget,
+      cache: app.metadataCache.getCache(fallbackTarget.path) ?? undefined,
+    };
+  }, [app, file.file, people, singleParticipant, singleParticipantKey]);
 
   const previousOneOnOne =
-    singleParticipant !== undefined
+    singleParticipantKey !== undefined
       ? findPrevious((entry) =>
           entry.participants.length === 1 &&
-          entry.participants[0] === singleParticipant
+          entry.participants[0].toLowerCase() === singleParticipantKey
         )
       : undefined;
 
   const nextOneOnOne =
-    singleParticipant !== undefined
+    singleParticipantKey !== undefined
       ? findNext((entry) =>
           entry.participants.length === 1 &&
-          entry.participants[0] === singleParticipant
+          entry.participants[0].toLowerCase() === singleParticipantKey
         )
       : undefined;
   const hasNext = Boolean(nextOneOnOne);
@@ -227,11 +268,20 @@ export const MeetingNavigationLinks = ({ file }: MeetingNavigationLinksProps) =>
 
     void (async () => {
       try {
-        await createMeetingForEntity({
+        const meetingFile = await createMeetingForEntity({
           app,
           entityFile: entityTarget,
           linkTargets: participantTargets,
         });
+
+        if (
+          !matchedSingleParticipant &&
+          meetingFile &&
+          singleParticipantRaw &&
+          singleParticipantRaw.trim()
+        ) {
+          await addParticipantLink(app, meetingFile, singleParticipantRaw);
+        }
       } catch (error) {
         console.error(
           "MeetingNavigationLinks: failed to create meeting",
@@ -239,9 +289,14 @@ export const MeetingNavigationLinks = ({ file }: MeetingNavigationLinksProps) =>
         );
       }
     })();
-  }, [app, file, matchedSingleParticipant]);
+  }, [
+    app,
+    file,
+    matchedSingleParticipant,
+    singleParticipantRaw,
+  ]);
 
-  if (!singleParticipant) {
+  if (!singleParticipantKey) {
     return null;
   }
 
