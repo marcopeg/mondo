@@ -129,8 +129,7 @@ export const DashboardView = () => {
 
   const inboxTasksState = useInboxTasks();
   const isDesktop = useMediaQuery("(min-width: 1024px)");
-  const shouldExpandQuickTasksOnMobile =
-    inboxTasksState.isLoading || inboxTasksState.tasks.length > 0;
+  const shouldExpandQuickTasksOnMobile = inboxTasksState.tasks.length > 0;
   const quickTasksCollapsed = isDesktop ? false : !shouldExpandQuickTasksOnMobile;
   const relevantNotesCollapsed = isDesktop ? false : shouldExpandQuickTasksOnMobile;
 
