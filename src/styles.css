@@ -158,6 +158,34 @@
   border-radius: 0 !important;
 }
 
+.crm-relevant-notes__filters-group {
+  border-radius: 0;
+}
+
+.crm-relevant-notes__filters-group .crm-button-group__button--first,
+.crm-relevant-notes__filters-group .crm-button-group__button--last {
+  border-top-left-radius: 0 !important;
+  border-bottom-left-radius: 0 !important;
+  border-top-right-radius: 0 !important;
+  border-bottom-right-radius: 0 !important;
+}
+
+@media (min-width: 640px) {
+  .crm-relevant-notes__filters-group {
+    border-radius: var(--radius-s, 0.45rem);
+  }
+
+  .crm-relevant-notes__filters-group .crm-button-group__button--first {
+    border-top-left-radius: var(--radius-s, 0.45rem) !important;
+    border-bottom-left-radius: var(--radius-s, 0.45rem) !important;
+  }
+
+  .crm-relevant-notes__filters-group .crm-button-group__button--last {
+    border-top-right-radius: var(--radius-s, 0.45rem) !important;
+    border-bottom-right-radius: var(--radius-s, 0.45rem) !important;
+  }
+}
+
 .crm-settings-entities-collapsible {
   margin-bottom: 1.5rem;
 }
@@ -602,6 +630,13 @@
   text-align: center;
 }
 
+.crm-timer-block__status-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+}
+
 .crm-timer-block__status {
   display: inline-flex;
   align-items: center;
@@ -624,6 +659,29 @@
 .crm-timer-block__status--rest {
   background: var(--color-orange, #d97706);
   color: var(--text-on-accent);
+}
+
+.crm-timer-block__status-next {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.1rem;
+  font-size: 0.7rem;
+  line-height: 1.1;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+}
+
+.crm-timer-block__status-next-label {
+  opacity: 0.75;
+}
+
+.crm-timer-block__status-next-value {
+  text-transform: none;
+  letter-spacing: normal;
+  font-weight: 600;
+  color: var(--text-normal);
 }
 
 .crm-timer-block__button {
@@ -734,6 +792,12 @@
   font-size: 1.55rem;
 }
 
+.crm-timer-block__loop {
+  font-family: var(--font-monospace);
+  font-size: 0.625rem;
+  color: var(--text-muted);
+}
+
 .crm-timer-block__phase {
   font-size: 0.8rem;
   font-weight: 600;
@@ -752,4 +816,16 @@
   gap: 0.35rem;
   font-size: 0.85rem;
   color: var(--text-muted);
+}
+
+.crm-timer-block__meta-label {
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.crm-timer-block__meta-value {
+  font-family: var(--font-monospace);
+  font-size: 1rem;
+  color: var(--text-normal);
 }

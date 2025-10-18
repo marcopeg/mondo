@@ -16,7 +16,7 @@ const roleConfig: CRMEntityConfig<
   list: {
     columns: ["show"],
   },
-  links: [{ type: "role-people" }, { type: "role-tasks" }],
+  links: [{ type: "role-people", collapsed: false }, { type: "role-tasks" }],
 };
 
 export default roleConfig;

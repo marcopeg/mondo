@@ -1,37 +1,38 @@
 import { type CSSProperties, type FC, useMemo } from "react";
-import { useTimerBlock } from "./useTimerBlock";
+import { useTimerBlock, type TimerBlockController } from "./useTimerBlock";
 
-type TimerBlockProps = Record<string, string>;
+type TimerBlockProps = Record<string, unknown>;
 
 const PROGRESS_RADIUS = 54;
 const PROGRESS_CIRCUMFERENCE = 2 * Math.PI * PROGRESS_RADIUS;
 
-export const TimerBlock: FC<TimerBlockProps> = (props) => {
+type TimerBlockContentProps = {
+  controller: TimerBlockController;
+  accentStyle?: CSSProperties;
+};
+
+const TimerBlockContent: FC<TimerBlockContentProps> = ({
+  controller,
+  accentStyle,
+}) => {
   const {
     canStart,
+    currentLoop,
     currentLabel,
     displayTitle,
     durationSeconds,
+    formattedElapsed,
     formattedRemaining,
+    hasFiniteLoops,
     intervalSeconds,
     isResting,
     isRunning,
+    nextLabel,
     progress,
+    totalLoops,
     start,
     stop,
-  } = useTimerBlock(props);
-
-  const accentStyle = useMemo(() => {
-    const customColor = props.color?.trim();
-
-    if (!customColor) {
-      return undefined;
-    }
-
-    return {
-      ["--crm-timer-accent" as const]: customColor,
-    } as CSSProperties;
-  }, [props.color]);
+  } = controller;
 
   const buttonClassName = useMemo(() => {
     const classes = ["crm-timer-block__button"];
@@ -75,8 +76,6 @@ export const TimerBlock: FC<TimerBlockProps> = (props) => {
     }
   };
 
-  const phaseLabel = isResting ? "rest" : "go";
-
   const buttonIcon = useMemo(() => {
     if (isRunning) {
       return (
@@ -113,7 +112,15 @@ export const TimerBlock: FC<TimerBlockProps> = (props) => {
     >
       <div className="crm-timer-block__heading">
         <div className="crm-timer-block__title">{displayTitle}</div>
-        <div className={statusClassName}>{phaseLabel}</div>
+        <div className="crm-timer-block__status-container">
+          <div className={statusClassName}>{currentLabel}</div>
+          {nextLabel ? (
+            <div className="crm-timer-block__status-next">
+              <span className="crm-timer-block__status-next-label">next up</span>
+              <span className="crm-timer-block__status-next-value">{nextLabel}</span>
+            </div>
+          ) : null}
+        </div>
       </div>
       <button
         type="button"
@@ -152,13 +159,41 @@ export const TimerBlock: FC<TimerBlockProps> = (props) => {
           <span className="crm-timer-block__countdown">
             {formattedRemaining}
           </span>
+          {hasFiniteLoops ? (
+            <span className="crm-timer-block__loop">{`(${currentLoop}/${totalLoops})`}</span>
+          ) : null}
         </span>
       </button>
       <div className="crm-timer-block__meta">
-        <span className="crm-timer-block__meta-duration">{`${durationSeconds}s`}</span>
-        <span className="crm-timer-block__meta-separator">/</span>
-        <span className="crm-timer-block__meta-interval">{`${intervalSeconds}s`}</span>
+        {isRunning ? (
+          <span className="crm-timer-block__meta-value">{formattedElapsed}</span>
+        ) : (
+          <>
+            <span className="crm-timer-block__meta-duration">{`${durationSeconds}s`}</span>
+            <span className="crm-timer-block__meta-separator">/</span>
+            <span className="crm-timer-block__meta-interval">{`${intervalSeconds}s`}</span>
+          </>
+        )}
       </div>
     </div>
   );
+};
+
+export const TimerBlock: FC<TimerBlockProps> = (props) => {
+  const controller = useTimerBlock(props);
+
+  const accentStyle = useMemo(() => {
+    const rawColor = props.color;
+    const customColor = typeof rawColor === "string" ? rawColor.trim() : "";
+
+    if (!customColor) {
+      return undefined;
+    }
+
+    return {
+      ["--crm-timer-accent" as const]: customColor,
+    } as CSSProperties;
+  }, [props.color]);
+
+  return <TimerBlockContent controller={controller} accentStyle={accentStyle} />;
 };

@@ -1,6 +1,6 @@
 {
-  "name": "obsidian-sample-plugin",
-  "version": "1.0.0",
+  "name": "crm",
+  "version": "0.0.3",
   "description": "This is a sample plugin for Obsidian (https://obsidian.md)",
   "main": "src/main.ts",
   "scripts": {
@@ -36,6 +36,7 @@
     "@dnd-kit/utilities": "^3.2.2",
     "@radix-ui/themes": "^3.2.1",
     "react": "^19.1.1",
-    "react-dom": "^19.1.1"
+    "react-dom": "^19.1.1",
+    "yaml": "^2.6.0"
   }
 }
