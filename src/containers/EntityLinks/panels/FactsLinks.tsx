@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Card } from "@/components/ui/Card";
 import { Table } from "@/components/ui/Table";
 import { Button } from "@/components/ui/Button";
@@ -149,7 +149,30 @@ export const FactsLinks = ({ file, config }: FactsLinksProps) => {
     return null;
   }
 
-  const sortedFacts = useMemo(() => {
+  const factOrder = useMemo(() => {
+    const frontmatter = file.cache?.frontmatter as
+      | Record<string, unknown>
+      | undefined;
+    const raw = frontmatter?.facts;
+
+    if (!raw) {
+      return [] as string[];
+    }
+
+    if (Array.isArray(raw)) {
+      return raw
+        .map((entry) => (typeof entry === "string" ? entry : ""))
+        .filter((entry): entry is string => entry.length > 0);
+    }
+
+    if (typeof raw === "string") {
+      return [raw];
+    }
+
+    return [] as string[];
+  }, [file.cache?.frontmatter?.facts]);
+
+  const fallbackSortedFacts = useMemo(() => {
     return [...facts].sort((a, b) => {
       const dateA = getFactDate(a);
       const dateB = getFactDate(b);
@@ -165,14 +188,91 @@ export const FactsLinks = ({ file, config }: FactsLinksProps) => {
     });
   }, [facts]);
 
+  const orderedFacts = useMemo(() => {
+    if (factOrder.length === 0) {
+      return fallbackSortedFacts;
+    }
+
+    const mapped = new Map(
+      fallbackSortedFacts
+        .map((entry) => {
+          const path = entry.file?.path;
+          return path ? [path, entry] : null;
+        })
+        .filter((entry): entry is [string, TCachedFile] => Boolean(entry))
+    );
+
+    const used = new Set<string>();
+    const prioritized: TCachedFile[] = [];
+
+    factOrder.forEach((path) => {
+      const match = mapped.get(path);
+      if (match) {
+        prioritized.push(match);
+        used.add(path);
+      }
+    });
+
+    const remaining = fallbackSortedFacts.filter((entry) => {
+      const path = entry.file?.path;
+      if (!path) {
+        return false;
+      }
+      return !used.has(path);
+    });
+
+    return [...prioritized, ...remaining];
+  }, [factOrder, fallbackSortedFacts]);
+
+  const [displayFacts, setDisplayFacts] = useState(orderedFacts);
+
+  useEffect(() => {
+    setDisplayFacts(orderedFacts);
+  }, [orderedFacts]);
+
   const validFacts = useMemo(
-    () => sortedFacts.filter((factEntry) => Boolean(factEntry.file)),
-    [sortedFacts]
+    () => displayFacts.filter((factEntry) => Boolean(factEntry.file)),
+    [displayFacts]
   );
 
   const entityName = getEntityDisplayName(file);
   const subtitle = linkRule.subtitle(entityName);
   const collapsed = (config as any)?.collapsed !== false;
+
+  const persistOrder = useCallback(
+    (items: TCachedFile[]) => {
+      if (!hostFile) {
+        return;
+      }
+
+      const paths = items
+        .map((entry) => entry.file?.path)
+        .filter((path): path is string => Boolean(path));
+
+      void (async () => {
+        try {
+          await app.fileManager.processFrontMatter(hostFile, (frontmatter) => {
+            if (paths.length > 0) {
+              frontmatter.facts = paths;
+            } else {
+              delete frontmatter.facts;
+            }
+          });
+        } catch (error) {
+          console.error("FactsLinks: failed to persist fact order", error);
+        }
+      })();
+    },
+    [app, hostFile]
+  );
+
+  const handleReorder = useCallback(
+    (items: TCachedFile[]) => {
+      setDisplayFacts(items);
+      persistOrder(items);
+    },
+    [persistOrder]
+  );
 
   const handleCreateFact = useCallback(() => {
     if (!linkRule) {
@@ -225,6 +325,10 @@ export const FactsLinks = ({ file, config }: FactsLinksProps) => {
       <EntityLinksTable
         items={validFacts}
         getKey={(factEntry) => factEntry.file!.path}
+        sortable
+        onReorder={handleReorder}
+        getSortableId={(factEntry) => factEntry.file!.path}
+        pageSize={validFacts.length > 0 ? validFacts.length : undefined}
         emptyLabel="No facts yet"
         renderRow={(factEntry) => {
           const factFile = factEntry.file!;
