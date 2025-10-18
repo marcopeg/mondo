@@ -153,6 +153,20 @@ export const RelevantNotes = ({ collapsed = false }: RelevantNotesProps) => {
       collapsible
       collapsed={collapsed}
       collapseOnHeaderClick
+      actions={[
+        {
+          key: "mode-toggle",
+          content: (
+            <Switch
+              checked={mode === "history"}
+              onCheckedChange={handleModeChange}
+              uncheckedLabel="hits"
+              checkedLabel="history"
+              aria-label="Toggle relevant notes mode"
+            />
+          ),
+        },
+      ]}
     >
       <Stack direction="column" gap={3} className="w-full">
         <Stack className="gap-2 flex-col sm:flex-row sm:items-center sm:justify-between -mt-2 -mx-2 px-2">
@@ -176,14 +190,6 @@ export const RelevantNotes = ({ collapsed = false }: RelevantNotesProps) => {
               })}
             </ButtonGroup>
           </div>
-          <Switch
-            checked={mode === "history"}
-            onCheckedChange={handleModeChange}
-            uncheckedLabel="hits"
-            checkedLabel="history"
-            aria-label="Toggle relevant notes mode"
-            className="flex-shrink-0 self-end sm:self-auto"
-          />
         </Stack>
         {(
           mode === "history"
