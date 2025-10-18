@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 type TimerPhase = "work" | "rest";
-type HepticMode = "audio" | "vibration";
+type HepticMode = "audio" | "vibration" | "both";
 
 type TimerBlockProps = Record<string, string>;
 
@@ -10,6 +10,7 @@ type TimerBlockState = {
   currentLabel: string;
   displayTitle: string;
   durationSeconds: number;
+  formattedElapsed: string;
   formattedRemaining: string;
   intervalSeconds: number;
   isResting: boolean;
@@ -44,6 +45,17 @@ const formatTime = (value: number): string => {
     .padStart(2, "0")}`;
 };
 
+const formatChronograph = (value: number): string => {
+  const safeValue = Number.isFinite(value) ? Math.max(0, Math.floor(value)) : 0;
+  const hours = Math.floor(safeValue / 3600);
+  const minutes = Math.floor((safeValue % 3600) / 60);
+  const seconds = safeValue % 60;
+
+  return `${hours.toString().padStart(2, "0")}:${minutes
+    .toString()
+    .padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
+};
+
 type NavigatorWithWakeLock = Navigator & {
   wakeLock?: {
     request: (type: "screen") => Promise<ScreenWakeLockSentinel>;
@@ -71,12 +83,26 @@ const getAudioContextConstructor = (): typeof AudioContext | undefined => {
   return window.AudioContext ?? audioWindow.webkitAudioContext;
 };
 
-const triggerShortBeep = (mode: HepticMode) => {
-  if (mode === "vibration") {
-    if (typeof navigator !== "undefined" && typeof navigator.vibrate === "function") {
-      navigator.vibrate(180);
-    }
+const shouldVibrate = (mode: HepticMode): boolean => mode === "vibration" || mode === "both";
 
+const shouldPlayAudio = (mode: HepticMode): boolean => mode === "audio" || mode === "both";
+
+const triggerVibration = (pattern: number | number[], mode: HepticMode) => {
+  if (!shouldVibrate(mode)) {
+    return;
+  }
+
+  if (typeof navigator === "undefined" || typeof navigator.vibrate !== "function") {
+    return;
+  }
+
+  navigator.vibrate(pattern);
+};
+
+const triggerShortBeep = (mode: HepticMode) => {
+  triggerVibration(180, mode);
+
+  if (!shouldPlayAudio(mode)) {
     return;
   }
 
@@ -113,11 +139,9 @@ const triggerShortBeep = (mode: HepticMode) => {
 };
 
 const triggerHappyChime = (mode: HepticMode) => {
-  if (mode === "vibration") {
-    if (typeof navigator !== "undefined" && typeof navigator.vibrate === "function") {
-      navigator.vibrate([140, 80, 200]);
-    }
+  triggerVibration([140, 80, 200], mode);
 
+  if (!shouldPlayAudio(mode)) {
     return;
   }
 
@@ -155,11 +179,9 @@ const triggerHappyChime = (mode: HepticMode) => {
 };
 
 const triggerRestCue = (mode: HepticMode) => {
-  if (mode === "vibration") {
-    if (typeof navigator !== "undefined" && typeof navigator.vibrate === "function") {
-      navigator.vibrate([250, 100, 250]);
-    }
+  triggerVibration([250, 100, 250], mode);
 
+  if (!shouldPlayAudio(mode)) {
     return;
   }
 
@@ -197,29 +219,44 @@ const triggerRestCue = (mode: HepticMode) => {
 };
 
 const stopFeedback = (mode: HepticMode) => {
-  if (mode === "vibration") {
-    if (typeof navigator !== "undefined" && typeof navigator.vibrate === "function") {
-      navigator.vibrate(0);
-    }
+  if (!shouldVibrate(mode)) {
+    return;
   }
+
+  if (typeof navigator === "undefined" || typeof navigator.vibrate !== "function") {
+    return;
+  }
+
+  navigator.vibrate(0);
 };
 
 export const useTimerBlock = (props: TimerBlockProps): TimerBlockState => {
   const durationSeconds = useMemo(() => parseSeconds(props.duration), [props.duration]);
   const intervalSeconds = useMemo(() => parseSeconds(props.interval), [props.interval]);
   const hepticMode: HepticMode = useMemo(() => {
-    return props.heptic?.toLowerCase() === "vibration" ? "vibration" : "audio";
+    const normalized = props.heptic?.toLowerCase();
+
+    if (normalized === "audio" || normalized === "vibration" || normalized === "both") {
+      return normalized;
+    }
+
+    return "audio";
   }, [props.heptic]);
+  const stepSeconds = useMemo(() => parseSeconds(props.step), [props.step]);
   const title = useMemo(() => props.title?.trim() || "work", [props.title]);
 
   const [isRunning, setIsRunning] = useState(false);
   const [phase, setPhase] = useState<TimerPhase>("work");
   const [remainingSeconds, setRemainingSeconds] = useState(durationSeconds);
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [progress, setProgress] = useState(1);
   const phaseDurationRef = useRef(Math.max(durationSeconds || 1, 1));
   const phaseStartTimeRef = useRef<number | null>(null);
+  const timerStartTimeRef = useRef<number | null>(null);
   const animationFrameRef = useRef<number | null>(null);
   const wakeLockRef = useRef<ScreenWakeLockSentinel | null>(null);
+  const lastFeedbackAtRef = useRef<number>(0);
+  const stepCountRef = useRef(0);
 
   const getNow = useCallback(() => {
     if (typeof performance !== "undefined" && typeof performance.now === "function") {
@@ -229,6 +266,36 @@ export const useTimerBlock = (props: TimerBlockProps): TimerBlockState => {
     return Date.now();
   }, []);
 
+  const markFeedback = useCallback(() => {
+    lastFeedbackAtRef.current = getNow();
+  }, [getNow]);
+
+  const playShortBeep = useCallback(() => {
+    triggerShortBeep(hepticMode);
+    markFeedback();
+  }, [hepticMode, markFeedback]);
+
+  const playHappyChime = useCallback(() => {
+    triggerHappyChime(hepticMode);
+    markFeedback();
+  }, [hepticMode, markFeedback]);
+
+  const playRestCue = useCallback(() => {
+    triggerRestCue(hepticMode);
+    markFeedback();
+  }, [hepticMode, markFeedback]);
+
+  const stopCurrentFeedback = useCallback(() => {
+    stopFeedback(hepticMode);
+  }, [hepticMode]);
+
+  useEffect(() => {
+    if (!isRunning) {
+      timerStartTimeRef.current = null;
+      setElapsedSeconds(0);
+    }
+  }, [isRunning]);
+
   useEffect(() => {
     if (!isRunning) {
       setPhase("work");
@@ -237,6 +304,12 @@ export const useTimerBlock = (props: TimerBlockProps): TimerBlockState => {
       phaseStartTimeRef.current = null;
     }
   }, [durationSeconds, isRunning]);
+
+  useEffect(() => {
+    if (!isRunning) {
+      stepCountRef.current = 0;
+    }
+  }, [isRunning]);
 
   const releaseWakeLock = useCallback(async () => {
     if (!wakeLockRef.current) {
@@ -303,7 +376,7 @@ export const useTimerBlock = (props: TimerBlockProps): TimerBlockState => {
       setPhase((currentPhase) => {
         if (currentPhase === "work") {
           if (intervalSeconds > 0) {
-            triggerRestCue(hepticMode);
+            playRestCue();
             setRemainingSeconds(intervalSeconds);
             setProgress(1);
             phaseStartTimeRef.current = null;
@@ -311,7 +384,7 @@ export const useTimerBlock = (props: TimerBlockProps): TimerBlockState => {
             return "rest";
           }
 
-          triggerHappyChime(hepticMode);
+          playHappyChime();
           setRemainingSeconds(durationSeconds);
           setProgress(1);
           phaseStartTimeRef.current = null;
@@ -319,7 +392,7 @@ export const useTimerBlock = (props: TimerBlockProps): TimerBlockState => {
           return "work";
         }
 
-        triggerHappyChime(hepticMode);
+        playHappyChime();
         setRemainingSeconds(durationSeconds);
         setProgress(1);
         phaseStartTimeRef.current = null;
@@ -331,24 +404,27 @@ export const useTimerBlock = (props: TimerBlockProps): TimerBlockState => {
     }
 
     if (remainingSeconds > 0 && remainingSeconds <= 3) {
-      triggerShortBeep(hepticMode);
+      playShortBeep();
     }
-  }, [durationSeconds, hepticMode, intervalSeconds, isRunning, remainingSeconds]);
+  }, [durationSeconds, intervalSeconds, isRunning, playHappyChime, playRestCue, playShortBeep, remainingSeconds]);
 
   const start = useCallback(() => {
     if (durationSeconds <= 0) {
       return;
     }
 
-    stopFeedback(hepticMode);
-    triggerHappyChime(hepticMode);
+    stepCountRef.current = 0;
+    stopCurrentFeedback();
+    playHappyChime();
     setPhase("work");
     setRemainingSeconds(durationSeconds);
     setProgress(1);
+    timerStartTimeRef.current = getNow();
+    setElapsedSeconds(0);
     phaseStartTimeRef.current = null;
     setIsRunning(true);
     void requestWakeLock();
-  }, [durationSeconds, hepticMode, requestWakeLock]);
+  }, [durationSeconds, getNow, playHappyChime, requestWakeLock, stopCurrentFeedback]);
 
   const stop = useCallback(() => {
     setIsRunning(false);
@@ -356,9 +432,10 @@ export const useTimerBlock = (props: TimerBlockProps): TimerBlockState => {
     setRemainingSeconds(durationSeconds);
     setProgress(1);
     phaseStartTimeRef.current = null;
-    stopFeedback(hepticMode);
+    stepCountRef.current = 0;
+    stopCurrentFeedback();
     void releaseWakeLock();
-  }, [durationSeconds, hepticMode, releaseWakeLock]);
+  }, [durationSeconds, releaseWakeLock, stopCurrentFeedback]);
 
   const formattedRemaining = useMemo(
     () => formatTime(isRunning ? remainingSeconds : durationSeconds),
@@ -398,6 +475,51 @@ export const useTimerBlock = (props: TimerBlockProps): TimerBlockState => {
     setProgress(1);
   }, [activePhaseDuration, getNow, isRunning, phase]);
 
+  useEffect(() => {
+    stepCountRef.current = 0;
+  }, [activePhaseDuration, phase, stepSeconds]);
+
+  useEffect(() => {
+    if (!isRunning) {
+      return;
+    }
+
+    if (stepSeconds <= 0) {
+      return;
+    }
+
+    if (remainingSeconds <= 0) {
+      return;
+    }
+
+    if (remainingSeconds <= 3) {
+      return;
+    }
+
+    const duration = Math.max(activePhaseDuration, 1);
+    const elapsed = duration - remainingSeconds;
+
+    if (elapsed <= 0) {
+      return;
+    }
+
+    const completedSteps = Math.floor(elapsed / stepSeconds);
+
+    if (completedSteps <= 0) {
+      return;
+    }
+
+    if (completedSteps > stepCountRef.current) {
+      const timeSinceLastFeedback = getNow() - lastFeedbackAtRef.current;
+
+      stepCountRef.current = completedSteps;
+
+      if (timeSinceLastFeedback > 400) {
+        playShortBeep();
+      }
+    }
+  }, [activePhaseDuration, getNow, isRunning, playShortBeep, remainingSeconds, stepSeconds]);
+
   const recomputeTiming = useCallback(() => {
     if (!isRunning) {
       return;
@@ -415,6 +537,17 @@ export const useTimerBlock = (props: TimerBlockProps): TimerBlockState => {
     const remaining = Math.max(durationMs - elapsed, 0);
     const ratio = Math.max(0, Math.min(1, remaining / durationMs));
     const remainingSecondsEstimate = Math.ceil(remaining / 1000);
+    const totalElapsedSeconds = (() => {
+      const timerStart = timerStartTimeRef.current;
+
+      if (timerStart === null) {
+        return 0;
+      }
+
+      const elapsedFromStart = Math.floor((now - timerStart) / 1000);
+
+      return Number.isFinite(elapsedFromStart) ? Math.max(elapsedFromStart, 0) : 0;
+    })();
 
     setProgress(ratio);
     setRemainingSeconds((value) => {
@@ -424,6 +557,9 @@ export const useTimerBlock = (props: TimerBlockProps): TimerBlockState => {
 
       return value === remainingSecondsEstimate ? value : remainingSecondsEstimate;
     });
+    setElapsedSeconds((value) =>
+      value === totalElapsedSeconds ? value : totalElapsedSeconds
+    );
   }, [getNow, isRunning]);
 
   useEffect(() => {
@@ -512,6 +648,7 @@ export const useTimerBlock = (props: TimerBlockProps): TimerBlockState => {
     currentLabel,
     displayTitle: title,
     durationSeconds,
+    formattedElapsed: formatChronograph(elapsedSeconds),
     formattedRemaining,
     intervalSeconds,
     isResting: phase === "rest",

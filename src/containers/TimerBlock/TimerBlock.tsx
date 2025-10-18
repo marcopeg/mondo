@@ -12,6 +12,7 @@ export const TimerBlock: FC<TimerBlockProps> = (props) => {
     currentLabel,
     displayTitle,
     durationSeconds,
+    formattedElapsed,
     formattedRemaining,
     intervalSeconds,
     isResting,
@@ -155,9 +156,18 @@ export const TimerBlock: FC<TimerBlockProps> = (props) => {
         </span>
       </button>
       <div className="crm-timer-block__meta">
-        <span className="crm-timer-block__meta-duration">{`${durationSeconds}s`}</span>
-        <span className="crm-timer-block__meta-separator">/</span>
-        <span className="crm-timer-block__meta-interval">{`${intervalSeconds}s`}</span>
+        {isRunning ? (
+          <>
+            <span className="crm-timer-block__meta-label">elapsed</span>
+            <span className="crm-timer-block__meta-value">{formattedElapsed}</span>
+          </>
+        ) : (
+          <>
+            <span className="crm-timer-block__meta-duration">{`${durationSeconds}s`}</span>
+            <span className="crm-timer-block__meta-separator">/</span>
+            <span className="crm-timer-block__meta-interval">{`${intervalSeconds}s`}</span>
+          </>
+        )}
       </div>
     </div>
   );
