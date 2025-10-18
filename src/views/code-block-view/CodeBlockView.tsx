@@ -1,20 +1,22 @@
 import { InlineError } from "@/components/InlineError";
 import type { ComponentType } from "react";
+import YAML from "yaml";
 import { JournalNav } from "@/containers/JournalNav";
 import HabitTracker from "@/containers/HabitTracker";
 import TimerBlock from "@/containers/TimerBlock";
 
-type CodeBlockProps = Record<string, string>;
+type CodeBlockProps = Record<string, unknown>;
 
 const blocksMap: Record<string, ComponentType<CodeBlockProps>> = {
   "journal-nav": JournalNav as ComponentType<CodeBlockProps>,
   habits: HabitTracker as ComponentType<CodeBlockProps>,
   timer: TimerBlock as ComponentType<CodeBlockProps>,
+  "time-plan": TimerBlock as ComponentType<CodeBlockProps>,
 };
 
-const parseInlineQuery = (query: string): CodeBlockProps => {
+const parseInlineQuery = (query: string): Record<string, string> => {
   const params = new URLSearchParams(query);
-  const result: CodeBlockProps = {};
+  const result: Record<string, string> = {};
 
   params.forEach((value, key) => {
     if (key) {
@@ -25,13 +27,21 @@ const parseInlineQuery = (query: string): CodeBlockProps => {
   return result;
 };
 
+const toRecord = (value: unknown): CodeBlockProps => {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return {};
+  }
+
+  return value as CodeBlockProps;
+};
+
 const parseBlockSource = (
   raw: string
 ): { blockKey: string; props: CodeBlockProps } => {
   const lines = raw
     .split(/\r?\n/)
-    .map((line) => line.trim())
-    .filter((line) => line.length > 0);
+    .map((line) => line.trimEnd())
+    .filter((line) => line.trim().length > 0);
 
   if (lines.length === 0) {
     return { blockKey: "", props: {} };
@@ -50,8 +60,46 @@ const parseBlockSource = (
     ? parseInlineQuery(inlineQuery)
     : {};
 
-  const props = rest.reduce<CodeBlockProps>(
-    (acc, line) => {
+  if (rest.length === 0) {
+    return { blockKey, props: baseProps };
+  }
+
+  const normalizedLines = rest.map((line) => {
+    const trimmed = line.trim();
+
+    if (!trimmed.includes(":") && trimmed.includes("=")) {
+      const equalsIndex = trimmed.indexOf("=");
+      const key = trimmed.slice(0, equalsIndex).trim();
+      const value = trimmed.slice(equalsIndex + 1).trim();
+
+      if (key.length === 0) {
+        return trimmed;
+      }
+
+      return `${key}: ${value}`;
+    }
+
+    return line;
+  });
+
+  const yamlSource = normalizedLines.join("\n");
+
+  try {
+    const parsed = YAML.parse(yamlSource);
+
+    if (Array.isArray(parsed)) {
+      return { blockKey, props: { ...baseProps, steps: parsed } };
+    }
+
+    const record = toRecord(parsed);
+
+    if (record === baseProps) {
+      return { blockKey, props: baseProps };
+    }
+
+    return { blockKey, props: { ...baseProps, ...record } };
+  } catch (error) {
+    const props = rest.reduce<CodeBlockProps>((acc, line) => {
       const colonIndex = line.indexOf(":");
       const equalsIndex = line.indexOf("=");
       const separatorIndex = colonIndex !== -1 ? colonIndex : equalsIndex;
@@ -69,11 +117,10 @@ const parseBlockSource = (
       acc[key] = value;
 
       return acc;
-    },
-    { ...baseProps }
-  );
+    }, { ...baseProps });
 
-  return { blockKey, props };
+    return { blockKey, props };
+  }
 };
 
 export const CodeBlockView = ({ source }: { source: string }) => {
