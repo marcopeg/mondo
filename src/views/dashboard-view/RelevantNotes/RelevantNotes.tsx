@@ -155,7 +155,7 @@ export const RelevantNotes = ({ collapsed = false }: RelevantNotesProps) => {
       collapseOnHeaderClick
     >
       <Stack direction="column" gap={3} className="w-full">
-        <Stack align="center" justify="space-between" className="gap-2">
+        <Stack className="gap-2 flex-col sm:flex-row sm:items-center sm:justify-between">
           <div className="-mx-1 flex-1 overflow-x-auto pb-1">
             <ButtonGroup className="mx-1 flex-nowrap">
               {filterButtons.map((button) => {
@@ -182,7 +182,7 @@ export const RelevantNotes = ({ collapsed = false }: RelevantNotesProps) => {
             uncheckedLabel="hits"
             checkedLabel="history"
             aria-label="Toggle relevant notes mode"
-            className="flex-shrink-0"
+            className="flex-shrink-0 self-end sm:self-auto"
           />
         </Stack>
         {(mode === "history"
