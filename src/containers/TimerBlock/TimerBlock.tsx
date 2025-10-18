@@ -113,13 +113,19 @@ const TimerBlockContent: FC<TimerBlockContentProps> = ({
       <div className="crm-timer-block__heading">
         <div className="crm-timer-block__title">{displayTitle}</div>
         <div className="crm-timer-block__status-container">
-          <div className={statusClassName}>{currentLabel}</div>
-          {nextLabel ? (
-            <div className="crm-timer-block__status-next">
-              <span className="crm-timer-block__status-next-label">next up</span>
-              <span className="crm-timer-block__status-next-value">{nextLabel}</span>
-            </div>
-          ) : null}
+          <div className="crm-timer-block__status-row">
+            <div className={statusClassName}>{currentLabel}</div>
+            {nextLabel && (
+              <div className="crm-timer-block__status-next">
+                <span className="crm-timer-block__status-next-label">
+                  next up
+                </span>
+                <span className="crm-timer-block__status-next-value">
+                  {nextLabel}
+                </span>
+              </div>
+            )}
+          </div>
         </div>
       </div>
       <button
@@ -166,7 +172,9 @@ const TimerBlockContent: FC<TimerBlockContentProps> = ({
       </button>
       <div className="crm-timer-block__meta">
         {isRunning ? (
-          <span className="crm-timer-block__meta-value">{formattedElapsed}</span>
+          <span className="crm-timer-block__meta-value">
+            {formattedElapsed}
+          </span>
         ) : (
           <>
             <span className="crm-timer-block__meta-duration">{`${durationSeconds}s`}</span>
@@ -195,5 +203,7 @@ export const TimerBlock: FC<TimerBlockProps> = (props) => {
     } as CSSProperties;
   }, [props.color]);
 
-  return <TimerBlockContent controller={controller} accentStyle={accentStyle} />;
+  return (
+    <TimerBlockContent controller={controller} accentStyle={accentStyle} />
+  );
 };

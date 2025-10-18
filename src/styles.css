@@ -637,6 +637,15 @@
   gap: 0.25rem;
 }
 
+.crm-timer-block__status-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  min-height: 1.65rem;
+}
+
 .crm-timer-block__status {
   display: inline-flex;
   align-items: center;
@@ -671,6 +680,7 @@
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: var(--text-muted);
+  justify-content: center;
 }
 
 .crm-timer-block__status-next-label {
@@ -695,14 +705,11 @@
   font-size: 1rem;
   font-weight: 700;
   cursor: pointer;
-  transition:
-    transform 0.18s ease,
-    box-shadow 0.18s ease,
-    background-color 0.18s ease,
-    color 0.18s ease,
-    border-color 0.18s ease;
+  transition: transform 0.18s ease, box-shadow 0.18s ease,
+    background-color 0.18s ease, color 0.18s ease, border-color 0.18s ease;
   box-shadow: 0 0.7rem 1.6rem rgba(0, 0, 0, 0.18);
-  box-shadow: 0 0.7rem 1.6rem color-mix(in srgb, var(--crm-timer-accent) 35%, transparent);
+  box-shadow: 0 0.7rem 1.6rem
+    color-mix(in srgb, var(--crm-timer-accent) 35%, transparent);
   background: var(--crm-timer-accent);
   color: var(--text-on-accent);
   position: relative;
@@ -715,7 +722,11 @@
 }
 
 .crm-timer-block__button--rest {
-  background: color-mix(in srgb, var(--crm-timer-accent) 35%, var(--color-orange, #d97706));
+  background: color-mix(
+    in srgb,
+    var(--crm-timer-accent) 35%,
+    var(--color-orange, #d97706)
+  );
   border-color: color-mix(in srgb, var(--crm-timer-accent) 55%, transparent);
 }
 
@@ -751,7 +762,8 @@
   pointer-events: none;
   transform: rotate(-90deg);
   filter: drop-shadow(
-    0 0.35rem 0.9rem color-mix(in srgb, var(--crm-timer-accent) 28%, transparent)
+    0 0.35rem 0.9rem
+      color-mix(in srgb, var(--crm-timer-accent) 28%, transparent)
   );
 }
 
@@ -770,7 +782,11 @@
 }
 
 .crm-timer-block--resting .crm-timer-block__progress-indicator {
-  stroke: color-mix(in srgb, var(--color-orange, #d97706) 85%, var(--crm-timer-accent));
+  stroke: color-mix(
+    in srgb,
+    var(--color-orange, #d97706) 85%,
+    var(--crm-timer-accent)
+  );
 }
 
 .crm-timer-block__button:disabled {
@@ -807,7 +823,11 @@
 }
 
 .crm-timer-block--resting .crm-timer-block__phase {
-  color: color-mix(in srgb, var(--color-orange, #d97706) 75%, var(--text-muted));
+  color: color-mix(
+    in srgb,
+    var(--color-orange, #d97706) 75%,
+    var(--text-muted)
+  );
 }
 
 .crm-timer-block__meta {
