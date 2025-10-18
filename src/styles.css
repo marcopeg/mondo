@@ -734,6 +734,12 @@
   font-size: 1.55rem;
 }
 
+.crm-timer-block__loop {
+  font-family: var(--font-monospace);
+  font-size: 0.625rem;
+  color: var(--text-muted);
+}
+
 .crm-timer-block__phase {
   font-size: 0.8rem;
   font-weight: 600;

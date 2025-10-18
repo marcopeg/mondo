@@ -7,16 +7,19 @@ type TimerBlockProps = Record<string, string>;
 
 type TimerBlockState = {
   canStart: boolean;
+  currentLoop: number;
   currentLabel: string;
   displayTitle: string;
   durationSeconds: number;
   formattedElapsed: string;
   formattedRemaining: string;
+  hasFiniteLoops: boolean;
   intervalSeconds: number;
   isResting: boolean;
   isRunning: boolean;
   progress: number;
   remainingSeconds: number;
+  totalLoops: number;
   start: () => void;
   stop: () => void;
 };
@@ -47,13 +50,52 @@ const formatTime = (value: number): string => {
 
 const formatChronograph = (value: number): string => {
   const safeValue = Number.isFinite(value) ? Math.max(0, Math.floor(value)) : 0;
-  const hours = Math.floor(safeValue / 3600);
-  const minutes = Math.floor((safeValue % 3600) / 60);
-  const seconds = safeValue % 60;
+  const totalSeconds = Math.floor(safeValue / 1000);
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+  const milliseconds = Math.floor(safeValue % 1000);
 
   return `${hours.toString().padStart(2, "0")}:${minutes
     .toString()
-    .padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
+    .padStart(2, "0")}:${seconds
+    .toString()
+    .padStart(2, "0")}.${milliseconds.toString().padStart(3, "0")}`;
+};
+
+type LoopConfig =
+  | { mode: "none" }
+  | { mode: "infinite" }
+  | { mode: "finite"; total: number };
+
+const parseLoop = (value: string | undefined): LoopConfig => {
+  if (!value) {
+    return { mode: "infinite" };
+  }
+
+  const normalized = value.trim().toLowerCase();
+
+  if (!normalized || normalized === "true") {
+    return { mode: "infinite" };
+  }
+
+  if (normalized === "false") {
+    return { mode: "none" };
+  }
+
+  const numeric = Number(normalized);
+
+  if (!Number.isFinite(numeric)) {
+    return { mode: "infinite" };
+  }
+
+  const totalLoops = Math.floor(numeric);
+
+  if (totalLoops <= 0) {
+    return { mode: "none" };
+  }
+
+  return { mode: "finite", total: totalLoops };
 };
 
 type NavigatorWithWakeLock = Navigator & {
@@ -233,6 +275,9 @@ const stopFeedback = (mode: HepticMode) => {
 export const useTimerBlock = (props: TimerBlockProps): TimerBlockState => {
   const durationSeconds = useMemo(() => parseSeconds(props.duration), [props.duration]);
   const intervalSeconds = useMemo(() => parseSeconds(props.interval), [props.interval]);
+  const loopConfig = useMemo(() => parseLoop(props.loop), [props.loop]);
+  const hasFiniteLoops = loopConfig.mode === "finite";
+  const totalLoops = hasFiniteLoops ? loopConfig.total : 0;
   const hepticMode: HepticMode = useMemo(() => {
     const normalized = props.heptic?.toLowerCase();
 
@@ -247,16 +292,17 @@ export const useTimerBlock = (props: TimerBlockProps): TimerBlockState => {
 
   const [isRunning, setIsRunning] = useState(false);
   const [phase, setPhase] = useState<TimerPhase>("work");
+  const [currentLoop, setCurrentLoop] = useState(0);
   const [remainingSeconds, setRemainingSeconds] = useState(durationSeconds);
-  const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  const [elapsedMilliseconds, setElapsedMilliseconds] = useState(0);
   const [progress, setProgress] = useState(1);
   const phaseDurationRef = useRef(Math.max(durationSeconds || 1, 1));
   const phaseStartTimeRef = useRef<number | null>(null);
-  const timerStartTimeRef = useRef<number | null>(null);
   const animationFrameRef = useRef<number | null>(null);
   const wakeLockRef = useRef<ScreenWakeLockSentinel | null>(null);
   const lastFeedbackAtRef = useRef<number>(0);
   const stepCountRef = useRef(0);
+  const workAccumulatedRef = useRef(0);
 
   const getNow = useCallback(() => {
     if (typeof performance !== "undefined" && typeof performance.now === "function") {
@@ -291,8 +337,9 @@ export const useTimerBlock = (props: TimerBlockProps): TimerBlockState => {
 
   useEffect(() => {
     if (!isRunning) {
-      timerStartTimeRef.current = null;
-      setElapsedSeconds(0);
+      workAccumulatedRef.current = 0;
+      setElapsedMilliseconds(0);
+      setCurrentLoop(0);
     }
   }, [isRunning]);
 
@@ -373,31 +420,59 @@ export const useTimerBlock = (props: TimerBlockProps): TimerBlockState => {
     }
 
     if (remainingSeconds === 0) {
-      setPhase((currentPhase) => {
-        if (currentPhase === "work") {
-          if (intervalSeconds > 0) {
-            playRestCue();
-            setRemainingSeconds(intervalSeconds);
-            setProgress(1);
-            phaseStartTimeRef.current = null;
+      if (phase === "work") {
+        const workDurationMs = Math.max(durationSeconds, 0) * 1000;
 
-            return "rest";
-          }
+        workAccumulatedRef.current += workDurationMs;
+        setElapsedMilliseconds(workAccumulatedRef.current);
 
+        const shouldContinue =
+          loopConfig.mode !== "none" && (!hasFiniteLoops || currentLoop < totalLoops);
+
+        if (!shouldContinue) {
           playHappyChime();
-          setRemainingSeconds(durationSeconds);
+          stop();
+
+          return;
+        }
+
+        if (intervalSeconds > 0) {
+          playRestCue();
+          setPhase("rest");
+          setRemainingSeconds(intervalSeconds);
           setProgress(1);
           phaseStartTimeRef.current = null;
 
-          return "work";
+          return;
         }
 
         playHappyChime();
+        setPhase("work");
         setRemainingSeconds(durationSeconds);
         setProgress(1);
         phaseStartTimeRef.current = null;
+        setCurrentLoop((value) => {
+          if (hasFiniteLoops) {
+            return Math.min(value + 1, totalLoops);
+          }
 
-        return "work";
+          return value + 1;
+        });
+
+        return;
+      }
+
+      playHappyChime();
+      setPhase("work");
+      setRemainingSeconds(durationSeconds);
+      setProgress(1);
+      phaseStartTimeRef.current = null;
+      setCurrentLoop((value) => {
+        if (hasFiniteLoops) {
+          return Math.min(value + 1, totalLoops);
+        }
+
+        return value + 1;
       });
 
       return;
@@ -406,7 +481,21 @@ export const useTimerBlock = (props: TimerBlockProps): TimerBlockState => {
     if (remainingSeconds > 0 && remainingSeconds <= 3) {
       playShortBeep();
     }
-  }, [durationSeconds, intervalSeconds, isRunning, playHappyChime, playRestCue, playShortBeep, remainingSeconds]);
+  }, [
+    currentLoop,
+    durationSeconds,
+    intervalSeconds,
+    isRunning,
+    hasFiniteLoops,
+    phase,
+    playHappyChime,
+    playRestCue,
+    playShortBeep,
+    remainingSeconds,
+    loopConfig,
+    totalLoops,
+    stop,
+  ]);
 
   const start = useCallback(() => {
     if (durationSeconds <= 0) {
@@ -419,12 +508,13 @@ export const useTimerBlock = (props: TimerBlockProps): TimerBlockState => {
     setPhase("work");
     setRemainingSeconds(durationSeconds);
     setProgress(1);
-    timerStartTimeRef.current = getNow();
-    setElapsedSeconds(0);
+    workAccumulatedRef.current = 0;
+    setElapsedMilliseconds(0);
+    setCurrentLoop(1);
     phaseStartTimeRef.current = null;
     setIsRunning(true);
     void requestWakeLock();
-  }, [durationSeconds, getNow, playHappyChime, requestWakeLock, stopCurrentFeedback]);
+  }, [durationSeconds, playHappyChime, requestWakeLock, stopCurrentFeedback]);
 
   const stop = useCallback(() => {
     setIsRunning(false);
@@ -537,17 +627,9 @@ export const useTimerBlock = (props: TimerBlockProps): TimerBlockState => {
     const remaining = Math.max(durationMs - elapsed, 0);
     const ratio = Math.max(0, Math.min(1, remaining / durationMs));
     const remainingSecondsEstimate = Math.ceil(remaining / 1000);
-    const totalElapsedSeconds = (() => {
-      const timerStart = timerStartTimeRef.current;
-
-      if (timerStart === null) {
-        return 0;
-      }
-
-      const elapsedFromStart = Math.floor((now - timerStart) / 1000);
-
-      return Number.isFinite(elapsedFromStart) ? Math.max(elapsedFromStart, 0) : 0;
-    })();
+    const totalElapsedMilliseconds = Math.floor(
+      workAccumulatedRef.current + (phase === "work" ? Math.min(elapsed, durationMs) : 0)
+    );
 
     setProgress(ratio);
     setRemainingSeconds((value) => {
@@ -557,10 +639,10 @@ export const useTimerBlock = (props: TimerBlockProps): TimerBlockState => {
 
       return value === remainingSecondsEstimate ? value : remainingSecondsEstimate;
     });
-    setElapsedSeconds((value) =>
-      value === totalElapsedSeconds ? value : totalElapsedSeconds
+    setElapsedMilliseconds((value) =>
+      value === totalElapsedMilliseconds ? value : totalElapsedMilliseconds
     );
-  }, [getNow, isRunning]);
+  }, [getNow, isRunning, phase]);
 
   useEffect(() => {
     if (!isRunning) {
@@ -645,16 +727,19 @@ export const useTimerBlock = (props: TimerBlockProps): TimerBlockState => {
 
   return {
     canStart: durationSeconds > 0,
+    currentLoop,
     currentLabel,
     displayTitle: title,
     durationSeconds,
-    formattedElapsed: formatChronograph(elapsedSeconds),
+    formattedElapsed: formatChronograph(elapsedMilliseconds),
     formattedRemaining,
+    hasFiniteLoops,
     intervalSeconds,
     isResting: phase === "rest",
     isRunning,
     progress,
     remainingSeconds: isRunning ? remainingSeconds : durationSeconds,
+    totalLoops,
     start,
     stop,
   };

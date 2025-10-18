@@ -9,15 +9,18 @@ const PROGRESS_CIRCUMFERENCE = 2 * Math.PI * PROGRESS_RADIUS;
 export const TimerBlock: FC<TimerBlockProps> = (props) => {
   const {
     canStart,
+    currentLoop,
     currentLabel,
     displayTitle,
     durationSeconds,
     formattedElapsed,
     formattedRemaining,
+    hasFiniteLoops,
     intervalSeconds,
     isResting,
     isRunning,
     progress,
+    totalLoops,
     start,
     stop,
   } = useTimerBlock(props);
@@ -153,14 +156,14 @@ export const TimerBlock: FC<TimerBlockProps> = (props) => {
           <span className="crm-timer-block__countdown">
             {formattedRemaining}
           </span>
+          {hasFiniteLoops ? (
+            <span className="crm-timer-block__loop">{`(${currentLoop}/${totalLoops})`}</span>
+          ) : null}
         </span>
       </button>
       <div className="crm-timer-block__meta">
         {isRunning ? (
-          <>
-            <span className="crm-timer-block__meta-label">elapsed</span>
-            <span className="crm-timer-block__meta-value">{formattedElapsed}</span>
-          </>
+          <span className="crm-timer-block__meta-value">{formattedElapsed}</span>
         ) : (
           <>
             <span className="crm-timer-block__meta-duration">{`${durationSeconds}s`}</span>
