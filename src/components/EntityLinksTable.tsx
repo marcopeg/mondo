@@ -1,4 +1,20 @@
 import React from "react";
+import {
+  DndContext,
+  PointerSensor,
+  TouchSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  arrayMove,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import { Table } from "@/components/ui/Table";
 import { Button } from "@/components/ui/Button";
 import { Separator } from "@/components/ui/Separator";
@@ -11,6 +27,9 @@ type EntityLinksTableProps<T> = {
   getKey: (item: T, index: number) => React.Key;
   pageSize?: number;
   emptyLabel?: React.ReactNode;
+  sortable?: boolean;
+  onReorder?: (items: T[]) => void;
+  getSortableId?: (item: T, index: number) => React.Key;
 };
 
 export const EntityLinksTable = <T,>({
@@ -19,12 +38,32 @@ export const EntityLinksTable = <T,>({
   getKey,
   pageSize = DEFAULT_PAGE_SIZE,
   emptyLabel = <span className="text-xs text-[var(--text-muted)]">No entries</span>,
+  sortable = false,
+  onReorder,
+  getSortableId,
 }: EntityLinksTableProps<T>) => {
+  const isSortable = sortable && typeof onReorder === "function";
+  const getItemId = React.useCallback(
+    (item: T, index: number): string | number => {
+      const rawId = getSortableId ? getSortableId(item, index) : getKey(item, index);
+      if (typeof rawId === "string" || typeof rawId === "number") {
+        return rawId;
+      }
+      return String(rawId);
+    },
+    [getKey, getSortableId]
+  );
+
   const [visibleCount, setVisibleCount] = React.useState(() =>
-    Math.min(pageSize, items.length)
+    isSortable ? items.length : Math.min(pageSize, items.length)
   );
 
   React.useEffect(() => {
+    if (isSortable) {
+      setVisibleCount(items.length);
+      return;
+    }
+
     setVisibleCount((previous) => {
       if (items.length <= pageSize) {
         return items.length;
@@ -34,11 +73,49 @@ export const EntityLinksTable = <T,>({
       }
       return Math.min(Math.max(pageSize, previous), items.length);
     });
-  }, [items.length, pageSize]);
+  }, [isSortable, items.length, pageSize]);
 
   const visibleItems = React.useMemo(
     () => items.slice(0, visibleCount),
     [items, visibleCount]
+  );
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 6,
+      },
+    }),
+    useSensor(TouchSensor, {
+      activationConstraint: {
+        delay: 150,
+        tolerance: 6,
+      },
+    })
+  );
+
+  const handleDragEnd = React.useCallback(
+    (event: DragEndEvent) => {
+      if (!isSortable || !onReorder) {
+        return;
+      }
+
+      const { active, over } = event;
+      if (!active || !over || active.id === over.id) {
+        return;
+      }
+
+      const allIds = items.map((item, index) => getItemId(item, index));
+      const activeIndex = allIds.findIndex((id) => id === active.id);
+      const overIndex = allIds.findIndex((id) => id === over.id);
+
+      if (activeIndex === -1 || overIndex === -1) {
+        return;
+      }
+
+      onReorder(arrayMove(items, activeIndex, overIndex));
+    },
+    [getItemId, isSortable, items, onReorder]
   );
 
   const handleLoadMore = React.useCallback(() => {
@@ -47,29 +124,60 @@ export const EntityLinksTable = <T,>({
     );
   }, [items.length, pageSize]);
 
-  const showLoadMore = items.length > visibleCount;
+  const showLoadMore = !isSortable && items.length > visibleCount;
+
+  const sortableItems = React.useMemo(
+    () => visibleItems.map((item, index) => getItemId(item, index)),
+    [getItemId, visibleItems]
+  );
 
   return (
     <div className="flex w-full flex-col gap-2">
       <Table className="w-full text-sm">
-        <tbody>
-          {visibleItems.length > 0 ? (
-            visibleItems.map((item, index) => (
-              <Table.Row
-                key={getKey(item, index)}
-                className="border-b border-[var(--background-modifier-border)] last:border-0 hover:bg-[var(--background-modifier-hover)]"
+        {visibleItems.length > 0 ? (
+          isSortable ? (
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={handleDragEnd}
+            >
+              <SortableContext
+                items={sortableItems}
+                strategy={verticalListSortingStrategy}
               >
-                {renderRow(item, index)}
-              </Table.Row>
-            ))
+                <tbody>
+                  {visibleItems.map((item, index) => (
+                    <SortableRow
+                      key={getKey(item, index)}
+                      id={getItemId(item, index)}
+                    >
+                      {renderRow(item, index)}
+                    </SortableRow>
+                  ))}
+                </tbody>
+              </SortableContext>
+            </DndContext>
           ) : (
+            <tbody>
+              {visibleItems.map((item, index) => (
+                <Table.Row
+                  key={getKey(item, index)}
+                  className="border-b border-[var(--background-modifier-border)] last:border-0 hover:bg-[var(--background-modifier-hover)]"
+                >
+                  {renderRow(item, index)}
+                </Table.Row>
+              ))}
+            </tbody>
+          )
+        ) : (
+          <tbody>
             <Table.Row>
               <Table.Cell className="px-2 py-2 text-xs text-[var(--text-muted)]">
                 {emptyLabel}
               </Table.Cell>
             </Table.Row>
-          )}
-        </tbody>
+          </tbody>
+        )}
       </Table>
       {showLoadMore ? (
         <div className="flex w-full flex-col gap-2">
@@ -90,3 +198,32 @@ export const EntityLinksTable = <T,>({
 };
 
 export default EntityLinksTable;
+
+type SortableRowProps = {
+  id: string | number;
+  children: React.ReactNode;
+};
+
+const SortableRow = ({ id, children }: SortableRowProps) => {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
+    useSortable({ id });
+
+  const style: React.CSSProperties = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
+
+  return (
+    <Table.Row
+      ref={setNodeRef}
+      style={style}
+      className={`border-b border-[var(--background-modifier-border)] last:border-0 hover:bg-[var(--background-modifier-hover)] ${
+        isDragging ? "opacity-70" : ""
+      }`}
+      {...attributes}
+      {...listeners}
+    >
+      {children}
+    </Table.Row>
+  );
+};

@@ -29,9 +29,14 @@ const TableRoot: React.FC<TableProps> = ({
   </div>
 );
 
-const TableRow: React.FC<RowProps> = ({ children, ...rest }) => (
-  <tr {...rest}>{children}</tr>
+const TableRow = React.forwardRef<HTMLTableRowElement, RowProps>(
+  ({ children, ...rest }, ref) => (
+    <tr ref={ref} {...rest}>
+      {children}
+    </tr>
+  )
 );
+TableRow.displayName = "TableRow";
 
 const TableCell: React.FC<CellProps> = ({ children, style, ...rest }) => (
   <td style={{ ...(style as any) }} {...rest}>
