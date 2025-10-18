@@ -1,16 +1,18 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
+// Phases and props
 type TimerPhase = "work" | "rest";
 type HepticMode = "audio" | "vibration" | "both";
-
 type TimerBlockProps = Record<string, unknown>;
 
+// Plan steps
 type TimerPlanStep = {
   title: string;
-  durationSeconds: number;
-  pauseSeconds: number;
+  durationSeconds: number; // work seconds
+  pauseSeconds: number; // rest seconds between steps
 };
 
+// Public controller API consumed by TimerBlock.tsx
 export type TimerBlockController = {
   canStart: boolean;
   currentLoop: number;
@@ -24,60 +26,40 @@ export type TimerBlockController = {
   isResting: boolean;
   isRunning: boolean;
   nextLabel?: string;
-  progress: number;
+  progress: number; // 1 -> full, 0 -> empty
   remainingSeconds: number;
   totalLoops: number;
   start: () => void;
   stop: () => void;
 };
 
+// ---------- Utilities ----------
 const parseSeconds = (value: unknown): number => {
-  if (value === undefined || value === null) {
-    return 0;
-  }
-
-  if (typeof value === "number") {
-    if (!Number.isFinite(value)) {
-      return 0;
-    }
-
-    return Math.max(0, Math.floor(value));
-  }
-
-  if (typeof value !== "string") {
-    return 0;
-  }
-
+  if (value === undefined || value === null) return 0;
+  if (typeof value === "number")
+    return Number.isFinite(value) ? Math.max(0, Math.floor(value)) : 0;
+  if (typeof value !== "string") return 0;
   const numeric = Number(value);
-
-  if (!Number.isFinite(numeric)) {
-    return 0;
-  }
-
-  return Math.max(0, Math.floor(numeric));
+  return Number.isFinite(numeric) ? Math.max(0, Math.floor(numeric)) : 0;
 };
 
 const formatTime = (value: number): string => {
-  const safeValue = Number.isFinite(value) ? Math.max(0, Math.floor(value)) : 0;
-  const minutes = Math.floor(safeValue / 60);
-  const seconds = safeValue % 60;
-
-  return `${minutes.toString().padStart(2, "0")}:${seconds
-    .toString()
-    .padStart(2, "0")}`;
+  const v = Number.isFinite(value) ? Math.max(0, Math.floor(value)) : 0;
+  const mm = Math.floor(v / 60);
+  const ss = v % 60;
+  return `${mm.toString().padStart(2, "0")}:${ss.toString().padStart(2, "0")}`;
 };
 
-const formatChronograph = (value: number): string => {
-  const safeValue = Number.isFinite(value) ? Math.max(0, Math.floor(value)) : 0;
-  const totalSeconds = Math.floor(safeValue / 1000);
-  const hours = Math.floor(totalSeconds / 3600);
-  const minutes = Math.floor((totalSeconds % 3600) / 60);
-  const seconds = totalSeconds % 60;
-  const milliseconds = Math.floor(safeValue % 1000);
-
-  return `${hours.toString().padStart(2, "0")}:${minutes
+const formatChronograph = (ms: number): string => {
+  const safe = Number.isFinite(ms) ? Math.max(0, Math.floor(ms)) : 0;
+  const totalSec = Math.floor(safe / 1000);
+  const hh = Math.floor(totalSec / 3600);
+  const mm = Math.floor((totalSec % 3600) / 60);
+  const ss = totalSec % 60;
+  const mmm = Math.floor(safe % 1000);
+  return `${hh.toString().padStart(2, "0")}:${mm
     .toString()
-    .padStart(2, "0")}:${seconds.toString().padStart(2, "0")}.${milliseconds
+    .padStart(2, "0")}:${ss.toString().padStart(2, "0")}.${mmm
     .toString()
     .padStart(3, "0")}`;
 };
@@ -86,86 +68,40 @@ type LoopConfig =
   | { mode: "none" }
   | { mode: "infinite" }
   | { mode: "finite"; total: number };
-
-const parseLoop = (value: string | undefined): LoopConfig => {
-  if (!value) {
-    return { mode: "infinite" };
-  }
-
-  const normalized = value.trim().toLowerCase();
-
-  if (!normalized || normalized === "true") {
-    return { mode: "infinite" };
-  }
-
-  if (normalized === "false") {
-    return { mode: "none" };
-  }
-
-  const numeric = Number(normalized);
-
-  if (!Number.isFinite(numeric)) {
-    return { mode: "infinite" };
-  }
-
-  const totalLoops = Math.floor(numeric);
-
-  if (totalLoops <= 0) {
-    return { mode: "none" };
-  }
-
-  return { mode: "finite", total: totalLoops };
+const parseLoop = (value: unknown): LoopConfig => {
+  const raw = typeof value === "string" ? value : String(value ?? "");
+  const normalized = raw.trim().toLowerCase();
+  if (!normalized || normalized === "true") return { mode: "infinite" };
+  if (normalized === "false") return { mode: "none" };
+  const n = Number(normalized);
+  if (!Number.isFinite(n)) return { mode: "infinite" };
+  const total = Math.floor(n);
+  if (total <= 0) return { mode: "none" };
+  return { mode: "finite", total };
 };
 
 const toStepTitle = (value: unknown, fallback: string): string => {
-  if (typeof value === "string") {
-    const trimmed = value.trim();
-
-    if (trimmed.length > 0) {
-      return trimmed;
-    }
-  }
-
-  return fallback;
+  const s = typeof value === "string" ? value.trim() : "";
+  return s ? s : fallback;
 };
 
 const parsePlanSteps = (value: unknown): TimerPlanStep[] => {
-  if (!Array.isArray(value)) {
-    return [];
-  }
-
+  if (!Array.isArray(value)) return [];
   const steps: TimerPlanStep[] = [];
-
-  value.forEach((rawStep, index) => {
-    if (!rawStep || typeof rawStep !== "object") {
-      return;
-    }
-
-    const stepRecord = rawStep as Record<string, unknown>;
-    const durationSeconds = parseSeconds(stepRecord.duration ?? stepRecord.time);
-
-    if (durationSeconds <= 0) {
-      return;
-    }
-
-    const pauseSeconds = parseSeconds(stepRecord.pause ?? stepRecord.rest ?? 0);
-    const fallbackTitle = `step ${index + 1}`;
-    const title = toStepTitle(stepRecord.title ?? stepRecord.name, fallbackTitle);
-
-    steps.push({
-      title,
-      durationSeconds,
-      pauseSeconds,
-    });
+  value.forEach((raw, idx) => {
+    if (!raw || typeof raw !== "object") return;
+    const rec = raw as Record<string, unknown>;
+    const durationSeconds = parseSeconds(rec.duration ?? rec.time);
+    if (durationSeconds <= 0) return;
+    const pauseSeconds = parseSeconds(rec.pause ?? rec.rest ?? 0);
+    const title = toStepTitle(rec.title ?? rec.name, `step ${idx + 1}`);
+    steps.push({ title, durationSeconds, pauseSeconds });
   });
-
   return steps;
 };
 
 type NavigatorWithWakeLock = Navigator & {
-  wakeLock?: {
-    request: (type: "screen") => Promise<ScreenWakeLockSentinel>;
-  };
+  wakeLock?: { request: (type: "screen") => Promise<ScreenWakeLockSentinel> };
 };
 
 type ScreenWakeLockSentinel = {
@@ -178,250 +114,186 @@ type ScreenWakeLockSentinel = {
 type WindowWithAudioContext = Window & {
   webkitAudioContext?: typeof AudioContext;
 };
-
 const getAudioContextConstructor = (): typeof AudioContext | undefined => {
-  if (typeof window === "undefined") {
-    return undefined;
-  }
-
-  const audioWindow = window as WindowWithAudioContext;
-
-  return window.AudioContext ?? audioWindow.webkitAudioContext;
+  if (typeof window === "undefined") return undefined;
+  const w = window as WindowWithAudioContext;
+  return window.AudioContext ?? w.webkitAudioContext;
 };
 
-const shouldVibrate = (mode: HepticMode): boolean =>
+const shouldVibrate = (mode: HepticMode) =>
   mode === "vibration" || mode === "both";
-
-const shouldPlayAudio = (mode: HepticMode): boolean =>
+const shouldPlayAudio = (mode: HepticMode) =>
   mode === "audio" || mode === "both";
 
 const triggerVibration = (pattern: number | number[], mode: HepticMode) => {
-  if (!shouldVibrate(mode)) {
-    return;
-  }
-
+  if (!shouldVibrate(mode)) return;
   if (
     typeof navigator === "undefined" ||
     typeof navigator.vibrate !== "function"
-  ) {
+  )
     return;
-  }
-
   navigator.vibrate(pattern);
 };
 
 const triggerShortBeep = (mode: HepticMode) => {
   triggerVibration(180, mode);
-
-  if (!shouldPlayAudio(mode)) {
-    return;
-  }
-
-  const AudioContextConstructor = getAudioContextConstructor();
-
-  if (!AudioContextConstructor) {
-    return;
-  }
-
+  if (!shouldPlayAudio(mode)) return;
+  const Ctor = getAudioContextConstructor();
+  if (!Ctor) return;
   try {
-    const context = new AudioContextConstructor();
-    const oscillator = context.createOscillator();
-    const gain = context.createGain();
-
-    oscillator.type = "sine";
-    oscillator.frequency.setValueAtTime(880, context.currentTime);
-    gain.gain.setValueAtTime(0.18, context.currentTime);
-
-    oscillator.connect(gain);
-    gain.connect(context.destination);
-
-    const duration = 0.18;
-
-    oscillator.start();
-    gain.gain.exponentialRampToValueAtTime(
-      0.0001,
-      context.currentTime + duration
-    );
-    oscillator.stop(context.currentTime + duration);
-
-    oscillator.addEventListener("ended", () => {
-      context.close().catch(() => undefined);
-    });
-  } catch (error) {
-    // Silently ignore audio errors
+    const ctx = new Ctor();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(880, ctx.currentTime);
+    gain.gain.setValueAtTime(0.18, ctx.currentTime);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    const d = 0.18;
+    osc.start();
+    gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + d);
+    osc.stop(ctx.currentTime + d);
+    osc.addEventListener("ended", () => ctx.close().catch(() => undefined));
+  } catch {
+    // ignore
   }
 };
 
 const triggerHappyChime = (mode: HepticMode) => {
   triggerVibration([140, 80, 200], mode);
-
-  if (!shouldPlayAudio(mode)) {
-    return;
-  }
-
-  const AudioContextConstructor = getAudioContextConstructor();
-
-  if (!AudioContextConstructor) {
-    return;
-  }
-
+  if (!shouldPlayAudio(mode)) return;
+  const Ctor = getAudioContextConstructor();
+  if (!Ctor) return;
   try {
-    const context = new AudioContextConstructor();
-    const oscillator = context.createOscillator();
-    const gain = context.createGain();
-    const now = context.currentTime;
-
-    oscillator.type = "sine";
-    oscillator.frequency.setValueAtTime(880, now);
+    const ctx = new Ctor();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    const now = ctx.currentTime;
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(880, now);
     gain.gain.setValueAtTime(0.18, now);
-
-    oscillator.connect(gain);
-    gain.connect(context.destination);
-
-    const duration = 0.5;
-
-    oscillator.start(now);
-    gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
-    oscillator.stop(now + duration);
-
-    oscillator.addEventListener("ended", () => {
-      context.close().catch(() => undefined);
-    });
-  } catch (error) {
-    // Silently ignore audio errors
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    const d = 0.5;
+    osc.start(now);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + d);
+    osc.stop(now + d);
+    osc.addEventListener("ended", () => ctx.close().catch(() => undefined));
+  } catch {
+    // ignore
   }
 };
 
 const triggerRestCue = (mode: HepticMode) => {
   triggerVibration([250, 100, 250], mode);
-
-  if (!shouldPlayAudio(mode)) {
-    return;
-  }
-
-  const AudioContextConstructor = getAudioContextConstructor();
-
-  if (!AudioContextConstructor) {
-    return;
-  }
-
+  if (!shouldPlayAudio(mode)) return;
+  const Ctor = getAudioContextConstructor();
+  if (!Ctor) return;
   try {
-    const context = new AudioContextConstructor();
-    const oscillator = context.createOscillator();
-    const gain = context.createGain();
-    const now = context.currentTime;
-
-    oscillator.type = "sine";
-    oscillator.frequency.setValueAtTime(660, now);
+    const ctx = new Ctor();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    const now = ctx.currentTime;
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(660, now);
     gain.gain.setValueAtTime(0.2, now);
-
-    oscillator.connect(gain);
-    gain.connect(context.destination);
-
-    const duration = 0.5;
-
-    oscillator.start(now);
-    gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
-    oscillator.stop(now + duration);
-
-    oscillator.addEventListener("ended", () => {
-      context.close().catch(() => undefined);
-    });
-  } catch (error) {
-    // Silently ignore audio errors
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    const d = 0.5;
+    osc.start(now);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + d);
+    osc.stop(now + d);
+    osc.addEventListener("ended", () => ctx.close().catch(() => undefined));
+  } catch {
+    // ignore
   }
 };
 
 const stopFeedback = (mode: HepticMode) => {
-  if (!shouldVibrate(mode)) {
-    return;
-  }
-
+  if (!shouldVibrate(mode)) return;
   if (
     typeof navigator === "undefined" ||
     typeof navigator.vibrate !== "function"
-  ) {
+  )
     return;
-  }
-
   navigator.vibrate(0);
 };
 
+// ---------- Hook ----------
 export const useTimerBlock = (props: TimerBlockProps): TimerBlockController => {
-  const baseDurationSeconds = useMemo(() => parseSeconds(props.duration), [props.duration]);
-  const baseIntervalSeconds = useMemo(() => parseSeconds(props.interval), [props.interval]);
-export const useTimerBlock = (props: TimerBlockProps): TimerBlockState => {
-  const durationSeconds = useMemo(
+  // Base durations from props
+  const baseDurationSeconds = useMemo(
     () => parseSeconds(props.duration),
     [props.duration]
   );
-  const intervalSeconds = useMemo(
+  const baseIntervalSeconds = useMemo(
     () => parseSeconds(props.interval),
     [props.interval]
   );
+
+  // Loop config
   const loopConfig = useMemo(() => parseLoop(props.loop), [props.loop]);
   const hasFiniteLoops = loopConfig.mode === "finite";
-  const totalLoops = hasFiniteLoops ? loopConfig.total : 0;
+  const totalLoops = hasFiniteLoops
+    ? (loopConfig as Extract<LoopConfig, { mode: "finite" }>).total
+    : 0;
+
+  // Heptic/audio mode
   const hepticMode: HepticMode = useMemo(() => {
-    const raw = typeof props.heptic === "string" ? props.heptic.toLowerCase() : "";
-
-    if (raw === "audio" || raw === "vibration" || raw === "both") {
-      return raw;
-    if (
-      normalized === "audio" ||
-      normalized === "vibration" ||
-      normalized === "both"
-    ) {
-      return normalized;
-    }
-
-    return "audio";
+    const raw =
+      typeof props.heptic === "string" ? props.heptic.toLowerCase() : "";
+    return raw === "audio" || raw === "vibration" || raw === "both"
+      ? raw
+      : "audio";
   }, [props.heptic]);
+
+  // Optional step beep every N seconds while in work phase
   const stepSeconds = useMemo(() => parseSeconds(props.step), [props.step]);
+
+  // Optional plan steps
   const planSteps = useMemo(() => parsePlanSteps(props.steps), [props.steps]);
-  const planStepsLength = planSteps.length;
-  const hasPlan = planStepsLength > 0;
-  const initialPlanDuration = useMemo(
-    () => (planStepsLength > 0 ? planSteps[0]?.durationSeconds ?? 0 : 0),
-    [planSteps, planStepsLength]
-  );
-  const rawTitle = typeof props.title === "string" ? props.title : "";
+  const hasPlan = planSteps.length > 0;
+  const initialPlanDuration = hasPlan ? planSteps[0].durationSeconds : 0;
+
+  // Title
   const title = useMemo(() => {
-    const trimmed = rawTitle.trim();
-
-    if (trimmed.length > 0) {
-      return trimmed;
-    }
-
+    const raw = typeof props.title === "string" ? props.title.trim() : "";
+    if (raw) return raw;
     return hasPlan ? "time plan" : "work";
-  }, [hasPlan, rawTitle]);
+  }, [props.title, hasPlan]);
 
-  const [currentStepIndex, setCurrentStepIndex] = useState(0);
+  // State
   const [isRunning, setIsRunning] = useState(false);
   const [phase, setPhase] = useState<TimerPhase>("work");
-  const initialDuration = hasPlan ? initialPlanDuration : baseDurationSeconds;
-  const [remainingSeconds, setRemainingSeconds] = useState(initialDuration);
-  const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [currentLoop, setCurrentLoop] = useState(0);
-  const [remainingSeconds, setRemainingSeconds] = useState(durationSeconds);
+  const [remainingSeconds, setRemainingSeconds] = useState(
+    hasPlan ? initialPlanDuration : baseDurationSeconds
+  );
   const [elapsedMilliseconds, setElapsedMilliseconds] = useState(0);
   const [progress, setProgress] = useState(1);
-  const phaseDurationRef = useRef(Math.max(initialDuration || 1, 1));
+
+  // Refs for timing and feedback
+  const phaseDurationRef = useRef(
+    Math.max((hasPlan ? initialPlanDuration : baseDurationSeconds) || 1, 1)
+  );
   const phaseStartTimeRef = useRef<number | null>(null);
   const animationFrameRef = useRef<number | null>(null);
   const wakeLockRef = useRef<ScreenWakeLockSentinel | null>(null);
-  const lastFeedbackAtRef = useRef<number>(0);
   const stepCountRef = useRef(0);
-  const workAccumulatedRef = useRef(0);
+  const lastFeedbackAtRef = useRef(0);
+  const workAccumulatedRef = useRef(0); // ms of completed work phases
 
+  // Derived current step & effective durations for this phase
   const safeStepIndex = hasPlan
-    ? Math.min(Math.max(currentStepIndex, 0), planStepsLength - 1)
+    ? Math.min(Math.max(currentStepIndex, 0), planSteps.length - 1)
     : 0;
   const currentPlanStep = hasPlan ? planSteps[safeStepIndex] : undefined;
   const nextPlanStep =
-    hasPlan && safeStepIndex + 1 < planStepsLength
+    hasPlan && safeStepIndex + 1 < planSteps.length
       ? planSteps[safeStepIndex + 1]
       : undefined;
+
   const durationSeconds = hasPlan
     ? currentPlanStep?.durationSeconds ?? 0
     : baseDurationSeconds;
@@ -433,10 +305,8 @@ export const useTimerBlock = (props: TimerBlockProps): TimerBlockState => {
     if (
       typeof performance !== "undefined" &&
       typeof performance.now === "function"
-    ) {
+    )
       return performance.now();
-    }
-
     return Date.now();
   }, []);
 
@@ -444,25 +314,36 @@ export const useTimerBlock = (props: TimerBlockProps): TimerBlockState => {
     lastFeedbackAtRef.current = getNow();
   }, [getNow]);
 
-  const playShortBeep = useCallback(() => {
+  const playShort = useCallback(() => {
     triggerShortBeep(hepticMode);
     markFeedback();
   }, [hepticMode, markFeedback]);
 
-  const playHappyChime = useCallback(() => {
+  const playChime = useCallback(() => {
     triggerHappyChime(hepticMode);
     markFeedback();
   }, [hepticMode, markFeedback]);
 
-  const playRestCue = useCallback(() => {
+  const playRest = useCallback(() => {
     triggerRestCue(hepticMode);
     markFeedback();
   }, [hepticMode, markFeedback]);
 
-  const stopCurrentFeedback = useCallback(() => {
-    stopFeedback(hepticMode);
-  }, [hepticMode]);
+  const stopCurrentFeedback = useCallback(
+    () => stopFeedback(hepticMode),
+    [hepticMode]
+  );
 
+  // Keep indices in range when plan changes
+  useEffect(() => {
+    if (!hasPlan) {
+      setCurrentStepIndex(0);
+      return;
+    }
+    setCurrentStepIndex((i) => Math.min(Math.max(i, 0), planSteps.length - 1));
+  }, [hasPlan, planSteps.length]);
+
+  // Reset some counters when stopped
   useEffect(() => {
     if (!isRunning) {
       workAccumulatedRef.current = 0;
@@ -471,24 +352,7 @@ export const useTimerBlock = (props: TimerBlockProps): TimerBlockState => {
     }
   }, [isRunning]);
 
-  useEffect(() => {
-    if (!hasPlan) {
-      setCurrentStepIndex(0);
-
-      return;
-    }
-
-    setCurrentStepIndex((index) =>
-      Math.min(Math.max(index, 0), planStepsLength - 1)
-    );
-  }, [hasPlan, planStepsLength]);
-
-  useEffect(() => {
-    if (!isRunning) {
-      setCurrentStepIndex(0);
-    }
-  }, [isRunning]);
-
+  // When duration changes and we're not running, reset remaining
   useEffect(() => {
     if (!isRunning) {
       setPhase("work");
@@ -498,111 +362,75 @@ export const useTimerBlock = (props: TimerBlockProps): TimerBlockState => {
     }
   }, [durationSeconds, isRunning]);
 
-  useEffect(() => {
-    if (!isRunning) {
-      stepCountRef.current = 0;
-    }
-  }, [isRunning]);
-
+  // Wake lock helpers
   const releaseWakeLock = useCallback(async () => {
-    if (!wakeLockRef.current) {
-      return;
-    }
-
+    if (!wakeLockRef.current) return;
     try {
-      const sentinel = wakeLockRef.current;
+      const s = wakeLockRef.current;
       wakeLockRef.current = null;
-      await sentinel.release();
-    } catch (error) {
+      await s.release();
+    } catch {
       wakeLockRef.current = null;
     }
   }, []);
 
   const requestWakeLock = useCallback(async () => {
-    if (typeof navigator === "undefined") {
-      return;
-    }
-
-    const navigatorWithWakeLock = navigator as NavigatorWithWakeLock;
-
-    if (!navigatorWithWakeLock.wakeLock?.request) {
-      return;
-    }
-
-    if (wakeLockRef.current) {
-      return;
-    }
-
+    if (typeof navigator === "undefined") return;
+    const n = navigator as NavigatorWithWakeLock;
+    if (!n.wakeLock?.request) return;
+    if (wakeLockRef.current) return;
     try {
-      const sentinel = await navigatorWithWakeLock.wakeLock.request("screen");
-
-      const handleRelease = () => {
+      const s = await n.wakeLock.request("screen");
+      const onRelease = () => {
         wakeLockRef.current = null;
-
-        if (sentinel.removeEventListener) {
-          sentinel.removeEventListener("release", handleRelease);
-        }
-
+        if (s.removeEventListener) s.removeEventListener("release", onRelease);
         if (
           typeof document !== "undefined" &&
           document.visibilityState === "visible"
         ) {
-          if (isRunning) {
-            void requestWakeLock();
-          }
+          if (isRunning) void requestWakeLock();
         }
       };
-
-      wakeLockRef.current = sentinel;
-
-      if (sentinel.addEventListener) {
-        sentinel.addEventListener("release", handleRelease);
-      }
-    } catch (error) {
+      wakeLockRef.current = s;
+      if (s.addEventListener) s.addEventListener("release", onRelease);
+    } catch {
       wakeLockRef.current = null;
     }
   }, [isRunning]);
 
+  // Start/Stop
+  const canStart = hasPlan ? initialPlanDuration > 0 : baseDurationSeconds > 0;
+
   const start = useCallback(() => {
-    const initialDurationSeconds = hasPlan ? initialPlanDuration : baseDurationSeconds;
-
-    if (initialDurationSeconds <= 0) {
-      return;
-    }
-
+    const initial = hasPlan ? initialPlanDuration : baseDurationSeconds;
+    if (initial <= 0) return;
     stepCountRef.current = 0;
     stopCurrentFeedback();
-    playHappyChime();
+    playChime();
     setPhase("work");
     setCurrentStepIndex(0);
-    setRemainingSeconds(initialDurationSeconds);
+    setRemainingSeconds(initial);
     setProgress(1);
-    timerStartTimeRef.current = getNow();
-    setElapsedSeconds(0);
+    workAccumulatedRef.current = 0;
+    setElapsedMilliseconds(0);
+    setCurrentLoop(1);
     phaseStartTimeRef.current = null;
     setIsRunning(true);
     void requestWakeLock();
   }, [
     baseDurationSeconds,
-    getNow,
     hasPlan,
     initialPlanDuration,
-    playHappyChime,
+    playChime,
     requestWakeLock,
     stopCurrentFeedback,
   ]);
 
   const stop = useCallback(() => {
-    const resetDuration = hasPlan ? initialPlanDuration : baseDurationSeconds;
-
     setIsRunning(false);
     setPhase("work");
     setCurrentStepIndex(0);
-    setRemainingSeconds(resetDuration);
-  const stop = useCallback(() => {
-    setIsRunning(false);
-    setPhase("work");
-    setRemainingSeconds(durationSeconds);
+    setRemainingSeconds(hasPlan ? initialPlanDuration : baseDurationSeconds);
     setProgress(1);
     phaseStartTimeRef.current = null;
     stepCountRef.current = 0;
@@ -615,88 +443,100 @@ export const useTimerBlock = (props: TimerBlockProps): TimerBlockState => {
     releaseWakeLock,
     stopCurrentFeedback,
   ]);
-  }, [durationSeconds, releaseWakeLock, stopCurrentFeedback]);
 
+  // Phase transitions (on countdown reaching 0)
   useEffect(() => {
-    if (!isRunning) {
-      return;
-    }
+    if (!isRunning) return;
 
     if (remainingSeconds === 0) {
+      // Add completed work to accumulated elapsed
+      if (phase === "work") {
+        workAccumulatedRef.current += Math.max(durationSeconds, 0) * 1000;
+        setElapsedMilliseconds(workAccumulatedRef.current);
+      }
+
       if (hasPlan) {
-        const currentStep = currentPlanStep;
-
-        if (!currentStep) {
-          playHappyChime();
-          stop();
-          return;
-        }
-
+        // Plan mode: handle work/rest per step
         if (phase === "work") {
-          if (currentStep.pauseSeconds > 0) {
-            playRestCue();
+          if ((currentPlanStep?.pauseSeconds ?? 0) > 0) {
+            playRest();
             setPhase("rest");
             setProgress(1);
             phaseStartTimeRef.current = null;
-            setRemainingSeconds(currentStep.pauseSeconds);
+            setRemainingSeconds(currentPlanStep!.pauseSeconds);
             return;
           }
 
-          const nextIndex = safeStepIndex + 1;
-
-          if (nextIndex < planStepsLength) {
-            playHappyChime();
-            setCurrentStepIndex(nextIndex);
+          // No rest for this step -> move to next step or loop/end
+          const nextIdx = safeStepIndex + 1;
+          if (nextIdx < planSteps.length) {
+            playChime();
+            setCurrentStepIndex(nextIdx);
             setPhase("work");
             setProgress(1);
             phaseStartTimeRef.current = null;
-            setRemainingSeconds(planSteps[nextIndex].durationSeconds);
+            setRemainingSeconds(planSteps[nextIdx].durationSeconds);
             return;
           }
-      if (phase === "work") {
-        const workDurationMs = Math.max(durationSeconds, 0) * 1000;
 
-        workAccumulatedRef.current += workDurationMs;
-        setElapsedMilliseconds(workAccumulatedRef.current);
+          // End of plan: loop or stop
+          const shouldContinue =
+            loopConfig.mode !== "none" &&
+            (!hasFiniteLoops || currentLoop < totalLoops);
+          if (!shouldContinue) {
+            playChime();
+            stop();
+            return;
+          }
+          playChime();
+          setCurrentStepIndex(0);
+          setPhase("work");
+          setProgress(1);
+          phaseStartTimeRef.current = null;
+          setRemainingSeconds(planSteps[0].durationSeconds);
+          setCurrentLoop((v) =>
+            hasFiniteLoops ? Math.min(v + 1, totalLoops) : v + 1
+          );
+          return;
+        }
 
+        // phase === 'rest'
+        const nextIdx = safeStepIndex + 1;
+        if (nextIdx < planSteps.length) {
+          playChime();
+          setCurrentStepIndex(nextIdx);
+          setPhase("work");
+          setProgress(1);
+          phaseStartTimeRef.current = null;
+          setRemainingSeconds(planSteps[nextIdx].durationSeconds);
+          return;
+        }
+
+        // End of plan rest -> loop or stop
         const shouldContinue =
           loopConfig.mode !== "none" &&
           (!hasFiniteLoops || currentLoop < totalLoops);
-
         if (!shouldContinue) {
-          playHappyChime();
+          playChime();
           stop();
           return;
         }
-
-        const nextIndex = safeStepIndex + 1;
-
-        if (nextIndex < planStepsLength) {
-          playHappyChime();
-          setCurrentStepIndex(nextIndex);
-          setPhase("work");
-
-          return;
-        }
-
-        if (intervalSeconds > 0) {
-          playRestCue();
-          setPhase("rest");
-          setRemainingSeconds(intervalSeconds);
-          setProgress(1);
-          phaseStartTimeRef.current = null;
-          setRemainingSeconds(planSteps[nextIndex].durationSeconds);
-          return;
-        }
-
-        playHappyChime();
-        stop();
+        playChime();
+        setCurrentStepIndex(0);
+        setPhase("work");
+        setProgress(1);
+        phaseStartTimeRef.current = null;
+        setRemainingSeconds(planSteps[0].durationSeconds);
+        setCurrentLoop((v) =>
+          hasFiniteLoops ? Math.min(v + 1, totalLoops) : v + 1
+        );
         return;
       }
 
+      // Simple mode (no plan)
       if (phase === "work") {
         if (intervalSeconds > 0) {
-          playRestCue();
+          playRest();
           setPhase("rest");
           setRemainingSeconds(intervalSeconds);
           setProgress(1);
@@ -704,239 +544,140 @@ export const useTimerBlock = (props: TimerBlockProps): TimerBlockState => {
           return;
         }
 
-        playHappyChime();
+        // No rest: either continue next work (loop) or stop
+        const shouldContinue =
+          loopConfig.mode !== "none" &&
+          (!hasFiniteLoops || currentLoop < totalLoops);
+        if (!shouldContinue) {
+          playChime();
+          stop();
+          return;
+        }
+        playChime();
         setPhase("work");
         setRemainingSeconds(durationSeconds);
         setProgress(1);
         phaseStartTimeRef.current = null;
-        setCurrentLoop((value) => {
-          if (hasFiniteLoops) {
-            return Math.min(value + 1, totalLoops);
-          }
-
-          return value + 1;
-        });
-
+        setCurrentLoop((v) =>
+          hasFiniteLoops ? Math.min(v + 1, totalLoops) : v + 1
+        );
         return;
       }
 
-      playHappyChime();
+      // Rest finished -> next work or stop based on loops
+      const shouldContinue =
+        loopConfig.mode !== "none" &&
+        (!hasFiniteLoops || currentLoop < totalLoops);
+      if (!shouldContinue) {
+        playChime();
+        stop();
+        return;
+      }
+      playChime();
+      setPhase("work");
       setRemainingSeconds(durationSeconds);
       setProgress(1);
       phaseStartTimeRef.current = null;
-      setPhase("work");
-      setPhase("work");
-      setRemainingSeconds(durationSeconds);
-      setProgress(1);
-      phaseStartTimeRef.current = null;
-      setCurrentLoop((value) => {
-        if (hasFiniteLoops) {
-          return Math.min(value + 1, totalLoops);
-        }
-
-        return value + 1;
-      });
-
+      setCurrentLoop((v) =>
+        hasFiniteLoops ? Math.min(v + 1, totalLoops) : v + 1
+      );
       return;
     }
 
+    // Final 3 seconds countdown cue
     if (remainingSeconds > 0 && remainingSeconds <= 3) {
-      playShortBeep();
+      playShort();
     }
   }, [
-    currentPlanStep,
-    durationSeconds,
-    hasPlan,
-    intervalSeconds,
     isRunning,
-    phase,
-    planSteps,
-    planStepsLength,
-    currentLoop,
-    durationSeconds,
-    intervalSeconds,
-    isRunning,
-    hasFiniteLoops,
-    phase,
-    playHappyChime,
-    playRestCue,
-    playShortBeep,
     remainingSeconds,
+    phase,
+    durationSeconds,
+    intervalSeconds,
+    hasPlan,
+    currentPlanStep?.pauseSeconds,
+    planSteps,
     safeStepIndex,
-    stop,
-  ]);
     loopConfig,
+    hasFiniteLoops,
+    currentLoop,
     totalLoops,
+    playChime,
+    playRest,
+    playShort,
     stop,
   ]);
 
-  const start = useCallback(() => {
-    if (durationSeconds <= 0) {
-      return;
-    }
-
-    stepCountRef.current = 0;
-    stopCurrentFeedback();
-    playHappyChime();
-    setPhase("work");
-    setRemainingSeconds(durationSeconds);
-    setProgress(1);
-    workAccumulatedRef.current = 0;
-    setElapsedMilliseconds(0);
-    setCurrentLoop(1);
-    phaseStartTimeRef.current = null;
-    setIsRunning(true);
-    void requestWakeLock();
-  }, [durationSeconds, playHappyChime, requestWakeLock, stopCurrentFeedback]);
-
-  const formattedRemaining = useMemo(
-    () => formatTime(isRunning ? remainingSeconds : durationSeconds),
-    [durationSeconds, isRunning, remainingSeconds]
-  );
-
-  const currentLabel = useMemo(() => {
-    if (hasPlan) {
-      if (phase === "rest") {
-        return "rest";
-      }
-
-      return currentPlanStep?.title ?? title;
-    }
-
-    if (isRunning && phase === "rest") {
-      return "rest";
-    }
-
-    return "go";
-  }, [currentPlanStep?.title, hasPlan, isRunning, phase, title]);
-
-  const nextLabel = useMemo(() => {
-    if (!hasPlan) {
-      return undefined;
-    }
-
-    if (phase !== "rest") {
-      return undefined;
-    }
-
-    return nextPlanStep?.title;
-  }, [hasPlan, nextPlanStep, phase]);
-
-  const canStart = hasPlan
-    ? initialPlanDuration > 0
-    : baseDurationSeconds > 0;
-
+  // Active phase duration used by timer computation
   const activePhaseDuration = useMemo(() => {
-    if (phase === "rest") {
-      if (intervalSeconds > 0) {
-        return intervalSeconds;
-      }
-
-      return durationSeconds || 1;
-    }
-
+    if (phase === "rest")
+      return intervalSeconds > 0 ? intervalSeconds : durationSeconds || 1;
     return durationSeconds || 1;
   }, [durationSeconds, intervalSeconds, phase]);
 
+  // Reinitialize timing on phase or duration change
   useEffect(() => {
     phaseDurationRef.current = Math.max(activePhaseDuration, 1);
-
     if (isRunning) {
       phaseStartTimeRef.current = getNow();
       setProgress(1);
       return;
     }
-
     phaseStartTimeRef.current = null;
     setProgress(1);
   }, [activePhaseDuration, getNow, isRunning, phase]);
 
+  // Reset step beep counter when duration/phase changes
   useEffect(() => {
     stepCountRef.current = 0;
   }, [activePhaseDuration, phase, stepSeconds]);
 
+  // Per-step beep feedback while in work phase (excluding last 3 seconds)
   useEffect(() => {
-    if (!isRunning) {
-      return;
-    }
-
-    if (stepSeconds <= 0) {
-      return;
-    }
-
-    if (remainingSeconds <= 0) {
-      return;
-    }
-
-    if (remainingSeconds <= 3) {
-      return;
-    }
-
+    if (!isRunning) return;
+    if (stepSeconds <= 0) return;
+    if (remainingSeconds <= 0) return;
+    if (remainingSeconds <= 3) return;
     const duration = Math.max(activePhaseDuration, 1);
     const elapsed = duration - remainingSeconds;
-
-    if (elapsed <= 0) {
-      return;
-    }
-
+    if (elapsed <= 0) return;
     const completedSteps = Math.floor(elapsed / stepSeconds);
-
-    if (completedSteps <= 0) {
-      return;
-    }
-
+    if (completedSteps <= 0) return;
     if (completedSteps > stepCountRef.current) {
-      const timeSinceLastFeedback = getNow() - lastFeedbackAtRef.current;
-
+      const since = getNow() - lastFeedbackAtRef.current;
       stepCountRef.current = completedSteps;
-
-      if (timeSinceLastFeedback > 400) {
-        playShortBeep();
-      }
+      if (since > 400) playShort();
     }
   }, [
     activePhaseDuration,
     getNow,
     isRunning,
-    playShortBeep,
+    playShort,
     remainingSeconds,
     stepSeconds,
   ]);
 
+  // Recompute countdown continuously via RAF + 1s interval backup
   const recomputeTiming = useCallback(() => {
-    if (!isRunning) {
-      return;
-    }
-
+    if (!isRunning) return;
     const durationMs = Math.max(phaseDurationRef.current * 1000, 1);
     const now = getNow();
     const start = phaseStartTimeRef.current ?? now;
-
-    if (phaseStartTimeRef.current === null) {
-      phaseStartTimeRef.current = start;
-    }
-
+    if (phaseStartTimeRef.current === null) phaseStartTimeRef.current = start;
     const elapsed = now - start;
     const remaining = Math.max(durationMs - elapsed, 0);
     const ratio = Math.max(0, Math.min(1, remaining / durationMs));
-    const remainingSecondsEstimate = Math.ceil(remaining / 1000);
-    const totalElapsedMilliseconds = Math.floor(
+    const remainingEstimate = Math.ceil(remaining / 1000);
+    const totalElapsedMs = Math.floor(
       workAccumulatedRef.current +
         (phase === "work" ? Math.min(elapsed, durationMs) : 0)
     );
-
     setProgress(ratio);
-    setRemainingSeconds((value) => {
-      if (!Number.isFinite(remainingSecondsEstimate)) {
-        return value;
-      }
-
-      return value === remainingSecondsEstimate
-        ? value
-        : remainingSecondsEstimate;
-    });
-    setElapsedMilliseconds((value) =>
-      value === totalElapsedMilliseconds ? value : totalElapsedMilliseconds
+    setRemainingSeconds((prev) =>
+      Number.isFinite(remainingEstimate) ? remainingEstimate : prev
+    );
+    setElapsedMilliseconds((prev) =>
+      prev === totalElapsedMs ? prev : totalElapsedMs
     );
   }, [getNow, isRunning, phase]);
 
@@ -946,27 +687,17 @@ export const useTimerBlock = (props: TimerBlockProps): TimerBlockState => {
         window.cancelAnimationFrame(animationFrameRef.current);
         animationFrameRef.current = null;
       }
-
       return;
     }
-
-    let isCancelled = false;
-
+    let cancelled = false;
     const tick = () => {
-      if (isCancelled) {
-        return;
-      }
-
+      if (cancelled) return;
       recomputeTiming();
-
       animationFrameRef.current = window.requestAnimationFrame(tick);
     };
-
     animationFrameRef.current = window.requestAnimationFrame(tick);
-
     return () => {
-      isCancelled = true;
-
+      cancelled = true;
       if (animationFrameRef.current !== null) {
         window.cancelAnimationFrame(animationFrameRef.current);
         animationFrameRef.current = null;
@@ -975,44 +706,27 @@ export const useTimerBlock = (props: TimerBlockProps): TimerBlockState => {
   }, [isRunning, recomputeTiming]);
 
   useEffect(() => {
-    if (!isRunning) {
-      return;
-    }
-
-    const intervalId = window.setInterval(() => {
-      recomputeTiming();
-    }, 1000);
-
-    return () => {
-      window.clearInterval(intervalId);
-    };
+    if (!isRunning) return;
+    const id = window.setInterval(() => recomputeTiming(), 1000);
+    return () => window.clearInterval(id);
   }, [isRunning, recomputeTiming]);
 
+  // Wake lock lifecycle
   useEffect(() => {
     if (!isRunning) {
       void releaseWakeLock();
-
       return;
     }
-
     void requestWakeLock();
-
-    if (typeof document === "undefined") {
-      return;
-    }
-
-    const handleVisibilityChange = () => {
+    if (typeof document === "undefined") return;
+    const onVis = () => {
       if (document.visibilityState === "visible") {
         void requestWakeLock();
         recomputeTiming();
       }
     };
-
-    document.addEventListener("visibilitychange", handleVisibilityChange);
-
-    return () => {
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
-    };
+    document.addEventListener("visibilitychange", onVis);
+    return () => document.removeEventListener("visibilitychange", onVis);
   }, [isRunning, recomputeTiming, releaseWakeLock, requestWakeLock]);
 
   useEffect(() => {
@@ -1021,9 +735,27 @@ export const useTimerBlock = (props: TimerBlockProps): TimerBlockState => {
     };
   }, [releaseWakeLock]);
 
+  // Labels and formatted values
+  const formattedRemaining = useMemo(
+    () => formatTime(isRunning ? remainingSeconds : durationSeconds),
+    [durationSeconds, isRunning, remainingSeconds]
+  );
+
+  const currentLabel = useMemo(() => {
+    if (hasPlan)
+      return phase === "rest" ? "rest" : currentPlanStep?.title ?? title;
+    if (isRunning && phase === "rest") return "rest";
+    return "go";
+  }, [currentPlanStep?.title, hasPlan, isRunning, phase, title]);
+
+  const nextLabel = useMemo(() => {
+    if (!hasPlan) return undefined;
+    if (phase !== "rest") return undefined;
+    return nextPlanStep?.title;
+  }, [hasPlan, nextPlanStep, phase]);
+
   return {
     canStart,
-    canStart: durationSeconds > 0,
     currentLoop,
     currentLabel,
     displayTitle: title,
