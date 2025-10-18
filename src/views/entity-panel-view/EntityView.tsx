@@ -22,6 +22,47 @@ type CreateEntityFileResult = {
   created: boolean;
 };
 
+// Focuses the title element (inline title or input) and selects all its content
+const focusAndSelectTitle = (leaf: any) => {
+  const view = leaf?.view as any;
+
+  // 1) Try inline title (contenteditable element)
+  const inlineTitleEl: HTMLElement | null =
+    view?.contentEl?.querySelector?.(".inline-title") ??
+    view?.containerEl?.querySelector?.(".inline-title") ??
+    null;
+  if (inlineTitleEl) {
+    inlineTitleEl.focus();
+    try {
+      const selection = window.getSelection?.();
+      const range = document.createRange?.();
+      if (selection && range) {
+        selection.removeAllRanges();
+        range.selectNodeContents(inlineTitleEl);
+        selection.addRange(range);
+      }
+    } catch (_) {
+      // no-op if selection APIs are unavailable
+    }
+    return true;
+  }
+
+  // 2) Try title input (when inline title is configured as an input)
+  const titleInput: HTMLInputElement | undefined =
+    view?.fileView?.inputEl ?? view?.titleEl?.querySelector?.("input");
+  if (titleInput) {
+    titleInput.focus();
+    titleInput.select();
+    return true;
+  }
+
+  // 3) Fallback: trigger rename command (opens rename UI)
+  const executed = (
+    view?.app ?? (window as any)?.app
+  )?.commands?.executeCommandById?.("app:rename-file");
+  return Boolean(executed);
+};
+
 const slugify = (value: string): string =>
   value
     .trim()
@@ -163,22 +204,7 @@ export const EntityView: FC<EntityViewProps> = ({ entityType }) => {
       if (created && leaf) {
         window.setTimeout(() => {
           if (app.workspace.getActiveFile()?.path === file.path) {
-            const executed = (app as any)?.commands?.executeCommandById?.(
-              "app:rename-file"
-            );
-
-            if (!executed) {
-              const view = (leaf as any)?.view;
-              const titleEl: HTMLInputElement | undefined =
-                view?.fileView?.inputEl ?? view?.titleEl?.querySelector?.(
-                  "input"
-                );
-
-              if (titleEl) {
-                titleEl.focus();
-                titleEl.select();
-              }
-            }
+            focusAndSelectTitle(leaf);
           }
         }, 150);
       }
