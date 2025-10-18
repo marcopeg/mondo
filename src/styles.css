@@ -602,6 +602,13 @@
   text-align: center;
 }
 
+.crm-timer-block__status-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+}
+
 .crm-timer-block__status {
   display: inline-flex;
   align-items: center;
@@ -624,6 +631,29 @@
 .crm-timer-block__status--rest {
   background: var(--color-orange, #d97706);
   color: var(--text-on-accent);
+}
+
+.crm-timer-block__status-next {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.1rem;
+  font-size: 0.7rem;
+  line-height: 1.1;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+}
+
+.crm-timer-block__status-next-label {
+  opacity: 0.75;
+}
+
+.crm-timer-block__status-next-value {
+  text-transform: none;
+  letter-spacing: normal;
+  font-weight: 600;
+  color: var(--text-normal);
 }
 
 .crm-timer-block__button {
