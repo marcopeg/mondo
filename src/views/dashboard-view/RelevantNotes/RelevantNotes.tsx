@@ -66,10 +66,10 @@ export const RelevantNotes = ({ collapsed = false }: RelevantNotesProps) => {
   const [hitsVisibleCount, setHitsVisibleCount] = useState(5);
   const [historyLimit, setHistoryLimit] = useState(5);
   const hitsNotes = useRelevantNotes(25);
-  const {
-    notes: historyNotes,
-    hasMore: historyHasMore,
-  } = useRecentCRMNotes(historyLimit, selectedType);
+  const { notes: historyNotes, hasMore: historyHasMore } = useRecentCRMNotes(
+    historyLimit,
+    selectedType
+  );
   const dateFormatter = useMemo(
     () => new Intl.DateTimeFormat(undefined, DATE_FORMAT_OPTIONS),
     []
@@ -155,7 +155,7 @@ export const RelevantNotes = ({ collapsed = false }: RelevantNotesProps) => {
       collapseOnHeaderClick
     >
       <Stack direction="column" gap={3} className="w-full">
-        <Stack className="gap-2 flex-col sm:flex-row sm:items-center sm:justify-between">
+        <Stack className="gap-2 flex-col sm:flex-row sm:items-center sm:justify-between -mt-2 -mx-2 px-2">
           <div className="-mx-2 flex-1 overflow-x-auto pb-1 sm:mx-0">
             <ButtonGroup className="crm-relevant-notes__filters-group flex-nowrap sm:mx-1">
               {filterButtons.map((button) => {
@@ -185,9 +185,11 @@ export const RelevantNotes = ({ collapsed = false }: RelevantNotesProps) => {
             className="flex-shrink-0 self-end sm:self-auto"
           />
         </Stack>
-        {(mode === "history"
-          ? historyNotes.length === 0
-          : filteredHits.length === 0) ? (
+        {(
+          mode === "history"
+            ? historyNotes.length === 0
+            : filteredHits.length === 0
+        ) ? (
           <Typography
             variant="body"
             className="text-sm text-[var(--text-muted)]"
