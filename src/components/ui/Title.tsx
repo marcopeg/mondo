@@ -17,10 +17,10 @@ export const Title = ({ title, subtitle, icon }: PropsWithIcon) => {
   }
 
   return (
-    <div className="setting-item-info">
+    <div className="setting-item-info flex min-h-12 items-center">
       <div className="flex items-center">
         {icon && <Icon name={icon} />}
-        <div className="flex flex-col">
+        <div className="flex flex-col justify-center gap-1">
           {title && <div className="setting-item-name">{title}</div>}
           {subtitle && (
             <div className="setting-item-description">{subtitle}</div>
