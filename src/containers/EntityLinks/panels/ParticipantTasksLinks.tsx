@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { Card } from "@/components/ui/Card";
 import { Table } from "@/components/ui/Table";
 import { Button } from "@/components/ui/Button";
@@ -6,22 +6,75 @@ import { Typography } from "@/components/ui/Typography";
 import { EntityLinksTable } from "@/components/EntityLinksTable";
 import { useFiles } from "@/hooks/use-files";
 import { useEntityLinkOrdering } from "@/hooks/use-entity-link-ordering";
+import { useApp } from "@/hooks/use-app";
+import { useSetting } from "@/hooks/use-setting";
 import { CRMFileType } from "@/types/CRMFileType";
 import { matchesPropertyLink } from "@/utils/matchesPropertyLink";
 import { getTaskLabel, getTaskStatus } from "@/utils/taskMetadata";
 import { getEntityDisplayName } from "@/utils/getEntityDisplayName";
+import { normalizeFolderPath } from "@/utils/normalizeFolderPath";
+import { getTemplateForType, renderTemplate } from "@/utils/CRMTemplates";
+import { addParticipantLink } from "@/utils/participants";
 import type { TCachedFile } from "@/types/TCachedFile";
-import type { App } from "obsidian";
+import type { App, TFile } from "obsidian";
 
 type ParticipantTasksLinksProps = {
   file: TCachedFile;
   config: Record<string, unknown>;
 };
 
+// Focuses the title element (inline title or input) and selects all its content
+const focusAndSelectTitle = (leaf: any) => {
+  const view = leaf?.view as any;
+
+  // 1) Try inline title (contenteditable element)
+  const inlineTitleEl: HTMLElement | null =
+    view?.contentEl?.querySelector?.(".inline-title") ??
+    view?.containerEl?.querySelector?.(".inline-title") ??
+    null;
+  if (inlineTitleEl) {
+    inlineTitleEl.focus();
+    try {
+      const selection = window.getSelection?.();
+      const range = document.createRange?.();
+      if (selection && range) {
+        selection.removeAllRanges();
+        range.selectNodeContents(inlineTitleEl);
+        selection.addRange(range);
+      }
+    } catch (_) {
+      // no-op if selection APIs are unavailable
+    }
+    return true;
+  }
+
+  // 2) Try title input (when inline title is configured as an input)
+  const titleInput: HTMLInputElement | undefined =
+    view?.fileView?.inputEl ?? view?.titleEl?.querySelector?.("input");
+  if (titleInput) {
+    titleInput.focus();
+    titleInput.select();
+    return true;
+  }
+
+  return false;
+};
+
+const sanitizeFileName = (value: string) =>
+  value
+    .replace(/[\u0000-\u001f\u007f<>:"|?*]+/g, "-")
+    .replace(/[\\/]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .trim() || "untitled";
+
 export const ParticipantTasksLinks = ({
   file,
   config,
 }: ParticipantTasksLinksProps) => {
+  const app = useApp();
+  const taskFolderPath = useSetting<string>("rootPaths.task", "");
+  const [isCreating, setIsCreating] = useState(false);
+
   const hostFile = file.file;
 
   const collapsed = (config as any)?.collapsed !== false;
@@ -87,9 +140,100 @@ export const ParticipantTasksLinks = ({
     );
   }
 
-  const handleCreateTask = useCallback(() => {
-    // TODO: Implement task creation
-  }, []);
+  const handleCreateTask = useCallback(async () => {
+    if (isCreating || !hostFile) {
+      return;
+    }
+
+    setIsCreating(true);
+
+    try {
+      // Get plugin settings for root paths and templates
+      const pluginInstance = (app as any).plugins?.plugins?.["crm"] as
+        | {
+            settings?: {
+              rootPaths?: Partial<Record<CRMFileType, string>>;
+              templates?: Partial<Record<CRMFileType, string>>;
+            };
+          }
+        | undefined;
+
+      if (!pluginInstance?.settings) {
+        throw new Error("CRM plugin settings are not available.");
+      }
+
+      const settings = pluginInstance.settings;
+      const folderSetting = settings.rootPaths?.[CRMFileType.TASK] ?? "/";
+      const normalizedFolder = normalizeFolderPath(folderSetting);
+
+      // Ensure folder exists
+      if (normalizedFolder) {
+        const existingFolder =
+          app.vault.getAbstractFileByPath(normalizedFolder);
+        if (!existingFolder) {
+          await app.vault.createFolder(normalizedFolder);
+        }
+      }
+
+      // Create file path
+      const safeBase = sanitizeFileName("Untitled");
+      const fileName = `${safeBase}.md`;
+      const filePath = normalizedFolder
+        ? `${normalizedFolder}/${fileName}`
+        : fileName;
+
+      let taskFile = app.vault.getAbstractFileByPath(filePath) as TFile | null;
+
+      if (!taskFile) {
+        const now = new Date();
+        const isoTimestamp = now.toISOString();
+        const templateSource = await getTemplateForType(
+          app,
+          settings.templates,
+          CRMFileType.TASK
+        );
+
+        const content = renderTemplate(templateSource, {
+          title: "Untitled",
+          type: String(CRMFileType.TASK),
+          filename: fileName,
+          slug: "untitled",
+          date: isoTimestamp.split("T")[0],
+          time: isoTimestamp.slice(11, 16),
+          datetime: isoTimestamp,
+        });
+
+        taskFile = await app.vault.create(filePath, content);
+      }
+
+      // Add participant link to the task
+      if (taskFile) {
+        const linkTarget = app.metadataCache.fileToLinktext(
+          hostFile,
+          taskFile.path
+        );
+        const link = `[[${linkTarget}]]`;
+        await addParticipantLink(app, taskFile, link);
+      }
+
+      // Open the task file
+      const leaf = app.workspace.getLeaf(false);
+      if (leaf && taskFile) {
+        await (leaf as any).openFile(taskFile);
+
+        // Focus and select title
+        window.setTimeout(() => {
+          if (app.workspace.getActiveFile()?.path === taskFile!.path) {
+            focusAndSelectTitle(leaf);
+          }
+        }, 150);
+      }
+    } catch (error) {
+      console.error("ParticipantTasksLinks: failed to create task", error);
+    } finally {
+      setIsCreating(false);
+    }
+  }, [app, hostFile, isCreating]);
 
   const actions = [
     {
