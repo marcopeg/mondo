@@ -18,13 +18,18 @@ type Apple = {
   velocity: number; // percent per second
 };
 
-const MAX_APPLES = 5;
+type GameEffect = {
+  id: string;
+  type: "success" | "miss";
+  x: number;
+  y: number;
+};
+
+const MAX_APPLES = 1;
 const MIN_APPLE_SIZE = 14;
 const MAX_APPLE_SIZE = 18;
 const MIN_VELOCITY = 18;
 const MAX_VELOCITY = 28;
-const TREE_MIN_X = 12;
-const TREE_MAX_X = 42;
 const START_Y = -12;
 const GROUND_Y = 95;
 
@@ -98,6 +103,7 @@ export const GameApples = (props: GameApplesProps) => {
   const [timeLeft, setTimeLeft] = useState(durationSeconds);
   const [recentScore, setRecentScore] = useState<ScoreEntry | null>(null);
   const [apples, setApples] = useState<Apple[]>([]);
+  const [effects, setEffects] = useState<GameEffect[]>([]);
 
   const animationFrameRef = useRef<number | null>(null);
   const timerTimeoutRef = useRef<number | null>(null);
@@ -106,6 +112,8 @@ export const GameApples = (props: GameApplesProps) => {
   const lastTickRef = useRef<number | null>(null);
   const endTimeRef = useRef<number>(0);
   const appleIdRef = useRef(0);
+  const effectIdRef = useRef(0);
+  const effectTimeoutsRef = useRef<Record<string, number>>({});
   const resultRecordedRef = useRef(false);
   const gameStateRef = useRef<GameState>("idle");
 
@@ -120,7 +128,7 @@ export const GameApples = (props: GameApplesProps) => {
   const bestScore = scores.length > 0 ? scores[0].score : 0;
 
   const leaderboardPreview = useMemo(
-    () => scores.slice(0, 3),
+    () => scores.slice(0, 10),
     [scores]
   );
 
@@ -151,7 +159,8 @@ export const GameApples = (props: GameApplesProps) => {
       MIN_APPLE_SIZE + Math.random() * (MAX_APPLE_SIZE - MIN_APPLE_SIZE);
     const velocity =
       MIN_VELOCITY + Math.random() * (MAX_VELOCITY - MIN_VELOCITY);
-    const x = TREE_MIN_X + Math.random() * (TREE_MAX_X - TREE_MIN_X);
+    const maxX = Math.max(0, 100 - size);
+    const x = Math.random() * maxX;
     return {
       id: `apple-${appleIdRef.current}`,
       x,
@@ -162,7 +171,7 @@ export const GameApples = (props: GameApplesProps) => {
   }, []);
 
   const scheduleNextSpawn = useCallback(
-    (options?: { immediate?: boolean }) => {
+    (options?: { immediate?: boolean; delay?: number }) => {
       if (spawnTimeoutRef.current !== null) {
         window.clearTimeout(spawnTimeoutRef.current);
         spawnTimeoutRef.current = null;
@@ -193,7 +202,8 @@ export const GameApples = (props: GameApplesProps) => {
         return;
       }
 
-      const delay = 420 + Math.random() * 1200;
+      const delay =
+        options?.delay ?? 620 + Math.random() * 1400;
       spawnTimeoutRef.current = window.setTimeout(performSpawn, delay);
     },
     [createApple]
@@ -207,18 +217,37 @@ export const GameApples = (props: GameApplesProps) => {
     []
   );
 
+  const triggerEffect = useCallback(
+    (type: "success" | "miss", center?: { x: number; y: number }) => {
+      if (!center) {
+        return;
+      }
+      effectIdRef.current += 1;
+      const id = `effect-${effectIdRef.current}`;
+      setEffects((prev) => [...prev, { id, type, x: center.x, y: center.y }]);
+      const timeout = window.setTimeout(() => {
+        setEffects((prev) => prev.filter((effect) => effect.id !== id));
+        delete effectTimeoutsRef.current[id];
+      }, type === "success" ? 800 : 600);
+      effectTimeoutsRef.current[id] = timeout;
+    },
+    []
+  );
+
   const handleAppleOutcome = useCallback(
-    (outcome: "success" | "miss") => {
+    (outcome: "success" | "miss", center?: { x: number; y: number }) => {
       if (outcome === "success") {
         setScore((current) => current + 1);
         playSuccessFeedback(effectiveMode);
+        triggerEffect("success", center);
       } else {
         setMisses((current) => current + 1);
         playSplashFeedback(effectiveMode);
+        triggerEffect("miss", center);
       }
-      scheduleNextSpawn({ immediate: true });
+      scheduleNextSpawn({ delay: outcome === "success" ? 650 : 420 });
     },
-    [effectiveMode, scheduleNextSpawn]
+    [effectiveMode, scheduleNextSpawn, triggerEffect]
   );
 
   const tickTimer = useCallback(() => {
@@ -244,12 +273,17 @@ export const GameApples = (props: GameApplesProps) => {
     setMisses(0);
     setRecentScore(null);
     setApples(() => []);
+    setEffects(() => []);
     draggingRef.current = null;
     endTimeRef.current = Date.now() + durationSeconds * 1000;
     setTimeLeft(durationSeconds);
     clearTimer();
     cancelAnimation();
     clearSpawnTimeout();
+    Object.values(effectTimeoutsRef.current).forEach((timeoutId) => {
+      window.clearTimeout(timeoutId);
+    });
+    effectTimeoutsRef.current = {};
     gameStateRef.current = "running";
     setGameState("running");
     scheduleNextSpawn({ immediate: true });
@@ -277,7 +311,12 @@ export const GameApples = (props: GameApplesProps) => {
       cancelAnimation();
       clearSpawnTimeout();
       setApples([]);
+      setEffects([]);
       draggingRef.current = null;
+      Object.values(effectTimeoutsRef.current).forEach((timeoutId) => {
+        window.clearTimeout(timeoutId);
+      });
+      effectTimeoutsRef.current = {};
     },
     [cancelAnimation, clearSpawnTimeout, clearTimer]
   );
@@ -366,7 +405,7 @@ export const GameApples = (props: GameApplesProps) => {
       const previous = lastTickRef.current ?? timestamp;
       const delta = clamp((timestamp - previous) / 1000, 0, 0.08);
       lastTickRef.current = timestamp;
-      const fallen: Apple[] = [];
+      const fallen: { apple: Apple; center: { x: number; y: number } }[] = [];
       setApples((prev) => {
         const next: Apple[] = [];
         prev.forEach((apple) => {
@@ -376,7 +415,11 @@ export const GameApples = (props: GameApplesProps) => {
           }
           const nextY = apple.y + apple.velocity * delta;
           if (nextY >= GROUND_Y) {
-            fallen.push({ ...apple, y: GROUND_Y });
+            const grounded = { ...apple, y: GROUND_Y };
+            fallen.push({
+              apple: grounded,
+              center: getAppleCenter(grounded),
+            });
           } else {
             next.push({ ...apple, y: nextY });
           }
@@ -385,8 +428,8 @@ export const GameApples = (props: GameApplesProps) => {
       });
 
       if (fallen.length > 0) {
-        fallen.forEach(() => {
-          handleAppleOutcome("miss");
+        fallen.forEach((item) => {
+          handleAppleOutcome("miss", item.center);
         });
       }
 
@@ -427,7 +470,7 @@ export const GameApples = (props: GameApplesProps) => {
 
       if (basket) {
         const basketRect = basket.getBoundingClientRect();
-        let captured = false;
+        let capturedCenter: { x: number; y: number } | null = null;
         setApples((prev) => {
           const next: Apple[] = [];
           prev.forEach((apple) => {
@@ -435,7 +478,7 @@ export const GameApples = (props: GameApplesProps) => {
               const updated = { ...apple, x, y };
               const center = getAppleCenter(updated);
               if (isInsideBasket(center.x, center.y, rect, basketRect)) {
-                captured = true;
+                capturedCenter = center;
                 return;
               }
               next.push(updated);
@@ -446,9 +489,9 @@ export const GameApples = (props: GameApplesProps) => {
           return next;
         });
 
-        if (captured) {
+        if (capturedCenter) {
           draggingRef.current = null;
-          handleAppleOutcome("success");
+          handleAppleOutcome("success", capturedCenter);
         }
         return;
       }
@@ -474,6 +517,7 @@ export const GameApples = (props: GameApplesProps) => {
       event.preventDefault();
       let dropped = false;
       let success = false;
+      let landingCenter: { x: number; y: number } | null = null;
       const basketRect = basket?.getBoundingClientRect();
       setApples((prev) => {
         const next: Apple[] = [];
@@ -481,9 +525,14 @@ export const GameApples = (props: GameApplesProps) => {
           if (apple.id === active.id) {
             dropped = true;
             const updated = { ...apple, x, y };
+            landingCenter = getAppleCenter(updated);
             if (basketRect) {
-              const center = getAppleCenter(updated);
-              success = isInsideBasket(center.x, center.y, rect, basketRect);
+              success = isInsideBasket(
+                landingCenter.x,
+                landingCenter.y,
+                rect,
+                basketRect
+              );
             }
           } else {
             next.push(apple);
@@ -494,7 +543,7 @@ export const GameApples = (props: GameApplesProps) => {
       if (!dropped) {
         return;
       }
-      handleAppleOutcome(success ? "success" : "miss");
+      handleAppleOutcome(success ? "success" : "miss", landingCenter ?? undefined);
     };
 
     window.addEventListener("pointermove", handleMove, { passive: false });
@@ -529,6 +578,15 @@ export const GameApples = (props: GameApplesProps) => {
     }
   }, [durationSeconds, gameState]);
 
+  useEffect(() => {
+    return () => {
+      Object.values(effectTimeoutsRef.current).forEach((timeoutId) => {
+        window.clearTimeout(timeoutId);
+      });
+      effectTimeoutsRef.current = {};
+    };
+  }, []);
+
   if (!ready) {
     return <InlineError message="Open a note to play the apple game." />;
   }
@@ -557,11 +615,11 @@ export const GameApples = (props: GameApplesProps) => {
         <span className="crm-game-apples-play-meta">
           Best score: {bestScore}
         </span>
-        {leaderboardPreview.length > 0 && (
-          <ul className="crm-game-apples-leaderboard" aria-label="Best results">
-            {leaderboardPreview.map((entry) => (
-              <li key={entry.recordedAt} className="crm-game-apples-leaderboard-item">
-                <span className="crm-game-apples-leaderboard-score">
+      {leaderboardPreview.length > 0 && (
+        <ul className="crm-game-apples-leaderboard" aria-label="Best results">
+          {leaderboardPreview.map((entry) => (
+            <li key={entry.recordedAt} className="crm-game-apples-leaderboard-item">
+              <span className="crm-game-apples-leaderboard-score">
                   {entry.score}
                 </span>
                 <span className="crm-game-apples-leaderboard-date">
@@ -650,6 +708,19 @@ export const GameApples = (props: GameApplesProps) => {
                   <div className="crm-game-apples-apple-shine" />
                   <div className="crm-game-apples-apple-leaf" />
                   <div className="crm-game-apples-apple-stem" />
+                </div>
+              ))}
+              {effects.map((effect) => (
+                <div
+                  key={effect.id}
+                  className={`crm-game-apples-effect crm-game-apples-effect--${effect.type}`}
+                  style={{
+                    left: `${effect.x}%`,
+                    top: `${effect.y}%`,
+                  }}
+                  aria-hidden="true"
+                >
+                  {effect.type === "success" ? "Yay!" : "Splash!"}
                 </div>
               ))}
             </div>

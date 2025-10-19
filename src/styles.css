@@ -948,6 +948,8 @@
   gap: clamp(0.6rem, 1.6vw, 1rem);
   margin: clamp(0.45rem, 1.2vw, 0.85rem) 0 0;
   padding: 0;
+  flex-wrap: wrap;
+  justify-content: center;
 }
 
 .crm-game-apples-leaderboard-item {
@@ -957,7 +959,7 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  min-width: 3.25rem;
+  min-width: clamp(3rem, 12vw, 4.75rem);
 }
 
 .crm-game-apples-leaderboard-score {
@@ -1213,6 +1215,57 @@
   height: 24%;
   border-radius: 999px;
   background: linear-gradient(180deg, #7f4b24 0%, #3d2510 100%);
+}
+
+.crm-game-apples-effect {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  font-size: clamp(1.4rem, 4vw, 2.2rem);
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  pointer-events: none;
+  animation: crm-game-apples-effect-pop 800ms cubic-bezier(0.25, 0.9, 0.3, 1)
+    forwards;
+  text-shadow: 0 3px 0 rgba(0, 0, 0, 0.2);
+}
+
+.crm-game-apples-effect--success {
+  color: #fff6a9;
+}
+
+.crm-game-apples-effect--miss {
+  color: #9ad5ff;
+  animation: crm-game-apples-effect-splash 620ms ease-out forwards;
+}
+
+@keyframes crm-game-apples-effect-pop {
+  0% {
+    transform: translate(-50%, -30%) scale(0.2);
+    opacity: 0;
+  }
+  40% {
+    transform: translate(-50%, -65%) scale(1.1);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(-50%, -100%) scale(0.9);
+    opacity: 0;
+  }
+}
+
+@keyframes crm-game-apples-effect-splash {
+  0% {
+    transform: translate(-50%, -40%) scale(0.4) rotate(-10deg);
+    opacity: 0;
+  }
+  45% {
+    transform: translate(-50%, -50%) scale(1.1) rotate(6deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(-50%, -10%) scale(0.8) rotate(0deg);
+    opacity: 0;
+  }
 }
 
 .crm-game-apples-sound {
