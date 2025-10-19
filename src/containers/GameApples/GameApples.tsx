@@ -216,15 +216,25 @@ export const GameApples = (props: GameApplesProps) => {
     setGameState("running");
   }, [cancelAnimation, clearSpawnTimeouts, clearTimer, createApple, durationSeconds]);
 
-  const closeOverlay = useCallback(() => {
-    setIsOpen(false);
-    setGameState("idle");
-    clearTimer();
-    cancelAnimation();
-    clearSpawnTimeouts();
-    setApples([]);
-    draggingRef.current = null;
-  }, [cancelAnimation, clearSpawnTimeouts, clearTimer]);
+  const closeOverlay = useCallback(
+    (options?: { skipFullscreenExit?: boolean }) => {
+      if (!options?.skipFullscreenExit) {
+        const element = containerRef.current;
+        if (element && document.fullscreenElement === element) {
+          void document.exitFullscreen().catch(() => undefined);
+        }
+      }
+
+      setIsOpen(false);
+      setGameState("idle");
+      clearTimer();
+      cancelAnimation();
+      clearSpawnTimeouts();
+      setApples([]);
+      draggingRef.current = null;
+    },
+    [cancelAnimation, clearSpawnTimeouts, clearTimer]
+  );
 
   const handlePlayClick = useCallback(() => {
     setIsOpen(true);
@@ -238,6 +248,49 @@ export const GameApples = (props: GameApplesProps) => {
   useEffect(() => {
     gameStateRef.current = gameState;
   }, [gameState]);
+
+  useEffect(() => {
+    if (!isOpen) {
+      return () => undefined;
+    }
+
+    const element = containerRef.current;
+    if (!element || typeof element.requestFullscreen !== "function") {
+      return () => undefined;
+    }
+
+    if (document.fullscreenElement !== element) {
+      const result = element.requestFullscreen();
+      if (result instanceof Promise) {
+        void result.catch(() => undefined);
+      }
+    }
+
+    return () => undefined;
+  }, [isOpen]);
+
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      const element = containerRef.current;
+      if (!element) {
+        return;
+      }
+
+      if (document.fullscreenElement === element) {
+        return;
+      }
+
+      if (isOpen) {
+        closeOverlay({ skipFullscreenExit: true });
+      }
+    };
+
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
+
+    return () => {
+      document.removeEventListener("fullscreenchange", handleFullscreenChange);
+    };
+  }, [closeOverlay, isOpen]);
 
   useEffect(() => {
     if (gameState === "running") {
@@ -455,7 +508,7 @@ export const GameApples = (props: GameApplesProps) => {
             <button
               type="button"
               className="crm-game-apples-close"
-              onClick={closeOverlay}
+              onClick={() => closeOverlay()}
               aria-label="Close game"
             >
               ×

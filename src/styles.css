@@ -967,6 +967,8 @@
   background: rgba(9, 14, 33, 0.8);
   z-index: 1000;
   display: flex;
+  width: 100vw;
+  height: 100vh;
 }
 
 .crm-game-apples-overlay-content {
@@ -977,6 +979,8 @@
   flex-direction: column;
   padding: clamp(0.75rem, 2vw, 1.25rem);
   overflow: hidden;
+  min-height: 100vh;
+  width: 100%;
 }
 
 .crm-game-apples-close {
