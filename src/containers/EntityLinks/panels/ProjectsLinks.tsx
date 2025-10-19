@@ -110,10 +110,6 @@ export const ProjectsLinks = ({ file, config }: ProjectsLinksProps) => {
     [projects]
   );
 
-  if (validProjects.length === 0) {
-    return null;
-  }
-
   const getProjectId = useCallback(
     (project: TCachedFile) => project.file?.path,
     []
@@ -152,6 +148,8 @@ export const ProjectsLinks = ({ file, config }: ProjectsLinksProps) => {
 
   const collapsed = (config as any)?.collapsed !== false;
 
+  const hasProjects = orderedProjects.length > 0;
+
   return (
     <Card
       collapsible
@@ -160,6 +158,7 @@ export const ProjectsLinks = ({ file, config }: ProjectsLinksProps) => {
       icon="folder-git-2"
       title="Projects"
       subtitle={subtitle}
+      {...(!hasProjects ? { p: 0 } : {})}
     >
       <ProjectsTable
         items={orderedProjects}

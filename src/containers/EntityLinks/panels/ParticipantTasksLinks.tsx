@@ -42,10 +42,6 @@ export const ParticipantTasksLinks = ({
     [tasks]
   );
 
-  if (validTasks.length === 0) {
-    return null;
-  }
-
   const getTaskId = useCallback(
     (task: TCachedFile) => task.file?.path,
     []
@@ -67,6 +63,8 @@ export const ParticipantTasksLinks = ({
     fallbackSort: sortTasksByLabel,
   });
 
+  const hasTasks = orderedTasks.length > 0;
+
   const entityName =
     (file.cache?.frontmatter?.show as string | undefined)?.trim() ||
     hostFile.basename;
@@ -81,6 +79,7 @@ export const ParticipantTasksLinks = ({
       icon="check-square"
       title="Tasks"
       subtitle={`Tasks referencing ${entityName}`}
+      {...(!hasTasks ? { p: 0 } : {})}
     >
       <EntityLinksTable
         items={orderedTasks}
@@ -114,6 +113,7 @@ export const ParticipantTasksLinks = ({
         sortable={sortable}
         onReorder={onReorder}
         getSortableId={(task) => task.file!.path}
+        emptyLabel="No tasks yet"
       />
     </Card>
   );

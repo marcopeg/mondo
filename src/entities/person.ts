@@ -15,6 +15,7 @@ const personConfig: CRMEntityConfig<
   | { type: "teammates"; collapsed?: boolean }
   | { type: "meetings"; collapsed?: boolean }
   | { type: "projects"; collapsed?: boolean }
+  | { type: "participant-tasks"; collapsed?: boolean }
   | { type: "facts"; collapsed?: boolean }
 > = {
   type: "person",
@@ -35,13 +36,16 @@ const personConfig: CRMEntityConfig<
       //... other configuration who'se type is specific to the "teammates" entity and that specific type should be defined in the TeammatesLinks.tsx file and similar file block by block
     },
     {
-      type: "meetings",
-    },
-    {
       type: "projects",
     },
     {
+      type: "participant-tasks",
+    },
+    {
       type: "facts",
+    },
+    {
+      type: "meetings",
     },
   ],
 };
