@@ -101,7 +101,7 @@ export const GameApples = (props: GameApplesProps) => {
 
   const animationFrameRef = useRef<number | null>(null);
   const timerTimeoutRef = useRef<number | null>(null);
-  const spawnTimeoutsRef = useRef<number[]>([]);
+  const spawnTimeoutRef = useRef<number | null>(null);
   const draggingRef = useRef<{ id: string; pointerId: number } | null>(null);
   const lastTickRef = useRef<number | null>(null);
   const endTimeRef = useRef<number>(0);
@@ -138,12 +138,10 @@ export const GameApples = (props: GameApplesProps) => {
     }
   }, []);
 
-  const clearSpawnTimeouts = useCallback(() => {
-    if (spawnTimeoutsRef.current.length > 0) {
-      spawnTimeoutsRef.current.forEach((timeoutId) => {
-        window.clearTimeout(timeoutId);
-      });
-      spawnTimeoutsRef.current = [];
+  const clearSpawnTimeout = useCallback(() => {
+    if (spawnTimeoutRef.current !== null) {
+      window.clearTimeout(spawnTimeoutRef.current);
+      spawnTimeoutRef.current = null;
     }
   }, []);
 
@@ -163,22 +161,65 @@ export const GameApples = (props: GameApplesProps) => {
     };
   }, []);
 
-  const scheduleApple = useCallback(() => {
-    if (gameStateRef.current !== "running") {
-      return;
-    }
-    const delay = 220 + Math.random() * 580;
-    const timeoutId = window.setTimeout(() => {
-      spawnTimeoutsRef.current = spawnTimeoutsRef.current.filter(
-        (value) => value !== timeoutId
-      );
+  const scheduleNextSpawn = useCallback(
+    (options?: { immediate?: boolean }) => {
+      if (spawnTimeoutRef.current !== null) {
+        window.clearTimeout(spawnTimeoutRef.current);
+        spawnTimeoutRef.current = null;
+      }
+
       if (gameStateRef.current !== "running") {
         return;
       }
-      setApples((prev) => [...prev, createApple()]);
-    }, delay);
-    spawnTimeoutsRef.current.push(timeoutId);
-  }, [createApple]);
+
+      const performSpawn = () => {
+        spawnTimeoutRef.current = null;
+        if (gameStateRef.current !== "running") {
+          return;
+        }
+        setApples((prev) => {
+          if (prev.length >= MAX_APPLES) {
+            scheduleNextSpawn();
+            return prev;
+          }
+          const nextApple = createApple();
+          scheduleNextSpawn();
+          return [...prev, nextApple];
+        });
+      };
+
+      if (options?.immediate) {
+        performSpawn();
+        return;
+      }
+
+      const delay = 420 + Math.random() * 1200;
+      spawnTimeoutRef.current = window.setTimeout(performSpawn, delay);
+    },
+    [createApple]
+  );
+
+  const getAppleCenter = useCallback(
+    (apple: Apple) => ({
+      x: apple.x + apple.size / 2,
+      y: apple.y + apple.size / 2,
+    }),
+    []
+  );
+
+  const handleAppleOutcome = useCallback(
+    (outcome: "success" | "miss") => {
+      if (outcome === "success") {
+        setScore((current) => current + 1);
+        playSuccessFeedback(effectiveMode);
+      } else {
+        setMisses((current) => current + 1);
+        playSplashFeedback(effectiveMode);
+      }
+      scheduleNextSpawn({ immediate: true });
+    },
+    [effectiveMode, scheduleNextSpawn]
+  );
 
   const tickTimer = useCallback(() => {
     if (gameStateRef.current !== "running") {
@@ -188,6 +229,7 @@ export const GameApples = (props: GameApplesProps) => {
     const remainingSeconds = Math.max(0, Math.ceil(remainingMs / 1000));
     setTimeLeft(remainingSeconds);
     if (remainingSeconds <= 0) {
+      gameStateRef.current = "ended";
       setGameState("ended");
       return;
     }
@@ -201,20 +243,23 @@ export const GameApples = (props: GameApplesProps) => {
     setScore(0);
     setMisses(0);
     setRecentScore(null);
-    setApples(() => {
-      const items: Apple[] = [];
-      for (let i = 0; i < MAX_APPLES; i += 1) {
-        items.push(createApple());
-      }
-      return items;
-    });
+    setApples(() => []);
+    draggingRef.current = null;
     endTimeRef.current = Date.now() + durationSeconds * 1000;
     setTimeLeft(durationSeconds);
     clearTimer();
     cancelAnimation();
-    clearSpawnTimeouts();
+    clearSpawnTimeout();
+    gameStateRef.current = "running";
     setGameState("running");
-  }, [cancelAnimation, clearSpawnTimeouts, clearTimer, createApple, durationSeconds]);
+    scheduleNextSpawn({ immediate: true });
+  }, [
+    cancelAnimation,
+    clearSpawnTimeout,
+    clearTimer,
+    durationSeconds,
+    scheduleNextSpawn,
+  ]);
 
   const closeOverlay = useCallback(
     (options?: { skipFullscreenExit?: boolean }) => {
@@ -226,14 +271,15 @@ export const GameApples = (props: GameApplesProps) => {
       }
 
       setIsOpen(false);
+      gameStateRef.current = "idle";
       setGameState("idle");
       clearTimer();
       cancelAnimation();
-      clearSpawnTimeouts();
+      clearSpawnTimeout();
       setApples([]);
       draggingRef.current = null;
     },
-    [cancelAnimation, clearSpawnTimeouts, clearTimer]
+    [cancelAnimation, clearSpawnTimeout, clearTimer]
   );
 
   const handlePlayClick = useCallback(() => {
@@ -248,6 +294,12 @@ export const GameApples = (props: GameApplesProps) => {
   useEffect(() => {
     gameStateRef.current = gameState;
   }, [gameState]);
+
+  useEffect(() => {
+    if (gameState !== "running") {
+      clearSpawnTimeout();
+    }
+  }, [clearSpawnTimeout, gameState]);
 
   useEffect(() => {
     if (!isOpen) {
@@ -314,10 +366,9 @@ export const GameApples = (props: GameApplesProps) => {
       const previous = lastTickRef.current ?? timestamp;
       const delta = clamp((timestamp - previous) / 1000, 0, 0.08);
       lastTickRef.current = timestamp;
-      let removed: Apple[] = [];
+      const fallen: Apple[] = [];
       setApples((prev) => {
         const next: Apple[] = [];
-        removed = [];
         prev.forEach((apple) => {
           if (draggingRef.current?.id === apple.id) {
             next.push(apple);
@@ -325,20 +376,20 @@ export const GameApples = (props: GameApplesProps) => {
           }
           const nextY = apple.y + apple.velocity * delta;
           if (nextY >= GROUND_Y) {
-            removed.push(apple);
+            fallen.push({ ...apple, y: GROUND_Y });
           } else {
             next.push({ ...apple, y: nextY });
           }
         });
         return next;
       });
-      if (removed.length > 0) {
-        setMisses((current) => current + removed.length);
-        removed.forEach(() => {
-          playSplashFeedback(effectiveMode);
-          scheduleApple();
+
+      if (fallen.length > 0) {
+        fallen.forEach(() => {
+          handleAppleOutcome("miss");
         });
       }
+
       animationFrameRef.current = window.requestAnimationFrame(step);
     };
 
@@ -348,12 +399,19 @@ export const GameApples = (props: GameApplesProps) => {
       cancelAnimation();
       lastTickRef.current = null;
     };
-  }, [cancelAnimation, effectiveMode, gameState, scheduleApple]);
+  }, [cancelAnimation, gameState, handleAppleOutcome]);
 
   useEffect(() => {
-    if (!isOpen) {
+    if (gameState !== "running") {
       return () => undefined;
     }
+
+    const container = containerRef.current;
+    if (!container) {
+      return () => undefined;
+    }
+
+    const basket = basketRef.current;
 
     const handleMove = (event: PointerEvent) => {
       const active = draggingRef.current;
@@ -363,13 +421,38 @@ export const GameApples = (props: GameApplesProps) => {
       if (gameStateRef.current !== "running") {
         return;
       }
-      const container = containerRef.current;
-      if (!container) {
-        return;
-      }
       const rect = container.getBoundingClientRect();
       const { x, y } = getPercentFromPointer(event, rect);
       event.preventDefault();
+
+      if (basket) {
+        const basketRect = basket.getBoundingClientRect();
+        let captured = false;
+        setApples((prev) => {
+          const next: Apple[] = [];
+          prev.forEach((apple) => {
+            if (apple.id === active.id) {
+              const updated = { ...apple, x, y };
+              const center = getAppleCenter(updated);
+              if (isInsideBasket(center.x, center.y, rect, basketRect)) {
+                captured = true;
+                return;
+              }
+              next.push(updated);
+            } else {
+              next.push(apple);
+            }
+          });
+          return next;
+        });
+
+        if (captured) {
+          draggingRef.current = null;
+          handleAppleOutcome("success");
+        }
+        return;
+      }
+
       setApples((prev) =>
         prev.map((apple) =>
           apple.id === active.id ? { ...apple, x, y } : apple
@@ -386,26 +469,21 @@ export const GameApples = (props: GameApplesProps) => {
       if (gameStateRef.current !== "running") {
         return;
       }
-      const container = containerRef.current;
-      const basket = basketRef.current;
-      if (!container || !basket) {
-        return;
-      }
       const rect = container.getBoundingClientRect();
-      const basketRect = basket.getBoundingClientRect();
       const { x, y } = getPercentFromPointer(event, rect);
       event.preventDefault();
       let dropped = false;
-      let successful = false;
+      let success = false;
+      const basketRect = basket?.getBoundingClientRect();
       setApples((prev) => {
         const next: Apple[] = [];
-        dropped = false;
-        successful = false;
         prev.forEach((apple) => {
           if (apple.id === active.id) {
             dropped = true;
-            if (isInsideBasket(x, y, rect, basketRect)) {
-              successful = true;
+            const updated = { ...apple, x, y };
+            if (basketRect) {
+              const center = getAppleCenter(updated);
+              success = isInsideBasket(center.x, center.y, rect, basketRect);
             }
           } else {
             next.push(apple);
@@ -416,14 +494,7 @@ export const GameApples = (props: GameApplesProps) => {
       if (!dropped) {
         return;
       }
-      if (successful) {
-        setScore((current) => current + 1);
-        playSuccessFeedback(effectiveMode);
-      } else {
-        setMisses((current) => current + 1);
-        playSplashFeedback(effectiveMode);
-      }
-      scheduleApple();
+      handleAppleOutcome(success ? "success" : "miss");
     };
 
     window.addEventListener("pointermove", handleMove, { passive: false });
@@ -435,7 +506,7 @@ export const GameApples = (props: GameApplesProps) => {
       window.removeEventListener("pointerup", handleEnd);
       window.removeEventListener("pointercancel", handleEnd);
     };
-  }, [effectiveMode, isOpen, scheduleApple]);
+  }, [gameState, getAppleCenter, handleAppleOutcome]);
 
   useEffect(() => {
     if (gameState !== "ended" || resultRecordedRef.current) {

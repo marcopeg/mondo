@@ -855,7 +855,10 @@
   --crm-game-apples-secondary: color-mix(in srgb, var(--interactive-accent) 30%, #5bcefa);
   border: 2px solid var(--crm-game-apples-accent);
   border-radius: 1.25rem;
-  padding: 1rem;
+  padding: clamp(1.5rem, 4vw, 2.75rem);
+  width: min(100%, 760px);
+  margin: clamp(0.75rem, 2vw, 1.75rem) auto;
+  min-height: clamp(14rem, 34vw, 21rem);
   background:
     radial-gradient(circle at top left, color-mix(in srgb, var(--crm-game-apples-secondary) 45%, transparent) 0%, transparent 55%),
     linear-gradient(135deg, color-mix(in srgb, var(--crm-game-apples-accent) 25%, transparent) 0%, transparent 60%),
@@ -865,40 +868,44 @@
     inset 0 0 0 1px color-mix(in srgb, var(--crm-game-apples-accent) 30%, transparent);
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: clamp(0.75rem, 2vw, 1.5rem);
 }
 
 .crm-game-apples-header {
   text-align: center;
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  align-items: center;
+  gap: clamp(0.35rem, 1vw, 0.75rem);
 }
 
 .crm-game-apples-title {
-  font-size: 1.45rem;
+  font-size: clamp(1.6rem, 3vw, 2.1rem);
   font-weight: 700;
   color: color-mix(in srgb, var(--crm-game-apples-accent) 90%, var(--text-normal));
   letter-spacing: 0.02em;
 }
 
 .crm-game-apples-subtitle {
-  font-size: 0.95rem;
+  font-size: clamp(1rem, 1.8vw, 1.2rem);
   color: var(--text-muted);
 }
 
 .crm-game-apples-play {
   border: none;
   border-radius: 1rem;
-  padding: 1.25rem;
+  padding: clamp(1.5rem, 4vw, 2.6rem);
   background: linear-gradient(135deg, #ff6f61 0%, #ffb347 45%, #ffd97d 100%);
   color: #2d1f10;
   font-weight: 700;
-  font-size: 1.1rem;
+  font-size: clamp(1.2rem, 2.2vw, 1.45rem);
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.4rem;
+  justify-content: center;
+  gap: clamp(0.45rem, 1.2vw, 0.85rem);
+  width: 100%;
+  min-height: clamp(5.5rem, 16vw, 7.75rem);
   cursor: pointer;
   box-shadow:
     0 14px 24px rgba(255, 111, 97, 0.35),
@@ -918,33 +925,35 @@
 }
 
 .crm-game-apples-play-icon {
-  font-size: 2rem;
+  font-size: clamp(2.4rem, 6vw, 3.25rem);
   filter: drop-shadow(0 2px 0 rgba(0, 0, 0, 0.12));
 }
 
 .crm-game-apples-play-label {
-  font-size: 1.25rem;
+  font-size: clamp(1.3rem, 2.6vw, 1.65rem);
   text-transform: uppercase;
   letter-spacing: 0.08em;
 }
 
 .crm-game-apples-play-meta {
-  font-size: 0.95rem;
+  font-size: clamp(1rem, 2vw, 1.2rem);
   color: rgba(0, 0, 0, 0.65);
+  font-weight: 600;
+  letter-spacing: 0.04em;
 }
 
 .crm-game-apples-leaderboard {
   list-style: none;
   display: flex;
-  gap: 0.6rem;
-  margin: 0.4rem 0 0;
+  gap: clamp(0.6rem, 1.6vw, 1rem);
+  margin: clamp(0.45rem, 1.2vw, 0.85rem) 0 0;
   padding: 0;
 }
 
 .crm-game-apples-leaderboard-item {
   background: rgba(255, 255, 255, 0.4);
   border-radius: 0.75rem;
-  padding: 0.35rem 0.6rem;
+  padding: clamp(0.35rem, 1vw, 0.55rem) clamp(0.6rem, 1.4vw, 0.85rem);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -952,12 +961,12 @@
 }
 
 .crm-game-apples-leaderboard-score {
-  font-size: 1.15rem;
+  font-size: clamp(1.2rem, 2.2vw, 1.4rem);
   font-weight: 700;
 }
 
 .crm-game-apples-leaderboard-date {
-  font-size: 0.75rem;
+  font-size: clamp(0.75rem, 1.4vw, 0.9rem);
   color: rgba(0, 0, 0, 0.7);
 }
 

@@ -10,12 +10,37 @@ type WindowWithAudioContext = Window & {
   webkitAudioContext?: typeof AudioContext;
 };
 
+let sharedContext: AudioContext | null = null;
+
 const getAudioContextConstructor = (): typeof AudioContext | undefined => {
   if (typeof window === "undefined") {
     return undefined;
   }
   const w = window as WindowWithAudioContext;
   return window.AudioContext ?? w.webkitAudioContext;
+};
+
+const getSharedAudioContext = (): AudioContext | null => {
+  const Ctor = getAudioContextConstructor();
+  if (!Ctor) {
+    return null;
+  }
+
+  if (sharedContext && sharedContext.state === "closed") {
+    sharedContext = null;
+  }
+
+  if (!sharedContext) {
+    try {
+      sharedContext = new Ctor();
+    } catch (error) {
+      console.error("GameApples: unable to create audio context", error);
+      sharedContext = null;
+      return null;
+    }
+  }
+
+  return sharedContext;
 };
 
 const withAudioContext = (
@@ -25,30 +50,27 @@ const withAudioContext = (
   if (!shouldPlayAudio(mode)) {
     return;
   }
-  const Ctor = getAudioContextConstructor();
-  if (!Ctor) {
+  const ctx = getSharedAudioContext();
+  if (!ctx) {
     return;
   }
-  try {
-    const ctx = new Ctor();
-    const schedule = () => {
-      try {
-        run(ctx);
-      } catch (error) {
-        console.error("GameApples: failed to play sound", error);
-        void ctx.close().catch(() => undefined);
-      }
-    };
-    if (typeof ctx.resume === "function" && ctx.state === "suspended") {
-      ctx
-        .resume()
-        .then(schedule)
-        .catch(schedule);
-    } else {
-      schedule();
+  const schedule = () => {
+    try {
+      run(ctx);
+    } catch (error) {
+      console.error("GameApples: failed to play sound", error);
     }
-  } catch (error) {
-    console.error("GameApples: unable to create audio context", error);
+  };
+  if (typeof ctx.resume === "function" && ctx.state === "suspended") {
+    ctx
+      .resume()
+      .then(schedule)
+      .catch((error) => {
+        console.error("GameApples: unable to resume audio context", error);
+        schedule();
+      });
+  } else {
+    schedule();
   }
 };
 
@@ -75,11 +97,12 @@ export const playGrabFeedback = (mode: HepticMode) => {
     gain.connect(ctx.destination);
     const end = now + 0.12;
     gain.gain.exponentialRampToValueAtTime(0.001, end);
+    osc.onended = () => {
+      osc.disconnect();
+      gain.disconnect();
+    };
     osc.start(now);
     osc.stop(end);
-    osc.onended = () => {
-      void ctx.close().catch(() => undefined);
-    };
   });
 };
 
@@ -96,11 +119,12 @@ export const playSuccessFeedback = (mode: HepticMode) => {
     gain.gain.exponentialRampToValueAtTime(0.001, now + 0.45);
     osc.connect(gain);
     gain.connect(ctx.destination);
+    osc.onended = () => {
+      osc.disconnect();
+      gain.disconnect();
+    };
     osc.start(now);
     osc.stop(now + 0.45);
-    osc.onended = () => {
-      void ctx.close().catch(() => undefined);
-    };
   });
 };
 
@@ -117,10 +141,11 @@ export const playSplashFeedback = (mode: HepticMode) => {
     gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
     osc.connect(gain);
     gain.connect(ctx.destination);
+    osc.onended = () => {
+      osc.disconnect();
+      gain.disconnect();
+    };
     osc.start(now);
     osc.stop(now + 0.3);
-    osc.onended = () => {
-      void ctx.close().catch(() => undefined);
-    };
   });
 };
