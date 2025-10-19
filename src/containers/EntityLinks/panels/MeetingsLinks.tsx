@@ -152,7 +152,6 @@ export const MeetingsLinks = ({ file, config }: MeetingsLinksProps) => {
       ]
     : [];
 
-  const hasMeetings = meetings.length > 0;
   const collapsed = (config as any)?.collapsed !== false;
 
   return (
@@ -164,9 +163,9 @@ export const MeetingsLinks = ({ file, config }: MeetingsLinksProps) => {
       title="Meetings"
       subtitle={subtitle}
       actions={actions}
-      {...(!hasMeetings ? { p: 0 } : {})}
+      {...(meetings.length === 0 ? { p: 0 } : {})}
     >
-      {hasMeetings ? <MeetingsTable items={meetings} /> : null}
+      <MeetingsTable items={meetings} emptyLabel="No meetings yet" />
     </Card>
   );
 };

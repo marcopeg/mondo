@@ -9,6 +9,7 @@ import { useEntityLinkOrdering } from "@/hooks/use-entity-link-ordering";
 import { CRMFileType } from "@/types/CRMFileType";
 import { matchesPropertyLink } from "@/utils/matchesPropertyLink";
 import { getTaskLabel, getTaskStatus } from "@/utils/taskMetadata";
+import { getEntityDisplayName } from "@/utils/getEntityDisplayName";
 import type { TCachedFile } from "@/types/TCachedFile";
 import type { App } from "obsidian";
 
@@ -22,14 +23,14 @@ export const ParticipantTasksLinks = ({
   config,
 }: ParticipantTasksLinksProps) => {
   const hostFile = file.file;
-  if (!hostFile) {
-    return null;
-  }
+
+  const collapsed = (config as any)?.collapsed !== false;
+  const entityName = getEntityDisplayName(file);
 
   const tasks = useFiles(CRMFileType.TASK, {
     filter: useCallback(
       (candidate: TCachedFile, _app: App) => {
-        if (!candidate.file || candidate.file.path === hostFile.path)
+        if (!hostFile || !candidate.file || candidate.file.path === hostFile.path)
           return false;
         return matchesPropertyLink(candidate, "participants", hostFile);
       },
@@ -65,11 +66,22 @@ export const ParticipantTasksLinks = ({
 
   const hasTasks = orderedTasks.length > 0;
 
-  const entityName =
-    (file.cache?.frontmatter?.show as string | undefined)?.trim() ||
-    hostFile.basename;
-
-  const collapsed = (config as any)?.collapsed !== false;
+  if (!hostFile) {
+    return (
+      <Card
+        collapsible
+        collapsed={collapsed}
+        collapseOnHeaderClick
+        icon="check-square"
+        title="Tasks"
+        subtitle={`Tasks referencing ${entityName}`}
+      >
+        <div className="px-2 py-2 text-xs text-[var(--text-muted)]">
+          Save this note to start linking tasks.
+        </div>
+      </Card>
+    );
+  }
 
   return (
     <Card

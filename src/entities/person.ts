@@ -37,15 +37,19 @@ const personConfig: CRMEntityConfig<
     },
     {
       type: "projects",
+      collapsed: false,
     },
     {
       type: "participant-tasks",
+      collapsed: false,
     },
     {
       type: "facts",
+      collapsed: false,
     },
     {
       type: "meetings",
+      collapsed: false,
     },
   ],
 };
