@@ -1,5 +1,6 @@
 import { useCallback, useMemo } from "react";
 import { Card } from "@/components/ui/Card";
+import { Button } from "@/components/ui/Button";
 import PeopleTable from "@/components/PeopleTable";
 import { useFiles } from "@/hooks/use-files";
 import { CRMFileType } from "@/types/CRMFileType";
@@ -30,7 +31,11 @@ export const TeammatesLinks = ({ file, config }: TeammatesLinksProps) => {
         if (value.startsWith("[[") && value.endsWith("]]")) {
           value = value.slice(2, -2);
         }
-        value = value.split("|")[0].split("#")[0].replace(/\\.md$/i, "").trim();
+        value = value
+          .split("|")[0]
+          .split("#")[0]
+          .replace(/\\.md$/i, "")
+          .trim();
         return value || null;
       })
       .filter(Boolean) as string[];
@@ -108,7 +113,6 @@ export const TeammatesLinks = ({ file, config }: TeammatesLinksProps) => {
       collapseOnHeaderClick
       icon="users"
       title="Teammates"
-      subtitle={`People who share a team with ${file.file.basename}`}
     >
       <PeopleTable items={teammates} />
     </Card>

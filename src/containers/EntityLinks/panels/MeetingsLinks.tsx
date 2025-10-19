@@ -29,7 +29,11 @@ export const MeetingsLinks = ({ file, config }: MeetingsLinksProps) => {
 
         switch (entityType) {
           case "person":
-            return matchesPropertyLink(meetingCached, "participants", file.file);
+            return matchesPropertyLink(
+              meetingCached,
+              "participants",
+              file.file
+            );
           case "team":
             return (
               matchesPropertyLink(meetingCached, "team", file.file) ||
@@ -48,23 +52,7 @@ export const MeetingsLinks = ({ file, config }: MeetingsLinksProps) => {
   });
 
   const displayName =
-    (file.cache?.frontmatter?.show as string | undefined) ??
-    file.file.basename;
-
-  const subtitle = (() => {
-    switch (entityType) {
-      case "person":
-        return `Meetings referencing ${displayName}`;
-      case "team":
-        return "Meetings involving this team";
-      case "project":
-        return "Meetings associated with this project";
-      case "location":
-        return "Meetings at this location";
-      default:
-        return "Meetings";
-    }
-  })();
+    (file.cache?.frontmatter?.show as string | undefined) ?? file.file.basename;
 
   const linkTargets = useMemo<MeetingLinkTarget[]>(() => {
     if (!file?.file || !entityType) {
@@ -135,22 +123,23 @@ export const MeetingsLinks = ({ file, config }: MeetingsLinksProps) => {
     })();
   }, [app, entityType, file, linkTargets]);
 
-  const actions = linkTargets.length > 0
-    ? [
-        {
-          key: "meeting-create",
-          content: (
-            <Button
-              variant="link"
-              icon="plus"
-              aria-label="Create meeting"
-              onClick={handleAddMeeting}
-              disabled={!file?.file}
-            />
-          ),
-        },
-      ]
-    : [];
+  const actions =
+    linkTargets.length > 0
+      ? [
+          {
+            key: "meeting-create",
+            content: (
+              <Button
+                variant="link"
+                icon="plus"
+                aria-label="Create meeting"
+                onClick={handleAddMeeting}
+                disabled={!file?.file}
+              />
+            ),
+          },
+        ]
+      : [];
 
   const collapsed = (config as any)?.collapsed !== false;
 
@@ -161,7 +150,6 @@ export const MeetingsLinks = ({ file, config }: MeetingsLinksProps) => {
       collapseOnHeaderClick
       icon="calendar"
       title="Meetings"
-      subtitle={subtitle}
       actions={actions}
       {...(meetings.length === 0 ? { p: 0 } : {})}
     >

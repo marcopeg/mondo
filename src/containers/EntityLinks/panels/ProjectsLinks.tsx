@@ -1,5 +1,6 @@
 import { useCallback, useMemo } from "react";
 import { Card } from "@/components/ui/Card";
+import { Button } from "@/components/ui/Button";
 import ProjectsTable from "@/components/ProjectsTable";
 import { useFiles } from "@/hooks/use-files";
 import { useApp } from "@/hooks/use-app";
@@ -123,7 +124,11 @@ export const ProjectsLinks = ({ file, config }: ProjectsLinksProps) => {
     });
   }, []);
 
-  const { items: orderedProjects, onReorder, sortable } = useEntityLinkOrdering({
+  const {
+    items: orderedProjects,
+    onReorder,
+    sortable,
+  } = useEntityLinkOrdering({
     file,
     items: validProjects,
     frontmatterKey: "projects",
@@ -131,24 +136,27 @@ export const ProjectsLinks = ({ file, config }: ProjectsLinksProps) => {
     fallbackSort: sortProjectsByLabel,
   });
 
-  const displayName = getDisplayName(file);
-
-  const subtitle = (() => {
-    switch (entityType) {
-      case "company":
-        return `Projects linked to ${displayName}`;
-      case "team":
-        return `Projects involving this team`;
-      case "person":
-        return `Projects associated with ${displayName}`;
-      default:
-        return "Related projects";
-    }
-  })();
-
   const collapsed = (config as any)?.collapsed !== false;
 
   const hasProjects = orderedProjects.length > 0;
+
+  const handleCreateProject = useCallback(() => {
+    // TODO: Implement project creation
+  }, []);
+
+  const actions = [
+    {
+      key: "project-create",
+      content: (
+        <Button
+          variant="link"
+          icon="plus"
+          aria-label="Create project"
+          onClick={handleCreateProject}
+        />
+      ),
+    },
+  ];
 
   return (
     <Card
@@ -157,7 +165,7 @@ export const ProjectsLinks = ({ file, config }: ProjectsLinksProps) => {
       collapseOnHeaderClick
       icon="folder-git-2"
       title="Projects"
-      subtitle={subtitle}
+      actions={actions}
       {...(!hasProjects ? { p: 0 } : {})}
     >
       <ProjectsTable

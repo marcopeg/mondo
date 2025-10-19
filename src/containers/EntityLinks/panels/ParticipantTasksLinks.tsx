@@ -30,7 +30,11 @@ export const ParticipantTasksLinks = ({
   const tasks = useFiles(CRMFileType.TASK, {
     filter: useCallback(
       (candidate: TCachedFile, _app: App) => {
-        if (!hostFile || !candidate.file || candidate.file.path === hostFile.path)
+        if (
+          !hostFile ||
+          !candidate.file ||
+          candidate.file.path === hostFile.path
+        )
           return false;
         return matchesPropertyLink(candidate, "participants", hostFile);
       },
@@ -43,10 +47,7 @@ export const ParticipantTasksLinks = ({
     [tasks]
   );
 
-  const getTaskId = useCallback(
-    (task: TCachedFile) => task.file?.path,
-    []
-  );
+  const getTaskId = useCallback((task: TCachedFile) => task.file?.path, []);
 
   const sortTasksByLabel = useCallback((entries: TCachedFile[]) => {
     return [...entries].sort((a, b) => {
@@ -56,7 +57,11 @@ export const ParticipantTasksLinks = ({
     });
   }, []);
 
-  const { items: orderedTasks, onReorder, sortable } = useEntityLinkOrdering({
+  const {
+    items: orderedTasks,
+    onReorder,
+    sortable,
+  } = useEntityLinkOrdering({
     file,
     items: validTasks,
     frontmatterKey: "tasks",
@@ -74,7 +79,6 @@ export const ParticipantTasksLinks = ({
         collapseOnHeaderClick
         icon="check-square"
         title="Tasks"
-        subtitle={`Tasks referencing ${entityName}`}
       >
         <div className="px-2 py-2 text-xs text-[var(--text-muted)]">
           Save this note to start linking tasks.
@@ -83,6 +87,24 @@ export const ParticipantTasksLinks = ({
     );
   }
 
+  const handleCreateTask = useCallback(() => {
+    // TODO: Implement task creation
+  }, []);
+
+  const actions = [
+    {
+      key: "task-create",
+      content: (
+        <Button
+          variant="link"
+          icon="plus"
+          aria-label="Create task"
+          onClick={handleCreateTask}
+        />
+      ),
+    },
+  ];
+
   return (
     <Card
       collapsible
@@ -90,7 +112,7 @@ export const ParticipantTasksLinks = ({
       collapseOnHeaderClick
       icon="check-square"
       title="Tasks"
-      subtitle={`Tasks referencing ${entityName}`}
+      actions={actions}
       {...(!hasTasks ? { p: 0 } : {})}
     >
       <EntityLinksTable

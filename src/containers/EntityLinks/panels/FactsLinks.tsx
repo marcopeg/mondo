@@ -236,8 +236,6 @@ export const FactsLinks = ({ file, config }: FactsLinksProps) => {
     [displayFacts]
   );
 
-  const entityName = getEntityDisplayName(file);
-  const subtitle = linkRule.subtitle(entityName);
   const collapsed = (config as any)?.collapsed !== false;
 
   const persistOrder = useCallback(
@@ -320,7 +318,6 @@ export const FactsLinks = ({ file, config }: FactsLinksProps) => {
       collapseOnHeaderClick
       icon="bookmark"
       title="Facts"
-      subtitle={subtitle}
       actions={actions}
     >
       <EntityLinksTable
