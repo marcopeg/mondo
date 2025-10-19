@@ -34,6 +34,19 @@ timer?duration=20&interval=0&title=Deep%20Work&color=#55aaff
 
 ```
 
+### Timer with sound + vibration cues
+
+```
+
+```crm
+timer?duration=15&interval=5&heptic=both
+```
+
+```
+
+- Plays a chime when you start, a cue when it is time to rest, and minute beeps if `step` is configured.
+- `heptic=both` enables tones and vibrations (where supported). Use `heptic=sound` to play tones without vibration.
+
 ### Multi‑step Time Plan
 
 ```
@@ -96,8 +109,10 @@ You can pass these as inline query parameters (e.g., `timer?duration=25`) or as 
   - Omit, `""`, or `"true"` → infinite looping
   - `"false"` → no looping (stop at the end)
   - numeric string (e.g., `"3"`) → finite number of loops
-- `heptic` (string): Feedback mode for audio/vibration cues.
-  - `"audio"` | `"vibration"` | `"both"` (default: `"audio"`)
+- `heptic` (string): Feedback mode for audio/vibration cues (default: `"audio"`).
+  - `"audio"` (alias: `"sound"`) — play tones only
+  - `"vibration"` — vibration only (if supported by the device)
+  - `"both"` — play tones and vibrate (default)
 
 ### `time-plan` steps
 
@@ -152,7 +167,7 @@ steps:
 ## Troubleshooting
 
 - The button is disabled: Ensure `duration` is > 0 (for `timer`) or your first plan step has `duration` > 0.
-- No audio: Some platforms block auto‑play. Interact with the page first (click start) and ensure `heptic` includes `audio`.
+- No audio: Make sure your device isn’t muted. Mobile browsers may require an initial tap before sounds are allowed, but the timer automatically resumes audio playback once you start it. Confirm `heptic` is set to `audio`, `sound`, or `both`.
 - No vibration: Desktop browsers may not support `navigator.vibrate`. Use `heptic=audio` or `heptic=both` for audio feedback.
 - Screen turning off: Wake Lock is best‑effort and may not be available on your platform.
 

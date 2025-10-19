@@ -125,6 +125,32 @@ const shouldVibrate = (mode: HepticMode) =>
 const shouldPlayAudio = (mode: HepticMode) =>
   mode === "audio" || mode === "both";
 
+const withAudioContext = (mode: HepticMode, run: (ctx: AudioContext) => void) => {
+  if (!shouldPlayAudio(mode)) return;
+  const Ctor = getAudioContextConstructor();
+  if (!Ctor) return;
+  try {
+    const ctx = new Ctor();
+    const schedule = () => {
+      try {
+        run(ctx);
+      } catch {
+        void ctx.close().catch(() => undefined);
+      }
+    };
+    if (typeof ctx.resume === "function" && ctx.state === "suspended") {
+      ctx
+        .resume()
+        .then(schedule)
+        .catch(schedule);
+    } else {
+      schedule();
+    }
+  } catch {
+    // ignore
+  }
+};
+
 const triggerVibration = (pattern: number | number[], mode: HepticMode) => {
   if (!shouldVibrate(mode)) return;
   if (
@@ -137,35 +163,35 @@ const triggerVibration = (pattern: number | number[], mode: HepticMode) => {
 
 const triggerShortBeep = (mode: HepticMode) => {
   triggerVibration(180, mode);
-  if (!shouldPlayAudio(mode)) return;
-  const Ctor = getAudioContextConstructor();
-  if (!Ctor) return;
-  try {
-    const ctx = new Ctor();
+  withAudioContext(mode, (ctx) => {
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
+    const start = ctx.currentTime;
+    const duration = 0.18;
     osc.type = "sine";
-    osc.frequency.setValueAtTime(880, ctx.currentTime);
-    gain.gain.setValueAtTime(0.18, ctx.currentTime);
+    osc.frequency.setValueAtTime(880, start);
+    gain.gain.setValueAtTime(0.18, start);
     osc.connect(gain);
     gain.connect(ctx.destination);
-    const d = 0.18;
-    osc.start();
-    gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + d);
-    osc.stop(ctx.currentTime + d);
-    osc.addEventListener("ended", () => ctx.close().catch(() => undefined));
-  } catch {
-    // ignore
-  }
+    const stopAt = start + duration;
+    osc.start(start);
+    gain.gain.exponentialRampToValueAtTime(0.0001, stopAt);
+    osc.stop(stopAt);
+    if (typeof osc.addEventListener === "function") {
+      osc.addEventListener("ended", () =>
+        ctx.close().catch(() => undefined)
+      );
+    } else {
+      osc.onended = () => {
+        void ctx.close().catch(() => undefined);
+      };
+    }
+  });
 };
 
 const triggerHappyChime = (mode: HepticMode) => {
   triggerVibration([140, 80, 200], mode);
-  if (!shouldPlayAudio(mode)) return;
-  const Ctor = getAudioContextConstructor();
-  if (!Ctor) return;
-  try {
-    const ctx = new Ctor();
+  withAudioContext(mode, (ctx) => {
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
     const now = ctx.currentTime;
@@ -174,23 +200,26 @@ const triggerHappyChime = (mode: HepticMode) => {
     gain.gain.setValueAtTime(0.18, now);
     osc.connect(gain);
     gain.connect(ctx.destination);
-    const d = 0.5;
+    const duration = 0.5;
+    const stopAt = now + duration;
     osc.start(now);
-    gain.gain.exponentialRampToValueAtTime(0.0001, now + d);
-    osc.stop(now + d);
-    osc.addEventListener("ended", () => ctx.close().catch(() => undefined));
-  } catch {
-    // ignore
-  }
+    gain.gain.exponentialRampToValueAtTime(0.0001, stopAt);
+    osc.stop(stopAt);
+    if (typeof osc.addEventListener === "function") {
+      osc.addEventListener("ended", () =>
+        ctx.close().catch(() => undefined)
+      );
+    } else {
+      osc.onended = () => {
+        void ctx.close().catch(() => undefined);
+      };
+    }
+  });
 };
 
 const triggerRestCue = (mode: HepticMode) => {
   triggerVibration([250, 100, 250], mode);
-  if (!shouldPlayAudio(mode)) return;
-  const Ctor = getAudioContextConstructor();
-  if (!Ctor) return;
-  try {
-    const ctx = new Ctor();
+  withAudioContext(mode, (ctx) => {
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
     const now = ctx.currentTime;
@@ -199,14 +228,21 @@ const triggerRestCue = (mode: HepticMode) => {
     gain.gain.setValueAtTime(0.2, now);
     osc.connect(gain);
     gain.connect(ctx.destination);
-    const d = 0.5;
+    const duration = 0.5;
+    const stopAt = now + duration;
     osc.start(now);
-    gain.gain.exponentialRampToValueAtTime(0.0001, now + d);
-    osc.stop(now + d);
-    osc.addEventListener("ended", () => ctx.close().catch(() => undefined));
-  } catch {
-    // ignore
-  }
+    gain.gain.exponentialRampToValueAtTime(0.0001, stopAt);
+    osc.stop(stopAt);
+    if (typeof osc.addEventListener === "function") {
+      osc.addEventListener("ended", () =>
+        ctx.close().catch(() => undefined)
+      );
+    } else {
+      osc.onended = () => {
+        void ctx.close().catch(() => undefined);
+      };
+    }
+  });
 };
 
 const stopFeedback = (mode: HepticMode) => {
@@ -242,6 +278,7 @@ export const useTimerBlock = (props: TimerBlockProps): TimerBlockController => {
   const hepticMode: HepticMode = useMemo(() => {
     const raw =
       typeof props.heptic === "string" ? props.heptic.toLowerCase() : "";
+    if (raw === "sound") return "audio";
     return raw === "audio" || raw === "vibration" || raw === "both"
       ? raw
       : "audio";
