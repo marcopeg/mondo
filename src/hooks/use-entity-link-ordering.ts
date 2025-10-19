@@ -16,7 +16,7 @@ interface UseEntityLinkOrderingResult<TItem> {
   sortable: boolean;
 }
 
-export const useEntityLinkOrdering = <TItem,>(
+export const useEntityLinkOrdering = <TItem>(
   options: UseEntityLinkOrderingOptions<TItem>
 ): UseEntityLinkOrderingResult<TItem> => {
   const { file, items, frontmatterKey, getItemId, fallbackSort } = options;
@@ -31,7 +31,8 @@ export const useEntityLinkOrdering = <TItem,>(
     const frontmatter = file.cache?.frontmatter as
       | Record<string, unknown>
       | undefined;
-    const raw = frontmatter?.[frontmatterKey];
+    const priorityKey = `${frontmatterKey}Priority`;
+    const raw = frontmatter?.[priorityKey];
 
     if (!raw) {
       return [] as string[];
@@ -109,18 +110,20 @@ export const useEntityLinkOrdering = <TItem,>(
         .map((item) => getItemId(item))
         .filter((id): id is string => Boolean(id));
 
+      const priorityKey = `${frontmatterKey}Priority`;
+
       void (async () => {
         try {
           await app.fileManager.processFrontMatter(hostFile, (frontmatter) => {
             if (ids.length > 0) {
-              frontmatter[frontmatterKey] = ids;
+              frontmatter[priorityKey] = ids;
             } else {
-              delete frontmatter[frontmatterKey];
+              delete frontmatter[priorityKey];
             }
           });
         } catch (error) {
           console.error(
-            `useEntityLinkOrdering: failed to persist order for "${frontmatterKey}"`,
+            `useEntityLinkOrdering: failed to persist order for "${priorityKey}"`,
             error
           );
         }

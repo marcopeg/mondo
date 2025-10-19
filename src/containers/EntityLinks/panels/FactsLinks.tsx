@@ -76,9 +76,10 @@ const getFactDate = (fact: TCachedFile): Date | null => {
   const timeValue = frontmatter.time;
 
   if (typeof dateValue === "string") {
-    const candidate = typeof timeValue === "string"
-      ? new Date(`${dateValue}T${timeValue}`)
-      : new Date(dateValue);
+    const candidate =
+      typeof timeValue === "string"
+        ? new Date(`${dateValue}T${timeValue}`)
+        : new Date(dateValue);
     if (!Number.isNaN(candidate.getTime())) {
       return candidate;
     }
@@ -153,7 +154,7 @@ export const FactsLinks = ({ file, config }: FactsLinksProps) => {
     const frontmatter = file.cache?.frontmatter as
       | Record<string, unknown>
       | undefined;
-    const raw = frontmatter?.facts;
+    const raw = frontmatter?.factsPriority;
 
     if (!raw) {
       return [] as string[];
@@ -170,7 +171,7 @@ export const FactsLinks = ({ file, config }: FactsLinksProps) => {
     }
 
     return [] as string[];
-  }, [file.cache?.frontmatter?.facts]);
+  }, [file.cache?.frontmatter?.factsPriority]);
 
   const fallbackSortedFacts = useMemo(() => {
     return [...facts].sort((a, b) => {
@@ -253,9 +254,9 @@ export const FactsLinks = ({ file, config }: FactsLinksProps) => {
         try {
           await app.fileManager.processFrontMatter(hostFile, (frontmatter) => {
             if (paths.length > 0) {
-              frontmatter.facts = paths;
+              frontmatter.factsPriority = paths;
             } else {
-              delete frontmatter.facts;
+              delete frontmatter.factsPriority;
             }
           });
         } catch (error) {
