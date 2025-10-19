@@ -3,10 +3,12 @@ import { Card } from "@/components/ui/Card";
 import ProjectsTable from "@/components/ProjectsTable";
 import { useFiles } from "@/hooks/use-files";
 import { useApp } from "@/hooks/use-app";
+import { useEntityLinkOrdering } from "@/hooks/use-entity-link-ordering";
 import { CRMFileType } from "@/types/CRMFileType";
 import { matchesPropertyLink } from "@/utils/matchesPropertyLink";
 import type { TCachedFile } from "@/types/TCachedFile";
 import type { App, TFile } from "obsidian";
+import { getProjectDisplayLabel } from "@/utils/getProjectDisplayInfo";
 
 type ProjectsLinksProps = {
   config: Record<string, unknown>;
@@ -103,9 +105,35 @@ export const ProjectsLinks = ({ file, config }: ProjectsLinksProps) => {
     ),
   });
 
-  if (projects.length === 0) {
+  const validProjects = useMemo(
+    () => projects.filter((project) => Boolean(project.file)),
+    [projects]
+  );
+
+  if (validProjects.length === 0) {
     return null;
   }
+
+  const getProjectId = useCallback(
+    (project: TCachedFile) => project.file?.path,
+    []
+  );
+
+  const sortProjectsByLabel = useCallback((entries: TCachedFile[]) => {
+    return [...entries].sort((a, b) => {
+      const labelA = getProjectDisplayLabel(a).toLowerCase();
+      const labelB = getProjectDisplayLabel(b).toLowerCase();
+      return labelA.localeCompare(labelB);
+    });
+  }, []);
+
+  const { items: orderedProjects, onReorder, sortable } = useEntityLinkOrdering({
+    file,
+    items: validProjects,
+    frontmatterKey: "projects",
+    getItemId: getProjectId,
+    fallbackSort: sortProjectsByLabel,
+  });
 
   const displayName = getDisplayName(file);
 
@@ -133,7 +161,12 @@ export const ProjectsLinks = ({ file, config }: ProjectsLinksProps) => {
       title="Projects"
       subtitle={subtitle}
     >
-      <ProjectsTable items={projects} />
+      <ProjectsTable
+        items={orderedProjects}
+        sortable={sortable}
+        onReorder={onReorder}
+        getSortableId={(project) => project.file!.path}
+      />
     </Card>
   );
 };
