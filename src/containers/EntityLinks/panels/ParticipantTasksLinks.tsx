@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/Button";
 import { Typography } from "@/components/ui/Typography";
 import { EntityLinksTable } from "@/components/EntityLinksTable";
 import { useFiles } from "@/hooks/use-files";
+import { useEntityLinkOrdering } from "@/hooks/use-entity-link-ordering";
 import { CRMFileType } from "@/types/CRMFileType";
 import { matchesPropertyLink } from "@/utils/matchesPropertyLink";
 import { getTaskLabel, getTaskStatus } from "@/utils/taskMetadata";
@@ -45,6 +46,27 @@ export const ParticipantTasksLinks = ({
     return null;
   }
 
+  const getTaskId = useCallback(
+    (task: TCachedFile) => task.file?.path,
+    []
+  );
+
+  const sortTasksByLabel = useCallback((entries: TCachedFile[]) => {
+    return [...entries].sort((a, b) => {
+      const labelA = getTaskLabel(a).toLowerCase();
+      const labelB = getTaskLabel(b).toLowerCase();
+      return labelA.localeCompare(labelB);
+    });
+  }, []);
+
+  const { items: orderedTasks, onReorder, sortable } = useEntityLinkOrdering({
+    file,
+    items: validTasks,
+    frontmatterKey: "tasks",
+    getItemId: getTaskId,
+    fallbackSort: sortTasksByLabel,
+  });
+
   const entityName =
     (file.cache?.frontmatter?.show as string | undefined)?.trim() ||
     hostFile.basename;
@@ -61,7 +83,7 @@ export const ParticipantTasksLinks = ({
       subtitle={`Tasks referencing ${entityName}`}
     >
       <EntityLinksTable
-        items={validTasks}
+        items={orderedTasks}
         getKey={(task) => task.file!.path}
         renderRow={(task) => {
           const taskFile = task.file!;
@@ -89,6 +111,9 @@ export const ParticipantTasksLinks = ({
             </>
           );
         }}
+        sortable={sortable}
+        onReorder={onReorder}
+        getSortableId={(task) => task.file!.path}
       />
     </Card>
   );

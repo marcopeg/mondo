@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/Button";
 import { Typography } from "@/components/ui/Typography";
 import { EntityLinksTable } from "@/components/EntityLinksTable";
 import { useFiles } from "@/hooks/use-files";
+import { useEntityLinkOrdering } from "@/hooks/use-entity-link-ordering";
 import { CRMFileType } from "@/types/CRMFileType";
 import { matchesAnyPropertyLink } from "@/utils/matchesAnyPropertyLink";
 import { getEntityDisplayName } from "@/utils/getEntityDisplayName";
@@ -43,6 +44,27 @@ export const RoleTasksLinks = ({ file, config }: RoleTasksLinksProps) => {
     return null;
   }
 
+  const getTaskId = useCallback(
+    (task: TCachedFile) => task.file?.path,
+    []
+  );
+
+  const sortTasksByLabel = useCallback((entries: TCachedFile[]) => {
+    return [...entries].sort((a, b) => {
+      const labelA = getTaskLabel(a).toLowerCase();
+      const labelB = getTaskLabel(b).toLowerCase();
+      return labelA.localeCompare(labelB);
+    });
+  }, []);
+
+  const { items: orderedTasks, onReorder, sortable } = useEntityLinkOrdering({
+    file,
+    items: validTasks,
+    frontmatterKey: "tasks",
+    getItemId: getTaskId,
+    fallbackSort: sortTasksByLabel,
+  });
+
   const roleName = getEntityDisplayName(file);
   const collapsed = (config as any)?.collapsed !== false;
 
@@ -56,7 +78,7 @@ export const RoleTasksLinks = ({ file, config }: RoleTasksLinksProps) => {
       subtitle={`Tasks referencing ${roleName}`}
     >
       <EntityLinksTable
-        items={validTasks}
+        items={orderedTasks}
         getKey={(task) => task.file!.path}
         renderRow={(task) => {
           const taskFile = task.file!;
@@ -84,6 +106,9 @@ export const RoleTasksLinks = ({ file, config }: RoleTasksLinksProps) => {
             </>
           );
         }}
+        sortable={sortable}
+        onReorder={onReorder}
+        getSortableId={(task) => task.file!.path}
       />
     </Card>
   );
