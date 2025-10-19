@@ -18,6 +18,7 @@ import { CSS } from "@dnd-kit/utilities";
 import { Table } from "@/components/ui/Table";
 import { Button } from "@/components/ui/Button";
 import { Separator } from "@/components/ui/Separator";
+import { Icon } from "@/components/ui/Icon";
 
 const DEFAULT_PAGE_SIZE = 10;
 
@@ -150,6 +151,7 @@ export const EntityLinksTable = <T,>({
                     <SortableRow
                       key={getKey(item, index)}
                       id={getItemId(item, index)}
+                      withHandle
                     >
                       {renderRow(item, index)}
                     </SortableRow>
@@ -202,9 +204,10 @@ export default EntityLinksTable;
 type SortableRowProps = {
   id: string | number;
   children: React.ReactNode;
+  withHandle?: boolean;
 };
 
-const SortableRow = ({ id, children }: SortableRowProps) => {
+const SortableRow = ({ id, children, withHandle = false }: SortableRowProps) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id });
 
@@ -220,10 +223,23 @@ const SortableRow = ({ id, children }: SortableRowProps) => {
       className={`border-b border-[var(--background-modifier-border)] last:border-0 hover:bg-[var(--background-modifier-hover)] ${
         isDragging ? "opacity-70" : ""
       }`}
-      {...attributes}
-      {...listeners}
+      {...(!withHandle ? attributes : {})}
+      {...(!withHandle ? listeners : {})}
     >
       {children}
+      {withHandle ? (
+        <Table.Cell className="w-10 px-2 py-2 align-middle text-right">
+          <button
+            type="button"
+            className="ml-auto flex h-7 w-7 items-center justify-center rounded border border-transparent text-[var(--text-muted)] transition-colors touch-none cursor-grab active:cursor-grabbing hover:text-[var(--text-normal)] focus-visible:border-[var(--interactive-accent)] focus-visible:text-[var(--interactive-accent)]"
+            aria-label="Reorder entry"
+            {...attributes}
+            {...listeners}
+          >
+            <Icon name="grip-vertical" className="mr-0 h-4 w-4" />
+          </button>
+        </Table.Cell>
+      ) : null}
     </Table.Row>
-  );
+    );
 };
