@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 // Phases and props
 type TimerPhase = "work" | "rest";
-type HepticMode = "audio" | "vibration" | "both";
+type HepticMode = "audio" | "vibration" | "both" | "none";
 type TimerBlockProps = Record<string, unknown>;
 
 // Plan steps
@@ -276,16 +276,41 @@ export const useTimerBlock = (props: TimerBlockProps): TimerBlockController => {
 
   // Heptic/audio mode
   const hepticMode: HepticMode = useMemo(() => {
-    const raw =
-      typeof props.heptic === "string" ? props.heptic.toLowerCase() : "";
-    if (raw === "sound") return "audio";
-    return raw === "audio" || raw === "vibration" || raw === "both"
-      ? raw
-      : "audio";
+    const rawValue =
+      typeof props.heptic === "string" ? props.heptic.trim().toLowerCase() : "";
+    if (rawValue === "sound") return "audio";
+    if (rawValue === "none") return "none";
+    if (
+      rawValue === "audio" ||
+      rawValue === "vibration" ||
+      rawValue === "both"
+    ) {
+      return rawValue;
+    }
+    return "both";
   }, [props.heptic]);
 
   // Optional step beep every N seconds while in work phase
-  const stepSeconds = useMemo(() => parseSeconds(props.step), [props.step]);
+  const stepSeconds = useMemo(() => {
+    const raw = props.step;
+    if (raw === undefined || raw === null) {
+      return 10;
+    }
+    if (typeof raw === "string" && raw.trim() === "") {
+      return 10;
+    }
+    const parsed = parseSeconds(raw);
+    if (parsed > 0) {
+      return parsed;
+    }
+    if (
+      (typeof raw === "string" && raw.trim() === "0") ||
+      (typeof raw === "number" && raw === 0)
+    ) {
+      return 0;
+    }
+    return 10;
+  }, [props.step]);
 
   // Optional plan steps
   const planSteps = useMemo(() => parsePlanSteps(props.steps), [props.steps]);

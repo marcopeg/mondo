@@ -45,7 +45,7 @@ timer?duration=15&interval=5&heptic=both
 ```
 
 - Plays a chime when you start, a cue when it is time to rest, and minute beeps if `step` is configured.
-- `heptic=both` enables tones and vibrations (where supported). Use `heptic=sound` to play tones without vibration.
+- `heptic=both` enables tones and vibrations (where supported) and is the default. Use `heptic=sound` to play tones without vibration.
 
 ### Multi‑step Time Plan
 
@@ -104,15 +104,16 @@ You can pass these as inline query parameters (e.g., `timer?duration=25`) or as 
 - `color` (string): Any CSS color (e.g., `#55aaff`, `hsl(210, 90%, 56%)`). Tints the ring and accents.
 - `duration` (number, seconds): Work duration for `timer` mode. Ignored for `time-plan` (use per-step durations instead).
 - `interval` (number, seconds): Rest duration for `timer` mode. In `time-plan`, rest is per-step via `pause`/`rest`.
-- `step` (number, seconds): Optional cadence for short beeps during work (ignored in the final 3 seconds of a phase). Set to `0` or omit to disable.
+- `step` (number, seconds): Optional cadence for short beeps during work (ignored in the final 3 seconds of a phase). Defaults to `10`. Set to `0` to disable.
 - `loop` (string | number): Controls repeating behavior after a cycle completes.
   - Omit, `""`, or `"true"` → infinite looping
   - `"false"` → no looping (stop at the end)
   - numeric string (e.g., `"3"`) → finite number of loops
-- `heptic` (string): Feedback mode for audio/vibration cues (default: `"audio"`).
+- `heptic` (string): Feedback mode for audio/vibration cues (default: `"both"`).
   - `"audio"` (alias: `"sound"`) — play tones only
   - `"vibration"` — vibration only (if supported by the device)
   - `"both"` — play tones and vibrate (default)
+  - `"none"` — disable all audio and vibration cues
 
 ### `time-plan` steps
 
@@ -167,8 +168,8 @@ steps:
 ## Troubleshooting
 
 - The button is disabled: Ensure `duration` is > 0 (for `timer`) or your first plan step has `duration` > 0.
-- No audio: Make sure your device isn’t muted. Mobile browsers may require an initial tap before sounds are allowed, but the timer automatically resumes audio playback once you start it. Confirm `heptic` is set to `audio`, `sound`, or `both`.
-- No vibration: Desktop browsers may not support `navigator.vibrate`. Use `heptic=audio` or `heptic=both` for audio feedback.
+- No audio: Make sure your device isn’t muted. Mobile browsers may require an initial tap before sounds are allowed, but the timer automatically resumes audio playback once you start it. Confirm `heptic` is not `none` and is set to `audio`, `sound`, or `both`.
+- No vibration: Desktop browsers may not support `navigator.vibrate`. Use `heptic=audio` or `heptic=both` for audio feedback, and avoid `heptic=none`.
 - Screen turning off: Wake Lock is best‑effort and may not be available on your platform.
 
 ## Tips
