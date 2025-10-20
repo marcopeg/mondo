@@ -39,3 +39,5 @@ focus on the Facts EntityLink for type=company. When clicking on "+" it should c
 add the EntityLink "Tasks" to the entity "company". it should list type=task entities linked to the company by the property "company". When creating a new entity "+", the default title should be "Untitled Task. The new note's file name content should be slected so that it's easy for the user to modify it by typing the new value.
 
 focs on the EntityLink "Teams" on the entity "company". This already lists the teams connected with the company. Add the button "+" to create a new team document (type=team). The default title should be "Untitled Team. The new note's file name content should be slected so that it's easy for the user to modify it by typing the new value.
+
+focs on the EntityLink "Employees" on the entity "company". This already lists the persons connected with the company. Add the button "+" to create a new person document (type=person) linked to the company via "company" attribute. The default title should be "Untitled Person. The new note's file name content should be slected so that it's easy for the user to modify it by typing the new value.
