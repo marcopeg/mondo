@@ -116,6 +116,8 @@ export const createFactForEntity = async ({
   const isEditableHost =
     hostType === CRMFileType.PERSON ||
     hostType === "person" ||
+    hostType === CRMFileType.MEETING ||
+    hostType === "meeting" ||
     hostType === CRMFileType.PROJECT ||
     hostType === "project" ||
     hostType === CRMFileType.TASK ||
