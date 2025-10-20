@@ -4,6 +4,11 @@ export const getTaskLabel = (task: TCachedFile): string => {
   const frontmatter = task.cache?.frontmatter as
     | Record<string, unknown>
     | undefined;
+  const title =
+    typeof frontmatter?.title === "string" ? frontmatter.title.trim() : "";
+  if (title) {
+    return title;
+  }
   const show =
     typeof frontmatter?.show === "string" ? frontmatter.show.trim() : "";
   if (show) {
