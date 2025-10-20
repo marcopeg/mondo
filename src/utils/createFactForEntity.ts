@@ -6,6 +6,47 @@ import { getCRMPlugin } from "@/utils/getCRMPlugin";
 import type { App, TFile } from "obsidian";
 import { normalizeFolderPath } from "@/utils/normalizeFolderPath";
 
+// Focuses the title element (inline title or input) and selects all its content
+const focusAndSelectTitle = (leaf: any) => {
+  const view = leaf?.view as any;
+
+  // 1) Try inline title (contenteditable element)
+  const inlineTitleEl: HTMLElement | null =
+    view?.contentEl?.querySelector?.(".inline-title") ??
+    view?.containerEl?.querySelector?.(".inline-title") ??
+    null;
+  if (inlineTitleEl) {
+    inlineTitleEl.focus();
+    try {
+      const selection = (window as any)?.getSelection?.();
+      const range = (document as any).createRange?.();
+      if (selection && range) {
+        selection.removeAllRanges();
+        range.selectNodeContents(inlineTitleEl);
+        selection.addRange(range);
+      }
+    } catch (_) {
+      // ignore selection errors
+    }
+    return true;
+  }
+
+  // 2) Try title input (when inline title is configured as an input)
+  const titleInput: HTMLInputElement | undefined =
+    view?.fileView?.inputEl ?? view?.titleEl?.querySelector?.("input");
+  if (titleInput) {
+    titleInput.focus();
+    titleInput.select();
+    return true;
+  }
+
+  // 3) Fallback: trigger rename command (opens rename UI)
+  const executed = (
+    view?.app ?? (window as any)?.app
+  )?.commands?.executeCommandById?.("app:rename-file");
+  return Boolean(executed);
+};
+
 const slugify = (value: string): string =>
   value
     .trim()
@@ -67,6 +108,10 @@ export const createFactForEntity = async ({
   };
 
   const displayName = getEntityDisplayName(entityFile);
+  const hostType = (entityFile.cache?.frontmatter as any)?.type as
+    | string
+    | undefined;
+  const isPersonHost = hostType === CRMFileType.PERSON || hostType === "person";
   const rootPathSetting = settings.rootPaths?.[CRMFileType.FACT] ?? "/";
   const normalizedFolder = normalizeFolderPath(rootPathSetting);
 
@@ -82,16 +127,26 @@ export const createFactForEntity = async ({
   const dateStamp = isoTimestamp.split("T")[0];
   const timeStamp = isoTimestamp.slice(11, 16);
 
-  const baseTitle = displayName
+  // For person host: use a simple and editable default title
+  const baseTitle = isPersonHost
+    ? "Untitled Fact"
+    : displayName
     ? `${dateStamp} ${timeStamp} - ${displayName}`
     : `${dateStamp} ${timeStamp} - Fact`;
   const safeTitle = baseTitle.trim() || `${dateStamp} ${timeStamp}`;
   const slug = slugify(safeTitle);
-  const safeFileBase = safeTitle.replace(/[\\/|?*:<>"]/g, "-");
-  const fileName = safeFileBase.endsWith(".md") ? safeFileBase : `${safeFileBase}.md`;
-  const filePath = normalizedFolder ? `${normalizedFolder}/${fileName}` : fileName;
+  const safeFileBase = isPersonHost
+    ? "Untitled Fact"
+    : safeTitle.replace(/[\\/|?*:<>"]/g, "-");
+  const fileName = safeFileBase.endsWith(".md")
+    ? safeFileBase
+    : `${safeFileBase}.md`;
+  const filePath = normalizedFolder
+    ? `${normalizedFolder}/${fileName}`
+    : fileName;
 
   let factFile = app.vault.getAbstractFileByPath(filePath) as TFile | null;
+  let didCreate = false;
 
   if (!factFile) {
     const templateSource = await getTemplateForType(
@@ -111,6 +166,7 @@ export const createFactForEntity = async ({
     });
 
     factFile = await app.vault.create(filePath, rendered);
+    didCreate = true;
   }
 
   if (!factFile) {
@@ -169,6 +225,16 @@ export const createFactForEntity = async ({
     const leaf = app.workspace.getLeaf(false);
     if (leaf && typeof (leaf as any).openFile === "function") {
       await (leaf as any).openFile(factFile);
+      // If created for a person, select the title to ease renaming
+      if (didCreate && isPersonHost) {
+        window.setTimeout(() => {
+          try {
+            focusAndSelectTitle(leaf);
+          } catch (_) {
+            // ignore
+          }
+        }, 150);
+      }
     }
   }
 
