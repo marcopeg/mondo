@@ -21,3 +21,5 @@ focus on the Meetings EntityLink for type=project. When clicking on "+" it shoul
 focus on the Facts EntityLink for type=task. When clicking on "+" it should create a new fact note linked to the task (this works already). The note's file name should be "Untitled Fact". The note's file name content should be slected so that it's easy for the user to modify it by typing the new value.
 
 focus on the Tasks EntityLink for type=task. This panel should implement the same look as the Facts EntityLink. Fix the padding and spacing so to make it look consistent.
+
+focus on the Tasks EntityLink for type=task. This panel should list sub-tasks. A sub-taks is a task that reference anothe task in the "task" property. Right now it looks like the linking is on "participants" but this is wrong and should be fixed. Make it also sure that when creating a new sub-task with "+" the link is made on the "task" property.
