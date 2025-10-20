@@ -204,6 +204,8 @@ export const createMeetingForEntity = async ({
   const displayName = getEntityDisplayName(entityFile);
   const isPersonHost =
     (entityFile.cache?.frontmatter as any)?.type === "person";
+  const isProjectHost =
+    (entityFile.cache?.frontmatter as any)?.type === "project";
   const rootPathSetting = settings.rootPaths?.[CRMFileType.MEETING] ?? "/";
   const normalizedFolder = normalizeFolderPath(rootPathSetting);
 
@@ -219,6 +221,8 @@ export const createMeetingForEntity = async ({
   const dateStamp = isoTimestamp.split("T")[0];
   const title = isPersonHost
     ? `${dateStamp} with ${displayName}`
+    : isProjectHost
+    ? `${dateStamp} on ${displayName}`
     : `${dateStamp} - ${displayName}`;
   const safeTitle = title.trim() || dateStamp;
   const slug = slugify(safeTitle);
@@ -268,8 +272,8 @@ export const createMeetingForEntity = async ({
     const leaf = app.workspace.getLeaf(false);
     if (leaf && typeof (leaf as any).openFile === "function") {
       await (leaf as any).openFile(meetingFile);
-      // If created for a person, select the title to ease renaming
-      if (didCreate && isPersonHost) {
+      // If created for a person or a project, select the title to ease renaming
+      if (didCreate && (isPersonHost || isProjectHost)) {
         window.setTimeout(() => {
           try {
             focusAndSelectTitle(leaf);
