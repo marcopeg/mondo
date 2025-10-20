@@ -111,7 +111,13 @@ export const createFactForEntity = async ({
   const hostType = (entityFile.cache?.frontmatter as any)?.type as
     | string
     | undefined;
-  const isPersonHost = hostType === CRMFileType.PERSON || hostType === "person";
+  // treat person and project hosts as editable targets where we prefer a simple
+  // default title (so user can immediately rename it)
+  const isEditableHost =
+    hostType === CRMFileType.PERSON ||
+    hostType === "person" ||
+    hostType === CRMFileType.PROJECT ||
+    hostType === "project";
   const rootPathSetting = settings.rootPaths?.[CRMFileType.FACT] ?? "/";
   const normalizedFolder = normalizeFolderPath(rootPathSetting);
 
@@ -127,15 +133,15 @@ export const createFactForEntity = async ({
   const dateStamp = isoTimestamp.split("T")[0];
   const timeStamp = isoTimestamp.slice(11, 16);
 
-  // For person host: use a simple and editable default title
-  const baseTitle = isPersonHost
+  // For editable hosts (person/project): use a simple and editable default title
+  const baseTitle = isEditableHost
     ? "Untitled Fact"
     : displayName
     ? `${dateStamp} ${timeStamp} - ${displayName}`
     : `${dateStamp} ${timeStamp} - Fact`;
   const safeTitle = baseTitle.trim() || `${dateStamp} ${timeStamp}`;
   const slug = slugify(safeTitle);
-  const safeFileBase = isPersonHost
+  const safeFileBase = isEditableHost
     ? "Untitled Fact"
     : safeTitle.replace(/[\\/|?*:<>"]/g, "-");
   const fileName = safeFileBase.endsWith(".md")
@@ -225,8 +231,8 @@ export const createFactForEntity = async ({
     const leaf = app.workspace.getLeaf(false);
     if (leaf && typeof (leaf as any).openFile === "function") {
       await (leaf as any).openFile(factFile);
-      // If created for a person, select the title to ease renaming
-      if (didCreate && isPersonHost) {
+      // If created for an editable host (person/project), select the title to ease renaming
+      if (didCreate && isEditableHost) {
         window.setTimeout(() => {
           try {
             focusAndSelectTitle(leaf);
