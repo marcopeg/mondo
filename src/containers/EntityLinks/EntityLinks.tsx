@@ -18,6 +18,7 @@ import { FactsLinks } from "./panels/FactsLinks";
 import { LocationPeopleLinks } from "./panels/LocationPeopleLinks";
 import { LocationCompaniesLinks } from "./panels/LocationCompaniesLinks";
 import { TaskSubtasksLinks } from "./panels/TaskSubtasksLinks";
+import { ProjectTasksLinks } from "./panels/ProjectTasksLinks";
 
 type LinkPanelProps = {
   file: TCachedFile;
@@ -39,6 +40,7 @@ const entityMap: Record<string, React.ComponentType<LinkPanelProps>> = {
   "location-people": LocationPeopleLinks,
   "location-companies": LocationCompaniesLinks,
   "task-subtasks": TaskSubtasksLinks,
+  "project-tasks": ProjectTasksLinks,
 };
 
 const renderMissingConfigError = (message: string, key?: React.Key) => (
@@ -73,8 +75,8 @@ export const EntityLinks = () => {
 
   const baseLinkConfigs = (entityConfig.links ?? []) as CRMEntityLinkConfig[];
 
-  // Auto-append participant-tasks panel only for entities other than task
-  const shouldAutoAppendParticipantTasks = entityType !== "task";
+  // Auto-append participant-tasks panel only for person entities
+  const shouldAutoAppendParticipantTasks = entityType === "person";
   const hasParticipantTasksLink = baseLinkConfigs.some(
     (config) => config.type === "participant-tasks"
   );

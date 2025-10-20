@@ -23,3 +23,5 @@ focus on the Facts EntityLink for type=task. When clicking on "+" it should crea
 focus on the Tasks EntityLink for type=task. This panel should implement the same look as the Facts EntityLink. Fix the padding and spacing so to make it look consistent.
 
 focus on the Tasks EntityLink for type=task. This panel should list sub-tasks. A sub-taks is a task that reference anothe task in the "task" property. Right now it looks like the linking is on "participants" but this is wrong and should be fixed. Make it also sure that when creating a new sub-task with "+" the link is made on the "task" property.
+
+focus on the Tasks EntityLink for type=project. This panel should list a project's main tasks. A project task is a task that reference anothe task in the "project" property. Right now it looks like the linking is on "participants" but this is wrong and should be fixed. Make it also sure that when creating a new sub-task with "+" the link is made on the "project" property.

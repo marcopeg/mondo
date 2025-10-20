@@ -12,6 +12,7 @@ participants:
 const projectConfig: CRMEntityConfig<
   "project",
   | { type: "participants-assignment" }
+  | { type: "project-tasks"; collapsed?: boolean }
   | { type: "meetings" }
   | { type: "facts"; collapsed?: boolean }
 > = {
@@ -27,6 +28,7 @@ const projectConfig: CRMEntityConfig<
   },
   links: [
     { type: "participants-assignment" },
+    { type: "project-tasks", collapsed: false },
     { type: "meetings" },
     { type: "facts" },
   ],
