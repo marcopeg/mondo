@@ -176,7 +176,7 @@ export const ParticipantTasksLinks = ({
       }
 
       // Create file path
-      const safeBase = sanitizeFileName("Untitled");
+      const safeBase = sanitizeFileName("Untitled Task");
       const fileName = `${safeBase}.md`;
       const filePath = normalizedFolder
         ? `${normalizedFolder}/${fileName}`
@@ -194,10 +194,10 @@ export const ParticipantTasksLinks = ({
         );
 
         const content = renderTemplate(templateSource, {
-          title: "Untitled",
+          title: "Untitled Task",
           type: String(CRMFileType.TASK),
           filename: fileName,
-          slug: "untitled",
+          slug: "untitled-task",
           date: isoTimestamp.split("T")[0],
           time: isoTimestamp.slice(11, 16),
           datetime: isoTimestamp,
