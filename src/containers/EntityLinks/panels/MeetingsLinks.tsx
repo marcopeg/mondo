@@ -21,6 +21,7 @@ type MeetingsLinksProps = {
 export const MeetingsLinks = ({ file, config }: MeetingsLinksProps) => {
   const app = useApp();
   const entityType = file.cache?.frontmatter?.type as string | undefined;
+  const hostFile = file.file;
 
   const meetings = useFiles(CRMFileType.MEETING, {
     filter: useCallback(
@@ -141,7 +142,41 @@ export const MeetingsLinks = ({ file, config }: MeetingsLinksProps) => {
         ]
       : [];
 
-  const collapsed = (config as any)?.collapsed !== false;
+  const collapsed = useMemo(() => {
+    const crmState = (file.cache?.frontmatter as any)?.crmState;
+    if (crmState?.meetings?.collapsed === true) return true;
+    if (crmState?.meetings?.collapsed === false) return false;
+    return (config as any)?.collapsed !== false;
+  }, [file.cache?.frontmatter, config]);
+
+  const handleCollapseChange = useCallback(
+    async (isCollapsed: boolean) => {
+      if (!hostFile) return;
+
+      try {
+        await app.fileManager.processFrontMatter(hostFile, (frontmatter) => {
+          if (
+            typeof frontmatter.crmState !== "object" ||
+            frontmatter.crmState === null
+          ) {
+            frontmatter.crmState = {};
+          }
+
+          if (
+            typeof frontmatter.crmState.meetings !== "object" ||
+            frontmatter.crmState.meetings === null
+          ) {
+            frontmatter.crmState.meetings = {};
+          }
+
+          frontmatter.crmState.meetings.collapsed = isCollapsed;
+        });
+      } catch (error) {
+        console.error("MeetingsLinks: failed to persist collapse state", error);
+      }
+    },
+    [app, hostFile]
+  );
 
   return (
     <Card
@@ -151,6 +186,7 @@ export const MeetingsLinks = ({ file, config }: MeetingsLinksProps) => {
       icon="calendar"
       title="Meetings"
       actions={actions}
+      onCollapseChange={handleCollapseChange}
       {...(meetings.length === 0 ? { p: 0 } : {})}
     >
       <MeetingsTable items={meetings} emptyLabel="No meetings yet" />
