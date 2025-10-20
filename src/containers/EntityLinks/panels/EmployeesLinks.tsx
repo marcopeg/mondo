@@ -67,6 +67,16 @@ export const EmployeesLinks = ({ file, config }: EmployeesLinksProps) => {
     ),
   });
 
+  const sortedEmployees = useMemo(() => {
+    return [...employees].sort((a, b) => {
+      const showA =
+        (a.cache?.frontmatter?.show as string) ?? a.file?.basename ?? "";
+      const showB =
+        (b.cache?.frontmatter?.show as string) ?? b.file?.basename ?? "";
+      return showA.localeCompare(showB);
+    });
+  }, [employees]);
+
   const collapsed = useMemo(() => {
     const crmState = (file.cache?.frontmatter as any)?.crmState;
     if (crmState?.employees?.collapsed === true) return true;
@@ -200,11 +210,6 @@ export const EmployeesLinks = ({ file, config }: EmployeesLinksProps) => {
     return null;
   }
 
-  const companyName =
-    (file.cache?.frontmatter?.show as string | undefined) ??
-    (file.cache?.frontmatter?.name as string | undefined) ??
-    file.file.basename;
-
   const actions = [
     {
       key: "employee-create",
@@ -226,11 +231,10 @@ export const EmployeesLinks = ({ file, config }: EmployeesLinksProps) => {
       collapseOnHeaderClick
       icon="user"
       title="Employees"
-      subtitle={`People employed at ${companyName}`}
       actions={actions}
       onCollapseChange={handleCollapseChange}
     >
-      <PeopleTable items={employees} />
+      <PeopleTable items={sortedEmployees} />
     </Card>
   );
 };
