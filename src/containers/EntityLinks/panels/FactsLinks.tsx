@@ -1,10 +1,11 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo } from "react";
 import { Card } from "@/components/ui/Card";
 import { Table } from "@/components/ui/Table";
 import { Button } from "@/components/ui/Button";
 import { EntityLinksTable } from "@/components/EntityLinksTable";
 import { useFiles } from "@/hooks/use-files";
 import { useApp } from "@/hooks/use-app";
+import { useEntityLinkOrdering } from "@/hooks/use-entity-link-ordering";
 import { CRMFileType } from "@/types/CRMFileType";
 import type { CRMEntityType } from "@/entities";
 import { matchesPropertyLink } from "@/utils/matchesPropertyLink";
@@ -150,31 +151,16 @@ export const FactsLinks = ({ file, config }: FactsLinksProps) => {
     return null;
   }
 
-  const factOrder = useMemo(() => {
-    const frontmatter = file.cache?.frontmatter as
-      | Record<string, unknown>
-      | undefined;
-    const raw = frontmatter?.factsPriority;
+  // Prepare inputs for ordering hook
+  const validFacts = useMemo(
+    () => facts.filter((factEntry) => Boolean(factEntry.file)),
+    [facts]
+  );
 
-    if (!raw) {
-      return [] as string[];
-    }
+  const getFactId = useCallback((entry: TCachedFile) => entry.file?.path, []);
 
-    if (Array.isArray(raw)) {
-      return raw
-        .map((entry) => (typeof entry === "string" ? entry : ""))
-        .filter((entry): entry is string => entry.length > 0);
-    }
-
-    if (typeof raw === "string") {
-      return [raw];
-    }
-
-    return [] as string[];
-  }, [file.cache?.frontmatter?.factsPriority]);
-
-  const fallbackSortedFacts = useMemo(() => {
-    return [...facts].sort((a, b) => {
+  const sortFacts = useCallback((entries: TCachedFile[]) => {
+    return [...entries].sort((a, b) => {
       const dateA = getFactDate(a);
       const dateB = getFactDate(b);
 
@@ -187,54 +173,19 @@ export const FactsLinks = ({ file, config }: FactsLinksProps) => {
       const nameB = getEntityDisplayName(b).toLowerCase();
       return nameA.localeCompare(nameB);
     });
-  }, [facts]);
+  }, []);
 
-  const orderedFacts = useMemo(() => {
-    if (factOrder.length === 0) {
-      return fallbackSortedFacts;
-    }
-
-    const mapped = new Map(
-      fallbackSortedFacts
-        .map((entry) => {
-          const path = entry.file?.path;
-          return path ? [path, entry] : null;
-        })
-        .filter((entry): entry is [string, TCachedFile] => Boolean(entry))
-    );
-
-    const used = new Set<string>();
-    const prioritized: TCachedFile[] = [];
-
-    factOrder.forEach((path) => {
-      const match = mapped.get(path);
-      if (match) {
-        prioritized.push(match);
-        used.add(path);
-      }
-    });
-
-    const remaining = fallbackSortedFacts.filter((entry) => {
-      const path = entry.file?.path;
-      if (!path) {
-        return false;
-      }
-      return !used.has(path);
-    });
-
-    return [...prioritized, ...remaining];
-  }, [factOrder, fallbackSortedFacts]);
-
-  const [displayFacts, setDisplayFacts] = useState(orderedFacts);
-
-  useEffect(() => {
-    setDisplayFacts(orderedFacts);
-  }, [orderedFacts]);
-
-  const validFacts = useMemo(
-    () => displayFacts.filter((factEntry) => Boolean(factEntry.file)),
-    [displayFacts]
-  );
+  const {
+    items: orderedFacts,
+    onReorder,
+    sortable,
+  } = useEntityLinkOrdering({
+    file,
+    items: validFacts,
+    frontmatterKey: "facts",
+    getItemId: getFactId,
+    fallbackSort: sortFacts,
+  });
 
   const collapsed = useMemo(() => {
     const crmState = (file.cache?.frontmatter as any)?.crmState;
@@ -243,40 +194,7 @@ export const FactsLinks = ({ file, config }: FactsLinksProps) => {
     return (config as any)?.collapsed !== false;
   }, [file.cache?.frontmatter, config]);
 
-  const persistOrder = useCallback(
-    (items: TCachedFile[]) => {
-      if (!hostFile) {
-        return;
-      }
-
-      const paths = items
-        .map((entry) => entry.file?.path)
-        .filter((path): path is string => Boolean(path));
-
-      void (async () => {
-        try {
-          await app.fileManager.processFrontMatter(hostFile, (frontmatter) => {
-            if (paths.length > 0) {
-              frontmatter.factsPriority = paths;
-            } else {
-              delete frontmatter.factsPriority;
-            }
-          });
-        } catch (error) {
-          console.error("FactsLinks: failed to persist fact order", error);
-        }
-      })();
-    },
-    [app, hostFile]
-  );
-
-  const handleReorder = useCallback(
-    (items: TCachedFile[]) => {
-      setDisplayFacts(items);
-      persistOrder(items);
-    },
-    [persistOrder]
-  );
+  const handleReorder = onReorder;
 
   const handleCreateFact = useCallback(() => {
     if (!linkRule) {
@@ -356,12 +274,12 @@ export const FactsLinks = ({ file, config }: FactsLinksProps) => {
       onCollapseChange={handleCollapseChange}
     >
       <EntityLinksTable
-        items={validFacts}
+        items={orderedFacts}
         getKey={(factEntry) => factEntry.file!.path}
-        sortable
+        sortable={sortable}
         onReorder={handleReorder}
         getSortableId={(factEntry) => factEntry.file!.path}
-        pageSize={validFacts.length > 0 ? validFacts.length : undefined}
+        pageSize={orderedFacts.length > 0 ? orderedFacts.length : undefined}
         emptyLabel="No facts yet"
         renderRow={(factEntry) => {
           const factFile = factEntry.file!;
