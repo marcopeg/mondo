@@ -130,12 +130,6 @@ export const ParticipantTasksLinks = ({
 
   const hasTasks = orderedTasks.length > 0;
 
-  const noPaddingWhenEmpty = useMemo(() => {
-    // For projects, keep the default padding even when empty to match Facts appearance
-    if (entityType === "project") return false;
-    return !hasTasks;
-  }, [entityType, hasTasks]);
-
   const handleCollapseChange = useCallback(
     async (isCollapsed: boolean) => {
       if (!hostFile) return;
@@ -176,7 +170,6 @@ export const ParticipantTasksLinks = ({
         collapseOnHeaderClick
         icon="check-square"
         title="Tasks"
-        {...(noPaddingWhenEmpty ? { p: 0 } : {})}
       >
         <div className="px-2 py-2 text-xs text-[var(--text-muted)]">
           Save this note to start linking tasks.
@@ -303,7 +296,6 @@ export const ParticipantTasksLinks = ({
       title="Tasks"
       actions={actions}
       onCollapseChange={handleCollapseChange}
-      {...(noPaddingWhenEmpty ? { p: 0 } : {})}
     >
       <EntityLinksTable
         items={orderedTasks}

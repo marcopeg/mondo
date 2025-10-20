@@ -19,3 +19,5 @@ focus on the Facts EntityLink for type=project. When clicking on "+" it should c
 focus on the Meetings EntityLink for type=project. When clicking on "+" it should create a new meetings note linked to the person (this works already). The note's file name should be "{date} on {project's "show" or "filename" attribute}". The note's file name content should be slected so that it's easy for the user to modify it by typing the new value.
 
 focus on the Facts EntityLink for type=task. When clicking on "+" it should create a new fact note linked to the task (this works already). The note's file name should be "Untitled Fact". The note's file name content should be slected so that it's easy for the user to modify it by typing the new value.
+
+focus on the Tasks EntityLink for type=task. This panel should implement the same look as the Facts EntityLink. Fix the padding and spacing so to make it look consistent.
