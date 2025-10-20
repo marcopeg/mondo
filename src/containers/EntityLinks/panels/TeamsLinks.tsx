@@ -195,11 +195,6 @@ export const TeamsLinks = ({ file, config }: TeamsLinksProps) => {
     return null;
   }
 
-  const companyName =
-    (file.cache?.frontmatter?.show as string | undefined) ??
-    (file.cache?.frontmatter?.name as string | undefined) ??
-    file.file.basename;
-
   const actions = [
     {
       key: "team-create",
@@ -221,7 +216,6 @@ export const TeamsLinks = ({ file, config }: TeamsLinksProps) => {
       collapseOnHeaderClick
       icon="users"
       title="Teams"
-      subtitle={`Teams linked to ${companyName}`}
       actions={actions}
       onCollapseChange={handleCollapseChange}
     >
