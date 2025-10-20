@@ -21,6 +21,7 @@ type MeetingsLinksProps = {
 export const MeetingsLinks = ({ file, config }: MeetingsLinksProps) => {
   const app = useApp();
   const entityType = file.cache?.frontmatter?.type as string | undefined;
+  const hostFile = file.file;
 
   const meetings = useFiles(CRMFileType.MEETING, {
     filter: useCallback(
@@ -29,7 +30,11 @@ export const MeetingsLinks = ({ file, config }: MeetingsLinksProps) => {
 
         switch (entityType) {
           case "person":
-            return matchesPropertyLink(meetingCached, "participants", file.file);
+            return matchesPropertyLink(
+              meetingCached,
+              "participants",
+              file.file
+            );
           case "team":
             return (
               matchesPropertyLink(meetingCached, "team", file.file) ||
@@ -48,23 +53,7 @@ export const MeetingsLinks = ({ file, config }: MeetingsLinksProps) => {
   });
 
   const displayName =
-    (file.cache?.frontmatter?.show as string | undefined) ??
-    file.file.basename;
-
-  const subtitle = (() => {
-    switch (entityType) {
-      case "person":
-        return `Meetings referencing ${displayName}`;
-      case "team":
-        return "Meetings involving this team";
-      case "project":
-        return "Meetings associated with this project";
-      case "location":
-        return "Meetings at this location";
-      default:
-        return "Meetings";
-    }
-  })();
+    (file.cache?.frontmatter?.show as string | undefined) ?? file.file.basename;
 
   const linkTargets = useMemo<MeetingLinkTarget[]>(() => {
     if (!file?.file || !entityType) {
@@ -135,25 +124,65 @@ export const MeetingsLinks = ({ file, config }: MeetingsLinksProps) => {
     })();
   }, [app, entityType, file, linkTargets]);
 
-  const actions = linkTargets.length > 0
-    ? [
-        {
-          key: "meeting-create",
-          content: (
-            <Button
-              variant="link"
-              icon="plus"
-              aria-label="Create meeting"
-              onClick={handleAddMeeting}
-              disabled={!file?.file}
-            />
-          ),
-        },
-      ]
-    : [];
+  const actions =
+    linkTargets.length > 0
+      ? [
+          {
+            key: "meeting-create",
+            content: (
+              <Button
+                variant="link"
+                icon="plus"
+                aria-label="Create meeting"
+                onClick={handleAddMeeting}
+                disabled={!file?.file}
+              />
+            ),
+          },
+        ]
+      : [];
 
-  const hasMeetings = meetings.length > 0;
-  const collapsed = (config as any)?.collapsed !== false;
+  const collapsed = useMemo(() => {
+    const crmState = (file.cache?.frontmatter as any)?.crmState;
+    if (crmState?.meetings?.collapsed === true) return true;
+    if (crmState?.meetings?.collapsed === false) return false;
+    return (config as any)?.collapsed !== false;
+  }, [file.cache?.frontmatter, config]);
+
+  const handleCollapseChange = useCallback(
+    async (isCollapsed: boolean) => {
+      if (!hostFile) return;
+
+      try {
+        await app.fileManager.processFrontMatter(hostFile, (frontmatter) => {
+          if (
+            typeof frontmatter.crmState !== "object" ||
+            frontmatter.crmState === null
+          ) {
+            frontmatter.crmState = {};
+          }
+
+          if (
+            typeof frontmatter.crmState.meetings !== "object" ||
+            frontmatter.crmState.meetings === null
+          ) {
+            frontmatter.crmState.meetings = {};
+          }
+
+          frontmatter.crmState.meetings.collapsed = isCollapsed;
+        });
+      } catch (error) {
+        console.error("MeetingsLinks: failed to persist collapse state", error);
+      }
+    },
+    [app, hostFile]
+  );
+
+  const noPaddingWhenEmpty = useMemo(() => {
+    // For projects, keep the default padding even when empty to match Facts appearance
+    if (entityType === "project") return false;
+    return meetings.length === 0;
+  }, [entityType, meetings.length]);
 
   return (
     <Card
@@ -162,11 +191,11 @@ export const MeetingsLinks = ({ file, config }: MeetingsLinksProps) => {
       collapseOnHeaderClick
       icon="calendar"
       title="Meetings"
-      subtitle={subtitle}
       actions={actions}
-      {...(!hasMeetings ? { p: 0 } : {})}
+      onCollapseChange={handleCollapseChange}
+      {...(noPaddingWhenEmpty ? { p: 0 } : {})}
     >
-      {hasMeetings ? <MeetingsTable items={meetings} /> : null}
+      <MeetingsTable items={meetings} emptyLabel="No meetings yet" />
     </Card>
   );
 };

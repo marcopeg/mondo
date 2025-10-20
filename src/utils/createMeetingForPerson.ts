@@ -6,6 +6,43 @@ import { getCRMPlugin } from "@/utils/getCRMPlugin";
 import { normalizeFolderPath } from "@/utils/normalizeFolderPath";
 import type { App, TFile } from "obsidian";
 
+// Focuses the title element (inline title or input) and selects all its content
+const focusAndSelectTitle = (leaf: any) => {
+  const view = leaf?.view as any;
+
+  // 1) Try inline title (contenteditable element)
+  const inlineTitleEl: HTMLElement | null =
+    view?.contentEl?.querySelector?.(".inline-title") ??
+    view?.containerEl?.querySelector?.(".inline-title") ??
+    null;
+  if (inlineTitleEl) {
+    inlineTitleEl.focus();
+    try {
+      const selection = window.getSelection?.();
+      const range = document.createRange?.();
+      if (selection && range) {
+        selection.removeAllRanges();
+        range.selectNodeContents(inlineTitleEl);
+        selection.addRange(range);
+      }
+    } catch (_) {
+      // no-op if selection APIs are unavailable
+    }
+    return true;
+  }
+
+  // 2) Try title input (when inline title is configured as an input)
+  const titleInput: HTMLInputElement | undefined =
+    view?.fileView?.inputEl ?? view?.titleEl?.querySelector?.("input");
+  if (titleInput) {
+    titleInput.focus();
+    titleInput.select();
+    return true;
+  }
+
+  return false;
+};
+
 const slugify = (value: string): string =>
   value
     .trim()
@@ -165,6 +202,10 @@ export const createMeetingForEntity = async ({
   };
 
   const displayName = getEntityDisplayName(entityFile);
+  const isPersonHost =
+    (entityFile.cache?.frontmatter as any)?.type === "person";
+  const isProjectHost =
+    (entityFile.cache?.frontmatter as any)?.type === "project";
   const rootPathSetting = settings.rootPaths?.[CRMFileType.MEETING] ?? "/";
   const normalizedFolder = normalizeFolderPath(rootPathSetting);
 
@@ -178,14 +219,23 @@ export const createMeetingForEntity = async ({
   const now = new Date();
   const isoTimestamp = now.toISOString();
   const dateStamp = isoTimestamp.split("T")[0];
-  const title = `${dateStamp} - ${displayName}`;
+  const title = isPersonHost
+    ? `${dateStamp} with ${displayName}`
+    : isProjectHost
+    ? `${dateStamp} on ${displayName}`
+    : `${dateStamp} - ${displayName}`;
   const safeTitle = title.trim() || dateStamp;
   const slug = slugify(safeTitle);
   const safeFileBase = safeTitle.replace(/[\\/|?*:<>"]/g, "-");
-  const fileName = safeFileBase.endsWith(".md") ? safeFileBase : `${safeFileBase}.md`;
-  const filePath = normalizedFolder ? `${normalizedFolder}/${fileName}` : fileName;
+  const fileName = safeFileBase.endsWith(".md")
+    ? safeFileBase
+    : `${safeFileBase}.md`;
+  const filePath = normalizedFolder
+    ? `${normalizedFolder}/${fileName}`
+    : fileName;
 
   let meetingFile = app.vault.getAbstractFileByPath(filePath) as TFile | null;
+  let didCreate = false;
 
   if (!meetingFile) {
     const templateSource = await getTemplateForType(
@@ -215,12 +265,23 @@ export const createMeetingForEntity = async ({
     });
 
     meetingFile = await app.vault.create(filePath, contentWithLinks);
+    didCreate = true;
   }
 
   if (meetingFile && openAfterCreate) {
     const leaf = app.workspace.getLeaf(false);
     if (leaf && typeof (leaf as any).openFile === "function") {
       await (leaf as any).openFile(meetingFile);
+      // If created for a person or a project, select the title to ease renaming
+      if (didCreate && (isPersonHost || isProjectHost)) {
+        window.setTimeout(() => {
+          try {
+            focusAndSelectTitle(leaf);
+          } catch (_) {
+            // ignore
+          }
+        }, 150);
+      }
     }
   }
 

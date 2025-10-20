@@ -16,7 +16,7 @@ interface UseEntityLinkOrderingResult<TItem> {
   sortable: boolean;
 }
 
-export const useEntityLinkOrdering = <TItem,>(
+export const useEntityLinkOrdering = <TItem>(
   options: UseEntityLinkOrderingOptions<TItem>
 ): UseEntityLinkOrderingResult<TItem> => {
   const { file, items, frontmatterKey, getItemId, fallbackSort } = options;
@@ -31,20 +31,22 @@ export const useEntityLinkOrdering = <TItem,>(
     const frontmatter = file.cache?.frontmatter as
       | Record<string, unknown>
       | undefined;
-    const raw = frontmatter?.[frontmatterKey];
 
-    if (!raw) {
+    // Read from crmState.{panel}.order
+    const rawOrder = (frontmatter as any)?.crmState?.[frontmatterKey]?.order;
+
+    if (!rawOrder) {
       return [] as string[];
     }
 
-    if (Array.isArray(raw)) {
-      return raw
+    if (Array.isArray(rawOrder)) {
+      return rawOrder
         .map((value) => (typeof value === "string" ? value : ""))
         .filter((value): value is string => value.length > 0);
     }
 
-    if (typeof raw === "string") {
-      return [raw];
+    if (typeof rawOrder === "string") {
+      return [rawOrder];
     }
 
     return [] as string[];
@@ -112,15 +114,31 @@ export const useEntityLinkOrdering = <TItem,>(
       void (async () => {
         try {
           await app.fileManager.processFrontMatter(hostFile, (frontmatter) => {
+            // Ensure crmState structure exists
+            if (
+              typeof (frontmatter as any).crmState !== "object" ||
+              (frontmatter as any).crmState === null
+            ) {
+              (frontmatter as any).crmState = {};
+            }
+
+            const panelState = (frontmatter as any).crmState[frontmatterKey];
+            if (typeof panelState !== "object" || panelState === null) {
+              (frontmatter as any).crmState[frontmatterKey] = {};
+            }
+
             if (ids.length > 0) {
-              frontmatter[frontmatterKey] = ids;
+              (frontmatter as any).crmState[frontmatterKey].order = ids;
             } else {
-              delete frontmatter[frontmatterKey];
+              // Remove empty order to keep frontmatter clean
+              if ((frontmatter as any).crmState[frontmatterKey]) {
+                delete (frontmatter as any).crmState[frontmatterKey].order;
+              }
             }
           });
         } catch (error) {
           console.error(
-            `useEntityLinkOrdering: failed to persist order for "${frontmatterKey}"`,
+            `useEntityLinkOrdering: failed to persist order for panel "${frontmatterKey}"`,
             error
           );
         }

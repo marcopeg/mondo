@@ -7,6 +7,7 @@ import { EntityLinksTable } from "@/components/EntityLinksTable";
 
 type MeetingsTableProps = {
   items: TCachedFile[];
+  emptyLabel?: React.ReactNode;
 };
 
 const resolveParticipants = (
@@ -63,13 +64,17 @@ const resolveParticipants = (
 /**
  * Presentational table for meeting rows with Obsidian link resolution for participants.
  */
-export const MeetingsTable: React.FC<MeetingsTableProps> = ({ items }) => {
+export const MeetingsTable: React.FC<MeetingsTableProps> = ({
+  items,
+  emptyLabel,
+}) => {
   const app = useApp();
 
   return (
     <EntityLinksTable
       items={items}
       getKey={(entry) => entry.file.path}
+      emptyLabel={emptyLabel}
       renderRow={(entry) => {
         const label =
           entry.cache?.frontmatter?.title ??
