@@ -35,3 +35,5 @@ focus on the Facts EntityLink for type=meeting. When clicking on "+" it should c
 add the EntityLink "Tasks" to the entity "meeting". it should list type=task entities linked to the meeting by the property "meeting". When creating a new entity "+", the default title should be "{date} for {atribute "show" or filename}. The new note's file name content should be slected so that it's easy for the user to modify it by typing the new value.
 
 focus on the Facts EntityLink for type=company. When clicking on "+" it should create a new fact note linked to the current company (this works already). The note's file name should be "Untitled Fact". The note's file name content should be slected so that it's easy for the user to modify it by typing the new value.
+
+add the EntityLink "Tasks" to the entity "company". it should list type=task entities linked to the company by the property "company". When creating a new entity "+", the default title should be "Untitled Task. The new note's file name content should be slected so that it's easy for the user to modify it by typing the new value.
