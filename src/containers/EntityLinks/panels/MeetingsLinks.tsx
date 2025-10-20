@@ -178,6 +178,12 @@ export const MeetingsLinks = ({ file, config }: MeetingsLinksProps) => {
     [app, hostFile]
   );
 
+  const noPaddingWhenEmpty = useMemo(() => {
+    // For projects, keep the default padding even when empty to match Facts appearance
+    if (entityType === "project") return false;
+    return meetings.length === 0;
+  }, [entityType, meetings.length]);
+
   return (
     <Card
       collapsible
@@ -187,7 +193,7 @@ export const MeetingsLinks = ({ file, config }: MeetingsLinksProps) => {
       title="Meetings"
       actions={actions}
       onCollapseChange={handleCollapseChange}
-      {...(meetings.length === 0 ? { p: 0 } : {})}
+      {...(noPaddingWhenEmpty ? { p: 0 } : {})}
     >
       <MeetingsTable items={meetings} emptyLabel="No meetings yet" />
     </Card>
