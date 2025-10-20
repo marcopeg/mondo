@@ -37,3 +37,5 @@ add the EntityLink "Tasks" to the entity "meeting". it should list type=task ent
 focus on the Facts EntityLink for type=company. When clicking on "+" it should create a new fact note linked to the current company (this works already). The note's file name should be "Untitled Fact". The note's file name content should be slected so that it's easy for the user to modify it by typing the new value.
 
 add the EntityLink "Tasks" to the entity "company". it should list type=task entities linked to the company by the property "company". When creating a new entity "+", the default title should be "Untitled Task. The new note's file name content should be slected so that it's easy for the user to modify it by typing the new value.
+
+focs on the EntityLink "Teams" on the entity "company". This already lists the teams connected with the company. Add the button "+" to create a new team document (type=team). The default title should be "Untitled Team. The new note's file name content should be slected so that it's easy for the user to modify it by typing the new value.
