@@ -25,3 +25,5 @@ focus on the Tasks EntityLink for type=task. This panel should implement the sam
 focus on the Tasks EntityLink for type=task. This panel should list sub-tasks. A sub-taks is a task that reference anothe task in the "task" property. Right now it looks like the linking is on "participants" but this is wrong and should be fixed. Make it also sure that when creating a new sub-task with "+" the link is made on the "task" property.
 
 focus on the Tasks EntityLink for type=project. This panel should list a project's main tasks. A project task is a task that reference anothe task in the "project" property. Right now it looks like the linking is on "participants" but this is wrong and should be fixed. Make it also sure that when creating a new sub-task with "+" the link is made on the "project" property.
+
+focus on the Fact EntityLink for type=fact. This panel should list a fact's sub-facts. A sub-fact is a fact that reference anothe fact in the "fact" property. Right now it looks like the linking is on "parent" but this is wrong and should be fixed. Make it also sure that when creating a new sub-fact with "+" the link is made on the "fact" property.

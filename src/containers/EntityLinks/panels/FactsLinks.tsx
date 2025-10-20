@@ -50,7 +50,7 @@ const FACT_LINK_RULES: Partial<Record<CRMEntityType, FactLinkRule>> = {
     subtitle: (name) => `Facts connected to ${name}`,
   },
   fact: {
-    property: "parent",
+    property: "fact",
     mode: "single",
     subtitle: (name) => `Child facts referencing ${name}`,
   },
