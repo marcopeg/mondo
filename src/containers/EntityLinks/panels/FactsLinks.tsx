@@ -236,7 +236,12 @@ export const FactsLinks = ({ file, config }: FactsLinksProps) => {
     [displayFacts]
   );
 
-  const collapsed = (config as any)?.collapsed !== false;
+  const collapsed = useMemo(() => {
+    const crmState = (file.cache?.frontmatter as any)?.crmState;
+    if (crmState?.facts?.collapsed === true) return true;
+    if (crmState?.facts?.collapsed === false) return false;
+    return (config as any)?.collapsed !== false;
+  }, [file.cache?.frontmatter, config]);
 
   const persistOrder = useCallback(
     (items: TCachedFile[]) => {
@@ -311,6 +316,35 @@ export const FactsLinks = ({ file, config }: FactsLinksProps) => {
     },
   ];
 
+  const handleCollapseChange = useCallback(
+    async (isCollapsed: boolean) => {
+      if (!hostFile) return;
+
+      try {
+        await app.fileManager.processFrontMatter(hostFile, (frontmatter) => {
+          if (
+            typeof frontmatter.crmState !== "object" ||
+            frontmatter.crmState === null
+          ) {
+            frontmatter.crmState = {};
+          }
+
+          if (
+            typeof frontmatter.crmState.facts !== "object" ||
+            frontmatter.crmState.facts === null
+          ) {
+            frontmatter.crmState.facts = {};
+          }
+
+          frontmatter.crmState.facts.collapsed = isCollapsed;
+        });
+      } catch (error) {
+        console.error("FactsLinks: failed to persist collapse state", error);
+      }
+    },
+    [app, hostFile]
+  );
+
   return (
     <Card
       collapsible
@@ -319,6 +353,7 @@ export const FactsLinks = ({ file, config }: FactsLinksProps) => {
       icon="bookmark"
       title="Facts"
       actions={actions}
+      onCollapseChange={handleCollapseChange}
     >
       <EntityLinksTable
         items={validFacts}

@@ -9,3 +9,7 @@ focus on the Projects EntityLink for type=person. When clicking on "+" on the Me
 focus on the Projects EntityLink for type=person. When collapsing or expanding the panel, the state for this particular panel should be persisted in the note's frontmatter in a key named `crmState` that is a json document where different panels can edit and add their own keys. make it so the `crmState` key gets created at the first need if not available.
 
 focus on the Tasks EntityLink for type=person. When collapsing or expanding the panel, the state for this particular panel should be persisted in the note's frontmatter in a key named `crmState` that is a json document where different panels can edit and add their own keys. make it so the `crmState` key gets created at the first need if not available.
+
+focus on the Facts EntityLink for type=person. When collapsing or expanding the panel, the state for this particular panel should be persisted in the note's frontmatter in a key named `crmState` that is a json document where different panels can edit and add their own keys. make it so the `crmState` key gets created at the first need if not available.
+
+focus on the Meetings EntityLink for type=person. When collapsing or expanding the panel, the state for this particular panel should be persisted in the note's frontmatter in a key named `crmState` that is a json document where different panels can edit and add their own keys. make it so the `crmState` key gets created at the first need if not available.
