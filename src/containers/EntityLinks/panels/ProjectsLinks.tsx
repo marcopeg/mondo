@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import ProjectsTable from "@/components/ProjectsTable";
@@ -10,14 +10,62 @@ import { matchesPropertyLink } from "@/utils/matchesPropertyLink";
 import type { TCachedFile } from "@/types/TCachedFile";
 import type { App, TFile } from "obsidian";
 import { getProjectDisplayLabel } from "@/utils/getProjectDisplayInfo";
+import { normalizeFolderPath } from "@/utils/normalizeFolderPath";
+import { getTemplateForType, renderTemplate } from "@/utils/CRMTemplates";
+import { addParticipantLink } from "@/utils/participants";
 
 type ProjectsLinksProps = {
   config: Record<string, unknown>;
   file: TCachedFile;
 };
 
+// Focuses the title element (inline title or input) and selects all its content
+const focusAndSelectTitle = (leaf: any) => {
+  const view = leaf?.view as any;
+
+  // 1) Try inline title (contenteditable element)
+  const inlineTitleEl: HTMLElement | null =
+    view?.contentEl?.querySelector?.(".inline-title") ??
+    view?.containerEl?.querySelector?.(".inline-title") ??
+    null;
+  if (inlineTitleEl) {
+    inlineTitleEl.focus();
+    try {
+      const selection = window.getSelection?.();
+      const range = document.createRange?.();
+      if (selection && range) {
+        selection.removeAllRanges();
+        range.selectNodeContents(inlineTitleEl);
+        selection.addRange(range);
+      }
+    } catch (_) {
+      // no-op if selection APIs are unavailable
+    }
+    return true;
+  }
+
+  // 2) Try title input (when inline title is configured as an input)
+  const titleInput: HTMLInputElement | undefined =
+    view?.fileView?.inputEl ?? view?.titleEl?.querySelector?.("input");
+  if (titleInput) {
+    titleInput.focus();
+    titleInput.select();
+    return true;
+  }
+
+  return false;
+};
+
+const sanitizeFileName = (value: string) =>
+  value
+    .replace(/[\u0000-\u001f\u007f<>:"|?*]+/g, "-")
+    .replace(/[\\/]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .trim() || "untitled";
+
 export const ProjectsLinks = ({ file, config }: ProjectsLinksProps) => {
   const app = useApp();
+  const [isCreating, setIsCreating] = useState(false);
 
   const entityType = file.cache?.frontmatter?.type;
 
@@ -140,9 +188,102 @@ export const ProjectsLinks = ({ file, config }: ProjectsLinksProps) => {
 
   const hasProjects = orderedProjects.length > 0;
 
-  const handleCreateProject = useCallback(() => {
-    // TODO: Implement project creation
-  }, []);
+  const handleCreateProject = useCallback(async () => {
+    if (isCreating || !file.file) {
+      return;
+    }
+
+    setIsCreating(true);
+
+    try {
+      // Get plugin settings for root paths and templates
+      const pluginInstance = (app as any).plugins?.plugins?.["crm"] as
+        | {
+            settings?: {
+              rootPaths?: Partial<Record<CRMFileType, string>>;
+              templates?: Partial<Record<CRMFileType, string>>;
+            };
+          }
+        | undefined;
+
+      if (!pluginInstance?.settings) {
+        throw new Error("CRM plugin settings are not available.");
+      }
+
+      const settings = pluginInstance.settings;
+      const folderSetting = settings.rootPaths?.[CRMFileType.PROJECT] ?? "/";
+      const normalizedFolder = normalizeFolderPath(folderSetting);
+
+      // Ensure folder exists
+      if (normalizedFolder) {
+        const existingFolder =
+          app.vault.getAbstractFileByPath(normalizedFolder);
+        if (!existingFolder) {
+          await app.vault.createFolder(normalizedFolder);
+        }
+      }
+
+      // Create file path
+      const safeBase = sanitizeFileName("Untitled Project");
+      const fileName = `${safeBase}.md`;
+      const filePath = normalizedFolder
+        ? `${normalizedFolder}/${fileName}`
+        : fileName;
+
+      let projectFile = app.vault.getAbstractFileByPath(
+        filePath
+      ) as TFile | null;
+
+      if (!projectFile) {
+        const now = new Date();
+        const isoTimestamp = now.toISOString();
+        const templateSource = await getTemplateForType(
+          app,
+          settings.templates,
+          CRMFileType.PROJECT
+        );
+
+        const content = renderTemplate(templateSource, {
+          title: "Untitled Project",
+          type: String(CRMFileType.PROJECT),
+          filename: fileName,
+          slug: "untitled-project",
+          date: isoTimestamp.split("T")[0],
+          time: isoTimestamp.slice(11, 16),
+          datetime: isoTimestamp,
+        });
+
+        projectFile = await app.vault.create(filePath, content);
+      }
+
+      // Add participant link to the project
+      if (projectFile) {
+        const linkTarget = app.metadataCache.fileToLinktext(
+          file.file,
+          projectFile.path
+        );
+        const link = `[[${linkTarget}]]`;
+        await addParticipantLink(app, projectFile, link);
+      }
+
+      // Open the project file
+      const leaf = app.workspace.getLeaf(false);
+      if (leaf && projectFile) {
+        await (leaf as any).openFile(projectFile);
+
+        // Focus and select title
+        window.setTimeout(() => {
+          if (app.workspace.getActiveFile()?.path === projectFile!.path) {
+            focusAndSelectTitle(leaf);
+          }
+        }, 150);
+      }
+    } catch (error) {
+      console.error("ProjectsLinks: failed to create project", error);
+    } finally {
+      setIsCreating(false);
+    }
+  }, [app, file, isCreating]);
 
   const actions = [
     {
