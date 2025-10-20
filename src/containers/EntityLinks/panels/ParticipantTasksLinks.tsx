@@ -77,7 +77,12 @@ export const ParticipantTasksLinks = ({
 
   const hostFile = file.file;
 
-  const collapsed = (config as any)?.collapsed !== false;
+  const collapsed = useMemo(() => {
+    const crmState = (file.cache?.frontmatter as any)?.crmState;
+    if (crmState?.tasks?.collapsed === true) return true;
+    if (crmState?.tasks?.collapsed === false) return false;
+    return (config as any)?.collapsed !== false;
+  }, [file.cache?.frontmatter, config]);
   const entityName = getEntityDisplayName(file);
 
   const tasks = useFiles(CRMFileType.TASK, {
@@ -123,6 +128,38 @@ export const ParticipantTasksLinks = ({
   });
 
   const hasTasks = orderedTasks.length > 0;
+
+  const handleCollapseChange = useCallback(
+    async (isCollapsed: boolean) => {
+      if (!hostFile) return;
+
+      try {
+        await app.fileManager.processFrontMatter(hostFile, (frontmatter) => {
+          if (
+            typeof frontmatter.crmState !== "object" ||
+            frontmatter.crmState === null
+          ) {
+            frontmatter.crmState = {};
+          }
+
+          if (
+            typeof frontmatter.crmState.tasks !== "object" ||
+            frontmatter.crmState.tasks === null
+          ) {
+            frontmatter.crmState.tasks = {};
+          }
+
+          frontmatter.crmState.tasks.collapsed = isCollapsed;
+        });
+      } catch (error) {
+        console.error(
+          "ParticipantTasksLinks: failed to persist collapse state",
+          error
+        );
+      }
+    },
+    [app, hostFile]
+  );
 
   if (!hostFile) {
     return (
@@ -257,6 +294,7 @@ export const ParticipantTasksLinks = ({
       icon="check-square"
       title="Tasks"
       actions={actions}
+      onCollapseChange={handleCollapseChange}
       {...(!hasTasks ? { p: 0 } : {})}
     >
       <EntityLinksTable
