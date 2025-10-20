@@ -184,9 +184,52 @@ export const ProjectsLinks = ({ file, config }: ProjectsLinksProps) => {
     fallbackSort: sortProjectsByLabel,
   });
 
-  const collapsed = (config as any)?.collapsed !== false;
+  const collapsed = useMemo(() => {
+    // First check crmState for persisted collapse state
+    const crmState = (file.cache?.frontmatter as any)?.crmState;
+    if (crmState?.projects?.collapsed === true) {
+      return true;
+    }
+    if (crmState?.projects?.collapsed === false) {
+      return false;
+    }
+    // Fallback to config or default
+    return (config as any)?.collapsed !== false;
+  }, [file.cache?.frontmatter, config]);
 
   const hasProjects = orderedProjects.length > 0;
+
+  const handleCollapseChange = useCallback(
+    async (isCollapsed: boolean) => {
+      if (!file.file) return;
+
+      try {
+        await app.fileManager.processFrontMatter(file.file, (frontmatter) => {
+          // Initialize crmState if it doesn't exist
+          if (
+            typeof frontmatter.crmState !== "object" ||
+            frontmatter.crmState === null
+          ) {
+            frontmatter.crmState = {};
+          }
+
+          // Initialize projects state if it doesn't exist
+          if (
+            typeof frontmatter.crmState.projects !== "object" ||
+            frontmatter.crmState.projects === null
+          ) {
+            frontmatter.crmState.projects = {};
+          }
+
+          // Update the collapsed state
+          frontmatter.crmState.projects.collapsed = isCollapsed;
+        });
+      } catch (error) {
+        console.error("ProjectsLinks: failed to persist collapse state", error);
+      }
+    },
+    [app, file]
+  );
 
   const handleCreateProject = useCallback(async () => {
     if (isCreating || !file.file) {
@@ -307,6 +350,7 @@ export const ProjectsLinks = ({ file, config }: ProjectsLinksProps) => {
       icon="folder-git-2"
       title="Projects"
       actions={actions}
+      onCollapseChange={handleCollapseChange}
       {...(!hasProjects ? { p: 0 } : {})}
     >
       <ProjectsTable
