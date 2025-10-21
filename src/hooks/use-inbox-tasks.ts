@@ -585,15 +585,20 @@ export const useInboxTasks = () => {
           content = `---\ntype: ${targetType}\n---\n`;
         }
 
-        const body = (target.raw || target.text || "").trim();
+        // Build a clean single-line body without checkbox/bullet
+        const taskText = (
+          target.text || extractTaskText(target.raw || "")
+        ).trim();
         const templateBlock = content.endsWith("\n\n")
           ? content
           : `${content.trimEnd()}\n\n`;
         const sourceLinkTarget = target.filePath.replace(/\.md$/i, "");
         const sourceLinkLabel = target.fileName.replace(/[\[\]]/g, "");
-        const backlink = `From note: [[${sourceLinkTarget}|${sourceLinkLabel}]]`;
-        const bodySection = body ? `${backlink}\n\n${body}\n` : `${backlink}\n`;
-        const combined = `${templateBlock}${bodySection}`;
+        const backlink = `[[${sourceLinkTarget}|${sourceLinkLabel}]]`;
+        const bodyLine = taskText || "";
+        // Keep the wiki link outside HTML so Obsidian parses it; shrink only parentheses
+        const metaLine = `_<small>(from </small>${backlink}<small>)</small>_`;
+        const combined = `${templateBlock}${bodyLine}\n${metaLine}\n`;
 
         const created = await app.vault.create(filePath, combined);
 
