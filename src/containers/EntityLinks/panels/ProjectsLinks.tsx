@@ -200,6 +200,9 @@ export const ProjectsLinks = ({ file, config }: ProjectsLinksProps) => {
         return `Projects associated with ${displayName}`;
       default:
         return "Related projects";
+    }
+  })();
+
   const collapsed = useMemo(() => {
     // First check crmState for persisted collapse state
     const crmState = (file.cache?.frontmatter as any)?.crmState;
@@ -212,8 +215,6 @@ export const ProjectsLinks = ({ file, config }: ProjectsLinksProps) => {
     // Fallback to config or default
     return (config as any)?.collapsed !== false;
   }, [file.cache?.frontmatter, config]);
-
-  const hasProjects = orderedProjects.length > 0;
 
   const handleCollapseChange = useCallback(
     async (isCollapsed: boolean) => {
