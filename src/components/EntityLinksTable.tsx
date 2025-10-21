@@ -142,56 +142,64 @@ export const EntityLinksTable = <T,>({
     [getItemId, visibleItems]
   );
 
-  return (
-    <div className="flex w-full flex-col gap-2">
-      <Table className="w-full text-sm">
-        {visibleItems.length > 0 ? (
-          isSortable ? (
-            <DndContext
-              sensors={sensors}
-              collisionDetection={closestCenter}
-              onDragEnd={handleDragEnd}
-              modifiers={[restrictToVerticalAxis]}
-            >
-              <SortableContext
-                items={sortableItems}
-                strategy={verticalListSortingStrategy}
-              >
-                <tbody>
-                  {visibleItems.map((item, index) => (
-                    <SortableRow
-                      key={getKey(item, index)}
-                      id={getItemId(item, index)}
-                      withHandle
-                    >
-                      {renderRow(item, index)}
-                    </SortableRow>
-                  ))}
-                </tbody>
-              </SortableContext>
-            </DndContext>
-          ) : (
+  const tableContent = (
+    <Table className="w-full text-sm">
+      {visibleItems.length > 0 ? (
+        isSortable ? (
+          <SortableContext
+            items={sortableItems}
+            strategy={verticalListSortingStrategy}
+          >
             <tbody>
               {visibleItems.map((item, index) => (
-                <Table.Row
+                <SortableRow
                   key={getKey(item, index)}
-                  className="border-b border-[var(--background-modifier-border)] last:border-0 hover:bg-[var(--background-modifier-hover)]"
+                  id={getItemId(item, index)}
+                  withHandle
                 >
                   {renderRow(item, index)}
-                </Table.Row>
+                </SortableRow>
               ))}
             </tbody>
-          )
+          </SortableContext>
         ) : (
           <tbody>
-            <Table.Row>
-              <Table.Cell className="px-2 py-2 text-xs text-[var(--text-muted)]">
-                {emptyLabel}
-              </Table.Cell>
-            </Table.Row>
+            {visibleItems.map((item, index) => (
+              <Table.Row
+                key={getKey(item, index)}
+                className="border-b border-[var(--background-modifier-border)] last:border-0 hover:bg-[var(--background-modifier-hover)]"
+              >
+                {renderRow(item, index)}
+              </Table.Row>
+            ))}
           </tbody>
-        )}
-      </Table>
+        )
+      ) : (
+        <tbody>
+          <Table.Row>
+            <Table.Cell className="px-2 py-2 text-xs text-[var(--text-muted)]">
+              {emptyLabel}
+            </Table.Cell>
+          </Table.Row>
+        </tbody>
+      )}
+    </Table>
+  );
+
+  return (
+    <div className="flex w-full flex-col gap-2">
+      {isSortable ? (
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleDragEnd}
+          modifiers={[restrictToVerticalAxis]}
+        >
+          {tableContent}
+        </DndContext>
+      ) : (
+        tableContent
+      )}
       {showLoadMore ? (
         <div className="flex w-full flex-col gap-2">
           <Separator />
