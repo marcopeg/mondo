@@ -20,9 +20,9 @@ const taskConfig: CRMEntityConfig<"task"> = {
     columns: ["show", "participants", "status"],
   },
   links: [
-    { type: "task-subtasks", collapsed: false },
     { type: "participants-assignment" },
     { type: "facts" },
+    { type: "task-subtasks", collapsed: false },
   ],
 };
 
