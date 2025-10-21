@@ -10,7 +10,6 @@ import { useApp } from "@/hooks/use-app";
 import { CRMFileType } from "@/types/CRMFileType";
 import { matchesPropertyLink } from "@/utils/matchesPropertyLink";
 import { getTaskLabel, getTaskStatus } from "@/utils/taskMetadata";
-import { getEntityDisplayName } from "@/utils/getEntityDisplayName";
 import { normalizeFolderPath } from "@/utils/normalizeFolderPath";
 import { getTemplateForType, renderTemplate } from "@/utils/CRMTemplates";
 import type { TCachedFile } from "@/types/TCachedFile";
@@ -235,8 +234,6 @@ export const TeamTasksLinks = ({ file, config }: TeamTasksLinksProps) => {
     },
   ];
 
-  const teamName = getEntityDisplayName(file);
-
   return (
     <Card
       collapsible
@@ -244,7 +241,6 @@ export const TeamTasksLinks = ({ file, config }: TeamTasksLinksProps) => {
       collapseOnHeaderClick
       icon="check-square"
       title="Tasks"
-      subtitle={`Tasks for ${teamName}`}
       actions={actions}
       onCollapseChange={handleCollapseChange}
     >
