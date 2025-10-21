@@ -11,6 +11,7 @@ type HabitTrackerProps = Record<string, string | undefined> & {
   title?: string;
   blockKey?: string;
   inlineKey?: string;
+  notePath?: string;
   value?: string;
 };
 
@@ -18,6 +19,7 @@ const HabitTracker: FC<HabitTrackerProps> = ({
   title,
   blockKey,
   inlineKey,
+  notePath,
 }) => {
   const [isMobileView, setIsMobileView] = useState<boolean>(() => {
     if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
@@ -28,7 +30,7 @@ const HabitTracker: FC<HabitTrackerProps> = ({
   });
   const trackerKey = blockKey ?? inlineKey ?? "habits";
   const { checkedDays, viewMode, error, toggleDay, toggleView } =
-    useHabitTracker({ trackerKey });
+    useHabitTracker({ trackerKey, filePath: notePath });
   const hasMounted = useRef(false);
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
   const effectiveViewMode = isMobileView ? "streak" : viewMode;

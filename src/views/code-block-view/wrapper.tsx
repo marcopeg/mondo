@@ -14,7 +14,7 @@ export class CRMInlineViewWrapper {
     const root = createRoot(el);
     root.render(
       <AppProvider app={app}>
-        <CodeBlockView source={source} />
+        <CodeBlockView source={source} sourcePath={ctx.sourcePath} />
       </AppProvider>
     );
 
