@@ -45,6 +45,7 @@ type CardProps = {
   collapsible?: boolean;
   collapsed?: boolean;
   collapseOnHeaderClick?: boolean;
+  onCollapseChange?: (collapsed: boolean) => void;
 };
 
 /**
@@ -71,6 +72,7 @@ export const Card: React.FC<CardProps> = ({
   collapsible = false,
   collapsed = false,
   collapseOnHeaderClick = false,
+  onCollapseChange,
 }) => {
   // Collect Box props to forward
   const boxProps: any = {};
@@ -152,12 +154,16 @@ export const Card: React.FC<CardProps> = ({
 
   const toggleCollapse = React.useCallback(() => {
     if (!collapsible) return;
-    setIsCollapsed((prev) => !prev);
-  }, [collapsible]);
+    setIsCollapsed((prev) => {
+      const newState = !prev;
+      onCollapseChange?.(newState);
+      return newState;
+    });
+  }, [collapsible, onCollapseChange]);
 
-  const collapseInteractiveProps: (React.HTMLAttributes<HTMLDivElement> & {
+  const collapseInteractiveProps: React.HTMLAttributes<HTMLDivElement> & {
     "aria-expanded"?: boolean;
-  }) = collapsible
+  } = collapsible
     ? {
         role: "button",
         tabIndex: 0,
@@ -202,7 +208,9 @@ export const Card: React.FC<CardProps> = ({
 
   const headerClassName = [
     innerPaddingClass,
-    collapseOnHeaderClick && collapsible ? "cursor-pointer select-none" : undefined,
+    collapseOnHeaderClick && collapsible
+      ? "cursor-pointer select-none"
+      : undefined,
   ]
     .filter(Boolean)
     .join(" ");
@@ -213,7 +221,9 @@ export const Card: React.FC<CardProps> = ({
   };
 
   const titleWrapperClassName =
-    collapsible && !collapseOnHeaderClick ? "cursor-pointer select-none" : undefined;
+    collapsible && !collapseOnHeaderClick
+      ? "cursor-pointer select-none"
+      : undefined;
 
   const titleWrapperStyle: React.CSSProperties = { outline: "none" };
 

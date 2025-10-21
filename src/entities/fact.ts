@@ -9,7 +9,7 @@ company:
 meeting:
 task:
 project:
-parent:
+fact:
 next:
 prev:
 ---

@@ -22,6 +22,14 @@ import { Icon } from "@/components/ui/Icon";
 
 const DEFAULT_PAGE_SIZE = 10;
 
+// Custom modifier to restrict drag movement to vertical axis only
+const restrictToVerticalAxis = ({ transform }: { transform: any }) => {
+  return {
+    ...transform,
+    x: 0, // Force x-axis to 0, only allow y-axis movement
+  };
+};
+
 type EntityLinksTableProps<T> = {
   items: T[];
   renderRow: (item: T, index: number) => React.ReactNode;
@@ -38,7 +46,9 @@ export const EntityLinksTable = <T,>({
   renderRow,
   getKey,
   pageSize = DEFAULT_PAGE_SIZE,
-  emptyLabel = <span className="text-xs text-[var(--text-muted)]">No entries</span>,
+  emptyLabel = (
+    <span className="text-xs text-[var(--text-muted)]">No entries</span>
+  ),
   sortable = false,
   onReorder,
   getSortableId,
@@ -46,7 +56,9 @@ export const EntityLinksTable = <T,>({
   const isSortable = sortable && typeof onReorder === "function";
   const getItemId = React.useCallback(
     (item: T, index: number): string | number => {
-      const rawId = getSortableId ? getSortableId(item, index) : getKey(item, index);
+      const rawId = getSortableId
+        ? getSortableId(item, index)
+        : getKey(item, index);
       if (typeof rawId === "string" || typeof rawId === "number") {
         return rawId;
       }
@@ -120,9 +132,7 @@ export const EntityLinksTable = <T,>({
   );
 
   const handleLoadMore = React.useCallback(() => {
-    setVisibleCount((previous) =>
-      Math.min(items.length, previous + pageSize)
-    );
+    setVisibleCount((previous) => Math.min(items.length, previous + pageSize));
   }, [items.length, pageSize]);
 
   const showLoadMore = !isSortable && items.length > visibleCount;
@@ -132,55 +142,64 @@ export const EntityLinksTable = <T,>({
     [getItemId, visibleItems]
   );
 
-  return (
-    <div className="flex w-full flex-col gap-2">
-      <Table className="w-full text-sm">
-        {visibleItems.length > 0 ? (
-          isSortable ? (
-            <DndContext
-              sensors={sensors}
-              collisionDetection={closestCenter}
-              onDragEnd={handleDragEnd}
-            >
-              <SortableContext
-                items={sortableItems}
-                strategy={verticalListSortingStrategy}
-              >
-                <tbody>
-                  {visibleItems.map((item, index) => (
-                    <SortableRow
-                      key={getKey(item, index)}
-                      id={getItemId(item, index)}
-                      withHandle
-                    >
-                      {renderRow(item, index)}
-                    </SortableRow>
-                  ))}
-                </tbody>
-              </SortableContext>
-            </DndContext>
-          ) : (
+  const tableContent = (
+    <Table className="w-full text-sm">
+      {visibleItems.length > 0 ? (
+        isSortable ? (
+          <SortableContext
+            items={sortableItems}
+            strategy={verticalListSortingStrategy}
+          >
             <tbody>
               {visibleItems.map((item, index) => (
-                <Table.Row
+                <SortableRow
                   key={getKey(item, index)}
-                  className="border-b border-[var(--background-modifier-border)] last:border-0 hover:bg-[var(--background-modifier-hover)]"
+                  id={getItemId(item, index)}
+                  withHandle
                 >
                   {renderRow(item, index)}
-                </Table.Row>
+                </SortableRow>
               ))}
             </tbody>
-          )
+          </SortableContext>
         ) : (
           <tbody>
-            <Table.Row>
-              <Table.Cell className="px-2 py-2 text-xs text-[var(--text-muted)]">
-                {emptyLabel}
-              </Table.Cell>
-            </Table.Row>
+            {visibleItems.map((item, index) => (
+              <Table.Row
+                key={getKey(item, index)}
+                className="border-b border-[var(--background-modifier-border)] last:border-0 hover:bg-[var(--background-modifier-hover)]"
+              >
+                {renderRow(item, index)}
+              </Table.Row>
+            ))}
           </tbody>
-        )}
-      </Table>
+        )
+      ) : (
+        <tbody>
+          <Table.Row>
+            <Table.Cell className="px-2 py-2 text-xs text-[var(--text-muted)]">
+              {emptyLabel}
+            </Table.Cell>
+          </Table.Row>
+        </tbody>
+      )}
+    </Table>
+  );
+
+  return (
+    <div className="flex w-full flex-col gap-2 overflow-y-auto">
+      {isSortable ? (
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleDragEnd}
+          modifiers={[restrictToVerticalAxis]}
+        >
+          {tableContent}
+        </DndContext>
+      ) : (
+        tableContent
+      )}
       {showLoadMore ? (
         <div className="flex w-full flex-col gap-2">
           <Separator />
@@ -207,9 +226,19 @@ type SortableRowProps = {
   withHandle?: boolean;
 };
 
-const SortableRow = ({ id, children, withHandle = false }: SortableRowProps) => {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
-    useSortable({ id });
+const SortableRow = ({
+  id,
+  children,
+  withHandle = false,
+}: SortableRowProps) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id });
 
   const style: React.CSSProperties = {
     transform: CSS.Transform.toString(transform),
@@ -241,5 +270,5 @@ const SortableRow = ({ id, children, withHandle = false }: SortableRowProps) => 
         </Table.Cell>
       ) : null}
     </Table.Row>
-    );
+  );
 };

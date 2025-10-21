@@ -7,18 +7,16 @@ import { EntityLinksTable } from "@/components/EntityLinksTable";
 import { useFiles } from "@/hooks/use-files";
 import { useEntityLinkOrdering } from "@/hooks/use-entity-link-ordering";
 import { useApp } from "@/hooks/use-app";
-import { useSetting } from "@/hooks/use-setting";
 import { CRMFileType } from "@/types/CRMFileType";
 import { matchesPropertyLink } from "@/utils/matchesPropertyLink";
 import { getTaskLabel, getTaskStatus } from "@/utils/taskMetadata";
 import { getEntityDisplayName } from "@/utils/getEntityDisplayName";
 import { normalizeFolderPath } from "@/utils/normalizeFolderPath";
 import { getTemplateForType, renderTemplate } from "@/utils/CRMTemplates";
-import { addParticipantLink } from "@/utils/participants";
 import type { TCachedFile } from "@/types/TCachedFile";
 import type { App, TFile } from "obsidian";
 
-type ParticipantTasksLinksProps = {
+type TaskSubtasksLinksProps = {
   file: TCachedFile;
   config: Record<string, unknown>;
 };
@@ -27,7 +25,6 @@ type ParticipantTasksLinksProps = {
 const focusAndSelectTitle = (leaf: any) => {
   const view = leaf?.view as any;
 
-  // 1) Try inline title (contenteditable element)
   const inlineTitleEl: HTMLElement | null =
     view?.contentEl?.querySelector?.(".inline-title") ??
     view?.containerEl?.querySelector?.(".inline-title") ??
@@ -42,13 +39,10 @@ const focusAndSelectTitle = (leaf: any) => {
         range.selectNodeContents(inlineTitleEl);
         selection.addRange(range);
       }
-    } catch (_) {
-      // no-op if selection APIs are unavailable
-    }
+    } catch (_) {}
     return true;
   }
 
-  // 2) Try title input (when inline title is configured as an input)
   const titleInput: HTMLInputElement | undefined =
     view?.fileView?.inputEl ?? view?.titleEl?.querySelector?.("input");
   if (titleInput) {
@@ -67,68 +61,61 @@ const sanitizeFileName = (value: string) =>
     .replace(/^-+|-+$/g, "")
     .trim() || "untitled";
 
-export const ParticipantTasksLinks = ({
-  file,
-  config,
-}: ParticipantTasksLinksProps) => {
+export const TaskSubtasksLinks = ({ file, config }: TaskSubtasksLinksProps) => {
   const app = useApp();
-  const entityType = file.cache?.frontmatter?.type as string | undefined;
-  const taskFolderPath = useSetting<string>("rootPaths.task", "");
-  const [isCreating, setIsCreating] = useState(false);
-
   const hostFile = file.file;
+  const [isCreating, setIsCreating] = useState(false);
 
   const collapsed = useMemo(() => {
     const crmState = (file.cache?.frontmatter as any)?.crmState;
-    if (crmState?.tasks?.collapsed === true) return true;
-    if (crmState?.tasks?.collapsed === false) return false;
+    if (crmState?.subtasks?.collapsed === true) return true;
+    if (crmState?.subtasks?.collapsed === false) return false;
     return (config as any)?.collapsed !== false;
   }, [file.cache?.frontmatter, config]);
-  const entityName = getEntityDisplayName(file);
 
-  const tasks = useFiles(CRMFileType.TASK, {
+  const subtasks = useFiles(CRMFileType.TASK, {
     filter: useCallback(
       (candidate: TCachedFile, _app: App) => {
         if (
           !hostFile ||
           !candidate.file ||
           candidate.file.path === hostFile.path
-        )
+        ) {
           return false;
-        return matchesPropertyLink(candidate, "participants", hostFile);
+        }
+        // A sub-task is a task that references the current task in the "task" property
+        return matchesPropertyLink(candidate, "task", hostFile);
       },
       [hostFile]
     ),
   });
 
-  const validTasks = useMemo(
-    () => tasks.filter((task) => Boolean(task.file)),
-    [tasks]
+  const validSubtasks = useMemo(
+    () => subtasks.filter((t) => Boolean(t.file)),
+    [subtasks]
   );
 
-  const getTaskId = useCallback((task: TCachedFile) => task.file?.path, []);
+  const getTaskId = useCallback((t: TCachedFile) => t.file?.path, []);
 
-  const sortTasksByLabel = useCallback((entries: TCachedFile[]) => {
+  const sortByLabel = useCallback((entries: TCachedFile[]) => {
     return [...entries].sort((a, b) => {
-      const labelA = getTaskLabel(a).toLowerCase();
-      const labelB = getTaskLabel(b).toLowerCase();
-      return labelA.localeCompare(labelB);
+      const aLabel = getTaskLabel(a).toLowerCase();
+      const bLabel = getTaskLabel(b).toLowerCase();
+      return aLabel.localeCompare(bLabel);
     });
   }, []);
 
   const {
-    items: orderedTasks,
+    items: orderedSubtasks,
     onReorder,
     sortable,
   } = useEntityLinkOrdering({
     file,
-    items: validTasks,
-    frontmatterKey: "tasks",
+    items: validSubtasks,
+    frontmatterKey: "subtasks",
     getItemId: getTaskId,
-    fallbackSort: sortTasksByLabel,
+    fallbackSort: sortByLabel,
   });
-
-  const hasTasks = orderedTasks.length > 0;
 
   const handleCollapseChange = useCallback(
     async (isCollapsed: boolean) => {
@@ -140,21 +127,21 @@ export const ParticipantTasksLinks = ({
             typeof frontmatter.crmState !== "object" ||
             frontmatter.crmState === null
           ) {
-            frontmatter.crmState = {};
+            frontmatter.crmState = {} as any;
           }
 
           if (
-            typeof frontmatter.crmState.tasks !== "object" ||
-            frontmatter.crmState.tasks === null
+            typeof (frontmatter as any).crmState.subtasks !== "object" ||
+            (frontmatter as any).crmState.subtasks === null
           ) {
-            frontmatter.crmState.tasks = {};
+            (frontmatter as any).crmState.subtasks = {};
           }
 
-          frontmatter.crmState.tasks.collapsed = isCollapsed;
+          (frontmatter as any).crmState.subtasks.collapsed = isCollapsed;
         });
       } catch (error) {
         console.error(
-          "ParticipantTasksLinks: failed to persist collapse state",
+          "TaskSubtasksLinks: failed to persist collapse state",
           error
         );
       }
@@ -162,31 +149,12 @@ export const ParticipantTasksLinks = ({
     [app, hostFile]
   );
 
-  if (!hostFile) {
-    return (
-      <Card
-        collapsible
-        collapsed={collapsed}
-        collapseOnHeaderClick
-        icon="check-square"
-        title="Tasks"
-      >
-        <div className="px-2 py-2 text-xs text-[var(--text-muted)]">
-          Save this note to start linking tasks.
-        </div>
-      </Card>
-    );
-  }
-
-  const handleCreateTask = useCallback(async () => {
-    if (isCreating || !hostFile) {
-      return;
-    }
-
+  const handleCreateSubtask = useCallback(async () => {
+    if (isCreating || !hostFile) return;
     setIsCreating(true);
 
     try {
-      // Get plugin settings for root paths and templates
+      // Resolve settings for root path and templates
       const pluginInstance = (app as any).plugins?.plugins?.["crm"] as
         | {
             settings?: {
@@ -213,16 +181,17 @@ export const ParticipantTasksLinks = ({
         }
       }
 
-      // Create file path
       const safeBase = sanitizeFileName("Untitled Task");
       const fileName = `${safeBase}.md`;
       const filePath = normalizedFolder
         ? `${normalizedFolder}/${fileName}`
         : fileName;
 
-      let taskFile = app.vault.getAbstractFileByPath(filePath) as TFile | null;
+      let subTaskFile = app.vault.getAbstractFileByPath(
+        filePath
+      ) as TFile | null;
 
-      if (!taskFile) {
+      if (!subTaskFile) {
         const now = new Date();
         const isoTimestamp = now.toISOString();
         const templateSource = await getTemplateForType(
@@ -241,33 +210,35 @@ export const ParticipantTasksLinks = ({
           datetime: isoTimestamp,
         });
 
-        taskFile = await app.vault.create(filePath, content);
+        subTaskFile = await app.vault.create(filePath, content);
       }
 
-      // Add participant link to the task
-      if (taskFile) {
-        const linkTarget = app.metadataCache.fileToLinktext(
+      if (subTaskFile) {
+        // Link the new task to the current task via the "task" property
+        // Generate link text to the parent (hostFile) from the perspective of the new subTaskFile
+        const parentLinktext = app.metadataCache.fileToLinktext(
           hostFile,
-          taskFile.path
+          subTaskFile.path
         );
-        const link = `[[${linkTarget}]]`;
-        await addParticipantLink(app, taskFile, link);
+
+        await app.fileManager.processFrontMatter(subTaskFile, (fm) => {
+          // Set a single-valued 'task' property pointing to the parent task
+          (fm as any).task = `[[${parentLinktext}]]`;
+        });
       }
 
-      // Open the task file
+      // Open and focus title for quick rename
       const leaf = app.workspace.getLeaf(false);
-      if (leaf && taskFile) {
-        await (leaf as any).openFile(taskFile);
-
-        // Focus and select title
+      if (leaf && subTaskFile) {
+        await (leaf as any).openFile(subTaskFile);
         window.setTimeout(() => {
-          if (app.workspace.getActiveFile()?.path === taskFile!.path) {
+          if (app.workspace.getActiveFile()?.path === subTaskFile!.path) {
             focusAndSelectTitle(leaf);
           }
         }, 150);
       }
     } catch (error) {
-      console.error("ParticipantTasksLinks: failed to create task", error);
+      console.error("TaskSubtasksLinks: failed to create sub-task", error);
     } finally {
       setIsCreating(false);
     }
@@ -275,17 +246,19 @@ export const ParticipantTasksLinks = ({
 
   const actions = [
     {
-      key: "task-create",
+      key: "subtask-create",
       content: (
         <Button
           variant="link"
           icon="plus"
-          aria-label="Create task"
-          onClick={handleCreateTask}
+          aria-label="Create sub-task"
+          onClick={handleCreateSubtask}
         />
       ),
     },
   ];
+
+  const taskName = getEntityDisplayName(file);
 
   return (
     <Card
@@ -294,16 +267,17 @@ export const ParticipantTasksLinks = ({
       collapseOnHeaderClick
       icon="check-square"
       title="Tasks"
+      subtitle={`Sub-tasks of ${taskName}`}
       actions={actions}
       onCollapseChange={handleCollapseChange}
     >
       <EntityLinksTable
-        items={orderedTasks}
-        getKey={(task) => task.file!.path}
-        renderRow={(task) => {
-          const taskFile = task.file!;
-          const label = getTaskLabel(task);
-          const status = getTaskStatus(task);
+        items={orderedSubtasks}
+        getKey={(t) => t.file!.path}
+        renderRow={(t) => {
+          const taskFile = t.file!;
+          const label = getTaskLabel(t);
+          const status = getTaskStatus(t);
           return (
             <>
               <Table.Cell className="px-2 py-2 align-top break-words overflow-hidden">
@@ -332,11 +306,11 @@ export const ParticipantTasksLinks = ({
         }}
         sortable={sortable}
         onReorder={onReorder}
-        getSortableId={(task) => task.file!.path}
-        emptyLabel="No tasks yet"
+        getSortableId={(t) => t.file!.path}
+        emptyLabel="No sub-tasks yet"
       />
     </Card>
   );
 };
 
-export default ParticipantTasksLinks;
+export default TaskSubtasksLinks;
