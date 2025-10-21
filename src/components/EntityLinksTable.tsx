@@ -22,6 +22,14 @@ import { Icon } from "@/components/ui/Icon";
 
 const DEFAULT_PAGE_SIZE = 10;
 
+// Custom modifier to restrict drag movement to vertical axis only
+const restrictToVerticalAxis = ({ transform }: { transform: any }) => {
+  return {
+    ...transform,
+    x: 0, // Force x-axis to 0, only allow y-axis movement
+  };
+};
+
 type EntityLinksTableProps<T> = {
   items: T[];
   renderRow: (item: T, index: number) => React.ReactNode;
@@ -38,7 +46,9 @@ export const EntityLinksTable = <T,>({
   renderRow,
   getKey,
   pageSize = DEFAULT_PAGE_SIZE,
-  emptyLabel = <span className="text-xs text-[var(--text-muted)]">No entries</span>,
+  emptyLabel = (
+    <span className="text-xs text-[var(--text-muted)]">No entries</span>
+  ),
   sortable = false,
   onReorder,
   getSortableId,
@@ -46,7 +56,9 @@ export const EntityLinksTable = <T,>({
   const isSortable = sortable && typeof onReorder === "function";
   const getItemId = React.useCallback(
     (item: T, index: number): string | number => {
-      const rawId = getSortableId ? getSortableId(item, index) : getKey(item, index);
+      const rawId = getSortableId
+        ? getSortableId(item, index)
+        : getKey(item, index);
       if (typeof rawId === "string" || typeof rawId === "number") {
         return rawId;
       }
@@ -120,9 +132,7 @@ export const EntityLinksTable = <T,>({
   );
 
   const handleLoadMore = React.useCallback(() => {
-    setVisibleCount((previous) =>
-      Math.min(items.length, previous + pageSize)
-    );
+    setVisibleCount((previous) => Math.min(items.length, previous + pageSize));
   }, [items.length, pageSize]);
 
   const showLoadMore = !isSortable && items.length > visibleCount;
@@ -141,6 +151,7 @@ export const EntityLinksTable = <T,>({
               sensors={sensors}
               collisionDetection={closestCenter}
               onDragEnd={handleDragEnd}
+              modifiers={[restrictToVerticalAxis]}
             >
               <SortableContext
                 items={sortableItems}
@@ -207,9 +218,19 @@ type SortableRowProps = {
   withHandle?: boolean;
 };
 
-const SortableRow = ({ id, children, withHandle = false }: SortableRowProps) => {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
-    useSortable({ id });
+const SortableRow = ({
+  id,
+  children,
+  withHandle = false,
+}: SortableRowProps) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id });
 
   const style: React.CSSProperties = {
     transform: CSS.Transform.toString(transform),
@@ -241,5 +262,5 @@ const SortableRow = ({ id, children, withHandle = false }: SortableRowProps) => 
         </Table.Cell>
       ) : null}
     </Table.Row>
-    );
+  );
 };
