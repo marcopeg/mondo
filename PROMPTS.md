@@ -57,3 +57,7 @@ focus on any EntityLink panel that generate a list of items, i want to remove th
 focus on the Tasks EntityLink panel for type=task, it should be collapsed by default.
 
 focus on all the EntityLink that exist in the project, those should be collapsed by default and should have no subtitle.
+
+focus on the Teammates EntityLink on the entity "person". It should always be visible even if there are no items same for the other panels, and it should have the "+" button that generates a new document of type=person linked back to the team with title "Untitled Person". The new note's file name content should be slected so that it's easy for the user to modify it by typing the new value.
+
+focus on the Teammates EntityLink on the entity "person". It should automatically hide if there is no "team" property in the document, or if it is null or empty.
