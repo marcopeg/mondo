@@ -76,7 +76,6 @@ export const RoleTasksLinks = ({ file, config }: RoleTasksLinksProps) => {
       collapseOnHeaderClick
       icon="check-square"
       title="Tasks"
-      subtitle={`Tasks referencing ${roleName}`}
     >
       <EntityLinksTable
         items={orderedTasks}

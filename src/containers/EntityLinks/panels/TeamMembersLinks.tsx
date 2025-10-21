@@ -154,7 +154,9 @@ export const TeamMembersLinks = ({ file, config }: TeamMembersLinksProps) => {
         ? `${normalizedFolder}/${fileName}`
         : fileName;
 
-      let personFile = app.vault.getAbstractFileByPath(filePath) as TFile | null;
+      let personFile = app.vault.getAbstractFileByPath(
+        filePath
+      ) as TFile | null;
 
       if (!personFile) {
         const now = new Date();
@@ -231,7 +233,6 @@ export const TeamMembersLinks = ({ file, config }: TeamMembersLinksProps) => {
       collapseOnHeaderClick
       icon="users"
       title="Members"
-      subtitle={`People assigned to ${title}`}
       actions={actions}
       onCollapseChange={handleCollapseChange}
     >

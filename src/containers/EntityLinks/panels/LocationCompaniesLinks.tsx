@@ -38,10 +38,9 @@ export const LocationCompaniesLinks = ({
   return (
     <Card
       collapsible
-      collapsed={Boolean((config as any)?.collapsed)}
+      collapsed={(config as any)?.collapsed !== false}
       icon="building-2"
       title="Companies"
-      subtitle={`Companies linked to ${locationName}`}
     >
       <CompaniesTable items={companies} />
     </Card>

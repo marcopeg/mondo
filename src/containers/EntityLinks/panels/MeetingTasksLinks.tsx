@@ -248,7 +248,6 @@ export const MeetingTasksLinks = ({ file, config }: MeetingTasksLinksProps) => {
       collapseOnHeaderClick
       icon="check-square"
       title="Tasks"
-      subtitle={`Tasks for ${meetingName}`}
       actions={actions}
       onCollapseChange={handleCollapseChange}
     >

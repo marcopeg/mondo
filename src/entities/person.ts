@@ -32,24 +32,24 @@ const personConfig: CRMEntityConfig<
   },
   links: [
     {
-      type: "teammates",
-      //... other configuration who'se type is specific to the "teammates" entity and that specific type should be defined in the TeammatesLinks.tsx file and similar file block by block
-    },
-    {
-      type: "projects",
-      collapsed: false,
-    },
-    {
-      type: "participant-tasks",
-      collapsed: false,
-    },
-    {
       type: "facts",
-      collapsed: false,
+      collapsed: true,
     },
     {
       type: "meetings",
-      collapsed: false,
+      collapsed: true,
+    },
+    {
+      type: "participant-tasks",
+      collapsed: true,
+    },
+    {
+      type: "projects",
+      collapsed: true,
+    },
+    {
+      type: "teammates",
+      collapsed: true,
     },
   ],
 };

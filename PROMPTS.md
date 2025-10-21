@@ -55,3 +55,5 @@ focus on the EntityLink "tasks" across the various entities, fix the horizontal 
 focus on any EntityLink panel that generate a list of items, i want to remove the padding around the list. the left/right borders of the list of item should touch the Card's body borders so to maximize the available space for rendering the contents.
 
 focus on the Tasks EntityLink panel for type=task, it should be collapsed by default.
+
+focus on all the EntityLink that exist in the project, those should be collapsed by default and should have no subtitle.

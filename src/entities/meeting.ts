@@ -42,7 +42,7 @@ const meetingConfig: CRMEntityConfig<
     },
     {
       type: "meeting-tasks",
-      collapsed: false,
+      collapsed: true,
     },
   ],
 };
