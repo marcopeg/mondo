@@ -280,8 +280,12 @@ export const TaskSubtasksLinks = ({ file, config }: TaskSubtasksLinksProps) => {
           const status = getTaskStatus(t);
           return (
             <>
-              <Table.Cell className="px-2 py-2 align-top">
-                <Button to={taskFile.path} variant="link">
+              <Table.Cell className="px-2 py-2 align-top break-words overflow-hidden">
+                <Button
+                  to={taskFile.path}
+                  variant="link"
+                  className="break-words whitespace-normal"
+                >
                   {label}
                 </Button>
               </Table.Cell>

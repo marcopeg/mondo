@@ -49,3 +49,5 @@ focus on the EntityLink "projects" of the entity type "team". Fix the UI so that
 focus on the EntityLink "meetings" of the entity type "team". When creating a new meeting, the new note's title should be "{date/time} with {team "show" or filename}". The default title should be "Untitled Person. The new note's file name content should be slected so that it's easy for the user to modify it by typing the new value.
 
 focus on the EntityLink "tasks" of the entity type "person". right now the task title expands horizontally causing a scroll on small screens that makes it difficult to handle the drag and drop. fix the ui so that the task's title can break into multiple lines. keep each lines' content centered on vertical alignmenr.
+
+focus on the EntityLink "tasks" across the various entities, fix the horizontal scrolling issue in the same way you did for the panel in the entity type=person, so that the task's title can break into multiple rows.

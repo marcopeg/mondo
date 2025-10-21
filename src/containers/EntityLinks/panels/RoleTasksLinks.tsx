@@ -44,10 +44,7 @@ export const RoleTasksLinks = ({ file, config }: RoleTasksLinksProps) => {
     return null;
   }
 
-  const getTaskId = useCallback(
-    (task: TCachedFile) => task.file?.path,
-    []
-  );
+  const getTaskId = useCallback((task: TCachedFile) => task.file?.path, []);
 
   const sortTasksByLabel = useCallback((entries: TCachedFile[]) => {
     return [...entries].sort((a, b) => {
@@ -57,7 +54,11 @@ export const RoleTasksLinks = ({ file, config }: RoleTasksLinksProps) => {
     });
   }, []);
 
-  const { items: orderedTasks, onReorder, sortable } = useEntityLinkOrdering({
+  const {
+    items: orderedTasks,
+    onReorder,
+    sortable,
+  } = useEntityLinkOrdering({
     file,
     items: validTasks,
     frontmatterKey: "tasks",
@@ -86,8 +87,12 @@ export const RoleTasksLinks = ({ file, config }: RoleTasksLinksProps) => {
           const status = getTaskStatus(task);
           return (
             <>
-              <Table.Cell className="px-2 py-2 align-top">
-                <Button to={taskFile.path} variant="link">
+              <Table.Cell className="px-2 py-2 align-top break-words overflow-hidden">
+                <Button
+                  to={taskFile.path}
+                  variant="link"
+                  className="break-words whitespace-normal"
+                >
                   {label}
                 </Button>
               </Table.Cell>
