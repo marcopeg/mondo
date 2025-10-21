@@ -351,7 +351,6 @@ export const ProjectsLinks = ({ file, config }: ProjectsLinksProps) => {
       title="Projects"
       actions={actions}
       onCollapseChange={handleCollapseChange}
-      {...(!hasProjects ? { p: 0 } : {})}
     >
       <ProjectsTable
         items={orderedProjects}
