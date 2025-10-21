@@ -51,3 +51,5 @@ focus on the EntityLink "meetings" of the entity type "team". When creating a ne
 focus on the EntityLink "tasks" of the entity type "person". right now the task title expands horizontally causing a scroll on small screens that makes it difficult to handle the drag and drop. fix the ui so that the task's title can break into multiple lines. keep each lines' content centered on vertical alignmenr.
 
 focus on the EntityLink "tasks" across the various entities, fix the horizontal scrolling issue in the same way you did for the panel in the entity type=person, so that the task's title can break into multiple rows.
+
+focus on any EntityLink panel that generate a list of items, i want to remove the padding around the list. the left/right borders of the list of item should touch the Card's body borders so to maximize the available space for rendering the contents.

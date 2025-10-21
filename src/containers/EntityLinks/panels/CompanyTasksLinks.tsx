@@ -267,7 +267,7 @@ export const CompanyTasksLinks = ({ file, config }: CompanyTasksLinksProps) => {
                   {label}
                 </Button>
               </Table.Cell>
-              <Table.Cell className="px-2 py-2 align-top text-right">
+              <Table.Cell className="px-2 py-2 align-middle text-right">
                 {status ? (
                   <Typography
                     variant="muted"
