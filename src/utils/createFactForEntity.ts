@@ -111,7 +111,7 @@ export const createFactForEntity = async ({
   const hostType = (entityFile.cache?.frontmatter as any)?.type as
     | string
     | undefined;
-  // Treat person, project, task, fact, company, and meeting hosts as editable targets where we prefer a
+  // Treat person, project, task, fact, company, team, and meeting hosts as editable targets where we prefer a
   // simple default title (so user can immediately rename it)
   const isEditableHost =
     hostType === CRMFileType.PERSON ||
@@ -124,7 +124,10 @@ export const createFactForEntity = async ({
     hostType === "task" ||
     hostType === CRMFileType.FACT ||
     hostType === "fact" ||
-    hostType === "company";
+    hostType === CRMFileType.COMPANY ||
+    hostType === "company" ||
+    hostType === CRMFileType.TEAM ||
+    hostType === "team";
   const rootPathSetting = settings.rootPaths?.[CRMFileType.FACT] ?? "/";
   const normalizedFolder = normalizeFolderPath(rootPathSetting);
 
