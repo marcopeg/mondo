@@ -159,7 +159,12 @@ const parseBlockSource = (
   }
 };
 
-export const CodeBlockView = ({ source }: { source: string }) => {
+type CodeBlockViewProps = {
+  source: string;
+  sourcePath: string;
+};
+
+export const CodeBlockView = ({ source, sourcePath }: CodeBlockViewProps) => {
   const { blockKey, props } = parseBlockSource(source);
   const BlockComponent = blockKey ? blocksMap[blockKey] : undefined;
 
@@ -175,5 +180,10 @@ export const CodeBlockView = ({ source }: { source: string }) => {
       ? { ...restProps, blockKey: keyProp, inlineKey: keyProp }
       : restProps;
 
-  return <BlockComponent {...componentProps} />;
+  const enhancedProps =
+    blockKey === "habits"
+      ? { ...componentProps, notePath: sourcePath }
+      : componentProps;
+
+  return <BlockComponent {...enhancedProps} />;
 };

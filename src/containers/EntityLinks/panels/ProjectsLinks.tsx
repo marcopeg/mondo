@@ -184,6 +184,22 @@ export const ProjectsLinks = ({ file, config }: ProjectsLinksProps) => {
     fallbackSort: sortProjectsByLabel,
   });
 
+  if (validProjects.length === 0) {
+    return null;
+  }
+
+  const displayName = getDisplayName(file);
+
+  const subtitle = (() => {
+    switch (entityType) {
+      case "company":
+        return `Projects linked to ${displayName}`;
+      case "team":
+        return `Projects involving this team`;
+      case "person":
+        return `Projects associated with ${displayName}`;
+      default:
+        return "Related projects";
   const collapsed = useMemo(() => {
     // First check crmState for persisted collapse state
     const crmState = (file.cache?.frontmatter as any)?.crmState;

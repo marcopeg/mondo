@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { TFile } from "obsidian";
 import { useApp } from "@/hooks/use-app";
 import { useActiveTab } from "@/hooks/use-active-tab";
 
@@ -6,6 +7,7 @@ type HabitTrackerView = "streak" | "calendar";
 
 type UseHabitTrackerArgs = {
   trackerKey?: string;
+  filePath?: string;
 };
 
 type UseHabitTrackerResult = {
@@ -63,13 +65,24 @@ const sortDates = (dates: Set<string>) => {
 
 export const useHabitTracker = ({
   trackerKey: requestedKey,
+  filePath,
 }: UseHabitTrackerArgs = {}): UseHabitTrackerResult => {
   const app = useApp();
   const { file } = useActiveTab();
-  const targetFile = file?.file;
-  const frontmatter = file?.cache?.frontmatter as
-    | Record<string, unknown>
-    | undefined;
+  const [explicitFile, setExplicitFile] = useState<TFile | null | undefined>(
+    undefined
+  );
+  const [explicitFrontmatter, setExplicitFrontmatter] = useState<
+    Record<string, unknown> | undefined
+  >(undefined);
+
+  const isResolvingExplicitFile = filePath ? explicitFile === undefined : false;
+  const targetFile = filePath
+    ? explicitFile ?? null
+    : file?.file ?? null;
+  const frontmatter = (filePath
+    ? explicitFrontmatter
+    : file?.cache?.frontmatter) as Record<string, unknown> | undefined;
 
   const trackerKey = requestedKey ?? "habits";
   const viewSettingKey = `${trackerKey}-view`;
@@ -79,7 +92,64 @@ export const useHabitTracker = ({
   const [trackedDays, setTrackedDays] = useState<Set<string>>(new Set());
   const [viewMode, setViewMode] = useState<HabitTrackerView>(DEFAULT_VIEW_MODE);
 
+  const resolveExplicitFile = useCallback(() => {
+    if (!filePath) {
+      setExplicitFile(undefined);
+      setExplicitFrontmatter(undefined);
+      return;
+    }
+
+    const resolved = app.vault.getAbstractFileByPath(filePath);
+    if (resolved instanceof TFile) {
+      setExplicitFile(resolved);
+      const cached = app.metadataCache.getFileCache(resolved);
+      setExplicitFrontmatter(
+        (cached?.frontmatter as Record<string, unknown> | undefined) ?? undefined
+      );
+      return;
+    }
+
+    setExplicitFile(null);
+    setExplicitFrontmatter(undefined);
+  }, [app.metadataCache, app.vault, filePath]);
+
+  useEffect(() => {
+    if (!filePath) {
+      setExplicitFile(null);
+      setExplicitFrontmatter(undefined);
+      return;
+    }
+
+    resolveExplicitFile();
+  }, [filePath, resolveExplicitFile]);
+
+  useEffect(() => {
+    if (!filePath) {
+      return;
+    }
+
+    const handleMetadataChange = () => {
+      resolveExplicitFile();
+    };
+
+    const metadataRef = app.metadataCache.on("changed", handleMetadataChange);
+    const modifyRef = app.vault.on("modify", (changedFile) => {
+      if (changedFile?.path === filePath) {
+        resolveExplicitFile();
+      }
+    });
+
+    return () => {
+      app.metadataCache.offref(metadataRef);
+      app.vault.offref(modifyRef);
+    };
+  }, [app.metadataCache, app.vault, filePath, resolveExplicitFile]);
+
   const ensureFrontmatter = useCallback(async () => {
+    if (isResolvingExplicitFile) {
+      return;
+    }
+
     if (!targetFile) {
       setError("Unable to access the current note.");
       return;
@@ -104,7 +174,13 @@ export const useHabitTracker = ({
       ensureRef.current = null;
       setError("Unable to read habit tracker data.");
     }
-  }, [app.fileManager, targetFile, trackerKey, viewSettingKey]);
+  }, [
+    app.fileManager,
+    isResolvingExplicitFile,
+    targetFile,
+    trackerKey,
+    viewSettingKey,
+  ]);
 
   useEffect(() => {
     ensureRef.current = null;
