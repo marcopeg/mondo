@@ -110,10 +110,6 @@ export const ProjectsLinks = ({ file, config }: ProjectsLinksProps) => {
     [projects]
   );
 
-  if (validProjects.length === 0) {
-    return null;
-  }
-
   const getProjectId = useCallback(
     (project: TCachedFile) => project.file?.path,
     []
@@ -127,13 +123,21 @@ export const ProjectsLinks = ({ file, config }: ProjectsLinksProps) => {
     });
   }, []);
 
-  const { items: orderedProjects, onReorder, sortable } = useEntityLinkOrdering({
+  const {
+    items: orderedProjects,
+    onReorder,
+    sortable,
+  } = useEntityLinkOrdering({
     file,
     items: validProjects,
     frontmatterKey: "projects",
     getItemId: getProjectId,
     fallbackSort: sortProjectsByLabel,
   });
+
+  if (validProjects.length === 0) {
+    return null;
+  }
 
   const displayName = getDisplayName(file);
 
