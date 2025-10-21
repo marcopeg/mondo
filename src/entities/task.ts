@@ -22,7 +22,8 @@ const taskConfig: CRMEntityConfig<"task"> = {
   links: [
     { type: "participants-assignment" },
     { type: "facts" },
-    { type: "task-subtasks", collapsed: false },
+    // Collapse subtasks by default; persisted per-note via crmState.subtasks.collapsed
+    { type: "task-subtasks", collapsed: true },
   ],
 };
 
