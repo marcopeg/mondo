@@ -35,6 +35,11 @@ const FACT_LINK_RULES: Partial<Record<CRMEntityType, FactLinkRule>> = {
     mode: "single",
     subtitle: (name) => `Facts about ${name}`,
   },
+  team: {
+    property: "team",
+    mode: "single",
+    subtitle: (name) => `Facts about ${name}`,
+  },
   meeting: {
     property: "meeting",
     mode: "single",
