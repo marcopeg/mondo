@@ -45,3 +45,5 @@ focs on the EntityLink "Employees" on the entity "company". This already lists t
 focus on the EntityLink that allows for drag and drop sorting; change the persist strategy so that they use the `crmState` frontmatter key as "{panel}.order".
 
 focus on the EntityLink "projects" of the entity type "team". Fix the UI so that it matches in padding and spacing the UI of the "facts" block for the entity type "person". 
+
+focus on the EntityLink "meetings" of the entity type "team". When creating a new meeting, the new note's title should be "{date/time} with {team "show" or filename}". The default title should be "Untitled Person. The new note's file name content should be slected so that it's easy for the user to modify it by typing the new value.
