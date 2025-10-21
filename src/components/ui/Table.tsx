@@ -21,7 +21,12 @@ const TableRoot: React.FC<TableProps> = ({
   >
     <table
       className={`crm-table ${className}`}
-      style={{ width: "100%", borderCollapse: "collapse", borderSpacing: 0 }}
+      style={{
+        width: "100%",
+        borderCollapse: "collapse",
+        borderSpacing: 0,
+        tableLayout: "fixed",
+      }}
       {...rest}
     >
       {children}

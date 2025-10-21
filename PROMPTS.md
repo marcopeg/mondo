@@ -47,3 +47,5 @@ focus on the EntityLink that allows for drag and drop sorting; change the persis
 focus on the EntityLink "projects" of the entity type "team". Fix the UI so that it matches in padding and spacing the UI of the "facts" block for the entity type "person". 
 
 focus on the EntityLink "meetings" of the entity type "team". When creating a new meeting, the new note's title should be "{date/time} with {team "show" or filename}". The default title should be "Untitled Person. The new note's file name content should be slected so that it's easy for the user to modify it by typing the new value.
+
+focus on the EntityLink "tasks" of the entity type "person". right now the task title expands horizontally causing a scroll on small screens that makes it difficult to handle the drag and drop. fix the ui so that the task's title can break into multiple lines. keep each lines' content centered on vertical alignmenr.
