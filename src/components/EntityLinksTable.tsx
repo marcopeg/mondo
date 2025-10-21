@@ -187,7 +187,7 @@ export const EntityLinksTable = <T,>({
   );
 
   return (
-    <div className="flex w-full flex-col gap-2">
+    <div className="flex w-full flex-col gap-2 overflow-y-auto">
       {isSortable ? (
         <DndContext
           sensors={sensors}
