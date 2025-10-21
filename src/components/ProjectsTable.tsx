@@ -36,14 +36,21 @@ export const ProjectsTable: React.FC<ProjectsTableProps> = ({
         const subtitle = getProjectDisplaySubtitle(entry);
 
         return (
-          <Table.Cell className="px-2 py-2 align-top">
-            <Button to={entry.file.path} variant="link">
-              {label}
-            </Button>
-            {subtitle ? (
-              <div className="text-xs text-[var(--text-muted)]">{subtitle}</div>
-            ) : null}
-          </Table.Cell>
+          <>
+            <Table.Cell className="px-2 py-2 align-top">
+              <Button to={entry.file.path} variant="link">
+                {label}
+              </Button>
+              {subtitle ? (
+                <div className="text-xs text-[var(--text-muted)]">
+                  {subtitle}
+                </div>
+              ) : null}
+            </Table.Cell>
+            <Table.Cell className="px-2 py-2 align-top text-right text-xs text-[var(--text-muted)]">
+              —
+            </Table.Cell>
+          </>
         );
       }}
     />
