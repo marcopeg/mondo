@@ -12,7 +12,10 @@ type LocationPeopleLinksProps = {
   file: TCachedFile;
 };
 
-export const LocationPeopleLinks = ({ file, config }: LocationPeopleLinksProps) => {
+export const LocationPeopleLinks = ({
+  file,
+  config,
+}: LocationPeopleLinksProps) => {
   const people = useFiles(CRMFileType.PERSON, {
     filter: useCallback(
       (candidate: TCachedFile, _app: App) => {
@@ -35,10 +38,9 @@ export const LocationPeopleLinks = ({ file, config }: LocationPeopleLinksProps) 
   return (
     <Card
       collapsible
-      collapsed={Boolean((config as any)?.collapsed)}
+      collapsed={(config as any)?.collapsed !== false}
       icon="users"
       title="People"
-      subtitle={`People linked to ${locationName}`}
     >
       <PeopleTable items={people} />
     </Card>

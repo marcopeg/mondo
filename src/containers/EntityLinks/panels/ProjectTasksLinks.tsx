@@ -245,7 +245,6 @@ export const ProjectTasksLinks = ({ file, config }: ProjectTasksLinksProps) => {
       collapseOnHeaderClick
       icon="check-square"
       title="Tasks"
-      subtitle={`Tasks for ${projectName}`}
       actions={actions}
       onCollapseChange={handleCollapseChange}
     >

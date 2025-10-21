@@ -44,7 +44,7 @@ focs on the EntityLink "Employees" on the entity "company". This already lists t
 
 focus on the EntityLink that allows for drag and drop sorting; change the persist strategy so that they use the `crmState` frontmatter key as "{panel}.order".
 
-focus on the EntityLink "projects" of the entity type "team". Fix the UI so that it matches in padding and spacing the UI of the "facts" block for the entity type "person". 
+focus on the EntityLink "projects" of the entity type "team". Fix the UI so that it matches in padding and spacing the UI of the "facts" block for the entity type "person".
 
 focus on the EntityLink "meetings" of the entity type "team". When creating a new meeting, the new note's title should be "{date/time} with {team "show" or filename}". The default title should be "Untitled Person. The new note's file name content should be slected so that it's easy for the user to modify it by typing the new value.
 
@@ -53,3 +53,11 @@ focus on the EntityLink "tasks" of the entity type "person". right now the task 
 focus on the EntityLink "tasks" across the various entities, fix the horizontal scrolling issue in the same way you did for the panel in the entity type=person, so that the task's title can break into multiple rows.
 
 focus on any EntityLink panel that generate a list of items, i want to remove the padding around the list. the left/right borders of the list of item should touch the Card's body borders so to maximize the available space for rendering the contents.
+
+focus on the Tasks EntityLink panel for type=task, it should be collapsed by default.
+
+focus on all the EntityLink that exist in the project, those should be collapsed by default and should have no subtitle.
+
+focus on the Teammates EntityLink on the entity "person". It should always be visible even if there are no items same for the other panels, and it should have the "+" button that generates a new document of type=person linked back to the team with title "Untitled Person". The new note's file name content should be slected so that it's easy for the user to modify it by typing the new value.
+
+focus on the Teammates EntityLink on the entity "person". It should automatically hide if there is no "team" property in the document, or if it is null or empty.

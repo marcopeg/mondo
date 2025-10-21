@@ -128,6 +128,43 @@ export const Card: React.FC<CardProps> = ({
   };
 
   const resolvedActions: CardAction[] = actions ?? [];
+
+  // Build header-specific padding that keeps horizontal padding the same as inner
+  // padding, but significantly reduces vertical padding to tighten the title bar.
+  // We scale vertical padding down to 25% of the base. Tailwind classes require
+  // integers, so we floor the scaled value, while inline styles use the exact scale.
+  const VERTICAL_SCALE = 0.25;
+  const scaleY = (v: number) => v * VERTICAL_SCALE;
+
+  const headerPaddingValues = (() => {
+    // derive the base values used by innerPaddingStyle/classes
+    const baseAll = p;
+    const baseX =
+      px !== undefined ? px : baseAll !== undefined ? baseAll : spacing;
+    const baseYRaw =
+      py !== undefined ? py : baseAll !== undefined ? baseAll : spacing;
+    const baseTopRaw = pt !== undefined ? pt : baseYRaw;
+    const baseBottomRaw = pb !== undefined ? pb : baseYRaw;
+
+    return {
+      x: baseX,
+      top: baseTopRaw,
+      bottom: baseBottomRaw,
+    };
+  })();
+
+  const headerPaddingClass = [
+    `px-${headerPaddingValues.x}`,
+    `pt-${Math.max(0, Math.floor(scaleY(headerPaddingValues.top)))}`,
+    `pb-${Math.max(0, Math.floor(scaleY(headerPaddingValues.bottom)))}`,
+  ].join(" ");
+
+  const headerPaddingStyle: React.CSSProperties = {
+    paddingLeft: `${headerPaddingValues.x * 0.25}rem`,
+    paddingRight: `${headerPaddingValues.x * 0.25}rem`,
+    paddingTop: `${scaleY(headerPaddingValues.top) * 0.25}rem`,
+    paddingBottom: `${scaleY(headerPaddingValues.bottom) * 0.25}rem`,
+  };
   const hasTextualHeaderContent = Boolean(title || subtitle);
   const hasIcon = Boolean(icon);
   const hasActions = resolvedActions.length > 0;
@@ -203,11 +240,11 @@ export const Card: React.FC<CardProps> = ({
     alignItems: "center",
     gap: "0.5rem",
     flexShrink: 0,
-    alignSelf: hasTextualHeaderContent ? "flex-start" : undefined,
+    alignSelf: hasTextualHeaderContent ? "center" : undefined,
   };
 
   const headerClassName = [
-    innerPaddingClass,
+    headerPaddingClass,
     collapseOnHeaderClick && collapsible
       ? "cursor-pointer select-none"
       : undefined,
@@ -216,7 +253,7 @@ export const Card: React.FC<CardProps> = ({
     .join(" ");
 
   const headerStyle: React.CSSProperties = {
-    ...innerPaddingStyle,
+    ...headerPaddingStyle,
     ...(collapseOnHeaderClick ? { outline: "none" } : {}),
   };
 
@@ -257,7 +294,7 @@ export const Card: React.FC<CardProps> = ({
                 gap={2}
                 align="center"
                 className={
-                  hasTextualHeaderContent ? "shrink-0 self-start" : "shrink-0"
+                  hasTextualHeaderContent ? "shrink-0 self-center" : "shrink-0"
                 }
                 style={actionsFlexStyle}
                 onClick={
@@ -317,7 +354,15 @@ export const Card: React.FC<CardProps> = ({
       )}
 
       {!isCollapsed && (
-        <Box className={innerPaddingClass} style={innerPaddingStyle}>
+        <Box
+          className={[innerPaddingClass, "crm-card-content"].join(" ")}
+          style={{
+            ...innerPaddingStyle,
+            // expose effective horizontal padding as CSS var for full-bleed children
+            // consumers (e.g. filters bar) can use negative margins based on this value
+            ["--crm-card-pad-x" as any]: `${headerPaddingValues.x * 0.25}rem`,
+          }}
+        >
           {children}
         </Box>
       )}

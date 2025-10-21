@@ -159,7 +159,7 @@
 }
 
 .crm-relevant-notes__filters-group {
-  border-radius: 0;
+  border-radius: 0 !important;
 }
 
 .crm-relevant-notes__filters-group .crm-button-group__button--first,
@@ -170,19 +170,25 @@
   border-bottom-right-radius: 0 !important;
 }
 
+/* Make the filters bar edge-to-edge inside Card content on all screens.
+   We rely on Card exposing --crm-card-pad-x on its content wrapper. */
+.crm .crm-card-content > .crm-relevant-notes__filters-group {
+  margin-left: calc(var(--crm-card-pad-x, 0.5rem) * -1);
+  margin-right: calc(var(--crm-card-pad-x, 0.5rem) * -1);
+}
+
+/* Keep square corners for the filters group at all sizes (match mobile look) */
 @media (min-width: 640px) {
   .crm-relevant-notes__filters-group {
-    border-radius: var(--radius-s, 0.45rem);
+    border-radius: 0 !important;
   }
-
   .crm-relevant-notes__filters-group .crm-button-group__button--first {
-    border-top-left-radius: var(--radius-s, 0.45rem) !important;
-    border-bottom-left-radius: var(--radius-s, 0.45rem) !important;
+    border-top-left-radius: 0 !important;
+    border-bottom-left-radius: 0 !important;
   }
-
   .crm-relevant-notes__filters-group .crm-button-group__button--last {
-    border-top-right-radius: var(--radius-s, 0.45rem) !important;
-    border-bottom-right-radius: var(--radius-s, 0.45rem) !important;
+    border-top-right-radius: 0 !important;
+    border-bottom-right-radius: 0 !important;
   }
 }
 

@@ -29,8 +29,6 @@ const teamConfig: CRMEntityConfig<
   links: [
     {
       type: "team-members",
-      collapsed: false,
-      //... other configuration who'se type is specific to the "team-members" entity and that specific type should be defined in the TeamMembersLinks.tsx file and similar file block by block
     },
     {
       type: "projects",

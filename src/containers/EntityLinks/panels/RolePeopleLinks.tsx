@@ -41,7 +41,6 @@ export const RolePeopleLinks = ({ file, config }: RolePeopleLinksProps) => {
       collapseOnHeaderClick
       icon="users"
       title="People"
-      subtitle={`People linked to ${roleName}`}
     >
       <PeopleTable items={people} />
     </Card>

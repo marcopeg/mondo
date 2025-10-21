@@ -267,7 +267,6 @@ export const TaskSubtasksLinks = ({ file, config }: TaskSubtasksLinksProps) => {
       collapseOnHeaderClick
       icon="check-square"
       title="Tasks"
-      subtitle={`Sub-tasks of ${taskName}`}
       actions={actions}
       onCollapseChange={handleCollapseChange}
     >

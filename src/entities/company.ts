@@ -28,14 +28,13 @@ const companyConfig: CRMEntityConfig<
   },
   links: [
     {
+      type: "employees",
+    },
+    {
       type: "teams",
     },
     {
       type: "projects",
-    },
-    {
-      type: "employees",
-      collapsed: true,
     },
     {
       type: "facts",
