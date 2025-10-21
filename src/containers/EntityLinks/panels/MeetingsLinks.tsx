@@ -12,6 +12,7 @@ import {
   createMeetingForEntity,
   type MeetingLinkTarget,
 } from "@/utils/createMeetingForPerson";
+import { matchesTeam } from "@/utils/matchesTeam";
 
 type MeetingsLinksProps = {
   config: Record<string, unknown>;
@@ -52,6 +53,16 @@ export const MeetingsLinks = ({ file, config }: MeetingsLinksProps) => {
     ),
   });
 
+  const teamMembers = useFiles(CRMFileType.PERSON, {
+    filter: useCallback(
+      (candidate: TCachedFile, appInstance: App) => {
+        if (!file.file || entityType !== "team") return false;
+        return matchesTeam(candidate, file.file.path, appInstance);
+      },
+      [entityType, file.file]
+    ),
+  });
+
   const displayName =
     (file.cache?.frontmatter?.show as string | undefined) ?? file.file.basename;
 
@@ -69,14 +80,21 @@ export const MeetingsLinks = ({ file, config }: MeetingsLinksProps) => {
             target: file,
           },
         ];
-      case "team":
+      case "team": {
+        const participantTargets = teamMembers.map((member) => ({
+          property: "participants" as const,
+          mode: "list" as const,
+          target: member,
+        }));
         return [
           {
             property: "team",
             mode: "single",
             target: file,
           },
+          ...participantTargets,
         ];
+      }
       case "project":
         return [
           {
@@ -96,7 +114,7 @@ export const MeetingsLinks = ({ file, config }: MeetingsLinksProps) => {
       default:
         return [];
     }
-  }, [entityType, file]);
+  }, [entityType, file, teamMembers]);
 
   const handleAddMeeting = useCallback(() => {
     if (!file?.file) {
