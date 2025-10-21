@@ -130,12 +130,11 @@ export const Card: React.FC<CardProps> = ({
   const resolvedActions: CardAction[] = actions ?? [];
 
   // Build header-specific padding that keeps horizontal padding the same as inner
-  // padding, but halves the vertical padding. Tailwind classes require integers,
-  // so we floor the halved value while the inline style uses the exact half.
-  const half = (v: number) => v / 2;
-
-  const getNumber = (v: number | undefined, fallback: number) =>
-    v !== undefined ? v : fallback;
+  // padding, but significantly reduces vertical padding to tighten the title bar.
+  // We scale vertical padding down to 25% of the base. Tailwind classes require
+  // integers, so we floor the scaled value, while inline styles use the exact scale.
+  const VERTICAL_SCALE = 0.25;
+  const scaleY = (v: number) => v * VERTICAL_SCALE;
 
   const headerPaddingValues = (() => {
     // derive the base values used by innerPaddingStyle/classes
@@ -156,15 +155,15 @@ export const Card: React.FC<CardProps> = ({
 
   const headerPaddingClass = [
     `px-${headerPaddingValues.x}`,
-    `pt-${Math.max(0, Math.floor(half(headerPaddingValues.top)))}`,
-    `pb-${Math.max(0, Math.floor(half(headerPaddingValues.bottom)))}`,
+    `pt-${Math.max(0, Math.floor(scaleY(headerPaddingValues.top)))}`,
+    `pb-${Math.max(0, Math.floor(scaleY(headerPaddingValues.bottom)))}`,
   ].join(" ");
 
   const headerPaddingStyle: React.CSSProperties = {
     paddingLeft: `${headerPaddingValues.x * 0.25}rem`,
     paddingRight: `${headerPaddingValues.x * 0.25}rem`,
-    paddingTop: `${half(headerPaddingValues.top) * 0.25}rem`,
-    paddingBottom: `${half(headerPaddingValues.bottom) * 0.25}rem`,
+    paddingTop: `${scaleY(headerPaddingValues.top) * 0.25}rem`,
+    paddingBottom: `${scaleY(headerPaddingValues.bottom) * 0.25}rem`,
   };
   const hasTextualHeaderContent = Boolean(title || subtitle);
   const hasIcon = Boolean(icon);
