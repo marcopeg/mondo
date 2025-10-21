@@ -1,10 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useApp } from "@/hooks/use-app";
 import { useSetting } from "@/hooks/use-setting";
-import {
-  getTemplateForType,
-  renderTemplate,
-} from "@/utils/CRMTemplates";
+import { getTemplateForType, renderTemplate } from "@/utils/CRMTemplates";
 import { CRMFileType } from "@/types/CRMFileType";
 import { TFile } from "obsidian";
 import { addParticipantLink } from "@/utils/participants";
@@ -67,11 +64,7 @@ const parseDateFromTitle = (title: string): Date | null => {
   const year = Number(match[1]);
   const month = Number(match[2]);
   const day = Number(match[3]);
-  if (
-    Number.isNaN(year) ||
-    Number.isNaN(month) ||
-    Number.isNaN(day)
-  ) {
+  if (Number.isNaN(year) || Number.isNaN(month) || Number.isNaN(day)) {
     return null;
   }
   const candidate = new Date(year, month - 1, day);
@@ -86,7 +79,9 @@ type ParsedTime = {
   minutes: number;
 };
 
-const parseTimeFromTitle = (raw: string | null | undefined): ParsedTime | null => {
+const parseTimeFromTitle = (
+  raw: string | null | undefined
+): ParsedTime | null => {
   if (!raw) {
     return null;
   }
@@ -125,7 +120,10 @@ const getHeadingTitleForLine = (
 
   for (const heading of headings) {
     if (heading.position.start.line <= lineNumber) {
-      if (!candidate || heading.position.start.line >= candidate.position.start.line) {
+      if (
+        !candidate ||
+        heading.position.start.line >= candidate.position.start.line
+      ) {
         candidate = heading;
       }
     }
@@ -260,7 +258,10 @@ const ensureFolder = async (app: any, folderPath: string) => {
 export const useInboxTasks = () => {
   const app = useApp();
   const inboxSetting = useSetting<string>("inbox", "Inbox");
-  const inboxFolder = useMemo(() => normalizeFolder(inboxSetting), [inboxSetting]);
+  const inboxFolder = useMemo(
+    () => normalizeFolder(inboxSetting),
+    [inboxSetting]
+  );
   const [tasks, setTasks] = useState<InboxTask[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -281,8 +282,7 @@ export const useInboxTasks = () => {
 
       const content = await app.vault.cachedRead(file);
       const lines = content.split(/\r?\n/u);
-      const metadata =
-        (cache ?? app.metadataCache.getFileCache(file)) ?? null;
+      const metadata = cache ?? app.metadataCache.getFileCache(file) ?? null;
 
       return openItems.map((item) => {
         const lineNumber = item.position.start.line;
@@ -317,8 +317,7 @@ export const useInboxTasks = () => {
         const results = collected.flat();
 
         results.sort((first, second) => {
-          const diff =
-            second.occurredAt.getTime() - first.occurredAt.getTime();
+          const diff = second.occurredAt.getTime() - first.occurredAt.getTime();
           if (diff !== 0) {
             return diff;
           }
@@ -384,36 +383,125 @@ export const useInboxTasks = () => {
         }
 
         const content = await app.vault.read(abstractFile);
+        const lineBreak = content.includes("\r\n") ? "\r\n" : "\n";
         const lines = content.split(/\r?\n/u);
-        const currentLine = lines[target.lineNumber];
+        // Prepare target text variants for precise matching
+        const targetRaw = target.raw || "";
+        const targetText = (target.text || targetRaw).trim();
+        const targetCollapsed = targetText.replace(/\s+/g, " ").trim();
 
-        if (currentLine === undefined) {
-          console.warn(
-            "useInboxTasks: missing line for task",
-            target.filePath,
-            target.lineNumber
-          );
-          return;
-        }
+        const isTaskBulletLine = (line: string | undefined) =>
+          typeof line === "string" && /^\s*[-+*]\s*\[[ xX]\]/.test(line);
 
-        const updatedLine = currentLine.replace(/\[\s\]/, "[x]");
-        if (updatedLine === currentLine) {
-          // nothing to toggle (maybe already completed)
-          return;
-        }
+        const isOpenTaskLine = (line: string | undefined) =>
+          typeof line === "string" && /^\s*[-+*]\s*\[\s\]/.test(line);
 
-        lines[target.lineNumber] = updatedLine;
-        let finalLine = updatedLine;
-        if (appendedText) {
-          const trimmed = appendedText.trim();
-          if (trimmed.length > 0 && !updatedLine.includes(trimmed)) {
-            finalLine = `${updatedLine.trimEnd()} ${trimmed}`;
-            lines[target.lineNumber] = finalLine;
+        const normalize = (s: string) => s.trim();
+
+        const collapseSpaces = (s: string) => s.replace(/\s+/g, " ").trim();
+
+        const matchesTarget = (line: string | undefined): boolean => {
+          if (typeof line !== "string" || !isTaskBulletLine(line)) return false;
+          if (line === targetRaw) return true;
+          const lineText = normalize(extractTaskText(line || ""));
+          if (lineText && targetText && lineText === targetText) return true;
+          const lineCollapsed = collapseSpaces(extractTaskText(line || ""));
+          if (
+            lineCollapsed &&
+            targetCollapsed &&
+            lineCollapsed === targetCollapsed
+          )
+            return true;
+          return false;
+        };
+
+        const tryUpdateAtIndex = (idx: number): boolean => {
+          if (idx < 0 || idx >= lines.length) return false;
+          const current = lines[idx];
+          if (!current) return false;
+
+          // Only operate on real markdown task bullets, not any [x] in frontmatter or text
+          if (!isTaskBulletLine(current)) {
+            return false;
+          }
+
+          // If it already looks completed, still allow appending the note.
+          const alreadyChecked = /^\s*[-+*]\s*\[[xX]\]/.test(current);
+          let updated = alreadyChecked
+            ? current
+            : current.replace(/^(\s*[-+*]\s*)\[[^\]]*\]/, "$1[x]");
+
+          if (appendedText) {
+            const add = appendedText.trim();
+            if (add.length > 0 && !updated.includes(add)) {
+              updated = `${updated.trimEnd()} ${add}`;
+            }
+          }
+
+          if (updated !== current) {
+            lines[idx] = updated;
+          }
+          return true;
+        };
+
+        // 1) Try the original index first (only if it matches the target text)
+        if (
+          !(
+            matchesTarget(lines[target.lineNumber]) &&
+            tryUpdateAtIndex(target.lineNumber)
+          )
+        ) {
+          // 2) Search in a small window around the original index (to handle recent inserts)
+          const windowRadius = 100;
+          let fixed = false;
+          for (let offset = 1; offset <= windowRadius; offset++) {
+            const leftIdx = target.lineNumber - offset;
+            if (matchesTarget(lines[leftIdx]) && tryUpdateAtIndex(leftIdx)) {
+              fixed = true;
+              break;
+            }
+            const rightIdx = target.lineNumber + offset;
+            if (matchesTarget(lines[rightIdx]) && tryUpdateAtIndex(rightIdx)) {
+              fixed = true;
+              break;
+            }
+          }
+
+          // 3) Fallback: search entire file for a task line whose extracted text matches
+          if (!fixed) {
+            let matchIndex = -1;
+            for (let i = 0; i < lines.length; i++) {
+              const line = lines[i];
+              if (matchesTarget(line)) {
+                matchIndex = i;
+                break;
+              }
+            }
+
+            if (matchIndex !== -1) {
+              if (!tryUpdateAtIndex(matchIndex)) {
+                console.warn(
+                  "useInboxTasks: found candidate line but failed to update",
+                  target.filePath,
+                  matchIndex
+                );
+                return;
+              }
+            } else {
+              console.warn(
+                "useInboxTasks: could not locate task line to complete",
+                target.filePath,
+                target.lineNumber
+              );
+              return;
+            }
           }
         }
 
-        const updatedContent = lines.join("\n");
-        await app.vault.modify(abstractFile, updatedContent);
+        const updatedContent = lines.join(lineBreak);
+        if (updatedContent !== content) {
+          await app.vault.modify(abstractFile, updatedContent);
+        }
 
         setTasks((prev) => prev.filter((task) => task.id !== target.id));
       } catch (error) {
@@ -433,12 +521,12 @@ export const useInboxTasks = () => {
   const promoteTask = useCallback(
     async (target: InboxTask, targetType: PromoteTargetType) => {
       try {
-        const plugin =
-          ((app as any)?.plugins?.plugins?.crm as any) ?? null;
+        const plugin = ((app as any)?.plugins?.plugins?.crm as any) ?? null;
         const settings = plugin?.settings ?? {};
         const rootPaths = settings.rootPaths ?? {};
-        const templates = (settings.templates ??
-          {}) as Partial<Record<CRMFileType, string>>;
+        const templates = (settings.templates ?? {}) as Partial<
+          Record<CRMFileType, string>
+        >;
 
         const folderSetting = rootPaths[targetType] ?? "/";
         const normalizedFolder = normalizeFolderPath(folderSetting);

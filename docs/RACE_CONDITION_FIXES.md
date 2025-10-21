@@ -143,6 +143,18 @@ The plugin now:
 - ✅ Prevents race conditions between multiple scans
 - ✅ Gracefully handles components requesting data before full initialization
 
+## Quick Tasks line-shift robustness
+
+When promoting a Quick Task to a standalone task note, we mark the original inbox task in the daily note as completed. On today's note, rapid edits (adding more quick tasks) can shift line numbers between the time the inbox list is collected and the promotion occurs.
+
+To handle this, task completion now:
+
+- Tries the original line index first
+- Searches within a small window around that index for an open checkbox line
+- Falls back to a whole-file search matching the normalized task text
+
+This prevents failures to check off the correct line on the active daily note due to recent insertions above the target line.
+
 ## Testing
 
 To verify the fixes work:
