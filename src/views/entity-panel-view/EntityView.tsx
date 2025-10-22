@@ -1,5 +1,5 @@
 import type { FC } from "react";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { App } from "obsidian";
 import { Notice, TFile } from "obsidian";
 import { useApp } from "@/hooks/use-app";
@@ -8,8 +8,13 @@ import { normalizeFolderPath } from "@/utils/normalizeFolderPath";
 import { getTemplateForType, renderTemplate } from "@/utils/CRMTemplates";
 import { addParticipantLink } from "@/utils/participants";
 import { resolveSelfPerson } from "@/utils/selfPerson";
+import { buildBaseDefinition } from "./baseDefinition";
+import {
+  maybeRenderNativeBase,
+  type NativeBaseRendererHandle,
+} from "./maybeRenderNativeBase";
+import { LegacyEntityTable } from "./LegacyEntityTable";
 import { useEntityPanels } from "./useEntityPanels";
-import { EntityGrid } from "./components/EntityGrid";
 
 type CreateEntityFileOptions = {
   app: App;
@@ -175,11 +180,50 @@ type EntityViewProps = {
 
 export const EntityView: FC<EntityViewProps> = ({ entityType }) => {
   const app = useApp();
-  const { columns, rows } = useEntityPanels(entityType);
   const config = getCRMEntityConfig(entityType);
   const title = config?.name ?? entityType;
   const entityLabel = useMemo(() => buildEntityLabel(entityType), [entityType]);
   const [isCreating, setIsCreating] = useState(false);
+  const { columns, rows } = useEntityPanels(entityType);
+  const baseContainerRef = useRef<HTMLDivElement | null>(null);
+  const rendererRef = useRef<NativeBaseRendererHandle | null>(null);
+  const [isNativeBaseActive, setIsNativeBaseActive] = useState(false);
+  const baseDefinition = useMemo(
+    () => buildBaseDefinition(entityType),
+    [entityType]
+  );
+
+  useEffect(() => {
+    const container = baseContainerRef.current;
+    if (!container) {
+      return;
+    }
+
+    const handle = maybeRenderNativeBase(app, container, baseDefinition);
+    if (handle) {
+      rendererRef.current = handle;
+      setIsNativeBaseActive(true);
+      return () => {
+        rendererRef.current?.destroy();
+        rendererRef.current = null;
+        setIsNativeBaseActive(false);
+      };
+    }
+
+    setIsNativeBaseActive(false);
+    rendererRef.current = null;
+    return () => {
+      rendererRef.current?.destroy();
+      rendererRef.current = null;
+    };
+  }, [app, baseDefinition]);
+
+  useEffect(() => {
+    const renderer = rendererRef.current;
+    if (renderer?.update) {
+      renderer.update(baseDefinition);
+    }
+  }, [baseDefinition]);
 
   const handleCreateNew = useCallback(async () => {
     if (isCreating) {
@@ -237,13 +281,12 @@ export const EntityView: FC<EntityViewProps> = ({ entityType }) => {
           </span>
         </div>
       </header>
-      {rows.length === 0 ? (
-        <div className="text-sm text-[var(--text-muted)]">
-          No files found for this type yet.
-        </div>
-      ) : (
-        <EntityGrid columns={columns} rows={rows} />
-      )}
+      <div ref={baseContainerRef} className="relative h-full flex-1" />
+      <LegacyEntityTable
+        hidden={isNativeBaseActive}
+        columns={columns}
+        rows={rows}
+      />
     </div>
   );
 };
