@@ -23,3 +23,19 @@ Hit `Shift+Cmd+j` and write anything that is personal.
 > Let yourself go.  
 > Don't think.  
 > Just write.
+
+# How to Install & Update
+
+ObsidianCRM is under active development so you would install it as a _Beta Tester_ at your own risk. But it's fine, I use it for myself first and it works, even if it needs a lot of love still!
+
+1. First, install the [BRAT](https://obsidian.md/plugins?id=obsidian42-brat) that lets you install orther plugins directly from GitHub.
+
+2. Open the BRAT plugin preferences and click on "Add beta plugin"
+
+3. Paste the following url:
+
+```bash
+https://github.com/marcopeg/obsidian-crm
+```
+
+I suggest you keep it updated to the latest version, but at this point feel free to install whatever available release.
