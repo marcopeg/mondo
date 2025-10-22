@@ -1,5 +1,9 @@
 import company from "./company";
 import gear from "./gear";
+import tool from "./tool";
+import recipe from "./recipe";
+import book from "./book";
+import movie from "./movie";
 import location from "./location";
 import meeting from "./meeting";
 import person from "./person";
@@ -23,6 +27,10 @@ const ENTITIES = [
   location,
   restaurant,
   gear,
+  tool,
+  recipe,
+  book,
+  movie,
 ] as const;
 
 type EntityConfig = (typeof ENTITIES)[number];
