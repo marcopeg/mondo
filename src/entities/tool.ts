@@ -20,7 +20,7 @@ const toolConfig: CRMEntityConfig<"tool"> = {
     template,
   },
   list: {
-    columns: ["show", "category", "owner", "location"],
+    columns: ["cover", "show", "category", "owner", "location"],
   },
 };
 

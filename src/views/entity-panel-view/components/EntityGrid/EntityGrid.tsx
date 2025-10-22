@@ -72,14 +72,17 @@ export const EntityGrid = ({ columns, rows }: EntityGridProps) => {
       <table className="min-w-full table-auto border border-[var(--background-modifier-border)]">
         <thead>
           <tr className="bg-[var(--background-secondary)]">
-            {columns.map((column) => (
-              <th
-                key={column}
-                className="border-b border-[var(--background-modifier-border)] px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]"
-              >
-                {formatColumnLabel(column)}
-              </th>
-            ))}
+            {columns.map((column) => {
+              const isCover = COVER_COLUMNS.has(column.toLowerCase());
+              const headerClass = isCover
+                ? "border-b border-[var(--background-modifier-border)] w-16 min-w-[4rem] max-w-[4rem] p-0 text-center text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]"
+                : "border-b border-[var(--background-modifier-border)] px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]";
+              return (
+                <th key={column} className={headerClass}>
+                  {formatColumnLabel(column)}
+                </th>
+              );
+            })}
           </tr>
         </thead>
         <tbody>
@@ -91,12 +94,13 @@ export const EntityGrid = ({ columns, rows }: EntityGridProps) => {
               {columns.map((column) => {
                 const CellComponent = getCellRenderer(column);
                 const value = getDisplayValue(row, column);
+                const isCover = COVER_COLUMNS.has(column.toLowerCase());
                 return (
                   <td
                     key={`${row.path}-${column}`}
                     className={`border-t border-[var(--background-modifier-border)] text-sm text-[var(--text-normal)] ${
-                      COVER_COLUMNS.has(column.toLowerCase())
-                        ? "p-0"
+                      isCover
+                        ? "w-16 min-w-[4rem] max-w-[4rem] p-0 align-middle"
                         : "px-3 py-2"
                     }`}
                   >

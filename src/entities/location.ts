@@ -14,7 +14,7 @@ const locationConfig: CRMEntityConfig<
     template: DEFAULT_TEMPLATE,
   },
   list: {
-    columns: ["show"],
+    columns: ["cover", "show"],
   },
   links: [
     {

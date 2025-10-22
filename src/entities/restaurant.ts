@@ -17,7 +17,7 @@ const restaurantConfig: CRMEntityConfig<"restaurant"> = {
     template,
   },
   list: {
-    columns: ["show", "location"],
+    columns: ["cover", "show", "location"],
   },
 };
 

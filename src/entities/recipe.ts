@@ -27,7 +27,7 @@ const recipeConfig: CRMEntityConfig<"recipe"> = {
     template,
   },
   list: {
-    columns: ["show", "source", "servings"],
+    columns: ["cover", "show", "source", "servings"],
   },
 };
 

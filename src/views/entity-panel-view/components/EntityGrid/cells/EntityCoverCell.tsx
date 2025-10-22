@@ -71,7 +71,7 @@ export const EntityCoverCell = ({ value, row }: EntityCoverCellProps) => {
   return (
     <div
       onClick={handleOpen}
-      className="relative block h-16 w-16 cursor-pointer overflow-hidden"
+      className="relative block h-16 w-16 cursor-pointer overflow-hidden mx-auto"
     >
       <img
         src={resourcePath}
