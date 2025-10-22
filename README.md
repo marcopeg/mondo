@@ -12,7 +12,16 @@ Add the attribute `type` to any note in your vault to enable the strong typing a
 
 ### fact
 
-A _fact_
+A _Fact_ represents a minimal unit of information in your system.
+Usually a _Fact_ adds context to some other type of note, to which are linked.
+
+This is an example of a _Fact_ that is related to a _Company_.
+
+```frontmatter
+type: fact
+company:
+  - [[CocaCola]]
+```
 
 ### task
 

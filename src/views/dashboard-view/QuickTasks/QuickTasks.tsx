@@ -18,7 +18,7 @@ type QuickTasksCardProps = {
 
 const QuickTasksCard = ({ collapsed, state }: QuickTasksCardProps) => {
   const { tasks, isLoading, toggleTask, promoteTask } = state;
-  const [visible, setVisible] = useState(10);
+  const [visible, setVisible] = useState(5);
   const [pending, setPending] = useState<Record<string, boolean>>({});
   const dateFormatter = useMemo(
     () =>
@@ -189,15 +189,16 @@ const QuickTasksCard = ({ collapsed, state }: QuickTasksCardProps) => {
             );
           })}
           {showLoadMore && (
-            <div className="flex w-full flex-col gap-2">
+            <div className="flex w-full flex-col gap-2 pt-1">
               <Separator />
               <Button
                 type="button"
                 variant="link"
                 fullWidth
                 className="text-xs px-2 py-2"
+                aria-label="Load more inbox tasks"
                 onClick={() => {
-                  setVisible((prev) => prev + 10);
+                  setVisible((prev) => prev + 5);
                 }}
               >
                 Load more
