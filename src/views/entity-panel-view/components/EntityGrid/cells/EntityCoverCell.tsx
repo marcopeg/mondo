@@ -30,7 +30,7 @@ const parseWikiLink = (raw: string) => {
   return target.trim();
 };
 
-export const EntityCoverCell = ({ value }: EntityCoverCellProps) => {
+export const EntityCoverCell = ({ value, row }: EntityCoverCellProps) => {
   const app = useApp();
 
   const cover = useMemo(() => {
@@ -53,29 +53,31 @@ export const EntityCoverCell = ({ value }: EntityCoverCellProps) => {
   }, [app, value]);
 
   const handleOpen = useCallback(async () => {
-    if (!cover) return;
+    // Open the entity note (row.path), not the cover file
+    const file = app.vault.getAbstractFileByPath(row.path);
+    if (!(file instanceof TFile)) return;
     const leaf = app.workspace.getLeaf(true);
-    await leaf.openFile(cover);
+    await leaf.openFile(file);
     app.workspace.revealLeaf(leaf);
-  }, [app, cover]);
+  }, [app, row.path]);
 
   if (!cover) {
-    return <span>—</span>;
+    // No placeholder: keep the cell empty as requested
+    return null;
   }
 
   const resourcePath = app.vault.getResourcePath(cover);
 
   return (
-    <button
-      type="button"
+    <div
       onClick={handleOpen}
-      className="flex h-16 w-16 items-center justify-center overflow-hidden rounded border border-[var(--background-modifier-border)] bg-[var(--background-secondary)]"
+      className="relative block h-16 w-16 cursor-pointer overflow-hidden"
     >
       <img
         src={resourcePath}
         alt={cover.name}
         className="h-full w-full object-cover"
       />
-    </button>
+    </div>
   );
 };

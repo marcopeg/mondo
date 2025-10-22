@@ -94,7 +94,11 @@ export const EntityGrid = ({ columns, rows }: EntityGridProps) => {
                 return (
                   <td
                     key={`${row.path}-${column}`}
-                    className="border-t border-[var(--background-modifier-border)] px-3 py-2 text-sm text-[var(--text-normal)]"
+                    className={`border-t border-[var(--background-modifier-border)] text-sm text-[var(--text-normal)] ${
+                      COVER_COLUMNS.has(column.toLowerCase())
+                        ? "p-0"
+                        : "px-3 py-2"
+                    }`}
                   >
                     <CellComponent row={row} column={column} value={value} />
                   </td>
