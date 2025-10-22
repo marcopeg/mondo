@@ -3,8 +3,6 @@ import { useApp } from "@/hooks/use-app";
 import { Typography } from "@/components/ui/Typography";
 import Button from "@/components/ui/Button";
 import Separator from "@/components/ui/Separator";
-import QuickLog from "./QuickLogEntry";
-import QuickTask from "./QuickTaskEntry";
 import { CRM_ENTITY_CONFIG_LIST } from "@/entities";
 import EntityPicker from "./components/EntityPicker";
 import RelevantNotes from "./RelevantNotes";
@@ -148,14 +146,6 @@ export const DashboardView = () => {
               <span className="hidden sm:inline">{action.label}</span>
             </Button>
           ))}
-        </div>
-        <div className="grid grid-cols-1 gap-2 lg:grid-cols-2 lg:gap-4">
-          <div className="w-full">
-            <QuickLog />
-          </div>
-          <div className="w-full">
-            <QuickTask />
-          </div>
         </div>
       </div>
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 lg:items-start">

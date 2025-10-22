@@ -7,7 +7,7 @@ import { useInboxTasks, type InboxTask } from "@/hooks/use-inbox-tasks";
 import Button from "@/components/ui/Button";
 import SplitButton from "@/components/ui/SplitButton";
 import { Separator } from "@/components/ui/Separator";
-import Badge from "@/components/ui/Badge";
+import QuickTask from "../QuickTaskEntry";
 
 type UseInboxTasksState = ReturnType<typeof useInboxTasks>;
 
@@ -16,10 +16,7 @@ type QuickTasksCardProps = {
   state: UseInboxTasksState;
 };
 
-const QuickTasksCard = ({
-  collapsed,
-  state,
-}: QuickTasksCardProps) => {
+const QuickTasksCard = ({ collapsed, state }: QuickTasksCardProps) => {
   const { tasks, isLoading, toggleTask, promoteTask } = state;
   const [visible, setVisible] = useState(10);
   const [pending, setPending] = useState<Record<string, boolean>>({});
@@ -67,21 +64,22 @@ const QuickTasksCard = ({
     [promoteTask, setPendingState]
   );
 
-  const openTasksCount = tasks.length;
-  const badgeLabel = `${openTasksCount} open task${
-    openTasksCount === 1 ? "" : "s"
-  }`;
+  // header shows only the quick task input; no counter badge
 
   return (
     <Card
-      title="Quick Tasks"
       icon="list-checks"
       collapsible
       collapsed={collapsed}
       collapseOnHeaderClick
       actions={[
         {
-          content: <Badge aria-label={badgeLabel}>{openTasksCount}</Badge>,
+          // Render the quick task creator inline in the title area
+          content: (
+            <div className="flex-1 min-w-0">
+              <QuickTask iconOnly />
+            </div>
+          ),
         },
       ]}
     >
@@ -217,10 +215,7 @@ type QuickTasksProps = {
   state?: UseInboxTasksState;
 };
 
-export const QuickTasks = ({
-  collapsed = false,
-  state,
-}: QuickTasksProps) => {
+export const QuickTasks = ({ collapsed = false, state }: QuickTasksProps) => {
   if (state) {
     return <QuickTasksCard collapsed={collapsed} state={state} />;
   }

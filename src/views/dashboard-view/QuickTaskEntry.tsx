@@ -8,7 +8,11 @@ import Stack from "@/components/ui/Stack";
 import type CRM from "@/main";
 import { addDailyLog } from "@/commands/daily.addLog";
 
-const QuickTask = () => {
+type QuickTaskProps = {
+  iconOnly?: boolean;
+};
+
+const QuickTask = ({ iconOnly = false }: QuickTaskProps) => {
   const app = useApp();
   const [quickLogText, setQuickLogText] = useState("");
   const [isLogging, setIsLogging] = useState(false);
@@ -74,13 +78,15 @@ const QuickTask = () => {
           }}
         />
         <Button
-          className="mod-cta w-12 sm:w-28 justify-center"
+          className={
+            "mod-cta justify-center " + (iconOnly ? "w-10" : "w-12 sm:w-28")
+          }
           type="submit"
           aria-label="Add task"
           disabled={isLogging || !quickLogText.trim()}
         >
-          <Icon name="send" className="w-5 h-5 sm:hidden mr-0" />
-          <span className="hidden sm:inline">Add Task</span>
+          <Icon name="send" className="w-5 h-5 mr-0" />
+          {!iconOnly && <span className="hidden sm:inline">Add Task</span>}
         </Button>
       </Stack>
     </form>

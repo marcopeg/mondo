@@ -240,6 +240,12 @@ export const Card: React.FC<CardProps> = ({
     alignItems: "center",
     gap: "0.5rem",
     flexShrink: 0,
+    // When there is no textual header, let actions grow and occupy
+    // the remaining space so that large controls (like a search/input)
+    // can stretch responsively without pushing outside the header.
+    flexGrow: hasTextualHeaderContent ? 0 : 1,
+    minWidth: 0,
+    width: hasTextualHeaderContent ? undefined : "100%",
     alignSelf: hasTextualHeaderContent ? "center" : undefined,
   };
 
@@ -280,13 +286,18 @@ export const Card: React.FC<CardProps> = ({
             gap={2}
             style={headerFlexStyle}
           >
-            {titleProps && (
+            {(titleProps || hasIcon) && (
               <div
                 className={titleWrapperClassName}
                 style={titleWrapperStyle}
                 {...(titleInteractiveProps as any)}
               >
-                {titleProps && <Title {...titleProps} />}
+                {titleProps ? (
+                  <Title {...titleProps} />
+                ) : hasIcon ? (
+                  // Render icon-only header by providing a zero-width title
+                  <Title title={"\u200B"} icon={icon!} />
+                ) : null}
               </div>
             )}
             {hasActions && (
@@ -294,7 +305,9 @@ export const Card: React.FC<CardProps> = ({
                 gap={2}
                 align="center"
                 className={
-                  hasTextualHeaderContent ? "shrink-0 self-center" : "shrink-0"
+                  hasTextualHeaderContent
+                    ? "shrink-0 self-center"
+                    : "flex-1 min-w-0"
                 }
                 style={actionsFlexStyle}
                 onClick={
@@ -317,7 +330,10 @@ export const Card: React.FC<CardProps> = ({
                     const key = action.key ?? `custom-${index}`;
 
                     return (
-                      <div key={key} className="flex items-center">
+                      <div
+                        key={key}
+                        className="flex items-center flex-1 min-w-0"
+                      >
                         {action.content}
                       </div>
                     );

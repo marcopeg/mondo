@@ -61,3 +61,5 @@ focus on all the EntityLink that exist in the project, those should be collapsed
 focus on the Teammates EntityLink on the entity "person". It should always be visible even if there are no items same for the other panels, and it should have the "+" button that generates a new document of type=person linked back to the team with title "Untitled Person". The new note's file name content should be slected so that it's easy for the user to modify it by typing the new value.
 
 focus on the Teammates EntityLink on the entity "person". It should automatically hide if there is no "team" property in the document, or if it is null or empty.
+
+focus on the dashboard, move the "create quick tasks" container into the title area of the QuickTasks list so that it is possible to quickly add tasks from there. Remove the "quick log entry" container - delete it completely from the repository".
