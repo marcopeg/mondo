@@ -2,6 +2,10 @@
 @tailwind components;
 @tailwind utilities;
 
+.crm .aspect-square {
+  aspect-ratio: 1 / 1;
+}
+
 .crm-audio-actions {
   display: flex;
   align-items: center;

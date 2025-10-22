@@ -4,7 +4,7 @@ import { Typography } from "@/components/ui/Typography";
 import Button from "@/components/ui/Button";
 import Separator from "@/components/ui/Separator";
 import { CRM_ENTITY_CONFIG_LIST } from "@/entities";
-import EntityPicker from "./components/EntityPicker";
+import EntityTilesGrid from "./components/EntityTilesGrid";
 import RelevantNotes from "./RelevantNotes";
 import QuickTasks from "./QuickTasks";
 import { useSetting } from "@/hooks/use-setting";
@@ -86,11 +86,10 @@ export const DashboardView = () => {
     }
   }, [app, selfPerson]);
 
-  const quickPickSections = CRM_ENTITY_CONFIG_LIST.map((config) => ({
+  const entityTiles = CRM_ENTITY_CONFIG_LIST.map((config) => ({
     type: config.type,
     icon: config.icon,
     title: config.name,
-    placeholder: "",
   }));
 
   const quickActions = useMemo(
@@ -154,17 +153,8 @@ export const DashboardView = () => {
       </div>
       <Separator spacing={4} />
       <Typography variant="h1">CRM Entities</Typography>
-      <div className="mt-4 grid grid-cols-1 gap-y-8 gap-x-16 md:grid-cols-2 xl:grid-cols-3">
-        {quickPickSections.map((section) => (
-          <EntityPicker
-            key={section.type}
-            icon={section.icon}
-            title={section.title}
-            type={section.type}
-            placeholder={section.placeholder}
-            onOpenList={() => onOpenEntityPanel(section.type)}
-          />
-        ))}
+      <div className="mt-4">
+        <EntityTilesGrid items={entityTiles} onOpen={onOpenEntityPanel} />
       </div>
     </div>
   );

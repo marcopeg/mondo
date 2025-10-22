@@ -65,3 +65,5 @@ focus on the Teammates EntityLink on the entity "person". It should automaticall
 focus on the dashboard, move the "create quick tasks" container into the title area of the QuickTasks list so that it is possible to quickly add tasks from there. Remove the "quick log entry" container - delete it completely from the repository".
 
 Focus on the Quick Tasks list in the dashboard. It looks like the date that is associated with each entry is wrong. the date should be picked by the attribute "date" of the note, falling back into parsing the fileName that should already be in a date format.
+
+Focus on the Dashboard, the CRM Entities part. Discard the quick entity component and implement a tiles wall inspired by Windows' Cortana style: flat tiles with centered icons and text. Don't use the ui/Button. Implement a custom EntityTiles component inside the dashboard area so to link to each EntityTab. The tiles should be squared and on mobile i envision 2 tiles per row.
