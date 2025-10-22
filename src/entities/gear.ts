@@ -16,7 +16,7 @@ const gearConfig: CRMEntityConfig<"gear"> = {
     template,
   },
   list: {
-    columns: ["show", "owner", "location"],
+    columns: ["cover", "show", "owner", "location"],
   },
 };
 
