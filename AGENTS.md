@@ -33,6 +33,7 @@ List of the possible values of the attribute "type":
 - company
 - location
 - project
+- idea
 - meeting
 - tool
 - recipe

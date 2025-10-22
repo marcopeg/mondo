@@ -18,7 +18,7 @@ I've implemented a singleton-based file management system that provides the foll
 ### 2. **CRM File Types** (`src/types/CRMFileType.ts`)
 
 - **Type safety**: Enum defining all valid CRM file types
-- **Extensible**: Easy to add new types (currently: person, company, project, team)
+- **Extensible**: Easy to add new types (currently: person, company, project, idea, team)
 - **Type guards**: Runtime validation of file types
 
 ### 3. **Optimized Hooks**

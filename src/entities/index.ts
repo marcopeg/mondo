@@ -8,6 +8,7 @@ import location from "./location";
 import meeting from "./meeting";
 import person from "./person";
 import project from "./project";
+import idea from "./idea";
 import role from "./role";
 import team from "./team";
 import restaurant from "./restaurant";
@@ -20,6 +21,7 @@ const ENTITIES = [
   fact,
   task,
   project,
+  idea,
   company,
   team,
   meeting,
