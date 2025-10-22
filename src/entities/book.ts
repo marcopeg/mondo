@@ -2,6 +2,7 @@ import type { CRMEntityConfig } from "@/types/CRMEntityConfig";
 
 const template = `---
 type: book
+cover:
 author:
 status:
 genre:
@@ -21,7 +22,7 @@ const bookConfig: CRMEntityConfig<"book"> = {
     template,
   },
   list: {
-    columns: ["show", "author", "status", "genre"],
+    columns: ["cover", "show", "author", "status", "genre"],
   },
 };
 
