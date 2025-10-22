@@ -73,5 +73,21 @@ export const resolveCRMEntityType = (value: string): CRMEntityType | null => {
   return null;
 };
 
+// UI configuration: controls ordering for tiles and relevant notes filters
+export const CRM_UI_CONFIG = {
+  tiles: {
+    // Order of entity tiles shown in the dashboard
+    // Default: follow the declared ENTITIES order
+    order: CRM_ENTITY_TYPES as CRMEntityType[],
+  },
+  relevantNotes: {
+    filter: {
+      // Order of type filter buttons in the Relevant Notes panel
+      // Default: follow the declared ENTITIES order
+      order: CRM_ENTITY_TYPES as CRMEntityType[],
+    },
+  },
+} as const;
+
 export type { CRMEntityConfig };
 export { ENTITIES as CRM_ENTITY_CONFIG_LIST };

@@ -3,7 +3,7 @@ import { useApp } from "@/hooks/use-app";
 import { Typography } from "@/components/ui/Typography";
 import Button from "@/components/ui/Button";
 import Separator from "@/components/ui/Separator";
-import { CRM_ENTITY_CONFIG_LIST } from "@/entities";
+import { CRM_ENTITIES, CRM_UI_CONFIG } from "@/entities";
 import EntityTilesGrid from "./components/EntityTilesGrid";
 import RelevantNotes from "./RelevantNotes";
 import QuickTasks from "./QuickTasks";
@@ -86,11 +86,18 @@ export const DashboardView = () => {
     }
   }, [app, selfPerson]);
 
-  const entityTiles = CRM_ENTITY_CONFIG_LIST.map((config) => ({
-    type: config.type,
-    icon: config.icon,
-    title: config.name,
-  }));
+  const entityTiles = useMemo(
+    () =>
+      CRM_UI_CONFIG.tiles.order
+        .map((type) => CRM_ENTITIES[type])
+        .filter(Boolean)
+        .map((config) => ({
+          type: config.type,
+          icon: config.icon,
+          title: config.name,
+        })),
+    []
+  );
 
   const quickActions = useMemo(
     () =>

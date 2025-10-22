@@ -67,3 +67,8 @@ focus on the dashboard, move the "create quick tasks" container into the title a
 Focus on the Quick Tasks list in the dashboard. It looks like the date that is associated with each entry is wrong. the date should be picked by the attribute "date" of the note, falling back into parsing the fileName that should already be in a date format.
 
 Focus on the Dashboard, the CRM Entities part. Discard the quick entity component and implement a tiles wall inspired by Windows' Cortana style: flat tiles with centered icons and text. Don't use the ui/Button. Implement a custom EntityTiles component inside the dashboard area so to link to each EntityTab. The tiles should be squared and on mobile i envision 2 tiles per row.
+
+Focus on the /entities/index.ts - this file should export a configuration object that contains the entites list, but that has other information as well:
+
+- tiles.order[]: should list the entites keys so that this order is implemented in the dashboard tiles.
+- relevantNotes.filter.order[]: should list the entities keys so that this order is implemented in the list of type filters in the dashboard's Relevant Notes.
