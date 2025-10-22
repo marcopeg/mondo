@@ -1,7 +1,9 @@
 import type { CRMEntityConfig } from "@/types/CRMEntityConfig";
 
 const template = `---
-type: movie
+type: show
+show:
+format: movie
 director:
 status:
 platform:
@@ -12,17 +14,18 @@ release_date:
 
 `;
 
-const movieConfig: CRMEntityConfig<"movie"> = {
-  type: "movie",
-  name: "Movies",
+const showConfig: CRMEntityConfig<"show"> = {
+  type: "show",
+  name: "Shows",
   icon: "clapperboard",
   dashboard: {},
   settings: {
     template,
   },
+  aliases: ["movie", "movies"],
   list: {
-    columns: ["show", "status", "platform", "release_date"],
+    columns: ["show", "format", "status", "platform", "release_date"],
   },
 };
 
-export default movieConfig;
+export default showConfig;

@@ -3,7 +3,7 @@ import gear from "./gear";
 import tool from "./tool";
 import recipe from "./recipe";
 import book from "./book";
-import movie from "./movie";
+import show from "./show";
 import location from "./location";
 import meeting from "./meeting";
 import person from "./person";
@@ -30,7 +30,7 @@ const ENTITIES = [
   tool,
   recipe,
   book,
-  movie,
+  show,
 ] as const;
 
 type EntityConfig = (typeof ENTITIES)[number];
