@@ -4,6 +4,12 @@ on:
   push:
     tags:
       - "*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Tag name to release (e.g., 0.0.13 or v0.0.13)"
+        required: true
+        type: string
 
 jobs:
   build:
@@ -11,25 +17,43 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
-      - name: Use Node.js
-        uses: actions/setup-node@v3
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
         with:
-          node-version: "18.x"
+          node-version: "20.x"
+          cache: yarn
 
-      - name: Build plugin
+      - name: Install dependencies and build (yarn)
         run: |
-          npm install
-          npm run build
+          corepack enable
+          yarn install --frozen-lockfile
+          yarn build
 
-      - name: Create release
+      - name: Package plugin ZIP
+        run: |
+          tag="${{ github.event.inputs.tag }}"
+          if [ -z "$tag" ] || [ "$tag" = "null" ]; then
+            tag="${GITHUB_REF#refs/tags/}"
+          fi
+          zip_name="obsidian-crm-${tag}.zip"
+          if [ -f versions.json ]; then
+            zip -r "$zip_name" manifest.json main.js styles.css versions.json
+          else
+            zip -r "$zip_name" manifest.json main.js styles.css
+          fi
+
+      - name: Create release and upload ZIP
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          tag="${GITHUB_REF#refs/tags/}"
-
+          tag="${{ github.event.inputs.tag }}"
+          if [ -z "$tag" ] || [ "$tag" = "null" ]; then
+            tag="${GITHUB_REF#refs/tags/}"
+          fi
+          zip_name="obsidian-crm-${tag}.zip"
           gh release create "$tag" \
             --title="$tag" \
             --draft \
-            main.js manifest.json styles.css
+            "$zip_name"
