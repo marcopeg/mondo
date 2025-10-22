@@ -6,6 +6,26 @@ Personal CRM as Obsidian Plugin, provides visualization and navigation facilitie
 
 # 👩‍💻 CRM
 
+Add the attribute `type` to any note in your vault to enable the strong typing and implicit relationships.
+
+## Types
+
+### fact
+
+A _fact_
+
+### task
+
+### person
+
+### role
+
+### team
+
+### company
+
+### meeting
+
 # 📆 Daily Notes
 
 Daily notes help jotting down quick information.

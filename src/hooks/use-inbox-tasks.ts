@@ -32,32 +32,47 @@ const extractTaskText = (line: string): string => {
 const DATE_TITLE_REGEX = /(\d{4})[-/](\d{2})[-/](\d{2})/;
 const TIME_REGEX = /\b(\d{1,2}):(\d{2})\b/;
 
-const getNoteTitle = (file: TFile, cache: CachedMetadata | null): string => {
-  const fmTitle = cache?.frontmatter?.title;
-  if (typeof fmTitle === "string") {
-    const trimmed = fmTitle.trim();
-    if (trimmed.length > 0) {
-      return trimmed;
-    }
-  }
+// Try to parse a date from frontmatter `date` field.
+// Accepts formats like YYYY-MM-DD or ISO strings. Returns a Date at local midnight.
+const parseDateFromFrontmatter = (
+  cache: CachedMetadata | null
+): Date | null => {
+  const fmDate: unknown = cache?.frontmatter?.date as unknown;
+  if (!fmDate) return null;
 
-  const headings = cache?.headings as HeadingCache[] | undefined;
-  if (Array.isArray(headings) && headings.length > 0) {
-    const primary = headings[0];
-    const headingTitle = primary?.heading;
-    if (typeof headingTitle === "string") {
-      const trimmed = headingTitle.trim();
-      if (trimmed.length > 0) {
-        return trimmed;
+  // If it's a string, try ISO parse first, then simple YYYY-MM-DD
+  if (typeof fmDate === "string") {
+    const iso = new Date(fmDate);
+    if (!Number.isNaN(iso.getTime())) {
+      return new Date(iso.getFullYear(), iso.getMonth(), iso.getDate());
+    }
+    const match = fmDate.match(DATE_TITLE_REGEX);
+    if (match) {
+      const year = Number(match[1]);
+      const month = Number(match[2]);
+      const day = Number(match[3]);
+      if (!Number.isNaN(year) && !Number.isNaN(month) && !Number.isNaN(day)) {
+        const candidate = new Date(year, month - 1, day);
+        if (!Number.isNaN(candidate.getTime())) return candidate;
       }
     }
+    return null;
   }
 
-  return file.basename;
+  // If Obsidian provided a Date-like object
+  if (fmDate instanceof Date) {
+    const d = fmDate as Date;
+    if (!Number.isNaN(d.getTime())) {
+      return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    }
+  }
+
+  return null;
 };
 
-const parseDateFromTitle = (title: string): Date | null => {
-  const match = title.match(DATE_TITLE_REGEX);
+// Parse a date from a simple string like a filename/basename in the form YYYY-MM-DD
+const parseDateFromSimpleString = (value: string): Date | null => {
+  const match = value.match(DATE_TITLE_REGEX);
   if (!match) {
     return null;
   }
@@ -151,21 +166,22 @@ const resolveTaskTimestamp = (
     typeof file.stat?.ctime === "number" ? file.stat.ctime : Date.now()
   );
 
-  const noteTitle = getNoteTitle(file, cache);
-  const dateFromTitle = parseDateFromTitle(noteTitle);
-  const hasExplicitDate = dateFromTitle !== null;
+  // Prefer frontmatter `date`; otherwise try parsing from filename (basename),
+  // finally fall back to file creation date.
+  const dateFromFM = parseDateFromFrontmatter(cache);
+  const dateFromFileName = parseDateFromSimpleString(file.basename);
+  const hasExplicitDate = Boolean(dateFromFM || dateFromFileName);
 
-  const occurredAt = hasExplicitDate
-    ? new Date(
-        dateFromTitle!.getFullYear(),
-        dateFromTitle!.getMonth(),
-        dateFromTitle!.getDate(),
-        0,
-        0,
-        0,
-        0
-      )
-    : new Date(createdAt.getTime());
+  const baseDate = dateFromFM ?? dateFromFileName ?? createdAt;
+  const occurredAt = new Date(
+    baseDate.getFullYear(),
+    baseDate.getMonth(),
+    baseDate.getDate(),
+    0,
+    0,
+    0,
+    0
+  );
 
   const headingTitle = getHeadingTitleForLine(cache, lineNumber);
   const parsedTime = parseTimeFromTitle(headingTitle);
