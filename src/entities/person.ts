@@ -27,7 +27,7 @@ const personConfig: CRMEntityConfig<
     template,
   },
   list: {
-    columns: ["show", "company", "role", "team", "location"],
+    columns: ["cover", "show", "company", "role", "team", "location"],
     sort: { column: "show", direction: "asc" },
   },
   links: [
