@@ -8,7 +8,9 @@
     "build": "npx tailwindcss -i src/styles.css -o styles.css --config tailwind.config.cjs --minify && tsc -noEmit -skipLibCheck && node esbuild.config.mjs production",
     "version": "node version-bump.mjs && git add manifest.json versions.json",
     "deploy": "yarn build && cp -f main.js styles.css manifest.json \"/Users/marcopeg/Library/Mobile Documents/iCloud~md~obsidian/Documents/Marco/.obsidian/plugins/crm\"",
-    "sync": "set -e; SRC=\"/Users/marcopeg/Library/Mobile Documents/iCloud~md~obsidian/Documents/Marco/\"; DEST=\"/Users/marcopeg/dv/MarcoDev\"; find \"$DEST\" -mindepth 1 -maxdepth 1 ! -name '.obsidian' -exec rm -rf {} +; rsync -a --exclude '.obsidian' --exclude '.obsidian/' \"$SRC\" \"$DEST/\""
+    "sync": "set -e; SRC=\"/Users/marcopeg/Library/Mobile Documents/iCloud~md~obsidian/Documents/Marco/\"; DEST=\"/Users/marcopeg/dv/MarcoDev\"; find \"$DEST\" -mindepth 1 -maxdepth 1 ! -name '.obsidian' -exec rm -rf {} +; rsync -a --exclude '.obsidian' --exclude '.obsidian/' \"$SRC\" \"$DEST/\"",
+    "tag:push": "git tag $(node -p \"require('./package.json').version\") && git push origin $(node -p \"require('./package.json').version\")",
+    "tag:prune": "git tag -d $(node -p \"require('./package.json').version\") && git push --delete origin $(node -p \"require('./package.json').version\") || true"
   },
   "keywords": [],
   "author": "",
