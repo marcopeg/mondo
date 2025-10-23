@@ -200,21 +200,22 @@
   margin: var(--size-4-4, 1rem) 0;
 }
 
-.crm-settings-entities-toggle-button {
+.crm-settings-entities-toggle-link {
   background: none;
   border: none;
   color: var(--text-accent);
   cursor: pointer;
   font: inherit;
   padding: 0;
+  text-decoration: none;
 }
 
-.crm-settings-entities-toggle-button:hover,
-.crm-settings-entities-toggle-button:focus-visible {
+.crm-settings-entities-toggle-link:hover,
+.crm-settings-entities-toggle-link:focus-visible {
   text-decoration: underline;
 }
 
-.crm-settings-entities-toggle-button:focus-visible {
+.crm-settings-entities-toggle-link:focus-visible {
   outline: 2px solid var(--interactive-accent);
   outline-offset: 2px;
 }
@@ -233,10 +234,44 @@
 
 .crm-settings-section {
   margin-top: var(--size-4-4, 1rem);
+  padding: var(--size-4-3, 0.75rem) var(--size-4-4, 1rem);
+  border-radius: var(--radius-l, 0.75rem);
+  border: 1px solid var(--background-modifier-border);
+  background-color: var(--background-secondary);
+  display: flex;
+  flex-direction: column;
+  gap: 0;
 }
 
 .crm-settings-section:first-of-type {
   margin-top: 0;
+}
+
+.crm-settings-section .setting-item {
+  margin: 0;
+  padding: var(--size-4-2, 0.5rem) 0;
+}
+
+.crm-settings-section .setting-item:first-child {
+  padding-top: 0;
+}
+
+.crm-settings-section .setting-item:last-child {
+  padding-bottom: 0;
+}
+
+.crm-settings-section .setting-item + .setting-item {
+  border-top: 1px solid var(--background-modifier-border);
+}
+
+.crm-settings-section .setting-item-heading {
+  padding-bottom: var(--size-4-2, 0.5rem);
+  margin-bottom: 0;
+}
+
+.crm-settings-section .setting-item-heading + .setting-item {
+  border-top: none;
+  padding-top: 0;
 }
 
 .crm-textfield__mic-icon {

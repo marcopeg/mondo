@@ -531,11 +531,11 @@ export class SettingsView extends PluginSettingTab {
     const entitiesToggleContainer = containerEl.createDiv(
       "crm-settings-entities-toggle"
     );
-    const entitiesToggleButton = entitiesToggleContainer.createEl("button", {
+    const entitiesToggleButton = entitiesToggleContainer.createEl("a", {
       text: "Show entities options",
     });
-    entitiesToggleButton.addClass("crm-settings-entities-toggle-button");
-    entitiesToggleButton.setAttribute("type", "button");
+    entitiesToggleButton.addClass("crm-settings-entities-toggle-link");
+    entitiesToggleButton.setAttribute("href", "#");
 
     const entitiesContent = containerEl.createDiv("crm-settings-entities");
     const entitiesContentId = "crm-settings-entities-content";
@@ -559,7 +559,8 @@ export class SettingsView extends PluginSettingTab {
 
     applyEntitiesVisibility(false);
 
-    entitiesToggleButton.addEventListener("click", () => {
+    entitiesToggleButton.addEventListener("click", (event) => {
+      event.preventDefault();
       applyEntitiesVisibility(!entitiesVisible);
     });
 
