@@ -121,7 +121,11 @@ const createEntityFile = async ({
   }
 
   const baseTitle = title.trim() || "Untitled";
-  const sanitizedBase = baseTitle.replace(/[\\/]+/g, "-");
+  // Sanitize filename to be Obsidian/OS friendly (remove invalid characters like : * ? " < > |)
+  const sanitizedBase = baseTitle
+    .replace(/[\\/:*?"<>|]+/g, "-")
+    .replace(/\s+/g, " ")
+    .trim();
   const defaultName = sanitizedBase.endsWith(".md")
     ? sanitizedBase
     : `${sanitizedBase}.md`;
@@ -189,7 +193,15 @@ export const EntityView: FC<EntityViewProps> = ({ entityType }) => {
     setIsCreating(true);
 
     try {
-      const titleForEntity = `Untitled ${entityLabel}`;
+      // For logs, default to "{date} {time}" to allow quick confirm with Enter
+      let titleForEntity = `Untitled ${entityLabel}`;
+      if (entityType === CRMFileType.LOG) {
+        const now = new Date();
+        const iso = now.toISOString();
+        const date = iso.split("T")[0];
+        const time = iso.slice(11, 16); // HH:mm (UTC)
+        titleForEntity = `${date} ${time}`;
+      }
       const { file, created } = await createEntityFile({
         app,
         entityType,

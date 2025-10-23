@@ -86,18 +86,12 @@ export const createLogForEntity = async ({
 
   const baseTitle = `${dateStamp} ${timeStamp}`;
   const safeTitle = baseTitle;
-  const descriptiveTitle = displayName
-    ? `${baseTitle} - ${displayName}`
-    : `${baseTitle} - Log`;
-  const sanitizedFileBase = descriptiveTitle
+  // Filename should strictly follow "{date} {time}" so it can be pre-selected and confirmed with Enter.
+  const sanitizedFileBase = baseTitle
     .replace(/[\\/|?*:<>"]/g, "-")
     .replace(/\s+/g, " ")
     .trim();
-  const fallbackFileBase = `${baseTitle} - Log`
-    .replace(/[\\/|?*:<>"]/g, "-")
-    .replace(/\s+/g, " ")
-    .trim();
-  const fileBase = sanitizedFileBase || fallbackFileBase;
+  const fileBase = sanitizedFileBase || baseTitle;
   const slug = slugify(fileBase);
   const fileName = fileBase.endsWith(".md") ? fileBase : `${fileBase}.md`;
   const filePath = normalizedFolder
@@ -180,7 +174,12 @@ export const createLogForEntity = async ({
     });
 
     Object.keys(frontmatter).forEach((key) => {
-      if (key === "date" || key === "time" || key === "datetime" || key === "type") {
+      if (
+        key === "date" ||
+        key === "time" ||
+        key === "datetime" ||
+        key === "type"
+      ) {
         return;
       }
 

@@ -5,9 +5,6 @@ date: {{date:YYYY-MM-DD}}
 time: {{time:HH:mm}}
 datetime: {{datetime}}
 ---
-
-# {{title}}
-
 `;
 
 const logConfig: CRMEntityConfig<
