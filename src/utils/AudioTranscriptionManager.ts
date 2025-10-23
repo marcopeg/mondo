@@ -57,6 +57,8 @@ export class AudioTranscriptionManager {
 
   private readonly audioDurationRequests = new Map<string, Promise<number | null>>();
 
+  private audioContext: AudioContext | null = null;
+
   constructor(plugin: CRM) {
     this.plugin = plugin;
   }
@@ -73,6 +75,11 @@ export class AudioTranscriptionManager {
       session?.controller.abort();
       this.stopTranscriptionSession(key);
     });
+
+    if (this.audioContext) {
+      void this.audioContext.close();
+      this.audioContext = null;
+    }
   };
 
   isAudioFile = (file: Maybe<TFile>) => {
@@ -529,11 +536,11 @@ export class AudioTranscriptionManager {
     session.controller.abort();
   };
 
-  private getAudioDurationSeconds = async (file: TFile) => {
+  private getAudioDurationSeconds = (file: TFile) => {
     const cached = this.audioDurationCache.get(file.path);
 
     if (typeof cached === "number") {
-      return cached;
+      return Promise.resolve(cached);
     }
 
     const pending = this.audioDurationRequests.get(file.path);
@@ -542,7 +549,41 @@ export class AudioTranscriptionManager {
       return pending;
     }
 
-    const promise = new Promise<number | null>((resolve) => {
+    const promise = (async (): Promise<number | null> => {
+      try {
+        const decoded = await this.decodeAudioDuration(file);
+
+        if (decoded != null) {
+          this.audioDurationCache.set(file.path, decoded);
+          return decoded;
+        }
+      } catch (error) {
+        console.warn("CRM: failed to decode audio buffer for duration", error);
+      }
+
+      const metadataDuration = await this.loadAudioMetadataDuration(file);
+
+      if (metadataDuration != null) {
+        this.audioDurationCache.set(file.path, metadataDuration);
+      }
+
+      return metadataDuration;
+    })()
+      .catch((error) => {
+        console.warn("CRM: failed to resolve audio duration", error);
+        return null;
+      })
+      .finally(() => {
+        this.audioDurationRequests.delete(file.path);
+      });
+
+    this.audioDurationRequests.set(file.path, promise);
+
+    return promise;
+  };
+
+  private loadAudioMetadataDuration = (file: TFile) => {
+    return new Promise<number | null>((resolve) => {
       const audio = document.createElement("audio");
       audio.preload = "metadata";
       audio.src = this.plugin.app.vault.getResourcePath(file);
@@ -556,28 +597,57 @@ export class AudioTranscriptionManager {
       const onLoaded = () => {
         cleanup();
         const duration = Number.isFinite(audio.duration) ? audio.duration : null;
-
-        if (duration != null) {
-          this.audioDurationCache.set(file.path, duration);
-        }
-
-        this.audioDurationRequests.delete(file.path);
         resolve(duration);
       };
 
       const onError = () => {
         cleanup();
-        this.audioDurationRequests.delete(file.path);
         resolve(null);
       };
 
       audio.addEventListener("loadedmetadata", onLoaded);
       audio.addEventListener("error", onError);
+      audio.load();
     });
+  };
 
-    this.audioDurationRequests.set(file.path, promise);
+  private decodeAudioDuration = async (file: TFile) => {
+    try {
+      const arrayBuffer = await this.plugin.app.vault.adapter.readBinary(file.path);
+      const bufferCopy = arrayBuffer.slice(0);
+      const context = this.ensureAudioContext();
+      const audioBuffer = await context.decodeAudioData(bufferCopy);
 
-    return promise;
+      if (!Number.isFinite(audioBuffer.duration)) {
+        return null;
+      }
+
+      return audioBuffer.duration;
+    } catch (error) {
+      console.warn("CRM: unable to decode audio duration", error);
+      return null;
+    }
+  };
+
+  private ensureAudioContext = () => {
+    if (this.audioContext) {
+      return this.audioContext;
+    }
+
+    const scopedWindow = window as Window & {
+      webkitAudioContext?: typeof AudioContext;
+    };
+
+    const AudioContextConstructor =
+      window.AudioContext ?? scopedWindow.webkitAudioContext;
+
+    if (!AudioContextConstructor) {
+      throw new Error("AudioContext is not supported in this environment.");
+    }
+
+    this.audioContext = new AudioContextConstructor();
+
+    return this.audioContext;
   };
 
   private formatDuration = (totalSeconds: number) => {
