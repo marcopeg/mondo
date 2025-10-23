@@ -2,7 +2,6 @@ import React from "react";
 import { Box } from "./Box";
 import Paper from "./Paper";
 import { Title } from "./Title";
-import Separator from "./Separator";
 import { Stack } from "./Stack";
 import { Button } from "./Button";
 
@@ -27,7 +26,7 @@ type CardProps = {
   subtitle?: string;
   icon?: string;
   children?: React.ReactNode;
-  // spacing is a Tailwind unit integer used for internal padding and separator spacing
+  // spacing is a Tailwind unit integer used for internal padding defaults
   spacing?: number;
   className?: string;
   // Forwarded Box spacing/margin props (Tailwind integer values)
@@ -49,7 +48,7 @@ type CardProps = {
 };
 
 /**
- * Card composes Box + Title + Separator. spacing defaults to 2.
+ * Card composes Box + Title with an optional header divider. spacing defaults to 2.
  */
 export const Card: React.FC<CardProps> = ({
   title,
@@ -249,6 +248,10 @@ export const Card: React.FC<CardProps> = ({
     alignSelf: hasTextualHeaderContent ? "center" : undefined,
   };
 
+  const hasBodyContent = React.Children.count(children) > 0;
+  const shouldShowHeaderDivider =
+    shouldRenderHeader && !isCollapsed && hasBodyContent;
+
   const headerClassName = [
     headerPaddingClass,
     collapseOnHeaderClick && collapsible
@@ -261,6 +264,9 @@ export const Card: React.FC<CardProps> = ({
   const headerStyle: React.CSSProperties = {
     ...headerPaddingStyle,
     ...(collapseOnHeaderClick ? { outline: "none" } : {}),
+    ...(shouldShowHeaderDivider
+      ? { borderBottom: "1px solid var(--background-modifier-border)" }
+      : {}),
   };
 
   const titleWrapperClassName =
@@ -362,11 +368,6 @@ export const Card: React.FC<CardProps> = ({
             )}
           </Stack>
         </Box>
-      )}
-
-      {(title || subtitle) && !isCollapsed && (
-        // Separator sits flush with Paper edges because it's outside the padded Box
-        <Separator spacing={0} spacingBefore={0} spacingAfter={0} />
       )}
 
       {!isCollapsed && (
