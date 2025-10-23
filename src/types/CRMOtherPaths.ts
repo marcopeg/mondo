@@ -7,11 +7,11 @@ export interface CRMJournalSettings {
 }
 
 export interface CRMDailySettings {
-  root: string; // folder where daily logs are stored
+  root: string; // folder where daily notes are stored
   entry: string; // filename format for daily entries (e.g. YYYY-MM-DD)
-  note: string; // note filename/time format inside a daily log (e.g. HH:MM)
+  note: string; // note filename/time format inside a daily note (e.g. HH:MM)
   section?: string; // heading level for daily notes (h1..h6)
-  useBullets?: boolean; // whether to prefix new log entries with a bullet
+  useBullets?: boolean; // whether to prefix new daily entries with a bullet
 }
 
 /** Defaults for journal settings */

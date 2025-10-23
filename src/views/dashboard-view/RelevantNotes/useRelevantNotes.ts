@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { useFiles } from "@/hooks/use-files";
 import { useApp } from "@/hooks/use-app";
+import { DAILY_NOTE_TYPE, LEGACY_DAILY_NOTE_TYPE } from "@/types/CRMFileType";
 import type { TCachedFile } from "@/types/TCachedFile";
 import {
   extractDailyLinkReferences,
@@ -145,22 +146,38 @@ const addReference = (
 
 export const useRelevantNotes = (logLimit = 10): RelevantNote[] => {
   const app = useApp();
-  const logs = useFiles("log");
+  const dailyNotes = useFiles(DAILY_NOTE_TYPE);
+  const legacyLogs = useFiles(LEGACY_DAILY_NOTE_TYPE);
+  const combinedNotes = useMemo(() => {
+    if (legacyLogs.length === 0) {
+      return dailyNotes;
+    }
+    const merged = new Map<string, (typeof dailyNotes)[number]>();
+    dailyNotes.forEach((entry) => {
+      merged.set(entry.file.path, entry);
+    });
+    legacyLogs.forEach((entry) => {
+      if (!merged.has(entry.file.path)) {
+        merged.set(entry.file.path, entry);
+      }
+    });
+    return Array.from(merged.values());
+  }, [dailyNotes, legacyLogs]);
 
   return useMemo(() => {
     if (!app) {
       return [];
     }
 
-    const sorted = [...logs]
+    const sorted = [...combinedNotes]
       .sort((left, right) => resolveTimestamp(right) - resolveTimestamp(left))
       .slice(0, logLimit);
 
     const aggregated = new Map<string, RelevantNote>();
 
-    sorted.forEach((log) => {
-      const sourcePath = log.file.path;
-      const frontmatter = log.cache?.frontmatter as
+    sorted.forEach((entry) => {
+      const sourcePath = entry.file.path;
+      const frontmatter = entry.cache?.frontmatter as
         | Record<string, unknown>
         | undefined;
       if (!frontmatter) {
@@ -169,8 +186,8 @@ export const useRelevantNotes = (logLimit = 10): RelevantNote[] => {
 
       const noteDate =
         normalizeDateValue(frontmatter.date) ??
-        extractIsoDate(log.file.basename) ??
-        normalizeDateValue(log.file.stat?.mtime);
+        extractIsoDate(entry.file.basename) ??
+        normalizeDateValue(entry.file.stat?.mtime);
 
       const baseExcluded = new Set<string>([sourcePath]);
 
@@ -227,5 +244,5 @@ export const useRelevantNotes = (logLimit = 10): RelevantNote[] => {
     });
 
     return result;
-  }, [app, logLimit, logs]);
+  }, [app, combinedNotes, logLimit]);
 };

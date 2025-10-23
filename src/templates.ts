@@ -15,7 +15,7 @@ export const CRM_DEFAULT_TEMPLATES = Object.freeze(
 
 export const getDefaultTemplate = (type: CRMFileType): string => {
   // Only entity types have default templates
-  // Special types like "log" and "journal" use the default
+  // Special types like daily notes and journals use the default
   if (type in CRM_DEFAULT_TEMPLATES) {
     return CRM_DEFAULT_TEMPLATES[type as CRMEntityType];
   }

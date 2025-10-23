@@ -5,7 +5,14 @@ import {
   type CRMEntityType,
 } from "@/entities";
 
-const SPECIAL_CRM_TYPES = ["log", "journal"] as const;
+export const DAILY_NOTE_TYPE = "daily" as const;
+export const LEGACY_DAILY_NOTE_TYPE = "log" as const;
+
+const SPECIAL_CRM_TYPES = [
+  DAILY_NOTE_TYPE,
+  LEGACY_DAILY_NOTE_TYPE,
+  "journal",
+] as const;
 
 /**
  * Special built-in types that are not entities but have special handling
@@ -39,17 +46,29 @@ export const CRM_FILE_TYPES: CRMFileType[] = [
 export const CRM_FILE_TYPE_LOOKUP = CRM_ENTITY_TYPE_SET;
 const SPECIAL_CRM_TYPE_SET = new Set<SpecialCRMType>(SPECIAL_CRM_TYPES);
 
+export type DailyNoteType = typeof DAILY_NOTE_TYPE | typeof LEGACY_DAILY_NOTE_TYPE;
+
+const DAILY_NOTE_TYPE_SET = new Set<DailyNoteType>([
+  DAILY_NOTE_TYPE,
+  LEGACY_DAILY_NOTE_TYPE,
+]);
+
 /**
- * Check if a type is a CRM entity type (excludes special types like log, journal)
+ * Check if a type is a CRM entity type (excludes special types like daily notes or journals)
  */
 export const isCRMEntityType = (type: string): type is CRMEntityType =>
   CRM_FILE_TYPE_LOOKUP.has(type as CRMEntityType);
 
 /**
- * Check if a type is a special CRM type (log, journal, etc.)
+ * Check if a type is a special CRM type (daily notes, legacy logs, journal, etc.)
  */
 export const isSpecialCRMType = (type: string): type is SpecialCRMType =>
   SPECIAL_CRM_TYPE_SET.has(type as SpecialCRMType);
+
+export const isDailyNoteType = (
+  type: string | null | undefined
+): type is DailyNoteType =>
+  typeof type === "string" && DAILY_NOTE_TYPE_SET.has(type as DailyNoteType);
 
 /**
  * Check if a type is any recognized CRM type (entity or special)
