@@ -552,14 +552,37 @@ export const useInboxTasks = () => {
         }
 
         const sourceText = target.text || target.raw || "";
+
+        // Decide the timestamp to use for the new note
+        // - For logs, inherit the Quick Task's resolved timestamp (date and time)
+        // - Otherwise, use "now"
+        const selectedDate =
+          targetType === CRMFileType.LOG && target?.occurredAt
+            ? new Date(target.occurredAt)
+            : new Date();
+
+        // Helper to format local date/time strings
+        const pad = (n: number) => n.toString().padStart(2, "0");
+        const localDateStr = `${selectedDate.getFullYear()}-${pad(
+          selectedDate.getMonth() + 1
+        )}-${pad(selectedDate.getDate())}`;
+        const localTimeStrDot = `${pad(selectedDate.getHours())}.${pad(
+          selectedDate.getMinutes()
+        )}`;
+
+        // Title strategy:
+        // - For logs: "YYYY-MM-DD HH:mm" (so user can just hit Enter)
+        // - For others: derive from task text (Title Case)
         const fallbackTitle =
           targetType === CRMFileType.PROJECT
             ? "New Project Task"
             : targetType === CRMFileType.LOG
-            ? "New Log Entry"
+            ? `${localDateStr} ${localTimeStrDot}`
             : "New Task";
-        const titleBase =
-          toTitleCase(sourceText).slice(0, 120) || fallbackTitle;
+        let titleBase =
+          targetType === CRMFileType.LOG
+            ? fallbackTitle
+            : toTitleCase(sourceText).slice(0, 120) || fallbackTitle;
         const safeBase = sanitizeFileName(titleBase) || "Untitled";
 
         const slug = slugify(sourceText || safeBase);
@@ -582,21 +605,29 @@ export const useInboxTasks = () => {
           counter += 1;
         }
 
+        // Ensure title matches the actual chosen filename for logs,
+        // so wiki links and note headings are consistent with the file basename.
+        if (targetType === CRMFileType.LOG) {
+          const finalBaseName = fileName.replace(/\.md$/i, "");
+          titleBase = finalBaseName;
+        }
+
         const templateSource = await getTemplateForType(
           app,
           templates,
           targetType
         );
 
-        const now = new Date();
-        const iso = now.toISOString();
+        const iso = selectedDate.toISOString();
         const data = {
           title: titleBase,
           type: targetType,
           filename: fileName,
-          slug,
+          slug: targetType === CRMFileType.LOG ? slugify(titleBase) : slug,
+          // Use selectedDate for all date/time fields so logs inherit Quick Task timestamp
           date: iso.split("T")[0],
-          time: iso.slice(11, 16),
+          // store a dot-time for convenience; template will also format from datetime
+          time: localTimeStrDot,
           datetime: iso,
         };
 

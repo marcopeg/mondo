@@ -74,3 +74,5 @@ Focus on the /entities/index.ts - this file should export a configuration object
 - relevantNotes.filter.order[]: should list the entities keys so that this order is implemented in the list of type filters in the dashboard's Relevant Notes.
 
 when creating a entity=log from the Entity Tab the title should follow the format "{date} {time}" and it should be pre-selected so that the user can confirm with "enter" or just edit to change it. the body should be empty.
+
+Focus on the QuickTaks in the dashboard. when selecting the option "log" to turn a quick tast into a log note, the newly created note should inherith the log's date an time as both title and attributes.

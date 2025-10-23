@@ -2,7 +2,7 @@ import type { CRMEntityConfig } from "@/types/CRMEntityConfig";
 
 const template = `---
 date: {{date:YYYY-MM-DD}}
-time: {{time:HH:mm}}
+time: {{time:HH.mm}}
 datetime: {{datetime}}
 ---
 `;
