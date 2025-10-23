@@ -197,7 +197,7 @@
 }
 
 .crm-settings-entities-collapsible {
-  margin-bottom: 1.5rem;
+  margin-bottom: var(--size-4-6, 1.5rem);
 }
 
 .crm-settings-entities-collapsible.is-collapsed
@@ -205,14 +205,13 @@
   display: none;
 }
 
-.crm-settings-entities-collapsible-content {
-  margin: 0;
-  padding: 0;
-}
-
 .crm-settings-entities-heading {
   cursor: pointer;
   user-select: none;
+  margin: 0;
+  padding: var(--size-4-3, 0.75rem) 0;
+  border-bottom: 1px solid var(--background-modifier-border);
+  font-weight: var(--font-semibold, 600);
 }
 
 .crm-settings-entities-heading:focus-visible {
@@ -232,6 +231,11 @@
   display: inline-block;
 }
 
+.crm-settings-entities-collapsible.is-collapsed
+  .crm-settings-entities-heading {
+  border-bottom: none;
+}
+
 .crm-settings-entities-collapsible:not(.is-collapsed)
   .crm-settings-entities-heading
   .setting-item-name::before {
@@ -240,6 +244,69 @@
 
 .crm-settings-entities-heading .setting-item-description {
   margin-left: 1.45rem;
+}
+
+.crm-settings-entities-collapsible-content {
+  margin: 0;
+  padding: var(--size-4-4, 1rem) 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--size-4-4, 1rem);
+}
+
+.crm-settings-card {
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-m, var(--radius-ml));
+  background-color: var(--background-secondary);
+  box-shadow: var(--shadow-s, var(--input-shadow, none));
+  clip-path: none;
+  padding: var(--size-4-4, 1rem);
+  display: flex;
+  flex-direction: column;
+  gap: var(--size-4-3, 0.75rem);
+}
+
+.crm-settings-card.mod-card {
+  /* Ensure Obsidian's mod-card class doesn't clip shadows */
+  clip-path: none;
+}
+
+.crm-settings-card + .crm-settings-card {
+  margin-top: var(--size-4-4, 1rem);
+}
+
+.crm-settings-entities-collapsible-content .crm-settings-card + .crm-settings-card {
+  margin-top: 0;
+}
+
+.crm-settings-entity-section {
+  display: flex;
+  flex-direction: column;
+}
+
+.crm-settings-entity-section-heading {
+  margin: 0 0 var(--size-4-3, 0.75rem);
+  padding: 0;
+  background: transparent;
+}
+
+.crm-settings-entity-fields {
+  display: flex;
+  flex-direction: column;
+  gap: var(--size-4-3, 0.75rem);
+}
+
+.crm-settings-entity-fields .setting-item {
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  box-shadow: none;
+}
+
+.crm-settings-entity-fields .setting-item + .setting-item {
+  padding-top: var(--size-2-4, 0.5rem);
+  border-top: 1px solid var(--background-modifier-border);
 }
 
 .crm-textfield__mic-icon {
