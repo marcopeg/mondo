@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/Button";
 import { EntityLinksTable } from "@/components/EntityLinksTable";
 import { useFiles } from "@/hooks/use-files";
 import { useApp } from "@/hooks/use-app";
-import { useEntityLinkOrdering } from "@/hooks/use-entity-link-ordering";
 import { CRMFileType } from "@/types/CRMFileType";
 import type { CRMEntityType } from "@/entities";
 import { matchesPropertyLink } from "@/utils/matchesPropertyLink";
@@ -171,17 +170,8 @@ export const LogsLinks = ({ file, config }: LogsLinksProps) => {
     });
   }, []);
 
-  const {
-    items: orderedLogs,
-    onReorder,
-    sortable,
-  } = useEntityLinkOrdering({
-    file,
-    items: validLogs,
-    frontmatterKey: PANEL_STATE_KEY,
-    getItemId: getLogId,
-    fallbackSort: sortLogs,
-  });
+  // Logs are not manually sortable; keep a deterministic sort by timestamp desc
+  const orderedLogs = useMemo(() => sortLogs(validLogs), [sortLogs, validLogs]);
 
   const collapsed = useMemo(() => {
     const crmState = (file.cache?.frontmatter as any)?.crmState;
@@ -200,17 +190,19 @@ export const LogsLinks = ({ file, config }: LogsLinksProps) => {
             typeof frontmatter.crmState !== "object" ||
             frontmatter.crmState === null
           ) {
-            frontmatter.crmState = {};
+            frontmatter.crmState = {} as any;
           }
 
           if (
-            typeof frontmatter.crmState[PANEL_STATE_KEY] !== "object" ||
-            frontmatter.crmState[PANEL_STATE_KEY] === null
+            typeof (frontmatter as any).crmState[PANEL_STATE_KEY] !==
+              "object" ||
+            (frontmatter as any).crmState[PANEL_STATE_KEY] === null
           ) {
-            frontmatter.crmState[PANEL_STATE_KEY] = {};
+            (frontmatter as any).crmState[PANEL_STATE_KEY] = {};
           }
 
-          frontmatter.crmState[PANEL_STATE_KEY].collapsed = isCollapsed;
+          (frontmatter as any).crmState[PANEL_STATE_KEY].collapsed =
+            isCollapsed;
         });
       } catch (error) {
         console.error("LogsLinks: failed to persist collapse state", error);
@@ -218,8 +210,6 @@ export const LogsLinks = ({ file, config }: LogsLinksProps) => {
     },
     [app, hostFile]
   );
-
-  const handleReorder = onReorder;
 
   // Removed subtitle to keep header clean per request
 
@@ -250,7 +240,7 @@ export const LogsLinks = ({ file, config }: LogsLinksProps) => {
         <Button
           variant="link"
           icon="plus"
-          aria-label="Create log"
+          // Manual reorder disabled for logs
           onClick={handleCreateLog}
         />
       ),
@@ -270,9 +260,7 @@ export const LogsLinks = ({ file, config }: LogsLinksProps) => {
       <EntityLinksTable
         items={orderedLogs}
         getKey={(logEntry) => logEntry.file!.path}
-        sortable={sortable}
-        onReorder={handleReorder}
-        getSortableId={(logEntry) => logEntry.file!.path}
+        sortable={false}
         pageSize={PAGE_SIZE}
         emptyLabel="No logs yet"
         renderRow={(logEntry) => {
