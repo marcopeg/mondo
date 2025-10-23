@@ -81,13 +81,25 @@ export const createLogForEntity = async ({
 
   const now = new Date();
   const isoTimestamp = now.toISOString();
-  const dateStamp = isoTimestamp.split("T")[0];
-  const timeStamp = isoTimestamp.slice(11, 16);
+  // Use local date/time for the human title; keep ISO for datetime
+  const yyyy = String(now.getFullYear());
+  const mm = String(now.getMonth() + 1).padStart(2, "0");
+  const dd = String(now.getDate()).padStart(2, "0");
+  const hh = String(now.getHours()).padStart(2, "0");
+  const min = String(now.getMinutes()).padStart(2, "0");
+  const dateStamp = `${yyyy}-${mm}-${dd}`;
+  const timeStamp = `${hh}:${min}`; // hh:mm local time
 
   const baseTitle = `${dateStamp} ${timeStamp}`;
   const safeTitle = baseTitle;
-  // Filename should strictly follow "{date} {time}" so it can be pre-selected and confirmed with Enter.
-  const sanitizedFileBase = baseTitle
+  // If the log is created from an EntityLinks panel, include the host name to reduce duplicates
+  const hostBaseName = entityFile?.file?.basename || displayName || "";
+  const fromEntityPanel = Array.isArray(linkTargets) && linkTargets.length > 0;
+  const rawFileBase =
+    fromEntityPanel && hostBaseName
+      ? `${baseTitle} on ${hostBaseName}`
+      : baseTitle;
+  const sanitizedFileBase = rawFileBase
     .replace(/[\\/|?*:<>"]/g, "-")
     .replace(/\s+/g, " ")
     .trim();

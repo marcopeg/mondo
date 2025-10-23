@@ -197,9 +197,13 @@ export const EntityView: FC<EntityViewProps> = ({ entityType }) => {
       let titleForEntity = `Untitled ${entityLabel}`;
       if (entityType === CRMFileType.LOG) {
         const now = new Date();
-        const iso = now.toISOString();
-        const date = iso.split("T")[0];
-        const time = iso.slice(11, 16); // HH:mm (UTC)
+        const yyyy = String(now.getFullYear());
+        const mm = String(now.getMonth() + 1).padStart(2, "0");
+        const dd = String(now.getDate()).padStart(2, "0");
+        const hh = String(now.getHours()).padStart(2, "0");
+        const min = String(now.getMinutes()).padStart(2, "0");
+        const date = `${yyyy}-${mm}-${dd}`;
+        const time = `${hh}:${min}`; // hh:mm local time
         titleForEntity = `${date} ${time}`;
       }
       const { file, created } = await createEntityFile({
