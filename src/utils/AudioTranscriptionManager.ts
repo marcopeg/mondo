@@ -21,6 +21,17 @@ const EXTENSION_TO_MIME: Record<string, string> = {
 
 const SUPPORTED_EXTENSIONS = new Set(Object.keys(EXTENSION_TO_MIME));
 
+type ActiveTranscription = {
+  controller: AbortController;
+  startedAt: number;
+  intervalId: number;
+  alertEl: HTMLElement;
+  labelEl: HTMLElement;
+  timerEl: HTMLElement;
+  cancelButton: HTMLButtonElement;
+  audioName: string;
+};
+
 type Maybe<T> = T | null | undefined;
 
 const getMimeFromExtension = (extension: Maybe<string>) => {
@@ -35,9 +46,11 @@ const getMimeFromExtension = (extension: Maybe<string>) => {
 export class AudioTranscriptionManager {
   private readonly plugin: CRM;
 
-  private readonly activeTranscriptions = new Set<string>();
+  private readonly activeTranscriptions = new Map<string, ActiveTranscription>();
 
   private readonly renderedEmbeds = new WeakMap<HTMLElement, string>();
+
+  private transcriptionAlertsContainer: HTMLElement | null = null;
 
   constructor(plugin: CRM) {
     this.plugin = plugin;
@@ -48,7 +61,13 @@ export class AudioTranscriptionManager {
   };
 
   dispose = () => {
-    this.activeTranscriptions.clear();
+    const activeKeys = Array.from(this.activeTranscriptions.keys());
+
+    activeKeys.forEach((key) => {
+      const session = this.activeTranscriptions.get(key);
+      session?.controller.abort();
+      this.stopTranscriptionSession(key);
+    });
   };
 
   isAudioFile = (file: Maybe<TFile>) => {
@@ -88,23 +107,32 @@ export class AudioTranscriptionManager {
       return null;
     }
 
-    this.activeTranscriptions.add(key);
+    const session = this.startTranscriptionSession(file);
     this.refreshAudioEmbeds(file.path);
-    new Notice("Transcribing audio…");
 
     try {
-      const transcript = await this.createTranscription(apiKey, file);
+      const transcript = await this.createTranscription(
+        apiKey,
+        file,
+        session.controller.signal
+      );
       const note = await this.writeMarkdownNote(file, transcript);
       new Notice("Transcription note ready.");
       this.refreshAudioEmbeds(file.path);
       return note;
     } catch (error) {
-      console.error("CRM: failed to transcribe audio note", error);
-      const message =
-        error instanceof Error ? error.message : "Unknown transcription error.";
-      new Notice(`Transcription failed: ${message}`);
+      if (error instanceof DOMException && error.name === "AbortError") {
+        new Notice("Transcription canceled.");
+      } else {
+        console.error("CRM: failed to transcribe audio note", error);
+        const message =
+          error instanceof Error
+            ? error.message
+            : "Unknown transcription error.";
+        new Notice(`Transcription failed: ${message}`);
+      }
     } finally {
-      this.activeTranscriptions.delete(key);
+      this.stopTranscriptionSession(key);
       this.refreshAudioEmbeds(file.path);
     }
 
@@ -184,7 +212,11 @@ export class AudioTranscriptionManager {
     return null;
   };
 
-  private createTranscription = async (apiKey: string, file: TFile) => {
+  private createTranscription = async (
+    apiKey: string,
+    file: TFile,
+    signal: AbortSignal
+  ) => {
     const buffer = await this.plugin.app.vault.adapter.readBinary(file.path);
     const blob = new Blob([buffer], { type: getMimeFromExtension(file.extension) });
 
@@ -198,6 +230,7 @@ export class AudioTranscriptionManager {
         Authorization: `Bearer ${apiKey}`,
       },
       body: formData,
+      signal,
     });
 
     if (!response.ok) {
@@ -299,6 +332,138 @@ export class AudioTranscriptionManager {
         this.openTranscription(audioFile, originPath);
       });
     }
+  };
+
+  private startTranscriptionSession = (file: TFile) => {
+    const key = file.path;
+    const container = this.ensureTranscriptionAlertsContainer();
+    const alertEl = container.createDiv({ cls: "crm-transcription-alert" });
+    alertEl.setAttr("role", "status");
+    alertEl.setAttr("aria-live", "polite");
+
+    const audioName = file.basename || file.name;
+
+    const labelEl = alertEl.createDiv({
+      cls: "crm-transcription-alert__message",
+      text: `Transcribing ${audioName}...`,
+    });
+
+    const metaEl = alertEl.createDiv({ cls: "crm-transcription-alert__meta" });
+    metaEl.createSpan({
+      cls: "crm-transcription-alert__meta-label",
+      text: "Elapsed",
+    });
+    const timerEl = metaEl.createSpan({
+      cls: "crm-transcription-alert__timer",
+    });
+
+    const cancelButton = alertEl.createEl("button", {
+      cls: "crm-transcription-alert__cancel mod-warning",
+      text: "Cancel",
+    });
+    cancelButton.setAttr("type", "button");
+
+    const controller = new AbortController();
+    const startedAt = Date.now();
+
+    const updateTimer = () => {
+      timerEl.setText(this.formatElapsedDuration(Date.now() - startedAt));
+    };
+
+    updateTimer();
+    const intervalId = window.setInterval(updateTimer, 1000);
+
+    const session: ActiveTranscription = {
+      controller,
+      startedAt,
+      intervalId,
+      alertEl,
+      labelEl,
+      timerEl,
+      cancelButton,
+      audioName,
+    };
+
+    this.activeTranscriptions.set(key, session);
+
+    cancelButton.addEventListener("click", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      this.cancelTranscription(key);
+    });
+
+    return session;
+  };
+
+  private stopTranscriptionSession = (key: string) => {
+    const session = this.activeTranscriptions.get(key);
+
+    if (!session) {
+      return;
+    }
+
+    window.clearInterval(session.intervalId);
+    session.alertEl.remove();
+
+    this.activeTranscriptions.delete(key);
+
+    const container = this.transcriptionAlertsContainer;
+
+    if (container && container.childElementCount === 0) {
+      container.remove();
+      this.transcriptionAlertsContainer = null;
+    }
+  };
+
+  private ensureTranscriptionAlertsContainer = () => {
+    if (
+      this.transcriptionAlertsContainer &&
+      document.body.contains(this.transcriptionAlertsContainer)
+    ) {
+      return this.transcriptionAlertsContainer;
+    }
+
+    this.transcriptionAlertsContainer = document.body.createDiv({
+      cls: "crm-transcription-alerts",
+    });
+
+    return this.transcriptionAlertsContainer;
+  };
+
+  private formatElapsedDuration = (elapsedMs: number) => {
+    const totalSeconds = Math.max(0, Math.floor(elapsedMs / 1000));
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+
+    if (hours > 0) {
+      return `${hours}:${minutes.toString().padStart(2, "0")}:${seconds
+        .toString()
+        .padStart(2, "0")}`;
+    }
+
+    if (minutes > 0) {
+      return `${minutes}:${seconds.toString().padStart(2, "0")}`;
+    }
+
+    return `${seconds}s`;
+  };
+
+  private cancelTranscription = (key: string) => {
+    const session = this.activeTranscriptions.get(key);
+
+    if (!session) {
+      return;
+    }
+
+    if (session.cancelButton.disabled) {
+      return;
+    }
+
+    session.cancelButton.disabled = true;
+    session.cancelButton.setText("Cancelling...");
+    session.labelEl.setText(`Cancelling ${session.audioName}...`);
+    session.controller.abort();
   };
 
   private refreshAudioEmbeds = (audioPath: string) => {
