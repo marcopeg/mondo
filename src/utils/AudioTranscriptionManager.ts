@@ -5,6 +5,7 @@ import {
   TFile,
   setIcon,
 } from "obsidian";
+import type { WorkspaceLeaf, View } from "obsidian";
 
 const TRANSCRIPTION_MODEL = "gpt-4o-mini-transcribe";
 
@@ -62,12 +63,44 @@ export class AudioTranscriptionManager {
 
   private audioContext: AudioContext | null = null;
 
+  private mediaDecorationTimer: number | null = null;
+
   constructor(plugin: CRM) {
     this.plugin = plugin;
   }
 
   initialize = () => {
-    // Placeholder for future initialization logic.
+    this.plugin.app.workspace.onLayoutReady(() => {
+      this.scheduleMediaViewDecoration();
+    });
+
+    this.scheduleMediaViewDecoration();
+
+    this.plugin.registerEvent(
+      this.plugin.app.workspace.on("file-open", (file) => {
+        if (!file) {
+          return;
+        }
+
+        if (!this.isAudioFile(file)) {
+          return;
+        }
+
+        this.scheduleMediaViewDecoration();
+      })
+    );
+
+    this.plugin.registerEvent(
+      this.plugin.app.workspace.on("layout-change", () => {
+        this.scheduleMediaViewDecoration();
+      })
+    );
+
+    this.plugin.registerEvent(
+      this.plugin.app.workspace.on("active-leaf-change", () => {
+        this.scheduleMediaViewDecoration();
+      })
+    );
   };
 
   dispose = () => {
@@ -82,6 +115,11 @@ export class AudioTranscriptionManager {
     if (this.audioContext) {
       void this.audioContext.close();
       this.audioContext = null;
+    }
+
+    if (this.mediaDecorationTimer != null) {
+      window.clearTimeout(this.mediaDecorationTimer);
+      this.mediaDecorationTimer = null;
     }
   };
 
@@ -187,6 +225,73 @@ export class AudioTranscriptionManager {
 
       this.renderActionButtons(actions, audioFile, context.sourcePath);
     });
+  };
+
+  private scheduleMediaViewDecoration = () => {
+    if (this.mediaDecorationTimer != null) {
+      window.clearTimeout(this.mediaDecorationTimer);
+    }
+
+    this.mediaDecorationTimer = window.setTimeout(() => {
+      this.mediaDecorationTimer = null;
+      this.decorateMediaViews();
+    }, 50);
+  };
+
+  private decorateMediaViews = () => {
+    this.plugin.app.workspace.iterateAllLeaves((leaf) => {
+      this.decorateMediaLeaf(leaf);
+    });
+  };
+
+  private decorateMediaLeaf = (leaf: WorkspaceLeaf) => {
+    const view = leaf.view;
+
+    if (!view) {
+      return;
+    }
+
+    if (typeof view.getViewType === "function" && view.getViewType() === "markdown") {
+      return;
+    }
+
+    const file = (view as View & { file?: TFile | null }).file;
+
+    if (!(file instanceof TFile)) {
+      return;
+    }
+
+    if (!this.isAudioFile(file)) {
+      return;
+    }
+
+    this.decorateAudioFileView(view, file);
+  };
+
+  private decorateAudioFileView = (view: View, file: TFile) => {
+    const container = view.containerEl.querySelector<HTMLElement>(".media-view");
+
+    if (!container) {
+      return;
+    }
+
+    const audio = container.querySelector("audio");
+
+    if (!audio) {
+      return;
+    }
+
+    container.setAttr("data-crm-audio-path", file.path);
+    this.renderedEmbeds.set(container, file.path);
+
+    let actions = container.querySelector<HTMLElement>(".crm-audio-actions");
+
+    if (!actions) {
+      actions = container.createDiv({ cls: "crm-audio-actions" });
+    }
+
+    audio.insertAdjacentElement("afterend", actions);
+    this.renderActionButtons(actions, file, file.path);
   };
 
   openTranscription = (audioFile: TFile, originPath?: string) => {
