@@ -2,6 +2,7 @@ import type CRM from "@/main";
 import {
   MarkdownPostProcessorContext,
   Notice,
+  Platform,
   TFile,
   setIcon,
 } from "obsidian";
@@ -62,12 +63,43 @@ export class AudioTranscriptionManager {
 
   private audioContext: AudioContext | null = null;
 
+  private desktopContainer: HTMLElement | null = null;
+
+  private desktopButton: HTMLButtonElement | null = null;
+
+  private desktopIcon: HTMLElement | null = null;
+
+  private desktopLabel: HTMLElement | null = null;
+
+  private mobileButton: HTMLButtonElement | null = null;
+
+  private mobileIcon: HTMLElement | null = null;
+
+  private mobileLabel: HTMLElement | null = null;
+
+  private mobileRetryTimeout: number | null = null;
+
+  private activeAudioFile: TFile | null = null;
+
   constructor(plugin: CRM) {
     this.plugin = plugin;
   }
 
   initialize = () => {
-    // Placeholder for future initialization logic.
+    this.plugin.registerEvent(
+      this.plugin.app.workspace.on("file-open", this.updateTranscriptionUi)
+    );
+    this.plugin.registerEvent(
+      this.plugin.app.workspace.on("active-leaf-change", this.updateTranscriptionUi)
+    );
+    this.plugin.registerEvent(
+      this.plugin.app.workspace.on("layout-change", this.updateTranscriptionUi)
+    );
+    this.plugin.registerEvent(
+      this.plugin.app.metadataCache.on("changed", this.updateTranscriptionUi)
+    );
+
+    this.updateTranscriptionUi();
   };
 
   dispose = () => {
@@ -83,6 +115,9 @@ export class AudioTranscriptionManager {
       void this.audioContext.close();
       this.audioContext = null;
     }
+
+    this.destroyDesktopButton();
+    this.destroyMobileButton();
   };
 
   isAudioFile = (file: Maybe<TFile>) => {
@@ -124,6 +159,7 @@ export class AudioTranscriptionManager {
 
     const session = this.startTranscriptionSession(file);
     this.refreshAudioEmbeds(file.path);
+    this.updateTranscriptionUi();
 
     try {
       const transcript = await this.createTranscription(
@@ -135,6 +171,7 @@ export class AudioTranscriptionManager {
       this.openTranscriptionFile(note, originPath ?? file.path);
       new Notice("Transcription note ready.");
       this.refreshAudioEmbeds(file.path);
+      this.updateTranscriptionUi();
       return note;
     } catch (error) {
       if (error instanceof DOMException && error.name === "AbortError") {
@@ -150,6 +187,7 @@ export class AudioTranscriptionManager {
     } finally {
       this.stopTranscriptionSession(key);
       this.refreshAudioEmbeds(file.path);
+      this.updateTranscriptionUi();
     }
 
     return null;
@@ -460,6 +498,8 @@ export class AudioTranscriptionManager {
       container.remove();
       this.transcriptionAlertsContainer = null;
     }
+
+    this.updateTranscriptionUi();
   };
 
   private ensureTranscriptionAlertsContainer = () => {
@@ -783,5 +823,299 @@ export class AudioTranscriptionManager {
     }
 
     return null;
+  };
+
+  private updateTranscriptionUi = () => {
+    const activeFile = this.plugin.app.workspace.getActiveFile();
+    const audioFile = this.isAudioFile(activeFile) ? activeFile : null;
+
+    this.activeAudioFile = audioFile;
+
+    this.updateDesktopButton(audioFile);
+    this.updateMobileButton(audioFile);
+  };
+
+  private updateDesktopButton = (audioFile: TFile | null) => {
+    if (Platform.isMobileApp) {
+      this.hideDesktopPanel();
+      return;
+    }
+
+    if (!audioFile) {
+      this.hideDesktopPanel();
+      return;
+    }
+
+    const container = this.ensureDesktopContainer();
+    const button = this.ensureDesktopButton(container);
+    const icon = this.desktopIcon;
+    const label = this.desktopLabel;
+
+    if (!button || !icon || !label) {
+      return;
+    }
+
+    const hasTranscription = this.hasExistingTranscription(audioFile);
+    const inProgress = this.isTranscriptionInProgress(audioFile);
+
+    const labelText = inProgress
+      ? "Transcribing…"
+      : hasTranscription
+      ? "Open transcription"
+      : "Transcribe";
+    const iconName = inProgress
+      ? "loader-2"
+      : hasTranscription
+      ? "file-text"
+      : "wand-2";
+
+    label.setText(labelText);
+    setIcon(icon, iconName);
+
+    if (inProgress) {
+      icon.classList.add("crm-voice-fab-icon--spin");
+    } else {
+      icon.classList.remove("crm-voice-fab-icon--spin");
+    }
+
+    button.disabled = inProgress;
+    button.setAttribute("aria-label", labelText);
+    button.setAttribute("title", labelText);
+
+    container.classList.add("crm-transcription-panel--visible");
+  };
+
+  private hideDesktopPanel = () => {
+    const container = this.desktopContainer;
+    if (container) {
+      container.classList.remove("crm-transcription-panel--visible");
+    }
+  };
+
+  private ensureDesktopContainer = () => {
+    if (
+      this.desktopContainer &&
+      document.body.contains(this.desktopContainer)
+    ) {
+      return this.desktopContainer;
+    }
+
+    this.desktopContainer?.remove();
+
+    this.desktopContainer = document.body.createDiv({
+      cls: "crm-transcription-panel",
+    });
+
+    return this.desktopContainer;
+  };
+
+  private ensureDesktopButton = (container: HTMLElement) => {
+    if (!this.desktopButton || !this.desktopButton.isConnected) {
+      this.desktopButton?.removeEventListener(
+        "click",
+        this.handleDesktopButtonClick
+      );
+      container.replaceChildren();
+      const button = container.createEl("button", {
+        cls: "crm-transcription-panel__button",
+      });
+      button.setAttr("type", "button");
+      const icon = button.createSpan({
+        cls: "crm-transcription-panel__icon",
+      });
+      const label = button.createSpan({
+        cls: "crm-transcription-panel__label",
+      });
+      button.addEventListener("click", this.handleDesktopButtonClick);
+      this.desktopButton = button;
+      this.desktopIcon = icon;
+      this.desktopLabel = label;
+    }
+
+    return this.desktopButton;
+  };
+
+  private handleDesktopButtonClick = (event: MouseEvent) => {
+    event.preventDefault();
+    event.stopPropagation();
+    this.handleTranscriptionAction();
+  };
+
+  private updateMobileButton = (audioFile: TFile | null) => {
+    if (!Platform.isMobileApp) {
+      this.destroyMobileButton();
+      return;
+    }
+
+    if (!audioFile) {
+      this.destroyMobileButton();
+      return;
+    }
+
+    const button = this.ensureMobileButton();
+    const icon = this.mobileIcon;
+    const label = this.mobileLabel;
+
+    if (!button || !icon || !label) {
+      return;
+    }
+
+    const hasTranscription = this.hasExistingTranscription(audioFile);
+    const inProgress = this.isTranscriptionInProgress(audioFile);
+
+    const labelText = inProgress
+      ? "Transcribing…"
+      : hasTranscription
+      ? "Open transcription"
+      : "Transcribe";
+    const iconName = inProgress
+      ? "loader-2"
+      : hasTranscription
+      ? "file-text"
+      : "wand-2";
+
+    label.setText(labelText);
+    setIcon(icon, iconName);
+
+    if (inProgress) {
+      icon.classList.add("crm-voice-fab-icon--spin");
+    } else {
+      icon.classList.remove("crm-voice-fab-icon--spin");
+    }
+
+    button.disabled = inProgress;
+    button.setAttribute("aria-label", labelText);
+    button.setAttribute("title", labelText);
+  };
+
+  private ensureMobileButton = () => {
+    const container = this.findMobileMenuContainer();
+
+    if (!container) {
+      this.scheduleMobileRetry();
+      return null;
+    }
+
+    this.clearMobileRetry();
+
+    if (!this.mobileButton || !this.mobileButton.isConnected) {
+      this.destroyMobileButton();
+
+      const button = container.createEl("button", {
+        cls: "crm-transcription-mobile-button",
+      });
+      button.setAttr("type", "button");
+      const icon = button.createSpan({
+        cls: "crm-transcription-mobile-button__icon",
+      });
+      const label = button.createSpan({
+        cls: "crm-transcription-mobile-button__label",
+      });
+
+      button.addEventListener("click", this.handleMobileButtonClick);
+
+      this.mobileButton = button;
+      this.mobileIcon = icon;
+      this.mobileLabel = label;
+    }
+
+    if (this.mobileButton && this.mobileButton.parentElement !== container) {
+      container.appendChild(this.mobileButton);
+    }
+
+    return this.mobileButton;
+  };
+
+  private handleMobileButtonClick = (event: MouseEvent) => {
+    event.preventDefault();
+    event.stopPropagation();
+    this.handleTranscriptionAction();
+  };
+
+  private scheduleMobileRetry = () => {
+    if (this.mobileRetryTimeout !== null) {
+      return;
+    }
+
+    this.mobileRetryTimeout = window.setTimeout(() => {
+      this.mobileRetryTimeout = null;
+      this.updateMobileButton(this.activeAudioFile);
+    }, 250);
+  };
+
+  private clearMobileRetry = () => {
+    if (this.mobileRetryTimeout !== null) {
+      window.clearTimeout(this.mobileRetryTimeout);
+      this.mobileRetryTimeout = null;
+    }
+  };
+
+  private destroyDesktopButton = () => {
+    if (this.desktopButton) {
+      this.desktopButton.removeEventListener(
+        "click",
+        this.handleDesktopButtonClick
+      );
+      this.desktopButton.remove();
+      this.desktopButton = null;
+    }
+
+    this.desktopIcon = null;
+    this.desktopLabel = null;
+
+    if (this.desktopContainer) {
+      this.desktopContainer.remove();
+      this.desktopContainer = null;
+    }
+  };
+
+  private destroyMobileButton = () => {
+    this.clearMobileRetry();
+
+    if (this.mobileButton) {
+      this.mobileButton.removeEventListener(
+        "click",
+        this.handleMobileButtonClick
+      );
+      this.mobileButton.remove();
+      this.mobileButton = null;
+    }
+
+    this.mobileIcon = null;
+    this.mobileLabel = null;
+  };
+
+  private findMobileMenuContainer = () => {
+    const selectors = [
+      ".mod-mobile .mobile-toolbar-options",
+      ".mod-mobile .mobile-toolbar",
+      ".mod-mobile .cm-mobile-toolbar",
+    ];
+
+    for (const selector of selectors) {
+      const element = document.body.querySelector(selector);
+      if (element instanceof HTMLElement) {
+        return element;
+      }
+    }
+
+    return null;
+  };
+
+  private handleTranscriptionAction = () => {
+    const file = this.activeAudioFile;
+
+    if (!file) {
+      return;
+    }
+
+    const existing = this.getTranscriptionNoteFile(file);
+
+    if (existing) {
+      this.openTranscriptionFile(existing, file.path);
+      return;
+    }
+
+    void this.transcribeAudioFile(file, file.path);
   };
 }
