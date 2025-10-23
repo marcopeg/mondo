@@ -6,6 +6,7 @@ import { Stack } from "@/components/ui/Stack";
 import Typography from "@/components/ui/Typography";
 import Link from "@/components/ui/Link";
 import { Icon } from "@/components/ui/Icon";
+import { DAILY_NOTE_TYPE } from "@/types/CRMFileType";
 import {
   extractDailyLinkReferences,
   extractDailyOpenedReferences,
@@ -37,13 +38,7 @@ const DailyNoteListCard = ({
   entries,
 }: DailyNoteListCardProps) => {
   return (
-    <Card
-      title={title}
-      icon={icon}
-      collapsible
-      collapsed
-      collapseOnHeaderClick
-    >
+    <Card title={title} icon={icon} collapsible collapsed collapseOnHeaderClick>
       {entries.length === 0 ? (
         <Typography variant="body" className="text-muted">
           None
@@ -60,9 +55,7 @@ const DailyNoteListCard = ({
             >
               <Icon name={entry.icon} />
               <Link to={entry.path}>
-                <Typography variant="body">
-                  {entry.display}
-                </Typography>
+                <Typography variant="body">{entry.display}</Typography>
               </Link>
             </Stack>
           ))}
@@ -86,6 +79,12 @@ export const DailyNoteLinks = () => {
   const frontmatter = cachedFile.cache?.frontmatter as
     | Record<string, unknown>
     | undefined;
+
+  // Ensure these panels are shown only for true daily notes
+  const type = (frontmatter?.type as string | undefined) ?? null;
+  if (type !== DAILY_NOTE_TYPE) {
+    return null;
+  }
 
   const dailyState = useMemo(
     () => getDailyNoteState(frontmatter),
