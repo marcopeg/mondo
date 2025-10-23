@@ -198,6 +198,12 @@
 
 .crm-settings-entities-collapsible {
   margin-bottom: 1.5rem;
+  background-color: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-m, 0.5rem);
+  box-shadow: var(--shadow-s, var(--input-shadow, none));
+  overflow: hidden;
+  padding: 0;
 }
 
 .crm-settings-entities-collapsible.is-collapsed
@@ -205,14 +211,13 @@
   display: none;
 }
 
-.crm-settings-entities-collapsible-content {
-  margin: 0;
-  padding: 0;
-}
-
 .crm-settings-entities-heading {
   cursor: pointer;
   user-select: none;
+  margin: 0;
+  padding: var(--size-4-3, 0.75rem) var(--size-4-4, 1rem);
+  border-bottom: 1px solid var(--background-modifier-border);
+  background: transparent;
 }
 
 .crm-settings-entities-heading:focus-visible {
@@ -232,6 +237,11 @@
   display: inline-block;
 }
 
+.crm-settings-entities-collapsible.is-collapsed
+  .crm-settings-entities-heading {
+  border-bottom: none;
+}
+
 .crm-settings-entities-collapsible:not(.is-collapsed)
   .crm-settings-entities-heading
   .setting-item-name::before {
@@ -240,6 +250,43 @@
 
 .crm-settings-entities-heading .setting-item-description {
   margin-left: 1.45rem;
+}
+
+.crm-settings-entities-collapsible-content {
+  margin: 0;
+  padding: var(--size-4-4, 1rem);
+  background: transparent;
+}
+
+.crm-settings-entity-section + .crm-settings-entity-section {
+  margin-top: var(--size-4-4, 1rem);
+  padding-top: var(--size-4-4, 1rem);
+  border-top: 1px solid var(--background-modifier-border);
+}
+
+.crm-settings-entity-section-heading {
+  margin: 0 0 var(--size-4-3, 0.75rem);
+  padding: 0;
+  background: transparent;
+}
+
+.crm-settings-entity-fields {
+  display: flex;
+  flex-direction: column;
+  gap: var(--size-4-3, 0.75rem);
+}
+
+.crm-settings-entity-fields .setting-item {
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  box-shadow: none;
+}
+
+.crm-settings-entity-fields .setting-item + .setting-item {
+  padding-top: var(--size-2-4, 0.5rem);
+  border-top: 1px solid var(--background-modifier-border);
 }
 
 .crm-textfield__mic-icon {

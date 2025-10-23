@@ -23,16 +23,19 @@ export const Paper: React.FC<PaperProps> = ({
   const paddingClass = hasExplicitPadding ? undefined : `p-${p}`;
 
   const visualStyle: React.CSSProperties = {
-    border: "1px solid var(--setting-item-border-color)",
-    borderRadius: "var(--radius-ml)",
-    backgroundColor: "var(--metadata-background)",
+    border: "1px solid var(--background-modifier-border)",
+    borderRadius: "var(--radius-m, var(--radius-ml))",
+    backgroundColor: "var(--background-secondary)",
+    boxShadow: "var(--shadow-s, var(--input-shadow, none))",
     clipPath: "none",
   };
 
   return (
     <Box
       {...(rest as any)}
-      className={[paddingClass, className].filter(Boolean).join(" ")}
+      className={[paddingClass, "crm-paper", "mod-card", className]
+        .filter(Boolean)
+        .join(" ")}
       style={{ ...visualStyle, ...style }}
     >
       {children}
