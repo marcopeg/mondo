@@ -928,6 +928,17 @@
   color: var(--text-normal);
 }
 
+.crm-transcription-alert__estimate {
+  margin-left: var(--size-2-1, 0.25rem);
+  font-size: 0.7rem;
+  font-style: italic;
+  color: var(--text-faint);
+}
+
+.crm-transcription-alert__estimate[hidden] {
+  display: none;
+}
+
 .crm-transcription-alert__cancel {
   margin-left: auto;
 }

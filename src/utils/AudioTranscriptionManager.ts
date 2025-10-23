@@ -21,6 +21,8 @@ const EXTENSION_TO_MIME: Record<string, string> = {
 
 const SUPPORTED_EXTENSIONS = new Set(Object.keys(EXTENSION_TO_MIME));
 
+const WHISPER_REALTIME_RATIO = 0.3;
+
 type ActiveTranscription = {
   controller: AbortController;
   startedAt: number;
@@ -29,6 +31,7 @@ type ActiveTranscription = {
   labelEl: HTMLElement;
   timerEl: HTMLElement;
   durationEl: HTMLElement;
+  estimateEl: HTMLElement;
   cancelButton: HTMLButtonElement;
   audioName: string;
 };
@@ -382,7 +385,7 @@ export class AudioTranscriptionManager {
     const metaEl = alertEl.createDiv({ cls: "crm-transcription-alert__meta" });
     metaEl.createSpan({
       cls: "crm-transcription-alert__meta-label",
-      text: "Duration:",
+      text: "Audio:",
     });
     const durationEl = metaEl.createSpan({
       cls: "crm-transcription-alert__meta-value",
@@ -398,6 +401,10 @@ export class AudioTranscriptionManager {
     const timerEl = metaEl.createSpan({
       cls: "crm-transcription-alert__timer",
     });
+    const estimateEl = metaEl.createSpan({
+      cls: "crm-transcription-alert__estimate",
+    });
+    estimateEl.toggleAttribute("hidden", true);
 
     const controller = new AbortController();
     const startedAt = Date.now();
@@ -409,7 +416,7 @@ export class AudioTranscriptionManager {
     updateTimer();
     const intervalId = window.setInterval(updateTimer, 1000);
 
-    void this.populateAudioDuration(file, durationEl);
+    void this.populateAudioDuration(file, durationEl, estimateEl);
 
     const session: ActiveTranscription = {
       controller,
@@ -419,6 +426,7 @@ export class AudioTranscriptionManager {
       labelEl,
       timerEl,
       durationEl,
+      estimateEl,
       cancelButton,
       audioName,
     };
@@ -469,19 +477,47 @@ export class AudioTranscriptionManager {
     return this.transcriptionAlertsContainer;
   };
 
-  private populateAudioDuration = async (file: TFile, target: HTMLElement) => {
+  private populateAudioDuration = async (
+    file: TFile,
+    target: HTMLElement,
+    estimateTarget?: HTMLElement
+  ) => {
     const durationSeconds = await this.getAudioDurationSeconds(file);
 
+    if (target.isConnected) {
+      if (durationSeconds == null) {
+        target.setText("--");
+      } else {
+        target.setText(this.formatDuration(durationSeconds));
+      }
+    }
+
+    if (estimateTarget) {
+      this.applyEstimatedTranscriptionDuration(estimateTarget, durationSeconds);
+    }
+  };
+
+  private applyEstimatedTranscriptionDuration = (
+    target: HTMLElement,
+    durationSeconds: number | null
+  ) => {
     if (!target.isConnected) {
       return;
     }
 
     if (durationSeconds == null) {
-      target.setText("--");
+      target.setText("");
+      target.toggleAttribute("hidden", true);
       return;
     }
 
-    target.setText(this.formatDuration(durationSeconds));
+    const estimatedSeconds = Math.max(
+      5,
+      Math.round(durationSeconds * WHISPER_REALTIME_RATIO)
+    );
+
+    target.setText(` (est. ${this.formatDuration(estimatedSeconds)})`);
+    target.toggleAttribute("hidden", false);
   };
 
   private formatElapsedDuration = (elapsedMs: number) => {
