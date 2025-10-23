@@ -148,39 +148,24 @@ export const extractDailyOpenedReferences = (
 
   const values = Array.isArray(raw) ? raw : [raw];
   const entries: DailyNoteReference[] = [];
-  const seen = new Map<string, DailyNoteReference>();
+  const seen = new Set<string>();
 
   values.forEach((value) => {
     let link: string | null = null;
-    let count = 1;
 
     if (typeof value === "string") {
       const trimmed = value.trim();
-      if (trimmed.length === 0) {
-        return;
+      if (trimmed.length > 0) {
+        link = trimmed;
       }
-      link = trimmed;
     } else if (value && typeof value === "object") {
       const objectValue = value as Record<string, unknown>;
       const maybeLink =
         objectValue.link ?? objectValue.raw ?? objectValue.value;
       if (typeof maybeLink === "string") {
         const trimmed = maybeLink.trim();
-        if (trimmed.length === 0) {
-          return;
-        }
-        link = trimmed;
-      }
-      const maybeCount = objectValue.count;
-      if (typeof maybeCount === "number" && Number.isFinite(maybeCount)) {
-        const normalized = Math.floor(maybeCount);
-        if (normalized > 0) {
-          count = normalized;
-        }
-      } else if (typeof maybeCount === "string") {
-        const parsed = Number.parseInt(maybeCount, 10);
-        if (Number.isFinite(parsed) && parsed > 0) {
-          count = parsed;
+        if (trimmed.length > 0) {
+          link = trimmed;
         }
       }
     }
@@ -193,35 +178,22 @@ export const extractDailyOpenedReferences = (
     if (!file) {
       return;
     }
-    if (excludedPaths.has(file.path)) {
+    if (excludedPaths.has(file.path) || seen.has(file.path)) {
       return;
     }
+
+    seen.add(file.path);
 
     const { type, icon } = resolveFileType(file, app);
     const label = getDisplayLabel(file, alias, app, sourcePath);
 
-    const existing = seen.get(file.path);
-    if (existing) {
-      existing.count += count;
-      return;
-    }
-
-    const entry: DailyNoteReference = {
+    entries.push({
       path: file.path,
       label,
       icon,
       type,
-      count,
-    };
-    seen.set(file.path, entry);
-    entries.push(entry);
-  });
-
-  entries.sort((left, right) => {
-    if (right.count !== left.count) {
-      return right.count - left.count;
-    }
-    return left.label.localeCompare(right.label);
+      count: 1,
+    });
   });
 
   return entries;
