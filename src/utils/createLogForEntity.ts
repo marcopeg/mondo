@@ -11,33 +11,33 @@ import {
   slugify,
 } from "@/utils/createLinkedNoteHelpers";
 
-export type FactLinkTarget = {
+export type LogLinkTarget = {
   property: string;
   mode: "single" | "list";
   target: TCachedFile;
 };
 
-type CreateFactForEntityParams = {
+type CreateLogForEntityParams = {
   app: App;
   entityFile: TCachedFile;
-  linkTargets: FactLinkTarget[];
+  linkTargets: LogLinkTarget[];
   openAfterCreate?: boolean;
 };
 
-export const createFactForEntity = async ({
+export const createLogForEntity = async ({
   app,
   entityFile,
   linkTargets,
   openAfterCreate = true,
-}: CreateFactForEntityParams): Promise<TFile | null> => {
+}: CreateLogForEntityParams): Promise<TFile | null> => {
   if (!entityFile?.file) {
-    console.warn("createFactForEntity: missing entity file reference");
+    console.warn("createLogForEntity: missing entity file reference");
     return null;
   }
 
   const plugin = getCRMPlugin(app);
   if (!plugin) {
-    console.error("createFactForEntity: CRM plugin instance not available");
+    console.error("createLogForEntity: CRM plugin instance not available");
     return null;
   }
 
@@ -50,8 +50,7 @@ export const createFactForEntity = async ({
   const hostType = (entityFile.cache?.frontmatter as any)?.type as
     | string
     | undefined;
-  // Treat person, project, task, fact, company, team, and meeting hosts as editable targets where we prefer a
-  // simple default title (so user can immediately rename it)
+
   const isEditableHost =
     hostType === CRMFileType.PERSON ||
     hostType === "person" ||
@@ -66,8 +65,11 @@ export const createFactForEntity = async ({
     hostType === CRMFileType.COMPANY ||
     hostType === "company" ||
     hostType === CRMFileType.TEAM ||
-    hostType === "team";
-  const rootPathSetting = settings.rootPaths?.[CRMFileType.FACT] ?? "/";
+    hostType === "team" ||
+    hostType === CRMFileType.LOG ||
+    hostType === "log";
+
+  const rootPathSetting = settings.rootPaths?.[CRMFileType.LOG] ?? "/";
   const normalizedFolder = normalizeFolderPath(rootPathSetting);
 
   if (normalizedFolder) {
@@ -79,40 +81,49 @@ export const createFactForEntity = async ({
 
   const now = new Date();
   const isoTimestamp = now.toISOString();
-  const dateStamp = isoTimestamp.split("T")[0];
-  const timeStamp = isoTimestamp.slice(11, 16);
+  // Use local date/time for the human title; keep ISO for datetime
+  const yyyy = String(now.getFullYear());
+  const mm = String(now.getMonth() + 1).padStart(2, "0");
+  const dd = String(now.getDate()).padStart(2, "0");
+  const hh = String(now.getHours()).padStart(2, "0");
+  const min = String(now.getMinutes()).padStart(2, "0");
+  const dateStamp = `${yyyy}-${mm}-${dd}`;
+  const timeStamp = `${hh}:${min}`; // hh:mm local time (metadata)
+  const timeDot = `${hh}.${min}`; // hh.mm for filenames/titles
 
-  // For editable hosts (person/project): use a simple and editable default title
-  const baseTitle = isEditableHost
-    ? "Untitled Fact"
-    : displayName
-    ? `${dateStamp} ${timeStamp} - ${displayName}`
-    : `${dateStamp} ${timeStamp} - Fact`;
-  const safeTitle = baseTitle.trim() || `${dateStamp} ${timeStamp}`;
-  const slug = slugify(safeTitle);
-  const safeFileBase = isEditableHost
-    ? "Untitled Fact"
-    : safeTitle.replace(/[\\/|?*:<>"]/g, "-");
-  const fileName = safeFileBase.endsWith(".md")
-    ? safeFileBase
-    : `${safeFileBase}.md`;
+  const baseTitle = `${dateStamp} ${timeDot}`;
+  const safeTitle = baseTitle;
+  // If the log is created from an EntityLinks panel, include the host name to reduce duplicates
+  const hostBaseName = entityFile?.file?.basename || displayName || "";
+  const fromEntityPanel = Array.isArray(linkTargets) && linkTargets.length > 0;
+  const rawFileBase =
+    fromEntityPanel && hostBaseName
+      ? `${baseTitle} on ${hostBaseName}`
+      : baseTitle;
+  const sanitizedFileBase = rawFileBase
+    .replace(/[\\/|?*<>\"]/g, "-")
+    .replace(/\s+/g, " ")
+    .trim();
+  const fileBase = sanitizedFileBase || baseTitle;
+  const slug = slugify(fileBase);
+  const fileName = fileBase.endsWith(".md") ? fileBase : `${fileBase}.md`;
   const filePath = normalizedFolder
     ? `${normalizedFolder}/${fileName}`
     : fileName;
 
-  let factFile = app.vault.getAbstractFileByPath(filePath) as TFile | null;
+  let logFile = app.vault.getAbstractFileByPath(filePath) as TFile | null;
   let didCreate = false;
 
-  if (!factFile) {
+  if (!logFile) {
     const templateSource = await getTemplateForType(
       app,
       settings.templates,
-      CRMFileType.FACT
+      CRMFileType.LOG
     );
 
     const rendered = renderTemplate(templateSource, {
       title: safeTitle,
-      type: String(CRMFileType.FACT),
+      type: String(CRMFileType.LOG),
       filename: fileName,
       slug,
       date: dateStamp,
@@ -120,11 +131,11 @@ export const createFactForEntity = async ({
       datetime: isoTimestamp,
     });
 
-    factFile = await app.vault.create(filePath, rendered);
+    logFile = await app.vault.create(filePath, rendered);
     didCreate = true;
   }
 
-  if (!factFile) {
+  if (!logFile) {
     return null;
   }
 
@@ -132,7 +143,7 @@ export const createFactForEntity = async ({
     (target) => target?.target?.file && target.property
   );
 
-  await app.fileManager.processFrontMatter(factFile, (frontmatter) => {
+  await app.fileManager.processFrontMatter(logFile, (frontmatter) => {
     frontmatter.date = dateStamp;
     frontmatter.time = timeStamp;
     frontmatter.datetime = isoTimestamp;
@@ -146,7 +157,7 @@ export const createFactForEntity = async ({
       const targetName = getEntityDisplayName(target);
       const wikiLink = buildWikiLink({
         app,
-        sourcePath: factFile!.path,
+        sourcePath: logFile!.path,
         targetFile,
         displayName: targetName,
       });
@@ -174,26 +185,70 @@ export const createFactForEntity = async ({
         frontmatter[property] = wikiLink;
       }
     });
+
+    Object.keys(frontmatter).forEach((key) => {
+      if (
+        key === "date" ||
+        key === "time" ||
+        key === "datetime" ||
+        key === "type"
+      ) {
+        return;
+      }
+
+      const value = frontmatter[key];
+
+      if (value === undefined || value === null) {
+        delete frontmatter[key];
+        return;
+      }
+
+      if (typeof value === "string") {
+        const trimmed = value.trim();
+        if (!trimmed) {
+          delete frontmatter[key];
+        } else {
+          frontmatter[key] = trimmed;
+        }
+        return;
+      }
+
+      if (Array.isArray(value)) {
+        const cleaned = value
+          .map((entry) => (typeof entry === "string" ? entry.trim() : entry))
+          .filter((entry) => {
+            if (typeof entry === "string") {
+              return entry.length > 0;
+            }
+            return entry !== null && entry !== undefined;
+          });
+
+        if (cleaned.length === 0) {
+          delete frontmatter[key];
+        } else {
+          frontmatter[key] = cleaned;
+        }
+      }
+    });
   });
 
-  if (factFile && openAfterCreate) {
+  if (logFile && openAfterCreate) {
     const leaf = app.workspace.getLeaf(false);
     if (leaf && typeof (leaf as any).openFile === "function") {
-      await (leaf as any).openFile(factFile);
-      // If created for an editable host (person/project), select the title to ease renaming
+      await (leaf as any).openFile(logFile);
       if (didCreate && isEditableHost) {
         window.setTimeout(() => {
           try {
             focusAndSelectTitle(leaf);
           } catch (_) {
-            // ignore
+            // ignore errors while focusing title
           }
         }, 150);
       }
     }
   }
 
-  return factFile;
+  return logFile;
 };
 
-export default createFactForEntity;
+export default createLogForEntity;

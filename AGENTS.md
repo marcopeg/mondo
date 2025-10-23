@@ -35,6 +35,7 @@ List of the possible values of the attribute "type":
 - project
 - idea
 - meeting
+- log
 - tool
 - recipe
 - book

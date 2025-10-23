@@ -40,7 +40,9 @@ export const CRMFileType = Object.freeze(
 
 export const CRM_FILE_TYPES: CRMFileType[] = [
   ...CRM_ENTITY_TYPES,
-  ...SPECIAL_CRM_TYPES,
+  ...SPECIAL_CRM_TYPES.filter(
+    (type) => !CRM_ENTITY_TYPE_SET.has(type as CRMEntityType)
+  ),
 ];
 
 export const CRM_FILE_TYPE_LOOKUP = CRM_ENTITY_TYPE_SET;

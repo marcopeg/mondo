@@ -14,11 +14,13 @@ import team from "./team";
 import restaurant from "./restaurant";
 import task from "./task";
 import fact from "./fact";
+import log from "./log";
 import type { CRMEntityConfig } from "@/types/CRMEntityConfig";
 
 const ENTITIES = [
   person,
   fact,
+  log,
   task,
   project,
   idea,

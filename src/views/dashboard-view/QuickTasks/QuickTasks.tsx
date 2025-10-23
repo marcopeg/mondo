@@ -53,7 +53,7 @@ const QuickTasksCard = ({ collapsed, state }: QuickTasksCardProps) => {
   }, []);
 
   const handlePromote = useCallback(
-    async (task: InboxTask, target: "task" | "project") => {
+    async (task: InboxTask, target: "task" | "project" | "log") => {
       setPendingState(task.id, true);
       try {
         await promoteTask(task, target);
@@ -177,6 +177,15 @@ const QuickTasksCard = ({ collapsed, state }: QuickTasksCardProps) => {
                           onSelect: () => {
                             if (isBusy) return;
                             void handlePromote(task, "project");
+                          },
+                        },
+                        {
+                          label: "log",
+                          icon: "file-clock",
+                          disabled: isBusy,
+                          onSelect: () => {
+                            if (isBusy) return;
+                            void handlePromote(task, "log");
                           },
                         },
                       ]}

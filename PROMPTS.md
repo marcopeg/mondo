@@ -72,3 +72,5 @@ Focus on the /entities/index.ts - this file should export a configuration object
 
 - tiles.order[]: should list the entites keys so that this order is implemented in the dashboard tiles.
 - relevantNotes.filter.order[]: should list the entities keys so that this order is implemented in the list of type filters in the dashboard's Relevant Notes.
+
+when creating a entity=log from the Entity Tab the title should follow the format "{date} {time}" and it should be pre-selected so that the user can confirm with "enter" or just edit to change it. the body should be empty.

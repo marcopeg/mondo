@@ -8,7 +8,13 @@ participants: []
 
 `;
 
-const taskConfig: CRMEntityConfig<"task"> = {
+const taskConfig: CRMEntityConfig<
+  "task",
+  | { type: "participants-assignment" }
+  | { type: "facts"; collapsed?: boolean }
+  | { type: "logs"; collapsed?: boolean }
+  | { type: "task-subtasks"; collapsed?: boolean }
+> = {
   type: "task",
   name: "Tasks",
   icon: "check-square",
@@ -22,6 +28,7 @@ const taskConfig: CRMEntityConfig<"task"> = {
   links: [
     { type: "participants-assignment" },
     { type: "facts" },
+    { type: "logs" },
     // Collapse subtasks by default; persisted per-note via crmState.subtasks.collapsed
     { type: "task-subtasks", collapsed: true },
   ],
