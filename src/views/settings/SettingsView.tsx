@@ -590,6 +590,8 @@ export class SettingsView extends PluginSettingTab {
 
     for (const { label, type } of entityDefinitions) {
       const section = entitiesContent.createDiv("crm-settings-entity-section");
+      section.addClass("crm-settings-card");
+      section.addClass("mod-card");
       const sectionHeading = new Setting(section).setName(label).setHeading();
       sectionHeading.settingEl.addClass("crm-settings-entity-section-heading");
 
@@ -711,12 +713,15 @@ export class SettingsView extends PluginSettingTab {
       }
     }
 
-    new Setting(containerEl)
+    const audioSettingsCard = containerEl.createDiv("crm-settings-card");
+    audioSettingsCard.addClass("mod-card");
+
+    new Setting(audioSettingsCard)
       .setName("Audio Transcription")
       .setDesc("Configure AI transcription for embedded audio.")
       .setHeading();
 
-    new Setting(containerEl)
+    new Setting(audioSettingsCard)
       .setName("OpenAI Whisper API key")
       .setDesc(
         "Used to transcribe embedded audio with OpenAI Whisper-compatible models."
@@ -738,7 +743,7 @@ export class SettingsView extends PluginSettingTab {
         } catch (e) {}
       });
 
-    new Setting(containerEl)
+    new Setting(audioSettingsCard)
       .setName("OpenAI model")
       .setDesc("Model used to polish dictated voice notes before insertion.")
       .addDropdown((dropdown) => {
@@ -765,7 +770,7 @@ export class SettingsView extends PluginSettingTab {
         });
       });
 
-    new Setting(containerEl)
+    new Setting(audioSettingsCard)
       .setName("Polish transcriptions with AI")
       .setDesc(
         "When enabled, dictated notes are refined by the selected OpenAI model before insertion."
@@ -784,12 +789,15 @@ export class SettingsView extends PluginSettingTab {
     const voiceManager = this.plugin.getVoiceoverManager?.();
     const voicePreviewTooltip = "Preview the selected voice";
 
-    new Setting(containerEl)
+    const voiceoverSettingsCard = containerEl.createDiv("crm-settings-card");
+    voiceoverSettingsCard.addClass("mod-card");
+
+    new Setting(voiceoverSettingsCard)
       .setName("Voiceover")
       .setDesc("Configure AI-generated voiceovers.")
       .setHeading();
 
-    new Setting(containerEl)
+    new Setting(voiceoverSettingsCard)
       .setName("Voiceover media cache")
       .setDesc(
         "Vault-relative folder where generated voiceovers are stored. The folder will be created when needed."
@@ -874,7 +882,7 @@ export class SettingsView extends PluginSettingTab {
     };
     let voiceSelect: HTMLSelectElement | null = null;
 
-    new Setting(containerEl)
+    new Setting(voiceoverSettingsCard)
       .setName("Voiceover voice")
       .setDesc(
         "Select the OpenAI voice used when generating audio from selected text."
@@ -1001,14 +1009,17 @@ export class SettingsView extends PluginSettingTab {
         });
       });
 
+    const dailySettingsCard = containerEl.createDiv("crm-settings-card");
+    dailySettingsCard.addClass("mod-card");
+
     // Daily Logs section
-    new Setting(containerEl)
+    new Setting(dailySettingsCard)
       .setName("Daily Logs")
       .setDesc("Settings for Daily Logs")
       .setHeading();
 
     addFolderSetting(
-      containerEl,
+      dailySettingsCard,
       "Daily root",
       "Where do you want to store your Daily Logs?\n(Default: Daily)",
       () => (this.plugin as any).settings.daily?.root ?? "Daily",
@@ -1020,7 +1031,7 @@ export class SettingsView extends PluginSettingTab {
       }
     );
 
-    new Setting(containerEl)
+    new Setting(dailySettingsCard)
       .setName("Entry format")
       .setDesc("Filename format for daily entries (default: YYYY-MM-DD)")
       .addText((t) => {
@@ -1037,7 +1048,7 @@ export class SettingsView extends PluginSettingTab {
         } catch (e) {}
       });
 
-    new Setting(containerEl)
+    new Setting(dailySettingsCard)
       .setName("Section Level")
       .setDesc("Heading level used for daily notes (default: h2)")
       .addDropdown((d) => {
@@ -1060,7 +1071,7 @@ export class SettingsView extends PluginSettingTab {
           });
       });
 
-    new Setting(containerEl)
+    new Setting(dailySettingsCard)
       .setName("Section Title")
       .setDesc("Time format for notes inside daily logs (default: HH:MM)")
       .addText((t) => {
@@ -1079,7 +1090,7 @@ export class SettingsView extends PluginSettingTab {
 
     // New: toggle for inserting bullets in daily logs
     const dailyUseBullets = (this.plugin as any).settings.daily?.useBullets;
-    new Setting(containerEl)
+    new Setting(dailySettingsCard)
       .setName("Use bullets for entries")
       .setDesc(
         "If enabled, new daily entries will be prefixed with a bullet ('- ')."
@@ -1094,13 +1105,16 @@ export class SettingsView extends PluginSettingTab {
       });
 
     // Journal section
-    new Setting(containerEl)
+    const journalSettingsCard = containerEl.createDiv("crm-settings-card");
+    journalSettingsCard.addClass("mod-card");
+
+    new Setting(journalSettingsCard)
       .setName("Journal")
       .setDesc("Settings for the Journal feature")
       .setHeading();
 
     addFolderSetting(
-      containerEl,
+      journalSettingsCard,
       "Journal root",
       "Where do you want to store your Journaling notes?\n(Default: Journal)",
       () => (this.plugin as any).settings.journal?.root ?? "Journal",
@@ -1112,7 +1126,7 @@ export class SettingsView extends PluginSettingTab {
       }
     );
 
-    new Setting(containerEl)
+    new Setting(journalSettingsCard)
       .setName("Entry format")
       .setDesc("Filename format for journal entries (default: YYYY-MM-DD)")
       .addText((t) => {
@@ -1135,7 +1149,7 @@ export class SettingsView extends PluginSettingTab {
     const journalUseSections =
       (this.plugin as any).settings.journal?.useSections ?? false;
 
-    new Setting(containerEl)
+    new Setting(journalSettingsCard)
       .setName("Enable Sections")
       .setDesc("Organize your journal by time entries")
       .addToggle((t) => {
@@ -1150,7 +1164,7 @@ export class SettingsView extends PluginSettingTab {
       });
 
     if (journalUseSections) {
-      new Setting(containerEl)
+      new Setting(journalSettingsCard)
         .setName("Section Level")
         .setDesc("Heading level used for journal notes (default: h3)")
         .addDropdown((d) => {
@@ -1175,7 +1189,7 @@ export class SettingsView extends PluginSettingTab {
             });
         });
 
-      new Setting(containerEl)
+      new Setting(journalSettingsCard)
         .setName("Section Title")
         .setDesc(
           "Time format for notes inside journal entries (default: HH:MM)"

@@ -197,13 +197,7 @@
 }
 
 .crm-settings-entities-collapsible {
-  margin-bottom: 1.5rem;
-  background-color: var(--background-secondary);
-  border: 1px solid var(--background-modifier-border);
-  border-radius: var(--radius-m, 0.5rem);
-  box-shadow: var(--shadow-s, var(--input-shadow, none));
-  overflow: hidden;
-  padding: 0;
+  margin-bottom: var(--size-4-6, 1.5rem);
 }
 
 .crm-settings-entities-collapsible.is-collapsed
@@ -215,9 +209,9 @@
   cursor: pointer;
   user-select: none;
   margin: 0;
-  padding: var(--size-4-3, 0.75rem) var(--size-4-4, 1rem);
+  padding: var(--size-4-3, 0.75rem) 0;
   border-bottom: 1px solid var(--background-modifier-border);
-  background: transparent;
+  font-weight: var(--font-semibold, 600);
 }
 
 .crm-settings-entities-heading:focus-visible {
@@ -254,14 +248,40 @@
 
 .crm-settings-entities-collapsible-content {
   margin: 0;
-  padding: var(--size-4-4, 1rem);
-  background: transparent;
+  padding: var(--size-4-4, 1rem) 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--size-4-4, 1rem);
 }
 
-.crm-settings-entity-section + .crm-settings-entity-section {
+.crm-settings-card {
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-m, var(--radius-ml));
+  background-color: var(--background-secondary);
+  box-shadow: var(--shadow-s, var(--input-shadow, none));
+  clip-path: none;
+  padding: var(--size-4-4, 1rem);
+  display: flex;
+  flex-direction: column;
+  gap: var(--size-4-3, 0.75rem);
+}
+
+.crm-settings-card.mod-card {
+  /* Ensure Obsidian's mod-card class doesn't clip shadows */
+  clip-path: none;
+}
+
+.crm-settings-card + .crm-settings-card {
   margin-top: var(--size-4-4, 1rem);
-  padding-top: var(--size-4-4, 1rem);
-  border-top: 1px solid var(--background-modifier-border);
+}
+
+.crm-settings-entities-collapsible-content .crm-settings-card + .crm-settings-card {
+  margin-top: 0;
+}
+
+.crm-settings-entity-section {
+  display: flex;
+  flex-direction: column;
 }
 
 .crm-settings-entity-section-heading {
