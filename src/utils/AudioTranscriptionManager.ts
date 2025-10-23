@@ -313,6 +313,27 @@ export class AudioTranscriptionManager {
     container.classList.add("crm-audio-actions");
 
     const transcription = this.getTranscriptionNoteFile(audioFile);
+
+    if (transcription) {
+      const openButton = container.createEl("button", {
+        cls: "crm-audio-action-button mod-link",
+        text: "Open transcription",
+      });
+      openButton.setAttr("type", "button");
+      openButton.setAttr(
+        "title",
+        "Open the linked transcription note in a new pane"
+      );
+
+      openButton.addEventListener("click", (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        this.openTranscription(audioFile, originPath);
+      });
+
+      return;
+    }
+
     const inProgress = this.activeTranscriptions.has(audioFile.path);
 
     const transcribeButton = container.createEl("button", {
@@ -328,7 +349,7 @@ export class AudioTranscriptionManager {
     });
     setIcon(transcribeIcon, inProgress ? "loader-2" : "wand-2");
     transcribeButton.createSpan({
-      text: inProgress ? "Transcribing…" : "Transcribe",
+      text: inProgress ? "Transcribing…" : "Run transcription",
     });
 
     transcribeButton.disabled = inProgress;
@@ -338,26 +359,6 @@ export class AudioTranscriptionManager {
       event.stopPropagation();
       void this.transcribeAudioFile(audioFile, originPath);
     });
-
-    if (transcription) {
-      const openButton = container.createEl("button", {
-        cls: "crm-audio-action-button",
-      });
-      openButton.setAttr("type", "button");
-      openButton.setAttr(
-        "title",
-        "Open the linked transcription note in a new pane"
-      );
-      const openIcon = openButton.createSpan({ cls: "crm-audio-action-icon" });
-      setIcon(openIcon, "file-text");
-      openButton.createSpan({ text: "Open transcription" });
-
-      openButton.addEventListener("click", (event) => {
-        event.preventDefault();
-        event.stopPropagation();
-        this.openTranscription(audioFile, originPath);
-      });
-    }
   };
 
   private startTranscriptionSession = (file: TFile) => {

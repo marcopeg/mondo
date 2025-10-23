@@ -34,6 +34,19 @@
   border-color: var(--interactive-accent);
 }
 
+.crm-audio-action-button.mod-link {
+  background: transparent;
+  color: var(--text-accent);
+  border-color: transparent;
+  padding: 0;
+  gap: 0.25rem;
+}
+
+.crm-audio-action-button.mod-link:hover:not(:disabled) {
+  color: var(--interactive-accent);
+  filter: none;
+}
+
 .crm-audio-action-button.mod-cta:disabled {
   opacity: 0.7;
   cursor: default;
