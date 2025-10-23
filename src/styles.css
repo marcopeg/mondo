@@ -196,120 +196,47 @@
   }
 }
 
-.crm-settings-entities-collapsible {
-  margin-bottom: var(--size-4-6, 1.5rem);
+.crm-settings-entities-toggle {
+  margin: var(--size-4-4, 1rem) 0;
 }
 
-.crm-settings-entities-collapsible.is-collapsed
-  .crm-settings-entities-collapsible-content {
-  display: none;
-}
-
-.crm-settings-entities-heading {
+.crm-settings-entities-toggle-button {
+  background: none;
+  border: none;
+  color: var(--text-accent);
   cursor: pointer;
-  user-select: none;
-  margin: 0;
-  padding: var(--size-4-3, 0.75rem) 0;
-  border-bottom: 1px solid var(--background-modifier-border);
-  font-weight: var(--font-semibold, 600);
+  font: inherit;
+  padding: 0;
 }
 
-.crm-settings-entities-heading:focus-visible {
+.crm-settings-entities-toggle-button:hover,
+.crm-settings-entities-toggle-button:focus-visible {
+  text-decoration: underline;
+}
+
+.crm-settings-entities-toggle-button:focus-visible {
   outline: 2px solid var(--interactive-accent);
   outline-offset: 2px;
 }
 
-.crm-settings-entities-heading .setting-item-name {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
+.crm-settings-entities {
+  margin-bottom: var(--size-4-4, 1rem);
 }
 
-.crm-settings-entities-heading .setting-item-name::before {
-  content: "▸";
-  transition: transform 0.15s ease;
-  display: inline-block;
+.crm-settings-entities.is-hidden {
+  display: none;
 }
 
-.crm-settings-entities-collapsible.is-collapsed
-  .crm-settings-entities-heading {
-  border-bottom: none;
-}
-
-.crm-settings-entities-collapsible:not(.is-collapsed)
-  .crm-settings-entities-heading
-  .setting-item-name::before {
-  transform: rotate(90deg);
-}
-
-.crm-settings-entities-heading .setting-item-description {
-  margin-left: 1.45rem;
-}
-
-.crm-settings-entities-collapsible-content {
-  margin: 0;
-  padding: var(--size-4-4, 1rem) 0 0;
-  display: flex;
-  flex-direction: column;
-  gap: var(--size-4-4, 1rem);
-}
-
-.crm-settings-card {
-  border: 1px solid var(--background-modifier-border);
-  border-radius: var(--radius-m, var(--radius-ml));
-  background-color: var(--background-secondary);
-  box-shadow: var(--shadow-s, var(--input-shadow, none));
-  clip-path: none;
-  padding: var(--size-4-4, 1rem);
-  display: flex;
-  flex-direction: column;
-  gap: var(--size-4-3, 0.75rem);
-}
-
-.crm-settings-card.mod-card {
-  /* Ensure Obsidian's mod-card class doesn't clip shadows */
-  clip-path: none;
-}
-
-.crm-settings-card + .crm-settings-card {
+.crm-settings-entity + .crm-settings-entity {
   margin-top: var(--size-4-4, 1rem);
 }
 
-.crm-settings-entities-collapsible-content .crm-settings-card + .crm-settings-card {
+.crm-settings-section {
+  margin-top: var(--size-4-4, 1rem);
+}
+
+.crm-settings-section:first-of-type {
   margin-top: 0;
-}
-
-.crm-settings-entity-section {
-  display: flex;
-  flex-direction: column;
-}
-
-.crm-settings-entity-section-heading {
-  margin: 0 0 var(--size-4-3, 0.75rem);
-  padding: 0;
-  background: transparent;
-}
-
-.crm-settings-entity-fields {
-  display: flex;
-  flex-direction: column;
-  gap: var(--size-4-3, 0.75rem);
-}
-
-body .crm-settings-entity-fields .setting-item {
-  margin: 0;
-  margin-block: 0;
-  margin-inline: 0;
-  padding: 0;
-  border: none;
-  background: transparent;
-  box-shadow: none;
-}
-
-body .crm-settings-entity-fields .setting-item + .setting-item {
-  margin-top: 0;
-  padding-top: var(--size-2-4, 0.5rem);
-  border-top: 1px solid var(--background-modifier-border);
 }
 
 .crm-textfield__mic-icon {
