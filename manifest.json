@@ -1,7 +1,7 @@
 {
 	"id": "crm",
 	"name": "CRM",
-	"version": "0.0.15",
+	"version": "0.0.16",
 	"minAppVersion": "0.15.0",
 	"description": "Build a personal CRM",
 	"author": "Marco Pegoraro",
