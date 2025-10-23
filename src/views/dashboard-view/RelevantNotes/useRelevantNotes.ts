@@ -8,6 +8,7 @@ import {
   extractDailyOpenedReferences,
   type DailyNoteReference,
 } from "@/utils/daily-note-references";
+import { getDailyNoteState } from "@/utils/daily-note-state";
 
 type ReferenceCategory = "created" | "modified" | "opened";
 
@@ -191,8 +192,10 @@ export const useRelevantNotes = (logLimit = 10): RelevantNote[] => {
 
       const baseExcluded = new Set<string>([sourcePath]);
 
+      const dailyState = getDailyNoteState(frontmatter);
+
       const created = extractDailyLinkReferences(
-        frontmatter.createdToday,
+        dailyState.created,
         app,
         sourcePath,
         baseExcluded
@@ -200,21 +203,19 @@ export const useRelevantNotes = (logLimit = 10): RelevantNote[] => {
 
       const createdPaths = new Set(created.map((entry) => entry.path));
 
-      const modifiedRaw =
-        (frontmatter.modifiedToday as unknown) ?? frontmatter.changedToday;
       const modifiedExcluded = new Set<string>([
         ...baseExcluded,
         ...createdPaths,
       ]);
       const modified = extractDailyLinkReferences(
-        modifiedRaw,
+        dailyState.changed,
         app,
         sourcePath,
         modifiedExcluded
       );
 
       const opened = extractDailyOpenedReferences(
-        frontmatter.openedToday,
+        dailyState.opened,
         app,
         sourcePath,
         baseExcluded

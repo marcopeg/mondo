@@ -11,33 +11,30 @@ import {
   extractDailyOpenedReferences,
   type DailyNoteReference,
 } from "@/utils/daily-note-references";
+import { getDailyNoteState } from "@/utils/daily-note-state";
 
 type DailyEntry = {
   path: string;
   display: string;
   icon: string;
-  count?: number;
 };
 
 const toDailyEntry = (reference: DailyNoteReference): DailyEntry => ({
   path: reference.path,
   display: reference.label,
   icon: reference.icon,
-  count: reference.count,
 });
 
 type DailyNoteListCardProps = {
   title: string;
   icon: string;
   entries: DailyEntry[];
-  showCount?: boolean;
 };
 
 const DailyNoteListCard = ({
   title,
   icon,
   entries,
-  showCount = false,
 }: DailyNoteListCardProps) => {
   return (
     <Card
@@ -65,9 +62,6 @@ const DailyNoteListCard = ({
               <Link to={entry.path}>
                 <Typography variant="body">
                   {entry.display}
-                  {showCount && typeof entry.count === "number"
-                    ? ` (x${entry.count})`
-                    : null}
                 </Typography>
               </Link>
             </Stack>
@@ -93,18 +87,23 @@ export const DailyNoteLinks = () => {
     | Record<string, unknown>
     | undefined;
 
+  const dailyState = useMemo(
+    () => getDailyNoteState(frontmatter),
+    [frontmatter]
+  );
+
   const createdEntries = useMemo(() => {
     if (!frontmatter) {
       return [] as DailyEntry[];
     }
     const excluded = new Set<string>([sourcePath]);
     return extractDailyLinkReferences(
-      frontmatter.createdToday,
+      dailyState.created,
       app,
       sourcePath,
       excluded
     ).map(toDailyEntry);
-  }, [app, frontmatter, sourcePath]);
+  }, [app, dailyState.created, frontmatter, sourcePath]);
 
   const changedEntries = useMemo(() => {
     if (!frontmatter) {
@@ -115,12 +114,12 @@ export const DailyNoteLinks = () => {
       ...createdEntries.map((entry) => entry.path),
     ]);
     return extractDailyLinkReferences(
-      frontmatter.changedToday,
+      dailyState.changed,
       app,
       sourcePath,
       excluded
     ).map(toDailyEntry);
-  }, [app, createdEntries, frontmatter, sourcePath]);
+  }, [app, createdEntries, dailyState.changed, frontmatter, sourcePath]);
 
   const openedEntries = useMemo(() => {
     if (!frontmatter) {
@@ -129,12 +128,12 @@ export const DailyNoteLinks = () => {
     const excluded = new Set<string>();
     excluded.add(sourcePath);
     return extractDailyOpenedReferences(
-      frontmatter.openedToday,
+      dailyState.opened,
       app,
       sourcePath,
       excluded
     ).map(toDailyEntry);
-  }, [app, frontmatter, sourcePath]);
+  }, [app, dailyState.opened, frontmatter, sourcePath]);
 
   return (
     <Stack direction="column" gap={2}>
@@ -152,7 +151,6 @@ export const DailyNoteLinks = () => {
         title="Opened Today"
         icon="eye"
         entries={openedEntries}
-        showCount
       />
     </Stack>
   );

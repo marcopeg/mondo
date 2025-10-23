@@ -3,6 +3,12 @@ import { DAILY_NOTE_TYPE, isDailyNoteType } from "@/types/CRMFileType";
 import type { App, CachedMetadata, TAbstractFile } from "obsidian";
 import { TFile } from "obsidian";
 
+type DailyNoteState = Record<string, unknown> & {
+  created: unknown;
+  changed: unknown;
+  opened: unknown;
+};
+
 const isAlreadyExistsError = (
   error: unknown,
   target: "folder" | "file"
@@ -321,9 +327,10 @@ export class DailyNoteTracker {
       "---",
       `type: ${DAILY_NOTE_TYPE}`,
       `date: ${dateKey}`,
-      "createdToday: []",
-      "changedToday: []",
-      "openedToday: []",
+      "crmState:",
+      "  created: []",
+      "  changed: []",
+      "  opened: []",
       "---",
       "",
     ].join("\n");
@@ -380,6 +387,157 @@ export class DailyNoteTracker {
     frontmatter.date = dateKey;
   };
 
+  private isPlainObject = (value: unknown): value is Record<string, unknown> =>
+    Boolean(value) && typeof value === "object" && !Array.isArray(value);
+
+  private ensureDailyNoteState = (
+    frontmatter: Record<string, unknown>
+  ): DailyNoteState => {
+    if (!this.isPlainObject(frontmatter.crmState)) {
+      frontmatter.crmState = {};
+    }
+
+    const state = frontmatter.crmState as Record<string, unknown> & {
+      created?: unknown;
+      changed?: unknown;
+      opened?: unknown;
+      dailyNote?: unknown;
+      createdToday?: unknown;
+      changedToday?: unknown;
+      modifiedToday?: unknown;
+      openedToday?: unknown;
+    };
+
+    if (this.isPlainObject(state.dailyNote)) {
+      const legacyDailyNote = state.dailyNote as Record<string, unknown> & {
+        created?: unknown;
+        createdToday?: unknown;
+        changed?: unknown;
+        changedToday?: unknown;
+        modifiedToday?: unknown;
+        opened?: unknown;
+        openedToday?: unknown;
+      };
+
+      if (state.created === undefined) {
+        state.created =
+          legacyDailyNote.created ?? legacyDailyNote.createdToday ?? undefined;
+      }
+      if (state.changed === undefined) {
+        state.changed =
+          legacyDailyNote.changed ??
+          legacyDailyNote.changedToday ??
+          legacyDailyNote.modifiedToday ??
+          undefined;
+      }
+      if (state.opened === undefined) {
+        state.opened =
+          legacyDailyNote.opened ?? legacyDailyNote.openedToday ?? undefined;
+      }
+
+      delete state.dailyNote;
+    }
+
+    if (state.createdToday !== undefined && state.created === undefined) {
+      state.created = state.createdToday;
+    }
+    if (state.createdToday !== undefined) {
+      delete state.createdToday;
+    }
+
+    const legacyFrontmatterCreated = frontmatter.createdToday;
+    if (legacyFrontmatterCreated !== undefined && state.created === undefined) {
+      state.created = legacyFrontmatterCreated;
+    }
+    if (legacyFrontmatterCreated !== undefined) {
+      delete frontmatter.createdToday;
+    }
+
+    if (state.changedToday !== undefined && state.changed === undefined) {
+      state.changed = state.changedToday;
+    }
+    if (state.changedToday !== undefined) {
+      delete state.changedToday;
+    }
+
+    const legacyFrontmatterChanged = frontmatter.changedToday;
+    if (legacyFrontmatterChanged !== undefined && state.changed === undefined) {
+      state.changed = legacyFrontmatterChanged;
+    }
+    if (legacyFrontmatterChanged !== undefined) {
+      delete frontmatter.changedToday;
+    }
+
+    const legacyFrontmatterModified = frontmatter.modifiedToday;
+    if (legacyFrontmatterModified !== undefined && state.changed === undefined) {
+      state.changed = legacyFrontmatterModified;
+    }
+    if (legacyFrontmatterModified !== undefined) {
+      delete frontmatter.modifiedToday;
+    }
+
+    if (state.modifiedToday !== undefined && state.changed === undefined) {
+      state.changed = state.modifiedToday;
+    }
+    if (state.modifiedToday !== undefined) {
+      delete state.modifiedToday;
+    }
+
+    if (state.openedToday !== undefined && state.opened === undefined) {
+      state.opened = state.openedToday;
+    }
+    if (state.openedToday !== undefined) {
+      delete state.openedToday;
+    }
+
+    const legacyFrontmatterOpened = frontmatter.openedToday;
+    if (legacyFrontmatterOpened !== undefined && state.opened === undefined) {
+      state.opened = legacyFrontmatterOpened;
+    }
+    if (legacyFrontmatterOpened !== undefined) {
+      delete frontmatter.openedToday;
+    }
+
+    state.created = this.normalizeLinkArray(state.created);
+    state.changed = this.normalizeLinkArray(state.changed);
+    state.opened = this.normalizeLinkArray(state.opened);
+
+    return state as DailyNoteState;
+  };
+
+  private normalizeLinkArray = (value: unknown): string[] => {
+    if (value === undefined) {
+      return [];
+    }
+
+    const rawValues = Array.isArray(value) ? value : [value];
+    const normalized: string[] = [];
+
+    rawValues.forEach((entry) => {
+      if (typeof entry === "string") {
+        const trimmed = entry.trim();
+        if (trimmed) {
+          normalized.push(trimmed);
+        }
+        return;
+      }
+
+      if (entry && typeof entry === "object") {
+        const objectValue = entry as Record<string, unknown>;
+        const maybeLink =
+          objectValue.link ?? objectValue.raw ?? objectValue.value;
+        if (typeof maybeLink === "string") {
+          const trimmed = maybeLink.trim();
+          if (trimmed) {
+            normalized.push(trimmed);
+          }
+        }
+      }
+    });
+
+    return normalized;
+  };
+
   private extractLinkRecords = (
     frontmatter: Record<string, unknown>,
     key: string,
@@ -417,7 +575,7 @@ export class DailyNoteTracker {
     frontmatter: Record<string, unknown>,
     key: string,
     sourcePath: string
-  ): { records: (LinkRecord & { count: number })[]; map: Map<string, LinkRecord & { count: number }> } => {
+  ): { records: LinkRecord[]; set: Set<string> } => {
     const raw = frontmatter[key];
 
     const values: unknown[] = [];
@@ -431,31 +589,24 @@ export class DailyNoteTracker {
       values.push(raw);
     }
 
-    const records: (LinkRecord & { count: number })[] = [];
-    const map = new Map<string, LinkRecord & { count: number }>();
+    const records: LinkRecord[] = [];
+    const set = new Set<string>();
 
     values.forEach((value) => {
       let link: string | null = null;
-      let count = 1;
 
       if (typeof value === "string") {
-        link = value.trim();
+        const trimmed = value.trim();
+        if (trimmed) {
+          link = trimmed;
+        }
       } else if (value && typeof value === "object") {
         const objectValue = value as Record<string, unknown>;
         const maybeLink = objectValue.link ?? objectValue.raw ?? objectValue.value;
-        if (typeof maybeLink === "string" && maybeLink.trim()) {
-          link = maybeLink.trim();
-        }
-        const maybeCount = objectValue.count;
-        if (typeof maybeCount === "number" && Number.isFinite(maybeCount)) {
-          const normalized = Math.floor(maybeCount);
-          if (normalized > 0) {
-            count = normalized;
-          }
-        } else if (typeof maybeCount === "string") {
-          const parsed = Number.parseInt(maybeCount, 10);
-          if (Number.isFinite(parsed) && parsed > 0) {
-            count = parsed;
+        if (typeof maybeLink === "string") {
+          const trimmed = maybeLink.trim();
+          if (trimmed) {
+            link = trimmed;
           }
         }
       }
@@ -465,22 +616,15 @@ export class DailyNoteTracker {
       }
 
       const canonical = this.resolveLinkCanonical(link, sourcePath);
-      if (!canonical) {
+      if (!canonical || set.has(canonical)) {
         return;
       }
 
-      const existing = map.get(canonical);
-      if (existing) {
-        existing.count += count;
-        return;
-      }
-
-      const record = { raw: link, canonical, count };
-      records.push(record);
-      map.set(canonical, record);
+      set.add(canonical);
+      records.push({ raw: link, canonical });
     });
 
-    return { records, map };
+    return { records, set };
   };
 
   private resolveLinkCanonical = (
@@ -571,15 +715,16 @@ export class DailyNoteTracker {
           dailyNote,
           (frontmatter) => {
             this.ensureDailyNoteMetadata(frontmatter, dateKey);
+            const state = this.ensureDailyNoteState(frontmatter);
 
             const created = this.extractLinkRecords(
-              frontmatter,
-              "createdToday",
+              state,
+              "created",
               sourcePath
             );
             const changed = this.extractLinkRecords(
-              frontmatter,
-              "changedToday",
+              state,
+              "changed",
               sourcePath
             );
 
@@ -592,10 +737,8 @@ export class DailyNoteTracker {
               (record) => record.canonical !== file.path
             );
 
-            frontmatter.createdToday = created.records.map(
-              (record) => record.raw
-            );
-            frontmatter.changedToday = filteredChanged.map(
+            state.created = created.records.map((record) => record.raw);
+            state.changed = filteredChanged.map(
               (record) => record.raw
             );
           }
@@ -624,23 +767,22 @@ export class DailyNoteTracker {
           dailyNote,
           (frontmatter) => {
             this.ensureDailyNoteMetadata(frontmatter, dateKey);
+            const state = this.ensureDailyNoteState(frontmatter);
 
             const created = this.extractLinkRecords(
-              frontmatter,
-              "createdToday",
+              state,
+              "created",
               sourcePath
             );
             const changed = this.extractLinkRecords(
-              frontmatter,
-              "changedToday",
+              state,
+              "changed",
               sourcePath
             );
 
             if (created.set.has(file.path)) {
-              frontmatter.createdToday = created.records.map(
-                (record) => record.raw
-              );
-              frontmatter.changedToday = changed.records
+              state.created = created.records.map((record) => record.raw);
+              state.changed = changed.records
                 .filter((record) => record.canonical !== file.path)
                 .map((record) => record.raw);
               return;
@@ -651,10 +793,8 @@ export class DailyNoteTracker {
               changed.set.add(file.path);
             }
 
-            frontmatter.createdToday = created.records.map(
-              (record) => record.raw
-            );
-            frontmatter.changedToday = changed.records.map(
+            state.created = created.records.map((record) => record.raw);
+            state.changed = changed.records.map(
               (record) => record.raw
             );
           }
@@ -683,30 +823,20 @@ export class DailyNoteTracker {
           dailyNote,
           (frontmatter) => {
             this.ensureDailyNoteMetadata(frontmatter, dateKey);
+            const state = this.ensureDailyNoteState(frontmatter);
 
             const opened = this.extractOpenedRecords(
-              frontmatter,
-              "openedToday",
+              state,
+              "opened",
               sourcePath
             );
 
-            const existing = opened.map.get(file.path);
-            if (existing) {
-              existing.count += 1;
-            } else {
-              const record = {
-                raw: wikiLink,
-                canonical: file.path,
-                count: 1,
-              };
-              opened.records.push(record);
-              opened.map.set(file.path, record);
+            if (!opened.set.has(file.path)) {
+              opened.records.push({ raw: wikiLink, canonical: file.path });
+              opened.set.add(file.path);
             }
 
-            frontmatter.openedToday = opened.records.map((record) => ({
-              link: record.raw,
-              count: record.count,
-            }));
+            state.opened = opened.records.map((record) => record.raw);
           }
         );
       });
