@@ -14,7 +14,7 @@ type EntityTilesGridProps = {
 
 /**
  * A flat tiles wall inspired by Cortana: square tiles with centered icon and text.
- * - 2 tiles per row on mobile
+ * - 3 tiles per row on mobile
  * - Uses Obsidian theme variables for colors and borders
  * - No dependency on ui/Button (plain clickable divs)
  */
@@ -33,7 +33,7 @@ export const EntityTilesGrid: React.FC<EntityTilesGridProps> = ({
   };
 
   return (
-    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-6">
+    <div className="grid grid-cols-3 gap-3 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-6">
       {items.map((item) => (
         <div
           key={item.type}
