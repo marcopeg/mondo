@@ -566,9 +566,13 @@ export const useInboxTasks = () => {
         const localDateStr = `${selectedDate.getFullYear()}-${pad(
           selectedDate.getMonth() + 1
         )}-${pad(selectedDate.getDate())}`;
-        const localTimeStrDot = `${pad(selectedDate.getHours())}.${pad(
-          selectedDate.getMinutes()
-        )}`;
+        const hh = pad(selectedDate.getHours());
+        const mm2 = pad(selectedDate.getMinutes());
+        const ss = pad(selectedDate.getSeconds());
+        const localTimeStrDot = `${hh}.${mm2}`;
+        const localDateTimeStr = `${selectedDate.getFullYear()}-${pad(
+          selectedDate.getMonth() + 1
+        )}-${pad(selectedDate.getDate())}T${hh}:${mm2}:${ss}`;
 
         // Title strategy:
         // - For logs: "YYYY-MM-DD HH:mm" (so user can just hit Enter)
@@ -625,9 +629,12 @@ export const useInboxTasks = () => {
           filename: fileName,
           slug: targetType === CRMFileType.LOG ? slugify(titleBase) : slug,
           // Use selectedDate for all date/time fields so logs inherit Quick Task timestamp
-          date: iso.split("T")[0],
-          // store a dot-time for convenience; template will also format from datetime
-          time: localTimeStrDot,
+          // For logs, store full local datetime in 'date' and omit 'time' attribute via template
+          date:
+            targetType === CRMFileType.LOG
+              ? localDateTimeStr
+              : iso.split("T")[0],
+          time: "",
           datetime: iso,
         };
 

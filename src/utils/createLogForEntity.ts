@@ -88,8 +88,9 @@ export const createLogForEntity = async ({
   const hh = String(now.getHours()).padStart(2, "0");
   const min = String(now.getMinutes()).padStart(2, "0");
   const dateStamp = `${yyyy}-${mm}-${dd}`;
-  const timeStamp = `${hh}:${min}`; // hh:mm local time (metadata)
   const timeDot = `${hh}.${min}`; // hh.mm for filenames/titles
+  const ss = String(now.getSeconds()).padStart(2, "0");
+  const localDateTime = `${dateStamp}T${hh}:${min}:${ss}`; // full local datetime
 
   const baseTitle = `${dateStamp} ${timeDot}`;
   const safeTitle = baseTitle;
@@ -126,8 +127,8 @@ export const createLogForEntity = async ({
       type: String(CRMFileType.LOG),
       filename: fileName,
       slug,
-      date: dateStamp,
-      time: timeStamp,
+      date: localDateTime,
+      time: "",
       datetime: isoTimestamp,
     });
 
@@ -144,8 +145,11 @@ export const createLogForEntity = async ({
   );
 
   await app.fileManager.processFrontMatter(logFile, (frontmatter) => {
-    frontmatter.date = dateStamp;
-    frontmatter.time = timeStamp;
+    frontmatter.date = localDateTime;
+    // Ensure 'time' is not present per requirement
+    if (Object.prototype.hasOwnProperty.call(frontmatter, "time")) {
+      delete (frontmatter as any).time;
+    }
     frontmatter.datetime = isoTimestamp;
 
     validTargets.forEach(({ property, mode, target }) => {
