@@ -117,6 +117,7 @@ export class AudioTranscriptionManager {
         session.controller.signal
       );
       const note = await this.writeMarkdownNote(file, transcript);
+      this.openTranscriptionFile(note, originPath ?? file.path);
       new Notice("Transcription note ready.");
       this.refreshAudioEmbeds(file.path);
       return note;
@@ -265,8 +266,18 @@ export class AudioTranscriptionManager {
 
   private writeMarkdownNote = async (file: TFile, transcript: string) => {
     const notePath = this.getTranscriptionNotePath(file);
+    const now = new Date();
+    const frontmatter = [
+      "---",
+      "type: transcription",
+      `date: ${this.formatIsoDate(now)}`,
+      `time: ${this.formatIsoTime(now)}`,
+      `source: "[[${file.path}]]"`,
+      "---",
+      "",
+    ].join("\n");
     const embed = `![[${file.name}]]`;
-    const noteContent = `${embed}\n\n${transcript}\n`;
+    const noteContent = `${frontmatter}${embed}\n\n${transcript}\n`;
 
     const existing = this.plugin.app.vault.getAbstractFileByPath(notePath);
 
@@ -449,6 +460,22 @@ export class AudioTranscriptionManager {
     return `${seconds}s`;
   };
 
+  private formatIsoDate = (value: Date) => {
+    const year = value.getFullYear();
+    const month = (value.getMonth() + 1).toString().padStart(2, "0");
+    const day = value.getDate().toString().padStart(2, "0");
+
+    return `${year}-${month}-${day}`;
+  };
+
+  private formatIsoTime = (value: Date) => {
+    const hours = value.getHours().toString().padStart(2, "0");
+    const minutes = value.getMinutes().toString().padStart(2, "0");
+    const seconds = value.getSeconds().toString().padStart(2, "0");
+
+    return `${hours}:${minutes}:${seconds}`;
+  };
+
   private cancelTranscription = (key: string) => {
     const session = this.activeTranscriptions.get(key);
 
@@ -496,7 +523,7 @@ export class AudioTranscriptionManager {
   };
 
   private openTranscriptionFile = (note: TFile, originPath: string) => {
-    this.plugin.app.workspace.openLinkText(note.path, originPath, false);
+    this.plugin.app.workspace.openLinkText(note.path, originPath, true);
   };
 
   private getAudioFileFromEmbed = (
