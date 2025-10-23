@@ -88,9 +88,10 @@ export const createLogForEntity = async ({
   const hh = String(now.getHours()).padStart(2, "0");
   const min = String(now.getMinutes()).padStart(2, "0");
   const dateStamp = `${yyyy}-${mm}-${dd}`;
-  const timeStamp = `${hh}:${min}`; // hh:mm local time
+  const timeStamp = `${hh}:${min}`; // hh:mm local time (metadata)
+  const timeDot = `${hh}.${min}`; // hh.mm for filenames/titles
 
-  const baseTitle = `${dateStamp} ${timeStamp}`;
+  const baseTitle = `${dateStamp} ${timeDot}`;
   const safeTitle = baseTitle;
   // If the log is created from an EntityLinks panel, include the host name to reduce duplicates
   const hostBaseName = entityFile?.file?.basename || displayName || "";
@@ -100,7 +101,7 @@ export const createLogForEntity = async ({
       ? `${baseTitle} on ${hostBaseName}`
       : baseTitle;
   const sanitizedFileBase = rawFileBase
-    .replace(/[\\/|?*:<>"]/g, "-")
+    .replace(/[\\/|?*<>\"]/g, "-")
     .replace(/\s+/g, " ")
     .trim();
   const fileBase = sanitizedFileBase || baseTitle;

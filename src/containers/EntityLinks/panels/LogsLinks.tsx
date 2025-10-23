@@ -30,9 +30,7 @@ type LogLinkRule = {
 const createDefaultSubtitle = (entityType: CRMEntityType) => {
   const entityLabel = entityType.charAt(0).toUpperCase() + entityType.slice(1);
   return (name: string) =>
-    name
-      ? `Logs referencing ${name}`
-      : `Logs related to this ${entityLabel}`;
+    name ? `Logs referencing ${name}` : `Logs related to this ${entityLabel}`;
 };
 
 const SPECIAL_LOG_RULES: Partial<Record<CRMEntityType, LogLinkRule>> = {
@@ -55,9 +53,7 @@ const SPECIAL_LOG_RULES: Partial<Record<CRMEntityType, LogLinkRule>> = {
   },
 };
 
-const resolveLogLinkRule = (
-  entityType: CRMEntityType
-): LogLinkRule =>
+const resolveLogLinkRule = (entityType: CRMEntityType): LogLinkRule =>
   SPECIAL_LOG_RULES[entityType] ?? {
     property: entityType,
     mode: "single",
@@ -175,7 +171,11 @@ export const LogsLinks = ({ file, config }: LogsLinksProps) => {
     });
   }, []);
 
-  const { items: orderedLogs, onReorder, sortable } = useEntityLinkOrdering({
+  const {
+    items: orderedLogs,
+    onReorder,
+    sortable,
+  } = useEntityLinkOrdering({
     file,
     items: validLogs,
     frontmatterKey: PANEL_STATE_KEY,
@@ -221,10 +221,7 @@ export const LogsLinks = ({ file, config }: LogsLinksProps) => {
 
   const handleReorder = onReorder;
 
-  const subtitle = useMemo(() => {
-    const name = getEntityDisplayName(file);
-    return linkRule.subtitle(name);
-  }, [file, linkRule]);
+  // Removed subtitle to keep header clean per request
 
   const handleCreateLog = useCallback(() => {
     void (async () => {
@@ -267,7 +264,6 @@ export const LogsLinks = ({ file, config }: LogsLinksProps) => {
       collapseOnHeaderClick
       icon="file-clock"
       title="Logs"
-      subtitle={subtitle}
       actions={actions}
       onCollapseChange={handleCollapseChange}
     >
