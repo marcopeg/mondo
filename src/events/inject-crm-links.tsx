@@ -5,7 +5,11 @@ import { AppProvider } from "@/context/AppProvider";
 import { EntityFileProvider } from "@/context/EntityFileProvider";
 import { EntityLinks } from "@/containers/EntityLinks";
 import DailyNoteLinks from "@/containers/DailyNoteLinks";
-import { isCRMFileType, isSpecialCRMType } from "@/types/CRMFileType";
+import {
+  isCRMFileType,
+  isDailyNoteType,
+  isSpecialCRMType,
+} from "@/types/CRMFileType";
 import type { TCachedFile } from "@/types/TCachedFile";
 import { getLeafFilePath } from "./inject-journal-nav";
 
@@ -94,9 +98,9 @@ const resolveRenderer = (
     return null;
   }
 
-  // Special CRM types (log, journal, etc.)
+  // Special CRM types (daily notes, journal, etc.)
   if (isSpecialCRMType(type)) {
-    if (type === "log") {
+    if (isDailyNoteType(type)) {
       return DailyNoteLinks;
     }
     if (type === "journal") {

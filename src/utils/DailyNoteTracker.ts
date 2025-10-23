@@ -1,4 +1,5 @@
 import type CRM from "@/main";
+import { DAILY_NOTE_TYPE, isDailyNoteType } from "@/types/CRMFileType";
 import type { App, CachedMetadata, TAbstractFile } from "obsidian";
 import { TFile } from "obsidian";
 
@@ -112,7 +113,7 @@ export class DailyNoteTracker {
 
     const cache = this.app.metadataCache.getFileCache(file);
     const type = this.readFrontmatterType(cache);
-    if (type !== "log") {
+    if (!isDailyNoteType(type)) {
       return false;
     }
 
@@ -284,7 +285,7 @@ export class DailyNoteTracker {
       }
       const cache = this.app.metadataCache.getFileCache(candidate);
       const type = this.readFrontmatterType(cache);
-      if (type !== "log") {
+      if (!isDailyNoteType(type)) {
         continue;
       }
       const date = this.readFrontmatterDate(cache);
@@ -318,7 +319,7 @@ export class DailyNoteTracker {
   private buildDailyNoteFrontmatter = (dateKey: string): string =>
     [
       "---",
-      "type: log",
+      `type: ${DAILY_NOTE_TYPE}`,
       `date: ${dateKey}`,
       "createdToday: []",
       "changedToday: []",
@@ -375,7 +376,7 @@ export class DailyNoteTracker {
     frontmatter: Record<string, unknown>,
     dateKey: string
   ) => {
-    frontmatter.type = "log";
+    frontmatter.type = DAILY_NOTE_TYPE;
     frontmatter.date = dateKey;
   };
 

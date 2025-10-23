@@ -1,5 +1,6 @@
 import { App, TFile, MarkdownView } from "obsidian";
 import type CRM from "@/main";
+import { DAILY_NOTE_TYPE, LEGACY_DAILY_NOTE_TYPE } from "@/types/CRMFileType";
 
 function pad(n: number) {
   return String(n).padStart(2, "0");
@@ -83,7 +84,12 @@ export async function addDailyLog(
     now.getMonth() + 1
   ).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
   const makeFrontmatter = (dateStr: string) => {
-    return `---\n` + `type: log\n` + `date: ${dateStr}\n` + `---\n`;
+    return (
+      `---\n` +
+      `type: ${DAILY_NOTE_TYPE}\n` +
+      `date: ${dateStr}\n` +
+      `---\n`
+    );
   };
 
   if (!tfile) {
@@ -97,11 +103,34 @@ export async function addDailyLog(
       const fmMatch = raw.match(fmRegex);
       if (fmMatch) {
         const existingFm = fmMatch[1] || "";
-        const hasTypeLog = /(^|\n)\s*type\s*:\s*log(\s|$)/i.test(existingFm);
+        const hasDailyType = new RegExp(
+          `(^|\\n)\\s*type\\s*:\\s*${DAILY_NOTE_TYPE}(\\s|$)`,
+          "i"
+        ).test(existingFm);
+        const hasLegacyType = new RegExp(
+          `(^|\\n)\\s*type\\s*:\\s*${LEGACY_DAILY_NOTE_TYPE}(\\s|$)`,
+          "i"
+        ).test(existingFm);
         const hasDate = /(^|\n)\s*date\s*:\s*\d{4}-\d{2}-\d{2}(\s|$)/i.test(
           existingFm
         );
-        if (!(hasTypeLog && hasDate && existingFm.indexOf(isoDate) !== -1)) {
+        const hasIsoDate = new RegExp(
+          `(^|\\n)\\s*date\\s*:\\s*${isoDate}(\\s|$)`,
+          "i"
+        ).test(existingFm);
+
+        if (hasLegacyType && !hasDailyType && hasIsoDate) {
+          const updatedFrontmatter = existingFm.replace(
+            new RegExp(
+              `(^|\\n)(\\s*type\\s*:\\s*)${LEGACY_DAILY_NOTE_TYPE}(\\s|$)`,
+              "i"
+            ),
+            `$1$2${DAILY_NOTE_TYPE}$3`
+          );
+          const rest = raw.replace(fmRegex, "").replace(/^\r?\n+/, "");
+          const newContent = `---\n${updatedFrontmatter}\n---\n` + rest;
+          await app.vault.modify(tfile, newContent);
+        } else if (!hasDailyType || !hasDate || !hasIsoDate) {
           // replace frontmatter with normalized one
           const rest = raw.replace(fmRegex, "").replace(/^\r?\n+/, "");
           const newContent = makeFrontmatter(isoDate) + rest;
