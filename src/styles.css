@@ -296,15 +296,18 @@
   gap: var(--size-4-3, 0.75rem);
 }
 
-.crm-settings-entity-fields .setting-item {
+body .crm-settings-entity-fields .setting-item {
   margin: 0;
+  margin-block: 0;
+  margin-inline: 0;
   padding: 0;
   border: none;
   background: transparent;
   box-shadow: none;
 }
 
-.crm-settings-entity-fields .setting-item + .setting-item {
+body .crm-settings-entity-fields .setting-item + .setting-item {
+  margin-top: 0;
   padding-top: var(--size-2-4, 0.5rem);
   border-top: 1px solid var(--background-modifier-border);
 }
