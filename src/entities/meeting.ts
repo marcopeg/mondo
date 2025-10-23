@@ -24,6 +24,7 @@ const meetingConfig: CRMEntityConfig<
   "meeting",
   | { type: "facts"; collapsed?: boolean }
   | { type: "meeting-tasks"; collapsed?: boolean }
+  | { type: "logs"; collapsed?: boolean }
 > = {
   type: "meeting",
   name: "Meetings",
@@ -39,6 +40,9 @@ const meetingConfig: CRMEntityConfig<
   links: [
     {
       type: "facts",
+    },
+    {
+      type: "logs",
     },
     {
       type: "meeting-tasks",

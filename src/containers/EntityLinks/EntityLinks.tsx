@@ -15,6 +15,7 @@ import { RolePeopleLinks } from "./panels/RolePeopleLinks";
 import { RoleTasksLinks } from "./panels/RoleTasksLinks";
 import { ParticipantsAssignmentLinks } from "./panels/ParticipantsAssignmentLinks";
 import { FactsLinks } from "./panels/FactsLinks";
+import { LogsLinks } from "./panels/LogsLinks";
 import { LocationPeopleLinks } from "./panels/LocationPeopleLinks";
 import { LocationCompaniesLinks } from "./panels/LocationCompaniesLinks";
 import { TaskSubtasksLinks } from "./panels/TaskSubtasksLinks";
@@ -40,6 +41,7 @@ const entityMap: Record<string, React.ComponentType<LinkPanelProps>> = {
   "role-tasks": RoleTasksLinks,
   "participants-assignment": ParticipantsAssignmentLinks,
   facts: FactsLinks,
+  logs: LogsLinks,
   "location-people": LocationPeopleLinks,
   "location-companies": LocationCompaniesLinks,
   "task-subtasks": TaskSubtasksLinks,

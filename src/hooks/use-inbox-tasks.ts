@@ -217,7 +217,7 @@ export type InboxTask = {
   hasExplicitTime: boolean;
 };
 
-type PromoteTargetType = Extract<CRMFileType, "task" | "project">;
+type PromoteTargetType = Extract<CRMFileType, "task" | "project" | "log">;
 
 const slugify = (value: string): string =>
   value
@@ -552,9 +552,14 @@ export const useInboxTasks = () => {
         }
 
         const sourceText = target.text || target.raw || "";
+        const fallbackTitle =
+          targetType === CRMFileType.PROJECT
+            ? "New Project Task"
+            : targetType === CRMFileType.LOG
+            ? "New Log Entry"
+            : "New Task";
         const titleBase =
-          toTitleCase(sourceText).slice(0, 120) ||
-          (targetType === "project" ? "New Project Task" : "New Task");
+          toTitleCase(sourceText).slice(0, 120) || fallbackTitle;
         const safeBase = sanitizeFileName(titleBase) || "Untitled";
 
         const slug = slugify(sourceText || safeBase);

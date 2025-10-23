@@ -4,28 +4,19 @@ const template = `---
 date: {{date:YYYY-MM-DD}}
 time: {{time:HH:mm}}
 datetime: {{datetime}}
-participants: []
-company:
-meeting:
-task:
-project:
-fact:
-next:
-prev:
 ---
 
-# Fact
+# {{title}}
 
 `;
 
-const factConfig: CRMEntityConfig<
-  "fact",
+const logConfig: CRMEntityConfig<
+  "log",
   { type: "facts"; collapsed?: boolean }
-  | { type: "logs"; collapsed?: boolean }
 > = {
-  type: "fact",
-  name: "Facts",
-  icon: "bookmark",
+  type: "log",
+  name: "Logs",
+  icon: "file-clock",
   dashboard: {},
   settings: {
     template,
@@ -37,11 +28,9 @@ const factConfig: CRMEntityConfig<
   links: [
     {
       type: "facts",
-    },
-    {
-      type: "logs",
+      collapsed: true,
     },
   ],
 };
 
-export default factConfig;
+export default logConfig;

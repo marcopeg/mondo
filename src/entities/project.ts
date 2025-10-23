@@ -15,6 +15,7 @@ const projectConfig: CRMEntityConfig<
   | { type: "facts"; collapsed?: boolean }
   | { type: "project-tasks"; collapsed?: boolean }
   | { type: "meetings" }
+  | { type: "logs"; collapsed?: boolean }
 > = {
   type: "project",
   name: "Projects",
@@ -29,6 +30,7 @@ const projectConfig: CRMEntityConfig<
   links: [
     { type: "participants-assignment" },
     { type: "facts" },
+    { type: "logs" },
     { type: "meetings" },
     { type: "project-tasks", collapsed: true },
   ],
