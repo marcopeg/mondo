@@ -133,8 +133,8 @@ export const DashboardView = () => {
 
   const inboxTasksState = useInboxTasks();
   const isDesktop = useMediaQuery("(min-width: 1024px)");
-  const quickTasksCollapsed = isDesktop ? false : true;
-  const relevantNotesCollapsed = isDesktop ? false : false;
+  const quickTasksCollapsed = false;
+  const relevantNotesCollapsed = isDesktop ? false : true;
 
   return (
     <div className="p-4 space-y-6">
@@ -155,8 +155,8 @@ export const DashboardView = () => {
         </div>
       </div>
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 lg:items-start">
-        <RelevantNotes collapsed={relevantNotesCollapsed} />
         <QuickTasks collapsed={quickTasksCollapsed} state={inboxTasksState} />
+        <RelevantNotes collapsed={relevantNotesCollapsed} />
       </div>
       <Separator spacing={4} />
       <Typography variant="h1">CRM Entities</Typography>
