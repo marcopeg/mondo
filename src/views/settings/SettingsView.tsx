@@ -348,21 +348,25 @@ export class SettingsView extends PluginSettingTab {
     }
 
     const addFolderSetting = (
-      container: HTMLElement,
+      container: HTMLElement | (() => Setting),
       name: string,
       desc: string,
       getValue: () => string,
       setValue: (v: string) => Promise<void>
     ) => {
-      new Setting(container)
-        .setName(name)
-        .setDesc(desc)
-        .addSearch((s) => {
-          s.setPlaceholder("/")
-            .setValue(getValue() ?? "/")
-            .onChange(async (v) => {
-              await setValue(v || "/");
-            });
+      const createSetting =
+        container instanceof HTMLElement
+          ? () => new Setting(container)
+          : container;
+
+      const setting = createSetting().setName(name).setDesc(desc);
+
+      setting.addSearch((s) => {
+        s.setPlaceholder("/")
+          .setValue(getValue() ?? "/")
+          .onChange(async (v) => {
+            await setValue(v || "/");
+          });
 
           // Attach native suggest to the input element
           // AbstractInputSuggest expects the global Obsidian to exist
@@ -399,6 +403,35 @@ export class SettingsView extends PluginSettingTab {
             // Fallback: no suggest available
           }
         });
+
+      return setting;
+    };
+
+    const createSettingsSection = (
+      parent: HTMLElement,
+      heading: string,
+      description?: string
+    ) => {
+      const sectionEl = parent.createDiv("crm-settings-section");
+
+      const applyRowStyles = (setting: Setting) => {
+        setting.settingEl.addClass("crm-settings-section__row");
+        return setting;
+      };
+
+      const headingSetting = applyRowStyles(new Setting(sectionEl));
+      headingSetting.setName(heading);
+      if (description) {
+        headingSetting.setDesc(description);
+      }
+      headingSetting.setHeading();
+
+      const createSetting = () => applyRowStyles(new Setting(sectionEl));
+
+      return {
+        element: sectionEl,
+        createSetting,
+      };
     };
 
     const entityDefinitions = CRM_FILE_TYPES.map((type) => {
@@ -528,77 +561,48 @@ export class SettingsView extends PluginSettingTab {
       });
     };
 
-    const entitiesGroup = containerEl.createDiv(
-      "crm-settings-entities-collapsible"
+    const entitiesToggleContainer = containerEl.createDiv(
+      "crm-settings-entities-toggle"
     );
-    entitiesGroup.addClass("is-collapsed");
+    const entitiesToggleButton = entitiesToggleContainer.createEl("a", {
+      text: "Show entities options",
+    });
+    entitiesToggleButton.addClass("crm-settings-entities-toggle-link");
+    entitiesToggleButton.setAttribute("href", "#");
 
-    const entitiesHeading = new Setting(entitiesGroup)
-      .setName("Configure Entitites")
-      .setHeading();
-    entitiesHeading.settingEl.addClass("crm-settings-entities-heading");
-    entitiesHeading.settingEl.setAttribute("role", "button");
-    entitiesHeading.settingEl.setAttribute("tabindex", "0");
-
-    const entitiesContent = entitiesGroup.createDiv(
-      "crm-settings-entities-collapsible-content"
-    );
+    const entitiesContent = containerEl.createDiv("crm-settings-entities");
     const entitiesContentId = "crm-settings-entities-content";
     entitiesContent.setAttribute("id", entitiesContentId);
-    entitiesHeading.settingEl.setAttribute("aria-controls", entitiesContentId);
-    entitiesHeading.settingEl.setAttribute("aria-expanded", "false");
+    entitiesToggleButton.setAttribute("aria-controls", entitiesContentId);
+    entitiesToggleButton.setAttribute("aria-expanded", "false");
 
-    const toggleEntities = (force?: boolean) => {
-      const shouldOpen =
-        typeof force === "boolean"
-          ? force
-          : entitiesGroup.hasClass("is-collapsed");
-      if (shouldOpen) {
-        entitiesGroup.removeClass("is-collapsed");
-        entitiesHeading.settingEl.setAttribute("aria-expanded", "true");
-      } else {
-        entitiesGroup.addClass("is-collapsed");
-        entitiesHeading.settingEl.setAttribute("aria-expanded", "false");
-      }
+    let entitiesVisible = false;
+    const applyEntitiesVisibility = (visible: boolean) => {
+      entitiesVisible = visible;
+      entitiesContent.toggleClass("is-hidden", !visible);
+      entitiesContent.setAttribute("aria-hidden", visible ? "false" : "true");
+      entitiesToggleButton.setText(
+        visible ? "Hide entities options" : "Show entities options"
+      );
+      entitiesToggleButton.setAttribute(
+        "aria-expanded",
+        visible ? "true" : "false"
+      );
     };
 
-    entitiesHeading.settingEl.addEventListener("click", () => {
-      toggleEntities();
-    });
-    entitiesHeading.settingEl.addEventListener("keydown", (event) => {
-      if (event.defaultPrevented) {
-        return;
-      }
+    applyEntitiesVisibility(false);
 
-      if (event.key === "Enter" || event.key === " ") {
-        event.preventDefault();
-        toggleEntities();
-        return;
-      }
-
-      if (event.key === "ArrowRight") {
-        event.preventDefault();
-        toggleEntities(true);
-        return;
-      }
-
-      if (event.key === "ArrowLeft") {
-        event.preventDefault();
-        toggleEntities(false);
-      }
+    entitiesToggleButton.addEventListener("click", (event) => {
+      event.preventDefault();
+      applyEntitiesVisibility(!entitiesVisible);
     });
 
     for (const { label, type } of entityDefinitions) {
-      const section = entitiesContent.createDiv("crm-settings-entity-section");
-      section.addClass("crm-settings-card");
-      section.addClass("mod-card");
-      const sectionHeading = new Setting(section).setName(label).setHeading();
-      sectionHeading.settingEl.addClass("crm-settings-entity-section-heading");
-
-      const fields = section.createDiv("crm-settings-entity-fields");
+      const section = entitiesContent.createDiv("crm-settings-entity");
+      new Setting(section).setName(label).setHeading();
 
       addFolderSetting(
-        fields,
+        section,
         "Documents Store",
         "Pick a folder in which to store all the documents for this entity",
         () => (this.plugin as any).settings.rootPaths[type],
@@ -640,7 +644,7 @@ export class SettingsView extends PluginSettingTab {
         }
       };
 
-      new Setting(fields)
+      new Setting(section)
         .setName("Custom Template")
         .setDesc("Pick a note to copy over whenever creating a new entity")
         .addSearch((search) => {
@@ -709,19 +713,18 @@ export class SettingsView extends PluginSettingTab {
         });
 
       if (type === CRMFileType.PERSON) {
-        addSelfPersonSetting(fields);
+        addSelfPersonSetting(section);
       }
     }
 
-    const audioSettingsCard = containerEl.createDiv("crm-settings-card");
-    audioSettingsCard.addClass("mod-card");
+    const audioSettingsSection = createSettingsSection(
+      containerEl,
+      "Audio Transcription",
+      "Configure AI transcription for embedded audio."
+    );
 
-    new Setting(audioSettingsCard)
-      .setName("Audio Transcription")
-      .setDesc("Configure AI transcription for embedded audio.")
-      .setHeading();
-
-    new Setting(audioSettingsCard)
+    audioSettingsSection
+      .createSetting()
       .setName("OpenAI Whisper API key")
       .setDesc(
         "Used to transcribe embedded audio with OpenAI Whisper-compatible models."
@@ -743,7 +746,8 @@ export class SettingsView extends PluginSettingTab {
         } catch (e) {}
       });
 
-    new Setting(audioSettingsCard)
+    audioSettingsSection
+      .createSetting()
       .setName("OpenAI model")
       .setDesc("Model used to polish dictated voice notes before insertion.")
       .addDropdown((dropdown) => {
@@ -770,7 +774,8 @@ export class SettingsView extends PluginSettingTab {
         });
       });
 
-    new Setting(audioSettingsCard)
+    audioSettingsSection
+      .createSetting()
       .setName("Polish transcriptions with AI")
       .setDesc(
         "When enabled, dictated notes are refined by the selected OpenAI model before insertion."
@@ -789,15 +794,14 @@ export class SettingsView extends PluginSettingTab {
     const voiceManager = this.plugin.getVoiceoverManager?.();
     const voicePreviewTooltip = "Preview the selected voice";
 
-    const voiceoverSettingsCard = containerEl.createDiv("crm-settings-card");
-    voiceoverSettingsCard.addClass("mod-card");
+    const voiceoverSettingsSection = createSettingsSection(
+      containerEl,
+      "Voiceover",
+      "Configure AI-generated voiceovers."
+    );
 
-    new Setting(voiceoverSettingsCard)
-      .setName("Voiceover")
-      .setDesc("Configure AI-generated voiceovers.")
-      .setHeading();
-
-    new Setting(voiceoverSettingsCard)
+    voiceoverSettingsSection
+      .createSetting()
       .setName("Voiceover media cache")
       .setDesc(
         "Vault-relative folder where generated voiceovers are stored. The folder will be created when needed."
@@ -882,7 +886,8 @@ export class SettingsView extends PluginSettingTab {
     };
     let voiceSelect: HTMLSelectElement | null = null;
 
-    new Setting(voiceoverSettingsCard)
+    voiceoverSettingsSection
+      .createSetting()
       .setName("Voiceover voice")
       .setDesc(
         "Select the OpenAI voice used when generating audio from selected text."
@@ -1009,17 +1014,14 @@ export class SettingsView extends PluginSettingTab {
         });
       });
 
-    const dailySettingsCard = containerEl.createDiv("crm-settings-card");
-    dailySettingsCard.addClass("mod-card");
-
-    // Daily Logs section
-    new Setting(dailySettingsCard)
-      .setName("Daily Logs")
-      .setDesc("Settings for Daily Logs")
-      .setHeading();
+    const dailySettingsSection = createSettingsSection(
+      containerEl,
+      "Daily Logs",
+      "Settings for Daily Logs"
+    );
 
     addFolderSetting(
-      dailySettingsCard,
+      dailySettingsSection.createSetting,
       "Daily root",
       "Where do you want to store your Daily Logs?\n(Default: Daily)",
       () => (this.plugin as any).settings.daily?.root ?? "Daily",
@@ -1031,7 +1033,8 @@ export class SettingsView extends PluginSettingTab {
       }
     );
 
-    new Setting(dailySettingsCard)
+    dailySettingsSection
+      .createSetting()
       .setName("Entry format")
       .setDesc("Filename format for daily entries (default: YYYY-MM-DD)")
       .addText((t) => {
@@ -1048,7 +1051,8 @@ export class SettingsView extends PluginSettingTab {
         } catch (e) {}
       });
 
-    new Setting(dailySettingsCard)
+    dailySettingsSection
+      .createSetting()
       .setName("Section Level")
       .setDesc("Heading level used for daily notes (default: h2)")
       .addDropdown((d) => {
@@ -1068,10 +1072,11 @@ export class SettingsView extends PluginSettingTab {
               (this.plugin as any).settings.daily || {};
             (this.plugin as any).settings.daily.section = v;
             await (this.plugin as any).saveSettings();
-          });
+        });
       });
 
-    new Setting(dailySettingsCard)
+    dailySettingsSection
+      .createSetting()
       .setName("Section Title")
       .setDesc("Time format for notes inside daily logs (default: HH:MM)")
       .addText((t) => {
@@ -1090,7 +1095,8 @@ export class SettingsView extends PluginSettingTab {
 
     // New: toggle for inserting bullets in daily logs
     const dailyUseBullets = (this.plugin as any).settings.daily?.useBullets;
-    new Setting(dailySettingsCard)
+    dailySettingsSection
+      .createSetting()
       .setName("Use bullets for entries")
       .setDesc(
         "If enabled, new daily entries will be prefixed with a bullet ('- ')."
@@ -1105,16 +1111,14 @@ export class SettingsView extends PluginSettingTab {
       });
 
     // Journal section
-    const journalSettingsCard = containerEl.createDiv("crm-settings-card");
-    journalSettingsCard.addClass("mod-card");
-
-    new Setting(journalSettingsCard)
-      .setName("Journal")
-      .setDesc("Settings for the Journal feature")
-      .setHeading();
+    const journalSettingsSection = createSettingsSection(
+      containerEl,
+      "Journal",
+      "Settings for the Journal feature"
+    );
 
     addFolderSetting(
-      journalSettingsCard,
+      journalSettingsSection.createSetting,
       "Journal root",
       "Where do you want to store your Journaling notes?\n(Default: Journal)",
       () => (this.plugin as any).settings.journal?.root ?? "Journal",
@@ -1126,7 +1130,8 @@ export class SettingsView extends PluginSettingTab {
       }
     );
 
-    new Setting(journalSettingsCard)
+    journalSettingsSection
+      .createSetting()
       .setName("Entry format")
       .setDesc("Filename format for journal entries (default: YYYY-MM-DD)")
       .addText((t) => {
@@ -1149,7 +1154,8 @@ export class SettingsView extends PluginSettingTab {
     const journalUseSections =
       (this.plugin as any).settings.journal?.useSections ?? false;
 
-    new Setting(journalSettingsCard)
+    journalSettingsSection
+      .createSetting()
       .setName("Enable Sections")
       .setDesc("Organize your journal by time entries")
       .addToggle((t) => {
@@ -1164,7 +1170,8 @@ export class SettingsView extends PluginSettingTab {
       });
 
     if (journalUseSections) {
-      new Setting(journalSettingsCard)
+      journalSettingsSection
+        .createSetting()
         .setName("Section Level")
         .setDesc("Heading level used for journal notes (default: h3)")
         .addDropdown((d) => {
@@ -1189,7 +1196,8 @@ export class SettingsView extends PluginSettingTab {
             });
         });
 
-      new Setting(journalSettingsCard)
+      journalSettingsSection
+        .createSetting()
         .setName("Section Title")
         .setDesc(
           "Time format for notes inside journal entries (default: HH:MM)"
