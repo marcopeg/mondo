@@ -910,7 +910,7 @@
   inset: 0;
   display: flex;
   justify-content: flex-end;
-  align-items: flex-end;
+  align-items: flex-start;
   padding: var(--size-4-4, 1.5rem);
   pointer-events: none;
   z-index: var(--layer-notice, 100);
@@ -1090,11 +1090,7 @@
 .crm-transcription-stage__button--primary {
   background-color: var(--interactive-accent);
   color: var(--text-on-accent, var(--background-primary));
-  border-color: color-mix(
-    in srgb,
-    var(--interactive-accent) 80%,
-    transparent
-  );
+  border-color: color-mix(in srgb, var(--interactive-accent) 80%, transparent);
 }
 
 .crm-transcription-stage__button--primary:hover:not(:disabled) {
@@ -1160,7 +1156,8 @@
     width: 100%;
     max-width: none;
     min-height: 100%;
-    justify-content: center;
+    /* Align content near the top on mobile to avoid overlap with the on-screen keyboard */
+    justify-content: flex-start;
     gap: var(--size-4-3, 1.25rem);
   }
 
@@ -1178,11 +1175,8 @@
       var(--background-secondary-alt) 70%,
       transparent
     );
-    border: 1px solid color-mix(
-      in srgb,
-      var(--interactive-accent) 35%,
-      transparent
-    );
+    border: 1px solid
+      color-mix(in srgb, var(--interactive-accent) 35%, transparent);
     box-shadow: var(--shadow-s, 0 4px 10px rgba(0, 0, 0, 0.15));
     cursor: pointer;
   }
