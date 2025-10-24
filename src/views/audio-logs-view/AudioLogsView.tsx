@@ -187,6 +187,10 @@ export const AudioLogsView = ({ plugin }: AudioLogsViewProps) => {
       .vault
       .getMarkdownFiles()
       .filter((file) => {
+        if (isTranscriptionFile(file)) {
+          return true;
+        }
+
         const cache = app.metadataCache.getFileCache(file);
         const type = cache?.frontmatter?.type;
         return typeof type === "string" && type.trim().toLowerCase() === "transcription";
@@ -590,11 +594,13 @@ export const AudioLogsView = ({ plugin }: AudioLogsViewProps) => {
 
       try {
         await manager.transcribeAudioFile(file, file.path);
+        refreshTranscriptionFiles();
+        bumpMetadataVersion();
       } finally {
         setTranscribing((prev) => ({ ...prev, [file.path]: false }));
       }
     },
-    [manager]
+    [bumpMetadataVersion, manager, refreshTranscriptionFiles]
   );
 
   const handleDelete = useCallback(
