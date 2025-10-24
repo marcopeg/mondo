@@ -1,6 +1,6 @@
 {
   "name": "crm",
-  "version": "0.0.17",
+  "version": "0.0.18",
   "description": "This is a sample plugin for Obsidian (https://obsidian.md)",
   "main": "src/main.ts",
   "scripts": {
