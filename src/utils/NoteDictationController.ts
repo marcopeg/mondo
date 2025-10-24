@@ -60,7 +60,10 @@ export class NoteDictationController {
   };
 
   start = async () => {
-    if (this.state.status === "recording" || this.state.status === "processing") {
+    if (
+      this.state.status === "recording" ||
+      this.state.status === "processing"
+    ) {
       return;
     }
 
@@ -118,7 +121,9 @@ export class NoteDictationController {
       this.setState({
         status: "error",
         errorMessage:
-          error instanceof Error ? error.message : "Microphone permission denied",
+          error instanceof Error
+            ? error.message
+            : "Microphone permission denied",
       });
     }
   };
@@ -295,7 +300,10 @@ export class NoteDictationController {
     this.cleanupRecording();
 
     if (blob.size === 0) {
-      this.setState({ status: "idle", errorMessage: "No audio captured. Try again." });
+      this.setState({
+        status: "idle",
+        errorMessage: "No audio captured. Try again.",
+      });
       this.options.onAbort();
       return;
     }
@@ -309,11 +317,26 @@ export class NoteDictationController {
         this.setState({ status: "idle", errorMessage: null });
       }, SUCCESS_DISPLAY_MS);
     } catch (error) {
+      // Gracefully handle user-initiated cancellations
+      const isAbort =
+        (error instanceof DOMException && error.name === "AbortError") ||
+        (error instanceof Error && error.name === "AbortError") ||
+        (error instanceof Error && /abort|cancel/i.test(error.message));
+
+      if (isAbort) {
+        // Return to idle without logging an error
+        this.resetVisualizer();
+        this.setState({ status: "idle", errorMessage: null });
+        return;
+      }
+
       console.error("CRM: voice submission failed", error);
       this.setState({
         status: "error",
         errorMessage:
-          error instanceof Error ? error.message : "Failed to process recording",
+          error instanceof Error
+            ? error.message
+            : "Failed to process recording",
       });
       this.resetVisualizer();
     }

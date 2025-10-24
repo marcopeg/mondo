@@ -218,7 +218,10 @@ export class NoteDictationManager {
     const apiKey = this.getApiKey();
 
     if (!context) {
-      throw new Error("The editor context is no longer available.");
+      // Treat missing editor context as a user-initiated cancel to avoid noisy errors
+      // downstream in the controller. Use a DOMException with name "AbortError"
+      // so it can be identified as a graceful cancellation.
+      throw new DOMException("Transcription canceled.", "AbortError");
     }
 
     if (!apiKey) {
@@ -226,7 +229,10 @@ export class NoteDictationManager {
     }
 
     this.processingNotice?.hide();
-    this.processingNotice = new Notice("Processing voice note…", PROCESSING_NOTICE_MS);
+    this.processingNotice = new Notice(
+      "Processing voice note…",
+      PROCESSING_NOTICE_MS
+    );
 
     const abortController = new AbortController();
     this.transcriptionAbortController = abortController;
@@ -239,7 +245,9 @@ export class NoteDictationManager {
       new Notice("Voice note inserted into the document.");
     } catch (error) {
       const normalizedError =
-        error instanceof Error ? error : new Error("Failed to process voice note.");
+        error instanceof Error
+          ? error
+          : new Error("Failed to process voice note.");
       const isAbortError =
         normalizedError.name === "AbortError" ||
         (error instanceof DOMException && error.name === "AbortError");
@@ -295,7 +303,9 @@ export class NoteDictationManager {
 
     if (state.status === "processing") {
       if (showDisabledNotice) {
-        new Notice("Please wait for the current dictation to finish processing.");
+        new Notice(
+          "Please wait for the current dictation to finish processing."
+        );
       }
       return "processing" as const;
     }
@@ -412,8 +422,14 @@ export class NoteDictationManager {
     const isError = state.status === "error";
     const isSuccess = state.status === "success";
 
-    button.classList.toggle("crm-dictation-toolbar-button--recording", isRecording);
-    button.classList.toggle("crm-dictation-toolbar-button--processing", isProcessing);
+    button.classList.toggle(
+      "crm-dictation-toolbar-button--recording",
+      isRecording
+    );
+    button.classList.toggle(
+      "crm-dictation-toolbar-button--processing",
+      isProcessing
+    );
     button.classList.toggle("crm-dictation-toolbar-button--error", isError);
     button.classList.toggle("crm-dictation-toolbar-button--success", isSuccess);
     button.setAttribute("aria-pressed", isRecording ? "true" : "false");
@@ -807,7 +823,8 @@ export class NoteDictationManager {
         this.lastDictationStatus === "recording" &&
         this.overlayRecordingStartedAt
       ) {
-        this.lastRecordingDurationMs = Date.now() - this.overlayRecordingStartedAt;
+        this.lastRecordingDurationMs =
+          Date.now() - this.overlayRecordingStartedAt;
       }
       if (this.lastDictationStatus !== "processing") {
         this.beginProcessingOverlay();
