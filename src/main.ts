@@ -13,6 +13,11 @@ import {
   CRMDashboardViewWrapper,
   DASHBOARD_VIEW,
 } from "@/views/dashboard-view/wrapper";
+import { CRMAudioLogsViewWrapper } from "@/views/audio-logs-view/wrapper";
+import {
+  AUDIO_LOGS_ICON,
+  AUDIO_LOGS_VIEW,
+} from "@/views/audio-logs-view/constants";
 import {
   CRMEntityPanelViewWrapper,
   ENTITY_PANEL_VIEW,
@@ -92,6 +97,7 @@ export default class CRM extends Plugin {
   private timestampToolbarManager: TimestampToolbarManager | null = null;
   private dailyNoteTracker: DailyNoteTracker | null = null;
   private geolocationAbortController: AbortController | null = null;
+  private audioLogsRibbonEl: HTMLElement | null = null;
 
   private applyGeolocationToFile = async (
     file: TFile,
@@ -248,6 +254,12 @@ export default class CRM extends Plugin {
       name: "Open CRM Dashboard",
       hotkeys: [{ modifiers: ["Mod", "Shift"], key: "m" }], // Cmd/Ctrl+Shift+M (user can change later)
       callback: () => this.showPanel(DASHBOARD_VIEW, "main"),
+    });
+
+    this.addCommand({
+      id: "open-audio-notes",
+      name: "OpenAudioNotes",
+      callback: () => this.showPanel(AUDIO_LOGS_VIEW, "main"),
     });
 
     this.addCommand({
@@ -448,9 +460,24 @@ export default class CRM extends Plugin {
     );
 
     this.registerView(
+      AUDIO_LOGS_VIEW,
+      (leaf) => new CRMAudioLogsViewWrapper(this, leaf, AUDIO_LOGS_ICON)
+    );
+
+    this.registerView(
       ENTITY_PANEL_VIEW,
       (leaf) => new CRMEntityPanelViewWrapper(leaf, CRM_ICON)
     );
+
+    if (Platform.isDesktopApp) {
+      this.audioLogsRibbonEl = this.addRibbonIcon(
+        AUDIO_LOGS_ICON,
+        "Open Audio Logs",
+        () => {
+          void this.showPanel(AUDIO_LOGS_VIEW, "main");
+        }
+      );
+    }
 
     // Auto open/close panels based on context (debounced)
     this.app.workspace.onLayoutReady(async () => {
@@ -535,6 +562,12 @@ export default class CRM extends Plugin {
     this.app.workspace
       .getLeavesOfType(ENTITY_PANEL_VIEW)
       .forEach((leaf) => leaf.detach());
+    this.app.workspace
+      .getLeavesOfType(AUDIO_LOGS_VIEW)
+      .forEach((leaf) => leaf.detach());
+
+    this.audioLogsRibbonEl?.remove();
+    this.audioLogsRibbonEl = null;
 
     disposeCRMLinkInjections();
 
@@ -549,6 +582,10 @@ export default class CRM extends Plugin {
 
     this.timestampToolbarManager?.dispose();
     this.timestampToolbarManager = null;
+  }
+
+  getAudioTranscriptionManager(): AudioTranscriptionManager | null {
+    return this.audioTranscriptionManager;
   }
 
   private extendFileMenu(menu: Menu, file: TAbstractFile, source?: string) {

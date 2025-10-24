@@ -20,7 +20,7 @@ const EXTENSION_TO_MIME: Record<string, string> = {
   webm: "audio/webm",
 };
 
-const SUPPORTED_EXTENSIONS = new Set(Object.keys(EXTENSION_TO_MIME));
+export const AUDIO_FILE_EXTENSIONS = new Set(Object.keys(EXTENSION_TO_MIME));
 
 const WHISPER_REALTIME_RATIO = 0.3;
 
@@ -122,7 +122,7 @@ export class AudioTranscriptionManager {
       return false;
     }
 
-    return SUPPORTED_EXTENSIONS.has(file.extension.toLowerCase());
+    return AUDIO_FILE_EXTENSIONS.has(file.extension.toLowerCase());
   };
 
   transcribeAudioFile = async (
@@ -249,7 +249,7 @@ export class AudioTranscriptionManager {
     return notePath;
   };
 
-  private getTranscriptionNoteFile = (file: TFile) => {
+  getTranscriptionNoteFile = (file: TFile) => {
     const notePath = this.getTranscriptionNotePath(file);
     const existing = this.plugin.app.vault.getAbstractFileByPath(notePath);
 
@@ -319,6 +319,7 @@ export class AudioTranscriptionManager {
       "type: transcription",
       `date: ${this.formatFrontmatterDateTime(now)}`,
       `source: "[[${file.path}]]"`,
+      `audio: ${file.path}`,
       "---",
       "",
     ].join("\n");
@@ -728,7 +729,7 @@ export class AudioTranscriptionManager {
     session.controller.abort();
   };
 
-  private getAudioDurationSeconds = (file: TFile) => {
+  getAudioDurationSeconds = (file: TFile) => {
     const cached = this.audioDurationCache.get(file.path);
 
     if (typeof cached === "number") {
