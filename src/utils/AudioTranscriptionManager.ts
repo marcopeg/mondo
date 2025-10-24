@@ -69,6 +69,86 @@ export class AudioTranscriptionManager {
     this.plugin = plugin;
   }
 
+  private matchesAudioFrontmatterValue = (
+    note: TFile,
+    audioFile: TFile,
+    value: unknown
+  ): boolean => {
+    if (Array.isArray(value)) {
+      return value.some((entry) =>
+        this.matchesAudioFrontmatterValue(note, audioFile, entry)
+      );
+    }
+
+    if (typeof value !== "string") {
+      return false;
+    }
+
+    const trimmed = value.trim();
+
+    if (!trimmed) {
+      return false;
+    }
+
+    const candidates = [trimmed];
+    const match = trimmed.match(/^\[\[(.+?)\]\]$/);
+
+    if (match?.[1]) {
+      const [target] = match[1].split("|");
+      const normalized = target?.trim();
+
+      if (normalized) {
+        candidates.push(normalized);
+      }
+    }
+
+    for (const candidate of candidates) {
+      if (!candidate) {
+        continue;
+      }
+
+      const resolved = this.plugin.app.metadataCache.getFirstLinkpathDest(
+        candidate,
+        note.path
+      );
+
+      if (resolved?.path === audioFile.path) {
+        return true;
+      }
+
+      if (candidate === audioFile.path) {
+        return true;
+      }
+    }
+
+    return false;
+  };
+
+  private findTranscriptionByFrontmatter = (audioFile: TFile) => {
+    const markdownFiles = this.plugin.app.vault.getMarkdownFiles();
+
+    for (const note of markdownFiles) {
+      const cache = this.plugin.app.metadataCache.getFileCache(note);
+      const type = cache?.frontmatter?.type;
+
+      if (typeof type !== "string" || type.trim().toLowerCase() !== "transcription") {
+        continue;
+      }
+
+      const frontmatter = cache?.frontmatter ?? {};
+
+      if (this.matchesAudioFrontmatterValue(note, audioFile, frontmatter?.source)) {
+        return note;
+      }
+
+      if (this.matchesAudioFrontmatterValue(note, audioFile, frontmatter?.audio)) {
+        return note;
+      }
+    }
+
+    return null;
+  };
+
   initialize = () => {
     // Placeholder for future initialization logic.
   };
@@ -226,6 +306,12 @@ export class AudioTranscriptionManager {
   };
 
   getTranscriptionNoteFile = (file: TFile) => {
+    const metadataMatch = this.findTranscriptionByFrontmatter(file);
+
+    if (metadataMatch) {
+      return metadataMatch;
+    }
+
     const notePath = this.getTranscriptionNotePath(file);
     const existing = this.plugin.app.vault.getAbstractFileByPath(notePath);
 
@@ -295,7 +381,6 @@ export class AudioTranscriptionManager {
       "type: transcription",
       `date: ${this.formatFrontmatterDateTime(now)}`,
       `source: "[[${file.path}]]"`,
-      `audio: ${file.path}`,
       "---",
       "",
     ].join("\n");

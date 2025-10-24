@@ -114,6 +114,27 @@ const extractTranscriptionSnippet = (content: string) => {
   return null;
 };
 
+const extractTranscriptionTitle = (app: App, file: TFile) => {
+  const cache = app.metadataCache.getFileCache(file);
+  const frontmatter = cache?.frontmatter ?? {};
+  const showField = frontmatter?.show;
+
+  if (typeof showField === "string") {
+    const trimmed = showField.trim();
+
+    if (trimmed) {
+      const match = trimmed.match(/^\[\[(.+?)(?:\|.*?)?\]\]$/);
+      if (match?.[1]) {
+        return match[1].trim() || null;
+      }
+
+      return trimmed;
+    }
+  }
+
+  return file.basename || file.name || null;
+};
+
 const openFileInWorkspace = async (app: App, file: TFile) => {
   try {
     const leaf = app.workspace.getLeaf(true);
@@ -127,6 +148,7 @@ type AudioMetadata = {
   durationSeconds: number | null;
   transcriptionFile: TFile | null;
   snippet: string | null;
+  title: string | null;
   version: number;
 };
 
@@ -317,23 +339,75 @@ export const AudioLogsView = ({ plugin }: AudioLogsViewProps) => {
     });
   }, [audioFiles]);
 
+  const resolveFrontmatterLink = useCallback(
+    (file: TFile, value: unknown) => {
+      const entries = Array.isArray(value) ? value : [value];
+
+      for (const entry of entries) {
+        if (typeof entry !== "string") {
+          continue;
+        }
+
+        const trimmed = entry.trim();
+
+        if (!trimmed) {
+          continue;
+        }
+
+        const candidates = [trimmed];
+        const match = trimmed.match(/^\[\[(.+?)\]\]$/);
+
+        if (match?.[1]) {
+          const [target] = match[1].split("|");
+          const normalized = target?.trim();
+
+          if (normalized) {
+            candidates.push(normalized);
+          }
+        }
+
+        for (const candidate of candidates) {
+          if (!candidate || candidate.startsWith("[[")) {
+            continue;
+          }
+
+          const resolved = app.metadataCache.getFirstLinkpathDest(
+            candidate,
+            file.path
+          );
+
+          if (resolved) {
+            return resolved.path;
+          }
+
+          const abstract = app.vault.getAbstractFileByPath(candidate);
+
+          if (abstract instanceof TFile) {
+            return abstract.path;
+          }
+
+          return candidate;
+        }
+      }
+
+      return null;
+    },
+    [app.metadataCache, app.vault]
+  );
+
   const getAudioPathForTranscription = useCallback(
     (file: TFile) => {
       const cache = app.metadataCache.getFileCache(file);
       const frontmatter = cache?.frontmatter ?? {};
-      const audioField = frontmatter?.audio;
 
-      if (typeof audioField === "string" && audioField.trim()) {
-        return audioField.trim();
+      const sourcePath = resolveFrontmatterLink(file, frontmatter?.source);
+      if (sourcePath) {
+        return sourcePath;
       }
 
-      const sourceField = frontmatter?.source;
-      if (typeof sourceField === "string" && sourceField.trim()) {
-        const match = sourceField.match(/\[\[(.+?)\]\]/);
-        if (match?.[1]) {
-          return match[1].trim();
-        }
-        return sourceField.trim();
+      const audioPath = resolveFrontmatterLink(file, frontmatter?.audio);
+      if (audioPath) {
+        return audioPath;
       }
 
       const directory = file.parent?.path ?? "";
@@ -344,7 +418,9 @@ export const AudioLogsView = ({ plugin }: AudioLogsViewProps) => {
       }
 
       for (const extension of AUDIO_FILE_EXTENSIONS) {
-        const candidatePath = `${directory ? `${directory}/` : ""}${baseName}.${extension}`;
+        const candidatePath = `${
+          directory ? `${directory}/` : ""
+        }${baseName}.${extension}`;
         const candidate = app.vault.getAbstractFileByPath(candidatePath);
         if (candidate instanceof TFile) {
           return candidate.path;
@@ -353,7 +429,11 @@ export const AudioLogsView = ({ plugin }: AudioLogsViewProps) => {
 
       return null;
     },
-    [app.metadataCache, app.vault]
+    [
+      app.metadataCache,
+      app.vault,
+      resolveFrontmatterLink,
+    ]
   );
 
   const transcriptionsMap = useMemo(() => {
@@ -448,6 +528,7 @@ export const AudioLogsView = ({ plugin }: AudioLogsViewProps) => {
 
         let durationSeconds: number | null = null;
         let snippet: string | null = null;
+        let title: string | null = null;
 
         try {
           durationSeconds = (await manager.getAudioDurationSeconds(file)) ?? null;
@@ -467,6 +548,7 @@ export const AudioLogsView = ({ plugin }: AudioLogsViewProps) => {
           try {
             const content = await app.vault.cachedRead(transcriptionFile);
             snippet = extractTranscriptionSnippet(content);
+            title = extractTranscriptionTitle(app, transcriptionFile);
           } catch (error) {
             console.warn(
               "CRM Audio Logs: failed to read transcription note",
@@ -483,6 +565,7 @@ export const AudioLogsView = ({ plugin }: AudioLogsViewProps) => {
           durationSeconds,
           transcriptionFile,
           snippet,
+          title,
           version: currentVersion,
         };
 
@@ -665,6 +748,7 @@ export const AudioLogsView = ({ plugin }: AudioLogsViewProps) => {
         const dateLabel = formatDate(file.stat.mtime);
         const snippet = meta?.snippet ?? null;
         const transcriptionFile = meta?.transcriptionFile ?? null;
+        const title = meta?.title ?? null;
         const isTranscribing =
           Boolean(transcribing[file.path]) ||
           manager?.isTranscriptionInProgress(file) === true;
@@ -678,6 +762,7 @@ export const AudioLogsView = ({ plugin }: AudioLogsViewProps) => {
           dateLabel,
           snippet,
           transcriptionFile,
+          title,
           isTranscribing,
           isMatchingTranscription,
           isQueuedForMatching,
@@ -783,6 +868,7 @@ export const AudioLogsView = ({ plugin }: AudioLogsViewProps) => {
                   : row.isQueuedForMatching
                   ? "Resolving..."
                   : "Transcribe";
+                const displayTitle = row.title ?? row.file.basename;
 
                 return (
                   <Table.Row key={row.file.path} className="border-t border-[var(--background-modifier-border)]">
@@ -804,9 +890,9 @@ export const AudioLogsView = ({ plugin }: AudioLogsViewProps) => {
                           event.preventDefault();
                           void openFileInWorkspace(app, row.file);
                         }}
-                        title={row.file.basename}
+                        title={displayTitle}
                       >
-                        {row.file.basename}
+                        {displayTitle}
                       </a>
                     </Table.Cell>
                     <Table.Cell className="p-3 align-middle text-[var(--text-muted)]">
