@@ -79,28 +79,18 @@ export const VaultImagesView = () => {
           No images found in your vault.
         </div>
       ) : (
-        <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+        <div className="grid grid-cols-2 gap-0 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-8">
           {entries.map((entry) => (
-            <button
-              key={entry.file.path}
-              type="button"
-              className="group relative aspect-square overflow-hidden rounded-md border border-[var(--background-modifier-border)] bg-[var(--background-secondary)]"
-              onClick={() => {
-                void handleOpenFile(entry.file);
-              }}
-              title={entry.file.basename}
-            >
+            <div key={entry.file.path} className="aspect-square overflow-hidden">
               <img
                 src={entry.resourcePath}
                 alt={entry.file.basename}
-                className="h-full w-full object-cover transition-transform group-hover:scale-105"
+                className="block h-full w-full cursor-pointer object-cover"
+                onClick={() => {
+                  void handleOpenFile(entry.file);
+                }}
               />
-              <div className="pointer-events-none absolute inset-x-0 bottom-0 flex items-end bg-gradient-to-t from-black/60 via-black/0 to-transparent p-2">
-                <span className="truncate text-left text-xs font-medium text-white">
-                  {entry.file.basename}
-                </span>
-              </div>
-            </button>
+            </div>
           ))}
         </div>
       )}
