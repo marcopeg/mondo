@@ -13,6 +13,7 @@ type FileRow = {
   icon: string;
   sizeLabel: string;
   createdLabel: string;
+  pathLabel: string;
 };
 
 const ICON_MAP: Record<string, string> = {
@@ -90,6 +91,7 @@ export const VaultFilesView = () => {
         icon,
         sizeLabel: formatBytes(file.stat.size ?? 0),
         createdLabel,
+        pathLabel: file.path,
       };
     }),
   [files]);
@@ -112,6 +114,9 @@ export const VaultFilesView = () => {
               <Table.HeadCell className="p-3 text-left text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">
                 Title
               </Table.HeadCell>
+              <Table.HeadCell className="p-3 text-left text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">
+                Path
+              </Table.HeadCell>
               <Table.HeadCell className="w-40 p-3 text-left text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">
                 Type
               </Table.HeadCell>
@@ -127,7 +132,7 @@ export const VaultFilesView = () => {
             {rows.length === 0 ? (
               <tr>
                 <Table.Cell
-                  colSpan={4}
+                  colSpan={5}
                   className="p-6 text-center text-[var(--text-muted)]"
                 >
                   No files found.
@@ -140,17 +145,23 @@ export const VaultFilesView = () => {
                   className="border-t border-[var(--background-modifier-border)]"
                 >
                   <Table.Cell className="p-3 align-middle">
-                    <button
-                      type="button"
-                      className="flex w-full max-w-full items-center gap-2 text-left text-[var(--interactive-accent)] hover:underline"
-                      onClick={() => {
+                    <a
+                      href="#"
+                      className="group inline-flex max-w-full items-center gap-2 text-left text-[var(--interactive-accent)] hover:underline"
+                      onClick={(event) => {
+                        event.preventDefault();
                         void handleOpenFile(row.file);
                       }}
                       title={row.file.basename}
                     >
                       <Icon name="external-link" className="h-4 w-4 flex-shrink-0" />
                       <span className="truncate">{row.file.basename}</span>
-                    </button>
+                    </a>
+                  </Table.Cell>
+                  <Table.Cell className="p-3 align-middle text-[var(--text-muted)]">
+                    <span className="block max-w-xs truncate md:max-w-sm lg:max-w-md" title={row.pathLabel}>
+                      {row.pathLabel}
+                    </span>
                   </Table.Cell>
                   <Table.Cell className="p-3 align-middle">
                     <div className="flex items-center gap-2 text-[var(--text-normal)]">

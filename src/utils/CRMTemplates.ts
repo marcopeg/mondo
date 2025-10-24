@@ -8,6 +8,8 @@ export interface TemplateContext {
   filename: string;
   slug: string;
   date: string;
+  datetime?: string;
+  time?: string;
 }
 
 const DATE_FORMAT_TOKENS = /(YYYY|MM|DD|HH|mm|ss)/g;
@@ -79,15 +81,23 @@ const TEMPLATE_REPLACEMENTS = [
   getTemplateReplacement(/{{\s*filename\s*}}/gi, (context) => context.filename),
   getTemplateReplacement(/{{\s*slug\s*}}/gi, (context) => context.slug),
   getTemplateReplacement(/{{\s*date\s*}}/gi, (context) => context.date),
-  // Backwards compatibility: {{datetime}} maps to the unified date field
-  getTemplateReplacement(/{{\s*datetime\s*}}/gi, (context) => context.date),
-  // Backwards compatibility: {{time}} renders from the unified date field when possible
+  getTemplateReplacement(
+    /{{\s*datetime\s*}}/gi,
+    (context) => context.datetime ?? context.date
+  ),
   getTemplateReplacement(/{{\s*time\s*}}/gi, (context) => {
+    if (typeof context.time === "string") {
+      return context.time;
+    }
+
     const parsed = parseDateValue(context.date);
     if (!parsed.date) {
       return context.date;
     }
-    return `${pad(parsed.date.getUTCHours())}:${pad(parsed.date.getUTCMinutes())}`;
+
+    return `${pad(parsed.date.getUTCHours())}:${pad(
+      parsed.date.getUTCMinutes()
+    )}`;
   }),
 ];
 

@@ -119,7 +119,7 @@ export const createDocumentForEntity = async ({
   const now = new Date();
   const isoTimestamp = now.toISOString();
   const dateStamp = isoTimestamp.slice(0, 10);
-  const timeStamp = isoTimestamp.slice(11, 19);
+  const timeStamp = isoTimestamp.slice(11, 16);
   const slug = slugify(baseTitle);
 
   const rendered = renderTemplate(templateSource, {
@@ -128,8 +128,8 @@ export const createDocumentForEntity = async ({
     filename: fileName,
     slug,
     date: dateStamp,
-    time: timeStamp,
     datetime: isoTimestamp,
+    time: timeStamp,
   });
 
   const documentFile = await app.vault.create(filePath, rendered);
