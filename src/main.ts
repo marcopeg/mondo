@@ -19,6 +19,23 @@ import {
   AUDIO_LOGS_VIEW,
 } from "@/views/audio-logs-view/constants";
 import {
+  CRMVaultImagesViewWrapper,
+} from "@/views/vault-images-view/wrapper";
+import {
+  VAULT_IMAGES_ICON,
+  VAULT_IMAGES_VIEW,
+} from "@/views/vault-images-view/constants";
+import { CRMVaultFilesViewWrapper } from "@/views/vault-files-view/wrapper";
+import {
+  VAULT_FILES_ICON,
+  VAULT_FILES_VIEW,
+} from "@/views/vault-files-view/constants";
+import { CRMVaultNotesViewWrapper } from "@/views/vault-notes-view/wrapper";
+import {
+  VAULT_NOTES_ICON,
+  VAULT_NOTES_VIEW,
+} from "@/views/vault-notes-view/constants";
+import {
   CRMEntityPanelViewWrapper,
   ENTITY_PANEL_VIEW,
   type CRMEntityPanelViewState,
@@ -263,6 +280,24 @@ export default class CRM extends Plugin {
     });
 
     this.addCommand({
+      id: "open-vault-images",
+      name: "Open Vault Images",
+      callback: () => this.showPanel(VAULT_IMAGES_VIEW, "main"),
+    });
+
+    this.addCommand({
+      id: "open-vault-files",
+      name: "Open Vault Files",
+      callback: () => this.showPanel(VAULT_FILES_VIEW, "main"),
+    });
+
+    this.addCommand({
+      id: "open-vault-notes",
+      name: "Open Vault Notes",
+      callback: () => this.showPanel(VAULT_NOTES_VIEW, "main"),
+    });
+
+    this.addCommand({
       id: "transcribe-audio-note",
       name: "Transcribe Audio Note",
       checkCallback: (checking) => {
@@ -462,6 +497,21 @@ export default class CRM extends Plugin {
     this.registerView(
       AUDIO_LOGS_VIEW,
       (leaf) => new CRMAudioLogsViewWrapper(this, leaf, AUDIO_LOGS_ICON)
+    );
+
+    this.registerView(
+      VAULT_IMAGES_VIEW,
+      (leaf) => new CRMVaultImagesViewWrapper(leaf, VAULT_IMAGES_ICON)
+    );
+
+    this.registerView(
+      VAULT_FILES_VIEW,
+      (leaf) => new CRMVaultFilesViewWrapper(leaf, VAULT_FILES_ICON)
+    );
+
+    this.registerView(
+      VAULT_NOTES_VIEW,
+      (leaf) => new CRMVaultNotesViewWrapper(leaf, VAULT_NOTES_ICON)
     );
 
     this.registerView(

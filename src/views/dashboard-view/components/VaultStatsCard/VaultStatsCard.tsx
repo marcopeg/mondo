@@ -2,64 +2,75 @@ import { useMemo } from "react";
 import { Card } from "@/components/ui/Card";
 import { Typography } from "@/components/ui/Typography";
 import { useVaultStats } from "./useVaultStats";
+import { useApp } from "@/hooks/use-app";
+import { formatBytes } from "@/utils/formatBytes";
+import {
+  OPEN_AUDIO_NOTES_COMMAND_ID,
+} from "@/views/audio-logs-view/constants";
+import { OPEN_VAULT_IMAGES_COMMAND_ID } from "@/views/vault-images-view/constants";
+import { OPEN_VAULT_FILES_COMMAND_ID } from "@/views/vault-files-view/constants";
+import { OPEN_VAULT_NOTES_COMMAND_ID } from "@/views/vault-notes-view/constants";
 
 const formatter = new Intl.NumberFormat();
 
-const formatBytes = (bytes: number): string => {
-  if (bytes <= 0) {
-    return "0B";
-  }
-
-  const units = [
-    { limit: 1024 ** 3, suffix: "Gb" },
-    { limit: 1024 ** 2, suffix: "Mb" },
-    { limit: 1024, suffix: "kB" },
-  ];
-
-  for (const unit of units) {
-    if (bytes >= unit.limit) {
-      const value = bytes / unit.limit;
-      if (value >= 100) return `${value.toFixed(0)}${unit.suffix}`;
-      if (value >= 10) return `${value.toFixed(1)}${unit.suffix}`;
-      return `${value.toFixed(2)}${unit.suffix}`;
-    }
-  }
-
-  return `${bytes.toFixed(0)}B`;
+type VaultStatsItem = {
+  key: string;
+  label: string;
+  count: number;
+  size: number;
+  commandId?: string;
 };
 
 export const VaultStatsCard = () => {
+  const app = useApp();
   const stats = useVaultStats();
 
   const items = useMemo(
-    () => [
-      {
-        key: "notes",
-        label: "Notes",
-        count: stats.notes.count,
-        size: stats.notes.size,
-      },
-      {
-        key: "images",
-        label: "Images",
-        count: stats.images.count,
-        size: stats.images.size,
-      },
-      {
-        key: "audio",
-        label: "Audio",
-        count: stats.audio.count,
-        size: stats.audio.size,
-      },
-      {
-        key: "files",
-        label: "Files",
-        count: stats.files.count,
-        size: stats.files.size,
-      },
-    ],
+    (): VaultStatsItem[] =>
+      [
+        {
+          key: "notes",
+          label: "Notes",
+          count: stats.notes.count,
+          size: stats.notes.size,
+          commandId: OPEN_VAULT_NOTES_COMMAND_ID,
+        },
+        {
+          key: "images",
+          label: "Images",
+          count: stats.images.count,
+          size: stats.images.size,
+          commandId: OPEN_VAULT_IMAGES_COMMAND_ID,
+        },
+        {
+          key: "audio",
+          label: "Audio",
+          count: stats.audio.count,
+          size: stats.audio.size,
+          commandId: OPEN_AUDIO_NOTES_COMMAND_ID,
+        },
+        {
+          key: "files",
+          label: "Files",
+          count: stats.files.count,
+          size: stats.files.size,
+          commandId: OPEN_VAULT_FILES_COMMAND_ID,
+        },
+      ],
     [stats]
   );
+
+  const handleActivate = (commandId?: string) => {
+    if (!commandId) {
+      return;
+    }
+
+    try {
+      (app as any).commands.executeCommandById(commandId);
+    } catch (error) {
+      console.debug("VaultStatsCard: failed to execute command", error);
+    }
+  };
 
   return (
     <Card spacing={6}>
@@ -74,7 +85,16 @@ export const VaultStatsCard = () => {
         {items.map((item) => (
           <div
             key={item.key}
-            className="flex flex-col items-center justify-center gap-3"
+            role="button"
+            tabIndex={0}
+            onClick={() => handleActivate(item.commandId)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                handleActivate(item.commandId);
+              }
+            }}
+            className="flex cursor-pointer flex-col items-center justify-center gap-3 rounded-md border border-transparent p-4 transition-colors hover:border-[var(--background-modifier-border)] hover:bg-[var(--background-modifier-hover)] focus:border-[var(--background-modifier-border)] focus:bg-[var(--background-modifier-hover)] focus:outline-none"
           >
             <Typography
               as="div"

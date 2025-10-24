@@ -1,36 +1,11 @@
 import { useCallback, useEffect, useState } from "react";
 import type { EventRef, TFile } from "obsidian";
 import { useApp } from "@/hooks/use-app";
-
-const IMAGE_EXTENSIONS = new Set([
-  "png",
-  "jpg",
-  "jpeg",
-  "gif",
-  "bmp",
-  "webp",
-  "svg",
-  "tiff",
-]);
-
-const AUDIO_EXTENSIONS = new Set([
-  "mp3",
-  "wav",
-  "m4a",
-  "aac",
-  "ogg",
-  "oga",
-  "flac",
-  "opus",
-]);
-
-const isMarkdown = (file: TFile) => file.extension.toLowerCase() === "md";
-
-const isImage = (file: TFile) =>
-  IMAGE_EXTENSIONS.has(file.extension.toLowerCase());
-
-const isAudio = (file: TFile) =>
-  AUDIO_EXTENSIONS.has(file.extension.toLowerCase());
+import {
+  isAudioFile,
+  isImageFile,
+  isMarkdownFile,
+} from "@/utils/fileTypeFilters";
 
 type VaultStats = {
   notes: { count: number; size: number };
@@ -59,17 +34,17 @@ const computeStats = (files: TFile[]): VaultStats => {
     const size = file.stat.size ?? 0;
     totalSize += size;
 
-    if (isMarkdown(file)) {
+    if (isMarkdownFile(file)) {
       notes = { count: notes.count + 1, size: notes.size + size };
       continue;
     }
 
-    if (isImage(file)) {
+    if (isImageFile(file)) {
       images = { count: images.count + 1, size: images.size + size };
       continue;
     }
 
-    if (isAudio(file)) {
+    if (isAudioFile(file)) {
       audio = { count: audio.count + 1, size: audio.size + size };
       continue;
     }
