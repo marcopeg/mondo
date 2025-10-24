@@ -2,7 +2,6 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useApp } from "@/hooks/use-app";
 import { Typography } from "@/components/ui/Typography";
 import Button from "@/components/ui/Button";
-import Separator from "@/components/ui/Separator";
 import { CRM_ENTITIES, CRM_UI_CONFIG } from "@/entities";
 import EntityTilesGrid from "./components/EntityTilesGrid";
 import RelevantNotes from "./RelevantNotes";
@@ -10,6 +9,7 @@ import QuickTasks from "./QuickTasks";
 import { useSetting } from "@/hooks/use-setting";
 import { resolveSelfPerson } from "@/utils/selfPerson";
 import { useInboxTasks } from "@/hooks/use-inbox-tasks";
+import VaultStatsCard from "./components/VaultStatsCard";
 
 const useMediaQuery = (query: string) => {
   const getMatches = useCallback(() => {
@@ -158,10 +158,12 @@ export const DashboardView = () => {
         <QuickTasks collapsed={quickTasksCollapsed} state={inboxTasksState} />
         <RelevantNotes collapsed={relevantNotesCollapsed} />
       </div>
-      <Separator spacing={4} />
       <Typography variant="h1">CRM Entities</Typography>
       <div className="mt-4">
         <EntityTilesGrid items={entityTiles} onOpen={onOpenEntityPanel} />
+      </div>
+      <div className="mt-6">
+        <VaultStatsCard />
       </div>
     </div>
   );
