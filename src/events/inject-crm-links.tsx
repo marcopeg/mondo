@@ -3,13 +3,7 @@ import { createRoot, Root } from "react-dom/client";
 import { Plugin, WorkspaceLeaf, MarkdownView, TFile } from "obsidian";
 import { AppProvider } from "@/context/AppProvider";
 import { EntityFileProvider } from "@/context/EntityFileProvider";
-import { EntityLinks } from "@/containers/EntityLinks";
-import DailyNoteLinks from "@/containers/DailyNoteLinks";
-import {
-  isCRMFileType,
-  isDailyNoteType,
-  isSpecialCRMType,
-} from "@/types/CRMFileType";
+import { EntityPanel } from "@/containers/EntityPanel";
 import type { TCachedFile } from "@/types/TCachedFile";
 import { getLeafFilePath } from "./inject-journal-nav";
 
@@ -83,41 +77,11 @@ const createInjectionNode = (path: string) => {
   return wrapper;
 };
 
-type RendererComponent = React.ComponentType;
-
-const resolveRenderer = (
-  type: string | null,
-  path: string,
-  plugin: Plugin
-): RendererComponent | null => {
-  if (!type) {
-    return null;
-  }
-
-  if (!isCRMFileType(type)) {
-    return null;
-  }
-
-  // Special CRM types (daily notes, journal, etc.)
-  if (isSpecialCRMType(type)) {
-    if (isDailyNoteType(type)) {
-      return DailyNoteLinks;
-    }
-    if (type === "journal") {
-      return null; // Journal support can be added later
-    }
-    return null;
-  }
-
-  // CRM entities
-  return EntityLinks;
-};
-
 const renderReact = (
   mount: HTMLElement,
   plugin: Plugin,
   path: string,
-  Renderer: RendererComponent
+  Renderer: React.ComponentType
 ) => {
   let root = (mount as any)[REACT_ROOT] as Root | undefined;
   if (!root) {
@@ -168,8 +132,7 @@ const ensureInjectionForLeaf = (
   }
 
   const type = getFrontmatterType(path, plugin);
-  const Renderer = resolveRenderer(type, path, plugin);
-  if (!Renderer) {
+  if (type && type.trim().toLowerCase() === "journal") {
     if (existing) {
       unmountAndRemove(existing.node);
       injections.delete(leafId);
@@ -218,7 +181,7 @@ const ensureInjectionForLeaf = (
     ".crm-injected-hello-root"
   ) as HTMLElement | null;
   if (mount) {
-    renderReact(mount, plugin, path, Renderer);
+    renderReact(mount, plugin, path, EntityPanel);
   }
 };
 

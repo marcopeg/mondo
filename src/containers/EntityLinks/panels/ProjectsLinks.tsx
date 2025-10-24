@@ -329,7 +329,14 @@ export const ProjectsLinks = ({ file, config }: ProjectsLinksProps) => {
 
   // After all hooks are declared, it's safe to early-return
   if (validProjects.length === 0) {
-    return null;
+    return (
+      <button
+        type="button"
+        className="hidden"
+        aria-label="Create project"
+        onClick={handleCreateProject}
+      />
+    );
   }
 
   const displayName = getDisplayName(file);

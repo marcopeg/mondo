@@ -240,6 +240,7 @@ export const LogsLinks = ({ file, config }: LogsLinksProps) => {
         <Button
           variant="link"
           icon="plus"
+          aria-label="Create log"
           // Manual reorder disabled for logs
           onClick={handleCreateLog}
         />

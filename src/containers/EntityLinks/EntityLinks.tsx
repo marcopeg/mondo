@@ -113,11 +113,13 @@ export const EntityLinks = () => {
 
         const { type, ...panelConfig } = linkConfig;
         return (
-          <Component
+          <div
             key={`${type}-${index}`}
-            file={file}
-            config={panelConfig}
-          />
+            data-entity-panel={type}
+            className="flex flex-col"
+          >
+            <Component file={file} config={panelConfig} />
+          </div>
         );
       })}
     </Stack>

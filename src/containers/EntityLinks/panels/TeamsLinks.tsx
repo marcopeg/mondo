@@ -192,7 +192,14 @@ export const TeamsLinks = ({ file, config }: TeamsLinksProps) => {
   }, [app, file, isCreating]);
 
   if (teams.length === 0) {
-    return null;
+    return (
+      <button
+        type="button"
+        className="hidden"
+        aria-label="Create team"
+        onClick={handleCreateTeam}
+      />
+    );
   }
 
   const actions = [

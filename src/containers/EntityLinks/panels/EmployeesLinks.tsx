@@ -207,7 +207,14 @@ export const EmployeesLinks = ({ file, config }: EmployeesLinksProps) => {
   }, [app, file, isCreating]);
 
   if (employees.length === 0) {
-    return null;
+    return (
+      <button
+        type="button"
+        className="hidden"
+        aria-label="Create person"
+        onClick={handleCreatePerson}
+      />
+    );
   }
 
   const actions = [
