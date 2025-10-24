@@ -127,9 +127,12 @@ type AudioMetadata = {
   durationSeconds: number | null;
   transcriptionFile: TFile | null;
   snippet: string | null;
+  version: number;
 };
 
 type MetadataMap = Record<string, AudioMetadata>;
+
+type MatchingState = Record<string, "queued" | "active">;
 
 type AudioLogsViewProps = {
   plugin: CRM;
@@ -139,12 +142,20 @@ export const AudioLogsView = ({ plugin }: AudioLogsViewProps) => {
   const app = useApp();
   const manager = plugin.getAudioTranscriptionManager();
   const [audioFiles, setAudioFiles] = useState<TFile[]>([]);
+  const [transcriptionFiles, setTranscriptionFiles] = useState<TFile[]>([]);
   const [metadataVersion, setMetadataVersion] = useState(0);
   const [metadataMap, setMetadataMap] = useState<MetadataMap>({});
   const [isLoading, setIsLoading] = useState(false);
   const [transcribing, setTranscribing] = useState<Record<string, boolean>>({});
   const [playingPath, setPlayingPath] = useState<string | null>(null);
+  const [visibleCount, setVisibleCount] = useState(20);
+  const [matchingState, setMatchingState] = useState<MatchingState>({});
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const metadataMapRef = useRef<MetadataMap>({});
+
+  useEffect(() => {
+    metadataMapRef.current = metadataMap;
+  }, [metadataMap]);
 
   const ensureAudioElement = useCallback(() => {
     if (!audioRef.current) {
@@ -171,13 +182,27 @@ export const AudioLogsView = ({ plugin }: AudioLogsViewProps) => {
     setAudioFiles(files);
   }, [app]);
 
+  const refreshTranscriptionFiles = useCallback(() => {
+    const files = app
+      .vault
+      .getMarkdownFiles()
+      .filter((file) => {
+        const cache = app.metadataCache.getFileCache(file);
+        const type = cache?.frontmatter?.type;
+        return typeof type === "string" && type.trim().toLowerCase() === "transcription";
+      });
+
+    setTranscriptionFiles(files);
+  }, [app]);
+
   const bumpMetadataVersion = useCallback(() => {
     setMetadataVersion((value) => value + 1);
   }, []);
 
   useEffect(() => {
     refreshAudioFiles();
-  }, [refreshAudioFiles]);
+    refreshTranscriptionFiles();
+  }, [refreshAudioFiles, refreshTranscriptionFiles]);
 
   useEffect(() => {
     const events: EventRef[] = [];
@@ -194,6 +219,7 @@ export const AudioLogsView = ({ plugin }: AudioLogsViewProps) => {
       }
 
       if (isTranscriptionFile(abstract)) {
+        refreshTranscriptionFiles();
         bumpMetadataVersion();
       }
     };
@@ -210,6 +236,7 @@ export const AudioLogsView = ({ plugin }: AudioLogsViewProps) => {
       }
 
       if (isTranscriptionFile(abstract)) {
+        refreshTranscriptionFiles();
         bumpMetadataVersion();
       }
     };
@@ -226,6 +253,7 @@ export const AudioLogsView = ({ plugin }: AudioLogsViewProps) => {
       }
 
       if (isTranscriptionFile(abstract)) {
+        refreshTranscriptionFiles();
         bumpMetadataVersion();
       }
     };
@@ -238,6 +266,7 @@ export const AudioLogsView = ({ plugin }: AudioLogsViewProps) => {
         }
 
         if (isTranscriptionFile(oldPath)) {
+          refreshTranscriptionFiles();
           bumpMetadataVersion();
         }
 
@@ -250,6 +279,7 @@ export const AudioLogsView = ({ plugin }: AudioLogsViewProps) => {
       }
 
       if (isTranscriptionFile(file) || isTranscriptionFile(oldPath)) {
+        refreshTranscriptionFiles();
         bumpMetadataVersion();
       }
     };
@@ -262,78 +292,240 @@ export const AudioLogsView = ({ plugin }: AudioLogsViewProps) => {
     return () => {
       events.forEach((ref) => app.vault.offref(ref));
     };
-  }, [app, bumpMetadataVersion, refreshAudioFiles]);
+  }, [
+    app,
+    bumpMetadataVersion,
+    refreshAudioFiles,
+    refreshTranscriptionFiles,
+  ]);
 
   useEffect(() => {
-    let disposed = false;
+    setMetadataMap((prev) => {
+      const next: MetadataMap = {};
+      audioFiles.forEach((file) => {
+        const meta = prev[file.path];
+        if (meta) {
+          next[file.path] = meta;
+        }
+      });
+      metadataMapRef.current = next;
+      return next;
+    });
+  }, [audioFiles]);
 
-    const loadMetadata = async () => {
-      if (!manager) {
-        setMetadataMap({});
-        setIsLoading(false);
-        return;
+  const getAudioPathForTranscription = useCallback(
+    (file: TFile) => {
+      const cache = app.metadataCache.getFileCache(file);
+      const frontmatter = cache?.frontmatter ?? {};
+      const audioField = frontmatter?.audio;
+
+      if (typeof audioField === "string" && audioField.trim()) {
+        return audioField.trim();
       }
 
-      setIsLoading(true);
+      const sourceField = frontmatter?.source;
+      if (typeof sourceField === "string" && sourceField.trim()) {
+        const match = sourceField.match(/\[\[(.+?)\]\]/);
+        if (match?.[1]) {
+          return match[1].trim();
+        }
+        return sourceField.trim();
+      }
 
-      const entries = await Promise.all(
-        audioFiles.map(async (file) => {
+      const directory = file.parent?.path ?? "";
+      const baseName = file.basename.replace(/-transcription$/, "");
+
+      if (!baseName) {
+        return null;
+      }
+
+      for (const extension of AUDIO_FILE_EXTENSIONS) {
+        const candidatePath = `${directory ? `${directory}/` : ""}${baseName}.${extension}`;
+        const candidate = app.vault.getAbstractFileByPath(candidatePath);
+        if (candidate instanceof TFile) {
+          return candidate.path;
+        }
+      }
+
+      return null;
+    },
+    [app.metadataCache, app.vault]
+  );
+
+  const transcriptionsMap = useMemo(() => {
+    const map = new Map<string, TFile>();
+
+    transcriptionFiles.forEach((file) => {
+      const audioPath = getAudioPathForTranscription(file);
+      if (audioPath) {
+        map.set(audioPath, file);
+      }
+    });
+
+    return map;
+  }, [getAudioPathForTranscription, transcriptionFiles]);
+
+  const visibleFiles = useMemo(
+    () => audioFiles.slice(0, visibleCount),
+    [audioFiles, visibleCount]
+  );
+
+  useEffect(() => {
+    if (!manager) {
+      metadataMapRef.current = {};
+      setMetadataMap({});
+      setMatchingState({});
+      setIsLoading(false);
+      return;
+    }
+
+    if (visibleFiles.length === 0) {
+      setMatchingState({});
+      setIsLoading(false);
+      return;
+    }
+
+    const currentVersion = metadataVersion;
+    const pendingFiles = visibleFiles.filter((file) => {
+      const meta = metadataMapRef.current[file.path];
+      const transcriptionFile = transcriptionsMap.get(file.path) ?? null;
+
+      if (!meta) {
+        return true;
+      }
+
+      if (meta.transcriptionFile?.path !== transcriptionFile?.path) {
+        return true;
+      }
+
+      return meta.version !== currentVersion;
+    });
+
+    if (pendingFiles.length === 0) {
+      setMatchingState((prev) => {
+        if (Object.keys(prev).length === 0) {
+          return prev;
+        }
+        return {};
+      });
+      setIsLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+
+    setIsLoading(true);
+    setMatchingState((prev) => {
+      const next: MatchingState = {};
+      pendingFiles.forEach((file) => {
+        const state = prev[file.path];
+        next[file.path] = state === "active" ? "active" : "queued";
+      });
+      return next;
+    });
+
+    const run = async () => {
+      for (const file of pendingFiles) {
+        if (cancelled) {
+          break;
+        }
+
+        const transcriptionFile = transcriptionsMap.get(file.path) ?? null;
+
+        setMatchingState((prev) => {
+          if (cancelled) {
+            return prev;
+          }
+          if (prev[file.path] === "active") {
+            return prev;
+          }
+          return { ...prev, [file.path]: "active" };
+        });
+
+        let durationSeconds: number | null = null;
+        let snippet: string | null = null;
+
+        try {
+          durationSeconds = (await manager.getAudioDurationSeconds(file)) ?? null;
+        } catch (error) {
+          console.warn(
+            "CRM Audio Logs: failed to load audio metadata",
+            file.path,
+            error
+          );
+        }
+
+        if (cancelled) {
+          break;
+        }
+
+        if (transcriptionFile) {
           try {
-            const duration = await manager.getAudioDurationSeconds(file);
-            const transcriptionFile = manager.getTranscriptionNoteFile(file);
-            let snippet: string | null = null;
-
-            if (transcriptionFile) {
-              try {
-                const content = await app.vault.cachedRead(transcriptionFile);
-                snippet = extractTranscriptionSnippet(content);
-              } catch (error) {
-                console.warn(
-                  "CRM Audio Logs: failed to read transcription note",
-                  error
-                );
-              }
-            }
-
-            return [
-              file.path,
-              {
-                durationSeconds: duration ?? null,
-                transcriptionFile,
-                snippet,
-              } as AudioMetadata,
-            ] as const;
+            const content = await app.vault.cachedRead(transcriptionFile);
+            snippet = extractTranscriptionSnippet(content);
           } catch (error) {
             console.warn(
-              "CRM Audio Logs: failed to load audio metadata",
-              file.path,
+              "CRM Audio Logs: failed to read transcription note",
               error
             );
-            const transcriptionFile = manager.getTranscriptionNoteFile(file);
-            return [
-              file.path,
-              {
-                durationSeconds: null,
-                transcriptionFile,
-                snippet: null,
-              } as AudioMetadata,
-            ] as const;
           }
-        })
-      );
+        }
 
-      if (!disposed) {
-        setMetadataMap(Object.fromEntries(entries));
+        if (cancelled) {
+          break;
+        }
+
+        const metadata: AudioMetadata = {
+          durationSeconds,
+          transcriptionFile,
+          snippet,
+          version: currentVersion,
+        };
+
+        setMetadataMap((prev) => {
+          if (cancelled) {
+            return prev;
+          }
+          const next = {
+            ...prev,
+            [file.path]: metadata,
+          };
+          metadataMapRef.current = next;
+          return next;
+        });
+
+        setMatchingState((prev) => {
+          if (cancelled) {
+            return prev;
+          }
+          if (!(file.path in prev)) {
+            return prev;
+          }
+          const next = { ...prev };
+          delete next[file.path];
+          return next;
+        });
+
+        if (cancelled) {
+          break;
+        }
+
+        await new Promise<void>((resolve) => {
+          setTimeout(resolve, 0);
+        });
+      }
+
+      if (!cancelled) {
         setIsLoading(false);
       }
     };
 
-    void loadMetadata();
+    void run();
 
     return () => {
-      disposed = true;
+      cancelled = true;
     };
-  }, [app, audioFiles, manager, metadataVersion]);
+  }, [app.vault, manager, metadataVersion, transcriptionsMap, visibleFiles]);
 
   useEffect(() => {
     return () => {
@@ -459,8 +651,9 @@ export const AudioLogsView = ({ plugin }: AudioLogsViewProps) => {
 
   const rows = useMemo(
     () =>
-      audioFiles.map((file) => {
+      visibleFiles.map((file) => {
         const meta = metadataMap[file.path];
+        const status = matchingState[file.path] ?? null;
         const durationLabel = formatDuration(meta?.durationSeconds);
         const sizeLabel = formatFileSize(file.stat.size);
         const dateLabel = formatDate(file.stat.mtime);
@@ -469,7 +662,8 @@ export const AudioLogsView = ({ plugin }: AudioLogsViewProps) => {
         const isTranscribing =
           Boolean(transcribing[file.path]) ||
           manager?.isTranscriptionInProgress(file) === true;
-        const isMatchingTranscription = !meta && isLoading;
+        const isMatchingTranscription = status === "active";
+        const isQueuedForMatching = status === "queued" || (!meta && isLoading);
 
         return {
           file,
@@ -480,9 +674,17 @@ export const AudioLogsView = ({ plugin }: AudioLogsViewProps) => {
           transcriptionFile,
           isTranscribing,
           isMatchingTranscription,
+          isQueuedForMatching,
         };
       }),
-    [audioFiles, isLoading, manager, metadataMap, transcribing]
+    [
+      isLoading,
+      manager,
+      matchingState,
+      metadataMap,
+      transcribing,
+      visibleFiles,
+    ]
   );
 
   const totalDurationLabel = totals.totalDuration
@@ -493,6 +695,8 @@ export const AudioLogsView = ({ plugin }: AudioLogsViewProps) => {
   const handleOpenAudioLogs = useCallback(() => {
     (app as any).commands.executeCommandById(OPEN_AUDIO_NOTES_COMMAND_ID);
   }, [app]);
+
+  const hasMore = audioFiles.length > visibleFiles.length;
 
   return (
     <div className="p-4 space-y-6">
@@ -570,6 +774,8 @@ export const AudioLogsView = ({ plugin }: AudioLogsViewProps) => {
                 const isPlaying = playingPath === row.file.path;
                 const transcribeLabel = row.isTranscribing
                   ? "Transcribing..."
+                  : row.isQueuedForMatching
+                  ? "Resolving..."
                   : "Transcribe";
 
                 return (
@@ -612,6 +818,11 @@ export const AudioLogsView = ({ plugin }: AudioLogsViewProps) => {
                           <Icon name="loader-2" className="h-4 w-4 animate-spin" />
                           <span className="text-sm">Matching...</span>
                         </div>
+                      ) : row.isQueuedForMatching ? (
+                        <div className="flex items-center gap-2 text-[var(--text-muted)]">
+                          <Icon name="clock" className="h-4 w-4" />
+                          <span className="text-sm">Queued...</span>
+                        </div>
                       ) : row.transcriptionFile ? (
                         <a
                           href="#"
@@ -628,7 +839,7 @@ export const AudioLogsView = ({ plugin }: AudioLogsViewProps) => {
                         <Button
                           icon="wand-2"
                           className="mod-cta"
-                          disabled={row.isTranscribing}
+                          disabled={row.isTranscribing || row.isQueuedForMatching}
                           onClick={() => handleTranscribe(row.file)}
                         >
                           {transcribeLabel}
@@ -652,6 +863,17 @@ export const AudioLogsView = ({ plugin }: AudioLogsViewProps) => {
           </tbody>
         </Table>
       </div>
+
+      {hasMore ? (
+        <div className="flex justify-center">
+          <Button
+            onClick={() => setVisibleCount((value) => value + 20)}
+            className="mod-cta"
+          >
+            Load More
+          </Button>
+        </div>
+      ) : null}
     </div>
   );
 };
