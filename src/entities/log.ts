@@ -8,6 +8,7 @@ date: {{date}}
 const logConfig: CRMEntityConfig<
   "log",
   { type: "facts"; collapsed?: boolean }
+  | { type: "documents"; collapsed?: boolean }
 > = {
   type: "log",
   name: "Logs",
@@ -21,6 +22,10 @@ const logConfig: CRMEntityConfig<
     sort: { column: "date", direction: "desc" },
   },
   links: [
+    {
+      type: "documents",
+      collapsed: true,
+    },
     {
       type: "facts",
       collapsed: true,

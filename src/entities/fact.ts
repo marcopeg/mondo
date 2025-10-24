@@ -8,7 +8,9 @@ participants: []
 
 const factConfig: CRMEntityConfig<
   "fact",
-  { type: "facts"; collapsed?: boolean } | { type: "logs"; collapsed?: boolean }
+  | { type: "facts"; collapsed?: boolean }
+  | { type: "logs"; collapsed?: boolean }
+  | { type: "documents"; collapsed?: boolean }
 > = {
   type: "fact",
   name: "Facts",
@@ -22,6 +24,10 @@ const factConfig: CRMEntityConfig<
     sort: { column: "date", direction: "desc" },
   },
   links: [
+    {
+      type: "documents",
+      collapsed: true,
+    },
     {
       type: "facts",
     },

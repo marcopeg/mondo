@@ -23,6 +23,7 @@ import { ProjectTasksLinks } from "./panels/ProjectTasksLinks";
 import { MeetingTasksLinks } from "./panels/MeetingTasksLinks";
 import { CompanyTasksLinks } from "./panels/CompanyTasksLinks";
 import { TeamTasksLinks } from "./panels/TeamTasksLinks";
+import { DocumentsLinks } from "./panels/DocumentsLinks";
 
 type LinkPanelProps = {
   file: TCachedFile;
@@ -49,6 +50,7 @@ const entityMap: Record<string, React.ComponentType<LinkPanelProps>> = {
   "meeting-tasks": MeetingTasksLinks,
   "company-tasks": CompanyTasksLinks,
   "team-tasks": TeamTasksLinks,
+  documents: DocumentsLinks,
 };
 
 const renderMissingConfigError = (message: string, key?: React.Key) => (
@@ -95,6 +97,9 @@ export const EntityLinks = () => {
       : baseLinkConfigs;
 
   if (linkConfigs.length === 0) {
+    if (entityType === "document") {
+      return null;
+    }
     return renderMissingConfigError(
       `no link configuration defined for "${entityType}"`
     );

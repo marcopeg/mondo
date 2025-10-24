@@ -8,7 +8,10 @@ owner:
 ---
 `;
 
-const toolConfig: CRMEntityConfig<"tool"> = {
+const toolConfig: CRMEntityConfig<
+  "tool",
+  | { type: "documents"; collapsed?: boolean }
+> = {
   type: "tool",
   name: "Tools",
   icon: "hammer",
@@ -19,6 +22,12 @@ const toolConfig: CRMEntityConfig<"tool"> = {
   list: {
     columns: ["cover", "show", "category", "owner", "location"],
   },
+  links: [
+    {
+      type: "documents",
+      collapsed: true,
+    },
+  ],
 };
 
 export default toolConfig;

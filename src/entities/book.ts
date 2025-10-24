@@ -5,7 +5,10 @@ date: {{date}}
 ---
 `;
 
-const bookConfig: CRMEntityConfig<"book"> = {
+const bookConfig: CRMEntityConfig<
+  "book",
+  | { type: "documents"; collapsed?: boolean }
+> = {
   type: "book",
   name: "Books",
   icon: "book",
@@ -16,6 +19,12 @@ const bookConfig: CRMEntityConfig<"book"> = {
   list: {
     columns: ["cover", "show", "author", "status", "genre"],
   },
+  links: [
+    {
+      type: "documents",
+      collapsed: true,
+    },
+  ],
 };
 
 export default bookConfig;

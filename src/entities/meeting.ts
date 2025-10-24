@@ -12,6 +12,7 @@ const meetingConfig: CRMEntityConfig<
   | { type: "facts"; collapsed?: boolean }
   | { type: "meeting-tasks"; collapsed?: boolean }
   | { type: "logs"; collapsed?: boolean }
+  | { type: "documents"; collapsed?: boolean }
 > = {
   type: "meeting",
   name: "Meetings",
@@ -25,6 +26,10 @@ const meetingConfig: CRMEntityConfig<
     sort: { column: "date_time", direction: "desc" },
   },
   links: [
+    {
+      type: "documents",
+      collapsed: true,
+    },
     {
       type: "facts",
     },

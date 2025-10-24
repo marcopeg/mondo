@@ -6,7 +6,10 @@ location: []
 ---
 `;
 
-const restaurantConfig: CRMEntityConfig<"restaurant"> = {
+const restaurantConfig: CRMEntityConfig<
+  "restaurant",
+  | { type: "documents"; collapsed?: boolean }
+> = {
   type: "restaurant",
   name: "Restaurants",
   icon: "utensils",
@@ -17,6 +20,12 @@ const restaurantConfig: CRMEntityConfig<"restaurant"> = {
   list: {
     columns: ["cover", "show", "location"],
   },
+  links: [
+    {
+      type: "documents",
+      collapsed: true,
+    },
+  ],
 };
 
 export default restaurantConfig;

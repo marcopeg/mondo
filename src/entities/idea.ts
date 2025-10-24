@@ -10,7 +10,9 @@ related:
 
 const ideaConfig: CRMEntityConfig<
   "idea",
-  { type: "facts"; collapsed?: boolean } | { type: "logs"; collapsed?: boolean }
+  | { type: "facts"; collapsed?: boolean }
+  | { type: "logs"; collapsed?: boolean }
+  | { type: "documents"; collapsed?: boolean }
 > = {
   type: "idea",
   name: "Ideas",
@@ -23,6 +25,7 @@ const ideaConfig: CRMEntityConfig<
     columns: ["show", "status"],
   },
   links: [
+    { type: "documents", collapsed: true },
     { type: "facts", collapsed: true },
     { type: "logs", collapsed: true },
   ],

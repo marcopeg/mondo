@@ -5,6 +5,7 @@ const locationConfig: CRMEntityConfig<
   "location",
   | { type: "location-people"; collapsed?: boolean }
   | { type: "location-companies"; collapsed?: boolean }
+  | { type: "documents"; collapsed?: boolean }
 > = {
   type: "location",
   name: "Locations",
@@ -17,6 +18,10 @@ const locationConfig: CRMEntityConfig<
     columns: ["cover", "show", "country", "region"],
   },
   links: [
+    {
+      type: "documents",
+      collapsed: true,
+    },
     {
       type: "location-people",
     },

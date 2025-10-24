@@ -14,6 +14,7 @@ const companyConfig: CRMEntityConfig<
   | { type: "facts"; collapsed?: boolean }
   | { type: "company-tasks"; collapsed?: boolean }
   | { type: "logs"; collapsed?: boolean }
+  | { type: "documents"; collapsed?: boolean }
 > = {
   type: "company",
   name: "Companies",
@@ -26,6 +27,10 @@ const companyConfig: CRMEntityConfig<
     columns: ["show", "location"],
   },
   links: [
+    {
+      type: "documents",
+      collapsed: true,
+    },
     {
       type: "employees",
     },

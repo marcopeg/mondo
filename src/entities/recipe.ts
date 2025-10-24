@@ -18,7 +18,10 @@ cook_time:
 
 `;
 
-const recipeConfig: CRMEntityConfig<"recipe"> = {
+const recipeConfig: CRMEntityConfig<
+  "recipe",
+  | { type: "documents"; collapsed?: boolean }
+> = {
   type: "recipe",
   name: "Cooking Book",
   icon: "book-open-check",
@@ -29,6 +32,12 @@ const recipeConfig: CRMEntityConfig<"recipe"> = {
   list: {
     columns: ["cover", "show", "source", "servings"],
   },
+  links: [
+    {
+      type: "documents",
+      collapsed: true,
+    },
+  ],
 };
 
 export default recipeConfig;

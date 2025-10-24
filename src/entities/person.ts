@@ -17,6 +17,7 @@ const personConfig: CRMEntityConfig<
   | { type: "participant-tasks"; collapsed?: boolean }
   | { type: "facts"; collapsed?: boolean }
   | { type: "logs"; collapsed?: boolean }
+  | { type: "documents"; collapsed?: boolean }
 > = {
   type: "person",
   name: "People",
@@ -31,6 +32,10 @@ const personConfig: CRMEntityConfig<
     sort: { column: "show", direction: "asc" },
   },
   links: [
+    {
+      type: "documents",
+      collapsed: true,
+    },
     {
       type: "facts",
       collapsed: true,

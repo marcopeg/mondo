@@ -1,4 +1,5 @@
 import company from "./company";
+import document from "./document";
 import gear from "./gear";
 import tool from "./tool";
 import recipe from "./recipe";
@@ -35,6 +36,7 @@ const ENTITIES = [
   recipe,
   book,
   show,
+  document,
 ] as const;
 
 type EntityConfig = (typeof ENTITIES)[number];

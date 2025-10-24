@@ -7,7 +7,10 @@ location: []
 ---
 `;
 
-const gearConfig: CRMEntityConfig<"gear"> = {
+const gearConfig: CRMEntityConfig<
+  "gear",
+  | { type: "documents"; collapsed?: boolean }
+> = {
   type: "gear",
   name: "Gear",
   icon: "settings",
@@ -18,6 +21,12 @@ const gearConfig: CRMEntityConfig<"gear"> = {
   list: {
     columns: ["cover", "show", "owner", "location"],
   },
+  links: [
+    {
+      type: "documents",
+      collapsed: true,
+    },
+  ],
 };
 
 export default gearConfig;

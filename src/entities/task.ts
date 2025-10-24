@@ -14,6 +14,7 @@ const taskConfig: CRMEntityConfig<
   | { type: "facts"; collapsed?: boolean }
   | { type: "logs"; collapsed?: boolean }
   | { type: "task-subtasks"; collapsed?: boolean }
+  | { type: "documents"; collapsed?: boolean }
 > = {
   type: "task",
   name: "Tasks",
@@ -26,6 +27,7 @@ const taskConfig: CRMEntityConfig<
     columns: ["show", "participants", "status"],
   },
   links: [
+    { type: "documents", collapsed: true },
     { type: "participants-assignment" },
     { type: "facts" },
     { type: "logs" },

@@ -15,6 +15,7 @@ const teamConfig: CRMEntityConfig<
   | { type: "facts"; collapsed?: boolean }
   | { type: "team-tasks"; collapsed?: boolean }
   | { type: "logs"; collapsed?: boolean }
+  | { type: "documents"; collapsed?: boolean }
 > = {
   type: "team",
   name: "Teams",
@@ -27,6 +28,10 @@ const teamConfig: CRMEntityConfig<
     columns: ["show", "company", "area"],
   },
   links: [
+    {
+      type: "documents",
+      collapsed: true,
+    },
     {
       type: "team-members",
     },
