@@ -2,7 +2,6 @@ import type { CRMEntityConfig } from "@/types/CRMEntityConfig";
 
 const template = `---
 date: {{date}}
-datetime: {{datetime}}
 ---
 `;
 
@@ -18,8 +17,8 @@ const logConfig: CRMEntityConfig<
     template,
   },
   list: {
-    columns: ["datetime", "show"],
-    sort: { column: "datetime", direction: "desc" },
+    columns: ["date", "show"],
+    sort: { column: "date", direction: "desc" },
   },
   links: [
     {

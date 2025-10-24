@@ -1,55 +1,98 @@
 import type { TFile } from "obsidian";
 
+const getTrimmedString = (value: unknown): string | undefined => {
+  if (typeof value !== "string") return undefined;
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : undefined;
+};
+
+const parseFrontmatterDate = (
+  value: unknown
+): { date: Date | null; raw: string | null } => {
+  if (value instanceof Date) {
+    if (!Number.isNaN(value.getTime())) {
+      return { date: value, raw: value.toISOString() };
+    }
+    return { date: null, raw: null };
+  }
+
+  const raw = getTrimmedString(value);
+  if (!raw) {
+    return { date: null, raw: null };
+  }
+
+  const primary = new Date(raw);
+  if (!Number.isNaN(primary.getTime())) {
+    return { date: primary, raw };
+  }
+
+  const normalized = raw.includes("T") ? raw : `${raw}T00:00`;
+  const fallback = new Date(normalized);
+  if (!Number.isNaN(fallback.getTime())) {
+    return { date: fallback, raw };
+  }
+
+  return { date: null, raw };
+};
+
+const hasTimeComponent = (value: Date | string | null): boolean => {
+  if (!value) return false;
+  if (value instanceof Date) {
+    return (
+      value.getHours() !== 0 ||
+      value.getMinutes() !== 0 ||
+      value.getSeconds() !== 0
+    );
+  }
+  return /\d{1,2}:\d{2}/.test(value);
+};
+
+const formatDateForNarration = (date: Date, includeTime: boolean): string => {
+  const options: Intl.DateTimeFormatOptions = includeTime
+    ? {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      }
+    : {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      };
+
+  return date.toLocaleString("en-US", options);
+};
+
 const getNoteDateInfo = (
   file: TFile,
   frontmatter: Record<string, unknown>
 ): string => {
-  // Try to get date from frontmatter
-  const fmDate =
-    frontmatter.date ?? frontmatter.published ?? frontmatter.created;
-  const fmTime = frontmatter.time;
+  const candidates: Array<{ date: Date | null; raw: string | null }> = [
+    parseFrontmatterDate(frontmatter.date),
+    parseFrontmatterDate(frontmatter.published),
+    parseFrontmatterDate(frontmatter.created),
+  ];
 
-  if (fmDate) {
-    const dateStr = typeof fmDate === "string" ? fmDate : String(fmDate);
-    const timeStr = fmTime
-      ? typeof fmTime === "string"
-        ? fmTime
-        : String(fmTime)
-      : null;
-
-    try {
-      const date = new Date(dateStr);
-      if (!isNaN(date.getTime())) {
-        const formatted = date.toLocaleString("en-US", {
-          year: "numeric",
-          month: "long",
-          day: "numeric",
-          hour: "2-digit",
-          minute: "2-digit",
-        });
-        return `on ${formatted}`;
-      }
-    } catch {
-      // If date parsing fails, try with just the string
-      if (timeStr) {
-        return `on ${dateStr} at ${timeStr}`;
-      }
-      return `on ${dateStr}`;
+  for (const candidate of candidates) {
+    if (candidate.date) {
+      const includeTime = hasTimeComponent(candidate.date) || hasTimeComponent(candidate.raw);
+      const formatted = formatDateForNarration(candidate.date, includeTime);
+      return `on ${formatted}`;
+    }
+    if (candidate.raw) {
+      return `on ${candidate.raw}`;
     }
   }
 
-  // Fallback to file creation time
   const stat = file.stat;
   if (stat?.ctime) {
-    const date = new Date(stat.ctime);
-    const formatted = date.toLocaleString("en-US", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-    return `created on ${formatted}`;
+    const created = new Date(stat.ctime);
+    if (!Number.isNaN(created.getTime())) {
+      const formatted = formatDateForNarration(created, true);
+      return `created on ${formatted}`;
+    }
   }
 
   return "";

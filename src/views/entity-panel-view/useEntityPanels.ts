@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import type { TFile } from "obsidian";
 import { useFiles } from "@/hooks/use-files";
 import { CRMFileType, getCRMEntityConfig } from "@/types/CRMFileType";
 
@@ -7,6 +8,7 @@ export type CRMEntityListRow = {
   label: string;
   fileName: string;
   frontmatter: Record<string, unknown>;
+  file: TFile;
 };
 
 const DEFAULT_COLUMN = "show";
@@ -17,69 +19,156 @@ const getTrimmedString = (value: unknown): string | undefined => {
   return trimmed.length > 0 ? trimmed : undefined;
 };
 
-const toDateObject = (dateValue: unknown, timeValue?: unknown): Date | null => {
-  if (dateValue instanceof Date) {
-    return Number.isNaN(dateValue.getTime()) ? null : dateValue;
-  }
+const hasTimeComponent = (date: Date): boolean =>
+  date.getHours() !== 0 ||
+  date.getMinutes() !== 0 ||
+  date.getSeconds() !== 0 ||
+  date.getMilliseconds() !== 0;
 
-  const dateString = getTrimmedString(dateValue);
-  if (!dateString) return null;
+const hasTimeInString = (value: string): boolean =>
+  /[T\s]\d{1,2}:\d{2}/.test(value) || /\d{2}:\d{2}:\d{2}/.test(value);
 
-  const timeString = getTrimmedString(timeValue);
-  const hasExplicitTime = dateString.includes("T") || dateString.includes(" ");
-  const isoCandidate = (() => {
-    if (timeString && !hasExplicitTime) {
-      return `${dateString}T${timeString}`;
-    }
-
-    if (dateString.includes("T")) {
-      return dateString;
-    }
-
-    if (dateString.includes(" ")) {
-      const [datePart, timePart] = dateString.split(" ", 2);
-      if (timePart) {
-        return `${datePart}T${timePart}`;
-      }
-    }
-
-    return `${dateString}T00:00`;
-  })();
-
-  const parsed = new Date(isoCandidate);
-  if (!Number.isNaN(parsed.getTime())) {
-    return parsed;
-  }
-
-  const fallback = new Date(dateString);
-  return Number.isNaN(fallback.getTime()) ? null : fallback;
+type DateValueInfo = {
+  date: Date | null;
+  raw: string | null;
+  hasTime: boolean;
 };
 
-const columnRules: Partial<Record<string, (row: CRMEntityListRow) => unknown>> =
-  {
-    date_time: (row) => {
-      const frontmatter = row.frontmatter ?? {};
-      const parsed = toDateObject(frontmatter.date, frontmatter.time);
-      if (parsed) {
-        return parsed;
-      }
+const parseDateLikeValue = (value: unknown): DateValueInfo => {
+  if (value instanceof Date) {
+    if (Number.isNaN(value.getTime())) {
+      return { date: null, raw: null, hasTime: false };
+    }
+    return {
+      date: value,
+      raw: value.toISOString(),
+      hasTime: hasTimeComponent(value),
+    };
+  }
 
-      const fallback = frontmatter.date_time;
-      if (fallback instanceof Date) {
-        return Number.isNaN(fallback.getTime()) ? undefined : fallback;
-      }
-      if (typeof fallback === "string") {
-        const fallbackParsed = toDateObject(fallback);
-        if (fallbackParsed) {
-          return fallbackParsed;
-        }
-        const trimmed = fallback.trim();
-        return trimmed.length > 0 ? trimmed : undefined;
-      }
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    if (!trimmed) {
+      return { date: null, raw: "", hasTime: false };
+    }
 
-      return undefined;
-    },
+    const dateOnlyMatch = trimmed.match(/^\d{4}-\d{2}-\d{2}$/);
+    let parsed: Date | null = null;
+    if (dateOnlyMatch) {
+      const [year, month, day] = trimmed.split("-").map(Number);
+      if (
+        Number.isFinite(year) &&
+        Number.isFinite(month) &&
+        Number.isFinite(day)
+      ) {
+        const candidate = new Date(Date.UTC(year, month - 1, day));
+        parsed = Number.isNaN(candidate.getTime()) ? null : candidate;
+      }
+    } else {
+      const candidate = new Date(trimmed);
+      parsed = Number.isNaN(candidate.getTime()) ? null : candidate;
+    }
+
+    return {
+      date: parsed,
+      raw: trimmed,
+      hasTime: hasTimeInString(trimmed),
+    };
+  }
+
+  return { date: null, raw: null, hasTime: false };
+};
+
+const combineDateAndTimeValues = (
+  dateValue: unknown,
+  timeValue: unknown
+): DateValueInfo => {
+  const dateString = getTrimmedString(dateValue);
+  if (!dateString) {
+    return { date: null, raw: dateString ?? null, hasTime: false };
+  }
+
+  const timeString = getTrimmedString(timeValue);
+  if (!timeString) {
+    return { date: null, raw: dateString, hasTime: false };
+  }
+
+  const candidate = new Date(`${dateString}T${timeString}`);
+  if (Number.isNaN(candidate.getTime())) {
+    return {
+      date: null,
+      raw: `${dateString} ${timeString}`.trim(),
+      hasTime: true,
+    };
+  }
+
+  return {
+    date: candidate,
+    raw: `${dateString} ${timeString}`.trim(),
+    hasTime: true,
   };
+};
+
+export type CRMEntityDateInfo = DateValueInfo & {
+  source: "frontmatter" | "legacy" | "created" | null;
+};
+
+export const getDateInfoForValue = (value: unknown): DateValueInfo =>
+  parseDateLikeValue(value);
+
+export const getRowDateInfo = (row: CRMEntityListRow): CRMEntityDateInfo => {
+  const frontmatter = row.frontmatter ?? {};
+  const primary = parseDateLikeValue(frontmatter.date);
+  const combined = combineDateAndTimeValues(frontmatter.date, frontmatter.time);
+
+  if (primary.date) {
+    if (!primary.hasTime && combined.date) {
+      return { ...combined, source: "frontmatter" };
+    }
+    return { ...primary, source: "frontmatter" };
+  }
+
+  if (combined.date) {
+    return { ...combined, source: "legacy" };
+  }
+
+  const legacyDateTime = parseDateLikeValue(frontmatter.datetime);
+  if (legacyDateTime.date) {
+    return { ...legacyDateTime, source: "legacy" };
+  }
+
+  const createdAt =
+    typeof row.file.stat?.ctime === "number"
+      ? new Date(row.file.stat.ctime)
+      : null;
+  if (createdAt && !Number.isNaN(createdAt.getTime())) {
+    return { date: createdAt, raw: null, hasTime: true, source: "created" };
+  }
+
+  const fallbackRaw =
+    (typeof frontmatter.date === "string" && frontmatter.date.trim()) ||
+    (typeof frontmatter.datetime === "string" && frontmatter.datetime.trim()) ||
+    combined.raw ||
+    primary.raw ||
+    null;
+
+  return { date: null, raw: fallbackRaw, hasTime: false, source: null };
+};
+
+const columnRules: Partial<Record<string, (row: CRMEntityListRow) => unknown>> = {
+  date: (row) => {
+    const info = getRowDateInfo(row);
+    return info.date ?? info.raw ?? undefined;
+  },
+  datetime: (row) => {
+    const info = getRowDateInfo(row);
+    return info.date ?? info.raw ?? undefined;
+  },
+  date_time: (row) => {
+    const info = getRowDateInfo(row);
+    return info.date ?? info.raw ?? undefined;
+  },
+};
 
 const formatFrontmatterValue = (value: unknown): string => {
   if (value === null || value === undefined) return "";
@@ -155,6 +244,7 @@ export const useEntityPanels = (entityType: CRMFileType) => {
         label,
         fileName: baseName,
         frontmatter,
+        file,
       };
     });
 

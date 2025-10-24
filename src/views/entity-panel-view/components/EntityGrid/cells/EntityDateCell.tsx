@@ -1,4 +1,9 @@
-import type { CRMEntityListRow } from "@/views/entity-panel-view/useEntityPanels";
+import {
+  getDateInfoForValue,
+  getRowDateInfo,
+  type CRMEntityDateInfo,
+  type CRMEntityListRow,
+} from "@/views/entity-panel-view/useEntityPanels";
 import { CRMFileLink } from "../../CRMFileLink";
 
 type EntityDateCellProps = {
@@ -7,69 +12,80 @@ type EntityDateCellProps = {
   column: string;
 };
 
-const toDate = (dateValue: string, timeValue?: string): Date | null => {
-  if (!dateValue) return null;
-  const datePart = dateValue.trim();
-  if (!datePart) return null;
-  const isoCandidate = timeValue
-    ? `${datePart}T${timeValue.trim()}`
-    : `${datePart}T00:00`;
-  const date = new Date(isoCandidate);
-  if (Number.isNaN(date.getTime())) {
-    const fallback = new Date(datePart);
-    return Number.isNaN(fallback.getTime()) ? null : fallback;
-  }
-  return date;
+type DateDisplayInfo = {
+  date: Date | null;
+  raw: string | null;
+  hasTime: boolean;
 };
 
-const formatDateTime = (date: Date | null, dateValue?: string, timeValue?: string) => {
-  if (!date) {
-    const parts = [dateValue, timeValue].filter(Boolean).join(" ");
-    return parts || "—";
+const formatDateForDisplay = (
+  info: DateDisplayInfo,
+  source?: CRMEntityDateInfo["source"]
+): string => {
+  if (!info.date) {
+    const fallback = info.raw?.trim();
+    return fallback && fallback.length > 0 ? fallback : "—";
   }
 
-  const options: Intl.DateTimeFormatOptions = {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  };
+  const options: Intl.DateTimeFormatOptions = info.hasTime
+    ? {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      }
+    : {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+      };
 
-  let formatted = date.toLocaleDateString(undefined, options);
-
-  const sanitizedTime = timeValue?.trim();
-  if (sanitizedTime && sanitizedTime.length > 0) {
-    const [hours = "00", minutes = "00"] = sanitizedTime.split(":");
-    const displayTime = `${hours.padStart(2, "0")}:${minutes.padStart(2, "0")}`;
-    formatted = `${formatted} • ${displayTime}`;
+  const formatted = info.date.toLocaleString(undefined, options);
+  if (source === "created") {
+    return `${formatted} • created`;
   }
 
   return formatted;
 };
 
-const getTimeFromDate = (date: Date): string | undefined => {
-  const hours = date.getHours();
-  const minutes = date.getMinutes();
-  if (hours === 0 && minutes === 0) return undefined;
-  return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
-};
-
 export const EntityDateCell = ({ value, row, column }: EntityDateCellProps) => {
+  const normalizedColumn = column.toLowerCase();
   const rawValue = Array.isArray(value) ? value[0] : value;
-  const directDate = rawValue instanceof Date ? rawValue : null;
-  const dateString = typeof rawValue === "string" ? rawValue : undefined;
-  const timeRaw = row.frontmatter?.time;
-  const explicitTime =
-    typeof timeRaw === "string" && timeRaw.trim().length > 0
-      ? timeRaw.trim()
-      : undefined;
 
-  const date = directDate ?? (dateString ? toDate(dateString, explicitTime) : null);
-  const fallbackDateString =
-    dateString ?? (directDate ? directDate.toISOString().split("T")[0] : undefined);
-  const effectiveTime = explicitTime ?? (directDate ? getTimeFromDate(directDate) : undefined);
-  const display = formatDateTime(date, fallbackDateString, effectiveTime);
+  let info: DateDisplayInfo;
+  let source: CRMEntityDateInfo["source"] | undefined;
 
-  const shouldLink = column.toLowerCase() === "date_time";
+  if (
+    normalizedColumn === "date" ||
+    normalizedColumn === "date_time" ||
+    normalizedColumn === "datetime"
+  ) {
+    const rowInfo = getRowDateInfo(row);
+    info = {
+      date: rowInfo.date,
+      raw: rowInfo.raw,
+      hasTime: rowInfo.hasTime,
+    };
+    source = rowInfo.source;
+  } else {
+    const candidate = getDateInfoForValue(rawValue);
+    info = {
+      date: candidate.date,
+      raw: candidate.raw,
+      hasTime: candidate.hasTime,
+    };
+    source = undefined;
+
+    if (!info.raw && typeof rawValue === "string") {
+      const trimmed = rawValue.trim();
+      info = { ...info, raw: trimmed.length > 0 ? trimmed : null };
+    }
+  }
+
+  const display = formatDateForDisplay(info, source);
+  const shouldLink = normalizedColumn === "date_time";
+
   if (shouldLink) {
     return <CRMFileLink path={row.path} label={display} />;
   }

@@ -290,9 +290,7 @@ export const ProjectsLinks = ({ file, config }: ProjectsLinksProps) => {
           type: String(CRMFileType.PROJECT),
           filename: fileName,
           slug: "untitled-project",
-          date: isoTimestamp.split("T")[0],
-          time: isoTimestamp.slice(11, 16),
-          datetime: isoTimestamp,
+          date: isoTimestamp,
         });
 
         projectFile = await app.vault.create(filePath, content);

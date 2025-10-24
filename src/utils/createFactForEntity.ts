@@ -115,9 +115,7 @@ export const createFactForEntity = async ({
       type: String(CRMFileType.FACT),
       filename: fileName,
       slug,
-      date: dateStamp,
-      time: timeStamp,
-      datetime: isoTimestamp,
+      date: isoTimestamp,
     });
 
     factFile = await app.vault.create(filePath, rendered);
@@ -133,9 +131,13 @@ export const createFactForEntity = async ({
   );
 
   await app.fileManager.processFrontMatter(factFile, (frontmatter) => {
-    frontmatter.date = dateStamp;
-    frontmatter.time = timeStamp;
-    frontmatter.datetime = isoTimestamp;
+    frontmatter.date = isoTimestamp;
+    if (Object.prototype.hasOwnProperty.call(frontmatter, "time")) {
+      delete (frontmatter as any).time;
+    }
+    if (Object.prototype.hasOwnProperty.call(frontmatter, "datetime")) {
+      delete (frontmatter as any).datetime;
+    }
 
     validTargets.forEach(({ property, mode, target }) => {
       const targetFile = target.file;

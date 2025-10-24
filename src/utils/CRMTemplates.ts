@@ -2,24 +2,12 @@ import { App, TFile } from "obsidian";
 import { CRMFileType } from "@/types/CRMFileType";
 import { getDefaultTemplate } from "@/templates";
 
-const TEMPLATE_KEYS: Array<[RegExp, keyof TemplateContext]> = [
-  [/{{\s*title\s*}}/gi, "title"],
-  [/{{\s*type\s*}}/gi, "type"],
-  [/{{\s*filename\s*}}/gi, "filename"],
-  [/{{\s*slug\s*}}/gi, "slug"],
-  [/{{\s*date\s*}}/gi, "date"],
-  [/{{\s*time\s*}}/gi, "time"],
-  [/{{\s*datetime\s*}}/gi, "datetime"],
-];
-
 export interface TemplateContext {
   title: string;
   type: string;
   filename: string;
   slug: string;
   date: string;
-  time: string;
-  datetime: string;
 }
 
 const DATE_FORMAT_TOKENS = /(YYYY|MM|DD|HH|mm|ss)/g;
@@ -35,9 +23,39 @@ const tokenFormatters: Record<string, (date: Date) => string> = {
   ss: (date) => pad(date.getUTCSeconds()),
 };
 
+type ParsedDate = {
+  date: Date | null;
+  isDateOnly: boolean;
+};
+
+const parseDateValue = (raw: string): ParsedDate => {
+  const trimmed = raw.trim();
+  if (!trimmed) {
+    return { date: null, isDateOnly: false };
+  }
+
+  const isoDateOnlyMatch = trimmed.match(/^\d{4}-\d{2}-\d{2}$/);
+  if (isoDateOnlyMatch) {
+    const [year, month, day] = trimmed.split("-").map(Number);
+    if (Number.isFinite(year) && Number.isFinite(month) && Number.isFinite(day)) {
+      const utcDate = new Date(Date.UTC(year, month - 1, day));
+      if (!Number.isNaN(utcDate.getTime())) {
+        return { date: utcDate, isDateOnly: true };
+      }
+    }
+  }
+
+  const parsed = new Date(trimmed);
+  if (!Number.isNaN(parsed.getTime())) {
+    return { date: parsed, isDateOnly: false };
+  }
+
+  return { date: null, isDateOnly: false };
+};
+
 const formatDateTime = (isoString: string, format: string): string => {
-  const date = new Date(isoString);
-  if (Number.isNaN(date.getTime())) {
+  const { date } = parseDateValue(isoString);
+  if (!date) {
     return format;
   }
 
@@ -46,6 +64,32 @@ const formatDateTime = (isoString: string, format: string): string => {
     return formatter ? formatter(date) : token;
   });
 };
+
+const getTemplateReplacement = (
+  pattern: RegExp,
+  getValue: (context: TemplateContext) => string
+) => {
+  return (content: string, context: TemplateContext): string =>
+    content.replace(pattern, () => getValue(context));
+};
+
+const TEMPLATE_REPLACEMENTS = [
+  getTemplateReplacement(/{{\s*title\s*}}/gi, (context) => context.title),
+  getTemplateReplacement(/{{\s*type\s*}}/gi, (context) => context.type),
+  getTemplateReplacement(/{{\s*filename\s*}}/gi, (context) => context.filename),
+  getTemplateReplacement(/{{\s*slug\s*}}/gi, (context) => context.slug),
+  getTemplateReplacement(/{{\s*date\s*}}/gi, (context) => context.date),
+  // Backwards compatibility: {{datetime}} maps to the unified date field
+  getTemplateReplacement(/{{\s*datetime\s*}}/gi, (context) => context.date),
+  // Backwards compatibility: {{time}} renders from the unified date field when possible
+  getTemplateReplacement(/{{\s*time\s*}}/gi, (context) => {
+    const parsed = parseDateValue(context.date);
+    if (!parsed.date) {
+      return context.date;
+    }
+    return `${pad(parsed.date.getUTCHours())}:${pad(parsed.date.getUTCMinutes())}`;
+  }),
+];
 
 const ensureTemplate = (type: CRMFileType): string => getDefaultTemplate(type);
 
@@ -173,17 +217,26 @@ export const renderTemplate = (
   const combined = `${header}${body}`;
 
   let output = combined;
-  TEMPLATE_KEYS.forEach(([pattern, key]) => {
-    output = output.replace(pattern, context[key]);
+  TEMPLATE_REPLACEMENTS.forEach((applyReplacement) => {
+    output = applyReplacement(output, context);
   });
   output = output.replace(
-    /{{\s*(date|time)\s*:\s*([^}]+)\s*}}/gi,
+    /{{\s*(date|time|datetime)\s*:\s*([^}]+)\s*}}/gi,
     (_match, token, rawFormat) => {
+      const normalizedToken = String(token || "date").toLowerCase();
       const format = String(rawFormat || "").trim();
       if (!format) {
-        return token === "time" ? context.time : context.date;
+        if (normalizedToken === "time") {
+          const parsed = parseDateValue(context.date);
+          if (parsed.date) {
+            return `${pad(parsed.date.getUTCHours())}:${pad(
+              parsed.date.getUTCMinutes()
+            )}`;
+          }
+        }
+        return context.date;
       }
-      return formatDateTime(context.datetime, format);
+      return formatDateTime(context.date, format);
     }
   );
 

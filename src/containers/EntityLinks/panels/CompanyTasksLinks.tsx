@@ -188,9 +188,7 @@ export const CompanyTasksLinks = ({ file, config }: CompanyTasksLinksProps) => {
           type: String(CRMFileType.TASK),
           filename: fileName,
           slug: "untitled-task",
-          date: isoTimestamp.split("T")[0],
-          time: isoTimestamp.slice(11, 16),
-          datetime: isoTimestamp,
+          date: isoTimestamp,
         });
         taskFile = await app.vault.create(filePath, content);
       }

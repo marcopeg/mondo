@@ -148,25 +148,12 @@ const createEntityFile = async ({
   const slug = slugify(baseTitle) || sanitizedBase.toLowerCase();
   const isoTimestamp = new Date().toISOString();
   const templateSource = await getTemplateForType(app, templates, entityType);
-  // For logs, set 'date' to full local datetime and omit 'time' via template
-  const nowLocal = new Date();
-  const y = String(nowLocal.getFullYear());
-  const m = String(nowLocal.getMonth() + 1).padStart(2, "0");
-  const d = String(nowLocal.getDate()).padStart(2, "0");
-  const h = String(nowLocal.getHours()).padStart(2, "0");
-  const mi = String(nowLocal.getMinutes()).padStart(2, "0");
-  const s = String(nowLocal.getSeconds()).padStart(2, "0");
-  const localFull = `${y}-${m}-${d}T${h}:${mi}:${s}`;
-
   const content = renderTemplate(templateSource ?? "", {
     title: baseTitle,
     type: String(entityType),
     filename: fileName,
     slug,
-    date:
-      entityType === CRMFileType.LOG ? localFull : isoTimestamp.split("T")[0],
-    time: "",
-    datetime: isoTimestamp,
+    date: isoTimestamp,
   });
 
   const createdFile = await app.vault.create(filePath, content);

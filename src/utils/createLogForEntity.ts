@@ -81,7 +81,7 @@ export const createLogForEntity = async ({
 
   const now = new Date();
   const isoTimestamp = now.toISOString();
-  // Use local date/time for the human title; keep ISO for datetime
+  // Use local date/time for the human title; store the unified ISO timestamp in frontmatter
   const yyyy = String(now.getFullYear());
   const mm = String(now.getMonth() + 1).padStart(2, "0");
   const dd = String(now.getDate()).padStart(2, "0");
@@ -89,8 +89,6 @@ export const createLogForEntity = async ({
   const min = String(now.getMinutes()).padStart(2, "0");
   const dateStamp = `${yyyy}-${mm}-${dd}`;
   const timeDot = `${hh}.${min}`; // hh.mm for filenames/titles
-  const ss = String(now.getSeconds()).padStart(2, "0");
-  const localDateTime = `${dateStamp}T${hh}:${min}:${ss}`; // full local datetime
 
   const baseTitle = `${dateStamp} ${timeDot}`;
   const safeTitle = baseTitle;
@@ -127,9 +125,7 @@ export const createLogForEntity = async ({
       type: String(CRMFileType.LOG),
       filename: fileName,
       slug,
-      date: localDateTime,
-      time: "",
-      datetime: isoTimestamp,
+      date: isoTimestamp,
     });
 
     logFile = await app.vault.create(filePath, rendered);
@@ -145,12 +141,13 @@ export const createLogForEntity = async ({
   );
 
   await app.fileManager.processFrontMatter(logFile, (frontmatter) => {
-    frontmatter.date = localDateTime;
-    // Ensure 'time' is not present per requirement
+    frontmatter.date = isoTimestamp;
     if (Object.prototype.hasOwnProperty.call(frontmatter, "time")) {
       delete (frontmatter as any).time;
     }
-    frontmatter.datetime = isoTimestamp;
+    if (Object.prototype.hasOwnProperty.call(frontmatter, "datetime")) {
+      delete (frontmatter as any).datetime;
+    }
 
     validTargets.forEach(({ property, mode, target }) => {
       const targetFile = target.file;
@@ -193,8 +190,6 @@ export const createLogForEntity = async ({
     Object.keys(frontmatter).forEach((key) => {
       if (
         key === "date" ||
-        key === "time" ||
-        key === "datetime" ||
         key === "type"
       ) {
         return;

@@ -205,9 +205,7 @@ export const TaskSubtasksLinks = ({ file, config }: TaskSubtasksLinksProps) => {
           type: String(CRMFileType.TASK),
           filename: fileName,
           slug: "untitled-task",
-          date: isoTimestamp.split("T")[0],
-          time: isoTimestamp.slice(11, 16),
-          datetime: isoTimestamp,
+          date: isoTimestamp,
         });
 
         subTaskFile = await app.vault.create(filePath, content);

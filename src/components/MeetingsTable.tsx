@@ -61,6 +61,80 @@ const resolveParticipants = (
     .filter(Boolean) as Array<{ path: string | null; label: string }>;
 };
 
+const parseMeetingDateValue = (
+  value: unknown
+): { date: Date | null; raw: string | null } => {
+  if (value instanceof Date) {
+    return Number.isNaN(value.getTime())
+      ? { date: null, raw: null }
+      : { date: value, raw: value.toISOString() };
+  }
+
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    if (!trimmed) {
+      return { date: null, raw: null };
+    }
+
+    const direct = new Date(trimmed);
+    if (!Number.isNaN(direct.getTime())) {
+      return { date: direct, raw: trimmed };
+    }
+
+    const normalized = trimmed.includes("T") ? trimmed : `${trimmed}T00:00`;
+    const fallback = new Date(normalized);
+    if (!Number.isNaN(fallback.getTime())) {
+      return { date: fallback, raw: trimmed };
+    }
+
+    return { date: null, raw: trimmed };
+  }
+
+  return { date: null, raw: null };
+};
+
+const formatMeetingDate = (entry: TCachedFile): string | null => {
+  const frontmatter = entry.cache?.frontmatter as
+    | Record<string, unknown>
+    | undefined;
+
+  const candidate = parseMeetingDateValue(frontmatter?.date);
+  if (candidate.date) {
+    const includeTime =
+      candidate.date.getHours() !== 0 || candidate.date.getMinutes() !== 0;
+    const formatted = candidate.date.toLocaleString(undefined, {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      ...(includeTime
+        ? { hour: "2-digit", minute: "2-digit" }
+        : undefined),
+    });
+    return formatted;
+  }
+
+  if (candidate.raw) {
+    return candidate.raw;
+  }
+
+  const createdAt =
+    typeof entry.file.stat?.ctime === "number"
+      ? new Date(entry.file.stat.ctime)
+      : null;
+  if (createdAt && !Number.isNaN(createdAt.getTime())) {
+    const formatted = createdAt.toLocaleString(undefined, {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+    return `${formatted} • created`;
+  }
+
+  return null;
+};
+
 /**
  * Presentational table for meeting rows with Obsidian link resolution for participants.
  */
@@ -81,9 +155,7 @@ export const MeetingsTable: React.FC<MeetingsTableProps> = ({
           entry.cache?.frontmatter?.name ??
           entry.file.basename ??
           entry.file.path;
-        const displayDate =
-          entry.cache?.frontmatter?.date ??
-          entry.cache?.frontmatter?.datetime;
+        const displayDate = formatMeetingDate(entry);
 
         const participants = resolveParticipants(entry, app);
 
@@ -94,7 +166,7 @@ export const MeetingsTable: React.FC<MeetingsTableProps> = ({
                 {label}
               </Button>
               {displayDate ? (
-                <div className="text-xs text-[var(--text-muted)]">{String(displayDate)}</div>
+                <div className="text-xs text-[var(--text-muted)]">{displayDate}</div>
               ) : null}
             </Table.Cell>
             <Table.Cell className="px-2 py-2 align-top text-xs text-[var(--text-muted)]">

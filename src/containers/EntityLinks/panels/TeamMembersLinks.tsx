@@ -172,9 +172,7 @@ export const TeamMembersLinks = ({ file, config }: TeamMembersLinksProps) => {
           type: String(CRMFileType.PERSON),
           filename: fileName,
           slug: "untitled-person",
-          date: isoTimestamp.split("T")[0],
-          time: isoTimestamp.slice(11, 16),
-          datetime: isoTimestamp,
+          date: isoTimestamp,
         });
 
         personFile = await app.vault.create(filePath, content);

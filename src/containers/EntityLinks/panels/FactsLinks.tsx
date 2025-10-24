@@ -62,36 +62,84 @@ const FACT_LINK_RULES: Partial<Record<CRMEntityType, FactLinkRule>> = {
   },
 };
 
-const getFactDate = (fact: TCachedFile): Date | null => {
-  const frontmatter = fact.cache?.frontmatter as
-    | Record<string, unknown>
-    | undefined;
-  if (!frontmatter) {
+type FactDateSource = "frontmatter" | "legacy" | "created" | null;
+
+const getTrimmedString = (value: unknown): string | undefined => {
+  if (typeof value !== "string") return undefined;
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : undefined;
+};
+
+const parseFactDateValue = (value: unknown): Date | null => {
+  if (value instanceof Date) {
+    return Number.isNaN(value.getTime()) ? null : value;
+  }
+
+  const dateString = getTrimmedString(value);
+  if (!dateString) {
     return null;
   }
 
-  const datetime = frontmatter.datetime;
-  if (typeof datetime === "string") {
-    const parsed = new Date(datetime);
-    if (!Number.isNaN(parsed.getTime())) {
-      return parsed;
+  const isoCandidate = dateString.includes("T")
+    ? dateString
+    : dateString.includes(" ")
+    ? dateString.replace(" ", "T")
+    : `${dateString}T00:00`;
+
+  const parsed = new Date(isoCandidate);
+  if (!Number.isNaN(parsed.getTime())) {
+    return parsed;
+  }
+
+  const fallback = new Date(dateString);
+  return Number.isNaN(fallback.getTime()) ? null : fallback;
+};
+
+const combineFactDateAndTime = (
+  dateValue: unknown,
+  timeValue: unknown
+): Date | null => {
+  const dateString = getTrimmedString(dateValue);
+  const timeString = getTrimmedString(timeValue);
+  if (!dateString || !timeString) {
+    return null;
+  }
+
+  const candidate = new Date(`${dateString}T${timeString}`);
+  return Number.isNaN(candidate.getTime()) ? null : candidate;
+};
+
+const getFactDate = (fact: TCachedFile): { date: Date | null; source: FactDateSource } => {
+  const frontmatter = fact.cache?.frontmatter as
+    | Record<string, unknown>
+    | undefined;
+
+  if (frontmatter) {
+    const direct = parseFactDateValue(frontmatter.date);
+    if (direct) {
+      return { date: direct, source: "frontmatter" };
+    }
+
+    const combined = combineFactDateAndTime(frontmatter.date, frontmatter.time);
+    if (combined) {
+      return { date: combined, source: "legacy" };
+    }
+
+    const legacyDateTime =
+      parseFactDateValue(frontmatter.datetime) ??
+      parseFactDateValue(frontmatter.date_time);
+    if (legacyDateTime) {
+      return { date: legacyDateTime, source: "legacy" };
     }
   }
 
-  const dateValue = frontmatter.date;
-  const timeValue = frontmatter.time;
-
-  if (typeof dateValue === "string") {
-    const candidate =
-      typeof timeValue === "string"
-        ? new Date(`${dateValue}T${timeValue}`)
-        : new Date(dateValue);
-    if (!Number.isNaN(candidate.getTime())) {
-      return candidate;
-    }
+  const createdAt =
+    typeof fact.file?.stat?.ctime === "number" ? new Date(fact.file.stat.ctime) : null;
+  if (createdAt && !Number.isNaN(createdAt.getTime())) {
+    return { date: createdAt, source: "created" };
   }
 
-  return null;
+  return { date: null, source: null };
 };
 
 const formatFactTimestamp = (fact: TCachedFile): string => {
@@ -99,28 +147,29 @@ const formatFactTimestamp = (fact: TCachedFile): string => {
     | Record<string, unknown>
     | undefined;
 
-  const dated = getFactDate(fact);
-  if (dated) {
-    return dated.toLocaleString();
+  const { date, source } = getFactDate(fact);
+  if (date) {
+    const formatted = date.toLocaleString(undefined, {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+    return source === "created" ? `${formatted} • created` : formatted;
   }
 
   if (!frontmatter) {
     return "";
   }
 
-  if (typeof frontmatter.datetime === "string") {
-    return frontmatter.datetime;
-  }
+  const preferred =
+    getTrimmedString(frontmatter.date) ??
+    getTrimmedString(frontmatter.datetime) ??
+    getTrimmedString(frontmatter.date_time) ??
+    getTrimmedString(frontmatter.time);
 
-  const parts: string[] = [];
-  if (typeof frontmatter.date === "string") {
-    parts.push(frontmatter.date);
-  }
-  if (typeof frontmatter.time === "string") {
-    parts.push(frontmatter.time);
-  }
-
-  return parts.join(" ");
+  return preferred ?? "";
 };
 
 export const FactsLinks = ({ file, config }: FactsLinksProps) => {
@@ -166,8 +215,10 @@ export const FactsLinks = ({ file, config }: FactsLinksProps) => {
 
   const sortFacts = useCallback((entries: TCachedFile[]) => {
     return [...entries].sort((a, b) => {
-      const dateA = getFactDate(a);
-      const dateB = getFactDate(b);
+      const infoA = getFactDate(a);
+      const infoB = getFactDate(b);
+      const dateA = infoA.date;
+      const dateB = infoB.date;
 
       if (dateA && dateB) {
         return dateB.getTime() - dateA.getTime();

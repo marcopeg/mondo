@@ -156,9 +156,7 @@ export const TeamsLinks = ({ file, config }: TeamsLinksProps) => {
           type: String(CRMFileType.TEAM),
           filename: fileName,
           slug: "untitled-team",
-          date: isoTimestamp.split("T")[0],
-          time: isoTimestamp.slice(11, 16),
-          datetime: isoTimestamp,
+          date: isoTimestamp,
         });
 
         teamFile = await app.vault.create(filePath, content);

@@ -247,16 +247,12 @@ export const createMeetingForEntity = async ({
       CRMFileType.MEETING
     );
 
-    const formattedTime = isoTimestamp.slice(11, 16);
-
     const rendered = renderTemplate(templateSource, {
       title: safeTitle,
       type: String(CRMFileType.MEETING),
       filename: fileName,
       slug,
-      date: dateStamp,
-      time: formattedTime,
-      datetime: isoTimestamp,
+      date: isoTimestamp,
     });
 
     const validTargets = linkTargets.filter((target) => target?.target?.file);

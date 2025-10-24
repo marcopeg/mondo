@@ -1,9 +1,7 @@
 import type { CRMEntityConfig } from "@/types/CRMEntityConfig";
 
 const template = `---
-date: {{date:YYYY-MM-DD}}
-time: {{time:HH:mm}}
-datetime: {{datetime}}
+date: {{date}}
 participants: []
 company:
 meeting:
@@ -31,8 +29,8 @@ const factConfig: CRMEntityConfig<
     template,
   },
   list: {
-    columns: ["datetime", "show"],
-    sort: { column: "datetime", direction: "desc" },
+    columns: ["date", "show"],
+    sort: { column: "date", direction: "desc" },
   },
   links: [
     {

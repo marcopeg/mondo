@@ -98,9 +98,7 @@ export const QuickEntity = ({ type, placeholder }: QuickEntityProps) => {
             type: String(entityType),
             filename: fileName,
             slug,
-            date: isoTimestamp.split("T")[0],
-            time: isoTimestamp.slice(11, 16),
-            datetime: isoTimestamp,
+            date: isoTimestamp,
           });
 
           tfile = await app.vault.create(filePath, content);
