@@ -1,7 +1,7 @@
 import type { CRMEntityConfig } from "@/types/CRMEntityConfig";
 
-const template = `---
-type: recipe
+const template = `
+date: {{date}}
 source:
 servings:
 prep_time:

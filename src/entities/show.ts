@@ -1,16 +1,10 @@
 import type { CRMEntityConfig } from "@/types/CRMEntityConfig";
 
-const template = `---
-type: show
+const template = `
+date: {{date}}
 format: movie
-director:
-status:
-platform:
-release_date:
+genre: []
 ---
-
-# Notes
-
 `;
 
 const showConfig: CRMEntityConfig<"show"> = {

@@ -1,11 +1,9 @@
 import type { CRMEntityConfig } from "@/types/CRMEntityConfig";
 
-const template = `---
-location:
+const template = `
+date: {{date}}
+location: []
 ---
-
-# Notes
-
 `;
 
 const restaurantConfig: CRMEntityConfig<"restaurant"> = {

@@ -2,21 +2,9 @@ import type { CRMEntityConfig } from "@/types/CRMEntityConfig";
 
 const template = `
 date: {{date}}
-location:
 participants:
-team:
-project:
+location:
 ---
-# Agenda
-
-# Notes
-
-# Decisions
-
-# Action Items
-
-# Follow Up
-
 `;
 
 const meetingConfig: CRMEntityConfig<

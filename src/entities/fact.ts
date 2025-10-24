@@ -3,23 +3,12 @@ import type { CRMEntityConfig } from "@/types/CRMEntityConfig";
 const template = `---
 date: {{date}}
 participants: []
-company:
-meeting:
-task:
-project:
-fact:
-next:
-prev:
 ---
-
-# Fact
-
 `;
 
 const factConfig: CRMEntityConfig<
   "fact",
-  { type: "facts"; collapsed?: boolean }
-  | { type: "logs"; collapsed?: boolean }
+  { type: "facts"; collapsed?: boolean } | { type: "logs"; collapsed?: boolean }
 > = {
   type: "fact",
   name: "Facts",

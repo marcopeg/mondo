@@ -1,10 +1,10 @@
 import type { CRMEntityConfig } from "@/types/CRMEntityConfig";
 
 const template = `---
+date: {{date}}
 owner: []
 location: []
 ---
-
 `;
 
 const gearConfig: CRMEntityConfig<"gear"> = {

@@ -1,13 +1,11 @@
 import type { CRMEntityConfig } from "@/types/CRMEntityConfig";
 
 const template = `---
+date: {{date}}
 type: idea
 status: draft
 related:
 ---
-
-# Summary
-
 `;
 
 const ideaConfig: CRMEntityConfig<

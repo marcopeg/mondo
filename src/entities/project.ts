@@ -1,12 +1,10 @@
 import type { CRMEntityConfig } from "@/types/CRMEntityConfig";
 
-const template = `---
-type: project
-company:
-team:
-participants:
+const template = `
+date: {{date}}
+company: []
+team: []
 ---
-
 `;
 
 const projectConfig: CRMEntityConfig<
