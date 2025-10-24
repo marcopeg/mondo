@@ -2,10 +2,10 @@ import type CRM from "@/main";
 import {
   MarkdownPostProcessorContext,
   Notice,
-  Platform,
   TFile,
   setIcon,
 } from "obsidian";
+import TranscriptionOverlay from "@/utils/TranscriptionOverlay";
 
 const TRANSCRIPTION_MODEL = "gpt-4o-mini-transcribe";
 
@@ -39,19 +39,6 @@ type ActiveTranscription = {
 
 type Maybe<T> = T | null | undefined;
 
-type WakeLockSentinel = {
-  released: boolean;
-  release: () => Promise<void>;
-  addEventListener?: (type: "release", listener: () => void) => void;
-  removeEventListener?: (type: "release", listener: () => void) => void;
-};
-
-type NavigatorWithWakeLock = Navigator & {
-  wakeLock?: {
-    request: (type: "screen") => Promise<WakeLockSentinel>;
-  };
-};
-
 const getMimeFromExtension = (extension: Maybe<string>) => {
   if (!extension) {
     return MIME_FALLBACK;
@@ -68,17 +55,9 @@ export class AudioTranscriptionManager {
 
   private readonly renderedEmbeds = new WeakMap<HTMLElement, string>();
 
-  private transcriptionOverlayEl: HTMLElement | null = null;
-
   private transcriptionAlertsContainer: HTMLElement | null = null;
 
-  private transcriptionOverlayCloseButton: HTMLButtonElement | null = null;
-
-  private wakeLock: WakeLockSentinel | null = null;
-
-  private wakeLockReleaseHandler: (() => void) | null = null;
-
-  private overlayDismissHandler: (() => void) | null = null;
+  private readonly overlay = new TranscriptionOverlay();
 
   private readonly audioDurationCache = new Map<string, number>();
 
@@ -108,13 +87,10 @@ export class AudioTranscriptionManager {
       this.audioContext = null;
     }
 
-    void this.releaseWakeLock();
+    void this.overlay.releaseWakeLock();
 
-    this.transcriptionOverlayEl?.remove();
-    this.transcriptionOverlayEl = null;
+    this.overlay.destroy();
     this.transcriptionAlertsContainer = null;
-    this.transcriptionOverlayCloseButton = null;
-    this.overlayDismissHandler = null;
   };
 
   isAudioFile = (file: Maybe<TFile>) => {
@@ -465,11 +441,11 @@ export class AudioTranscriptionManager {
 
     this.activeTranscriptions.set(key, session);
 
-    this.updateOverlayCloseAction(() => {
+    this.overlay.setDismissHandler(() => {
       this.cancelTranscription(key);
     });
 
-    void this.requestWakeLock();
+    void this.overlay.acquireWakeLock();
 
     cancelButton.addEventListener("click", (event) => {
       event.preventDefault();
@@ -493,13 +469,13 @@ export class AudioTranscriptionManager {
     this.activeTranscriptions.delete(key);
 
     if (this.activeTranscriptions.size === 0) {
-      this.updateOverlayCloseAction(null);
-      void this.releaseWakeLock();
+      this.overlay.setDismissHandler(null);
+      void this.overlay.releaseWakeLock();
     } else {
       const fallbackKey = Array.from(this.activeTranscriptions.keys()).pop();
 
       if (fallbackKey) {
-        this.updateOverlayCloseAction(() => {
+        this.overlay.setDismissHandler(() => {
           this.cancelTranscription(fallbackKey);
         });
       }
@@ -508,87 +484,9 @@ export class AudioTranscriptionManager {
     const container = this.transcriptionAlertsContainer;
 
     if (container && container.childElementCount === 0) {
-      this.transcriptionOverlayEl?.remove();
-      this.transcriptionOverlayEl = null;
+      this.overlay.clear();
+      this.overlay.destroy();
       this.transcriptionAlertsContainer = null;
-      this.transcriptionOverlayCloseButton = null;
-      this.overlayDismissHandler = null;
-    }
-  };
-
-  private updateOverlayCloseAction = (handler: (() => void) | null) => {
-    const button = this.transcriptionOverlayCloseButton;
-
-    this.overlayDismissHandler = handler ?? null;
-
-    if (!button) {
-      return;
-    }
-
-    button.onclick = null;
-
-    if (!handler) {
-      button.toggleAttribute("hidden", true);
-      return;
-    }
-
-    button.toggleAttribute("hidden", false);
-    button.onclick = (event) => {
-      event.preventDefault();
-      event.stopPropagation();
-      handler();
-    };
-  };
-
-  private requestWakeLock = async () => {
-    if (!Platform.isMobileApp || this.wakeLock || typeof navigator === "undefined") {
-      return;
-    }
-
-    const nav = navigator as NavigatorWithWakeLock;
-    const wakeLockApi = nav.wakeLock;
-
-    if (!wakeLockApi?.request) {
-      return;
-    }
-
-    try {
-      const sentinel = await wakeLockApi.request("screen");
-      const releaseHandler = () => {
-        if (this.wakeLock === sentinel) {
-          this.wakeLock = null;
-          this.wakeLockReleaseHandler = null;
-        }
-        sentinel.removeEventListener?.("release", releaseHandler);
-      };
-
-      sentinel.addEventListener?.("release", releaseHandler);
-
-      this.wakeLock = sentinel;
-      this.wakeLockReleaseHandler = releaseHandler;
-    } catch (error) {
-      console.debug("CRM: unable to acquire wake lock", error);
-    }
-  };
-
-  private releaseWakeLock = async () => {
-    const sentinel = this.wakeLock;
-
-    if (!sentinel) {
-      return;
-    }
-
-    try {
-      await sentinel.release();
-    } catch (error) {
-      console.debug("CRM: unable to release wake lock", error);
-    } finally {
-      if (this.wakeLockReleaseHandler) {
-        sentinel.removeEventListener?.("release", this.wakeLockReleaseHandler);
-      }
-
-      this.wakeLock = null;
-      this.wakeLockReleaseHandler = null;
     }
   };
 
@@ -600,42 +498,10 @@ export class AudioTranscriptionManager {
       return this.transcriptionAlertsContainer;
     }
 
-    const overlay = document.body.createDiv({
-      cls: "crm-transcription-overlay",
+    const container = this.overlay.ensureContainer({
+      className: "crm-transcription-alerts",
     });
 
-    const backdrop = overlay.createDiv({
-      cls: "crm-transcription-overlay__backdrop",
-    });
-    backdrop.setAttr("aria-hidden", "true");
-
-    const content = overlay.createDiv({
-      cls: "crm-transcription-overlay__content",
-    });
-    content.setAttr("role", "dialog");
-    content.setAttr("aria-modal", "true");
-
-    const closeButton = content.createEl("button", {
-      cls: "clickable-icon crm-transcription-overlay__close",
-    });
-    closeButton.setAttr("type", "button");
-    closeButton.setAttr("aria-label", "Cancel transcription");
-    closeButton.setAttr("title", "Cancel transcription");
-    closeButton.toggleAttribute("hidden", true);
-    setIcon(closeButton, "x");
-
-    const container = content.createDiv({
-      cls: "crm-transcription-alerts",
-    });
-
-    backdrop.addEventListener("click", (event) => {
-      event.preventDefault();
-      event.stopPropagation();
-      this.overlayDismissHandler?.();
-    });
-
-    this.transcriptionOverlayEl = overlay;
-    this.transcriptionOverlayCloseButton = closeButton;
     this.transcriptionAlertsContainer = container;
 
     return container;

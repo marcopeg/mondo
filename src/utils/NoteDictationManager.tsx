@@ -15,12 +15,15 @@ import NoteDictationController, {
   type DictationState,
 } from "@/utils/NoteDictationController";
 import VoiceTranscriptionService from "@/utils/VoiceTranscriptionService";
+import TranscriptionOverlay from "@/utils/TranscriptionOverlay";
 import {
   CRM_DICTATION_ICON_ID,
   registerDictationIcon,
 } from "@/utils/registerDictationIcon";
 
 const PROCESSING_NOTICE_MS = 5_000;
+const WHISPER_REALTIME_RATIO = 0.3;
+const MIN_TRANSCRIPTION_SECONDS = 5;
 
 type RecordingContext = {
   editor: Editor;
@@ -45,6 +48,20 @@ export class NoteDictationManager {
   private toolbarDisabled = false;
   private toolbarTooltip: string | undefined;
   private toolbarRetryTimeout: number | null = null;
+
+  private transcriptionOverlay: TranscriptionOverlay | null = null;
+  private overlayContainer: HTMLElement | null = null;
+  private overlayRecordingTimer: number | null = null;
+  private overlayProcessingTimer: number | null = null;
+  private overlayRecordingStartedAt: number | null = null;
+  private overlayProcessingStartedAt: number | null = null;
+  private overlayRecordingElapsedEl: HTMLElement | null = null;
+  private overlayProcessingEstimateEl: HTMLElement | null = null;
+  private processingEstimateSeconds: number | null = null;
+  private lastRecordingDurationMs: number | null = null;
+  private transcriptionAbortController: AbortController | null = null;
+  private lastDictationStatus: DictationState["status"] = "idle";
+  private cancellationNotice: Notice | null = null;
 
   constructor(plugin: CRM) {
     this.plugin = plugin;
@@ -106,6 +123,12 @@ export class NoteDictationManager {
 
     this.destroyToolbarButton();
     this.recordingContext = null;
+    this.cancellationNotice?.hide();
+    this.cancellationNotice = null;
+    this.transcriptionAbortController?.abort();
+    this.transcriptionAbortController = null;
+    this.teardownTranscriptionOverlay();
+    this.transcriptionOverlay = null;
   };
 
   private ensureController = () => {
@@ -117,6 +140,7 @@ export class NoteDictationManager {
       });
       this.unsubscribeController = this.controller.subscribe((state) => {
         this.updateToolbarState(state);
+        this.updateTranscriptionOverlay(state);
       });
     }
     return this.controller;
@@ -186,6 +210,7 @@ export class NoteDictationManager {
 
   private handleAbort = () => {
     this.recordingContext = null;
+    this.teardownTranscriptionOverlay();
   };
 
   private handleSubmit = async (audio: Blob) => {
@@ -203,13 +228,29 @@ export class NoteDictationManager {
     this.processingNotice?.hide();
     this.processingNotice = new Notice("Processing voice note…", PROCESSING_NOTICE_MS);
 
+    const abortController = new AbortController();
+    this.transcriptionAbortController = abortController;
+
     try {
-      const content = await this.transcriptionService.process(audio);
+      const content = await this.transcriptionService.process(audio, {
+        signal: abortController.signal,
+      });
       this.insertText(content, context);
       new Notice("Voice note inserted into the document.");
     } catch (error) {
+      const normalizedError =
+        error instanceof Error ? error : new Error("Failed to process voice note.");
+      const isAbortError =
+        normalizedError.name === "AbortError" ||
+        (error instanceof DOMException && error.name === "AbortError");
+
+      if (isAbortError) {
+        console.info("CRM: voice transcription aborted by user.");
+        throw new Error("Transcription canceled.");
+      }
+
       const message =
-        error instanceof Error ? error.message : "Failed to process voice note.";
+        normalizedError.message?.trim() || "Failed to process voice note.";
       console.error("CRM: failed to process voice note", error);
       new Notice(`Voice note failed: ${message}`);
       throw new Error(message);
@@ -217,6 +258,7 @@ export class NoteDictationManager {
       this.processingNotice?.hide();
       this.processingNotice = null;
       this.recordingContext = null;
+      this.transcriptionAbortController = null;
     }
   };
 
@@ -466,6 +508,343 @@ export class NoteDictationManager {
       return "Retry";
     }
     return "Start dictation";
+  };
+
+  private ensureOverlay = () => {
+    if (!this.transcriptionOverlay) {
+      this.transcriptionOverlay = new TranscriptionOverlay();
+    }
+    return this.transcriptionOverlay;
+  };
+
+  private mountOverlayContainer = () => {
+    const overlay = this.ensureOverlay();
+    const container = overlay.ensureContainer({
+      className: "crm-transcription-stage",
+    });
+    container.replaceChildren();
+    this.overlayContainer = container;
+    return container;
+  };
+
+  private clearRecordingTimer = () => {
+    if (this.overlayRecordingTimer !== null) {
+      window.clearInterval(this.overlayRecordingTimer);
+      this.overlayRecordingTimer = null;
+    }
+  };
+
+  private clearProcessingTimer = () => {
+    if (this.overlayProcessingTimer !== null) {
+      window.clearInterval(this.overlayProcessingTimer);
+      this.overlayProcessingTimer = null;
+    }
+  };
+
+  private formatElapsedDuration = (elapsedMs: number) => {
+    const totalSeconds = Math.max(0, Math.floor(elapsedMs / 1000));
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+
+    if (hours > 0) {
+      return `${hours}:${minutes.toString().padStart(2, "0")}:${seconds
+        .toString()
+        .padStart(2, "0")}`;
+    }
+
+    if (minutes > 0) {
+      return `${minutes}:${seconds.toString().padStart(2, "0")}`;
+    }
+
+    return `${seconds}s`;
+  };
+
+  private formatDuration = (totalSeconds: number) => {
+    const seconds = Math.max(0, Math.round(totalSeconds));
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const remainingSeconds = seconds % 60;
+
+    const segments: string[] = [];
+
+    if (hours > 0) {
+      segments.push(`${hours}h`);
+    }
+
+    if (minutes > 0) {
+      segments.push(`${minutes}m`);
+    }
+
+    if (hours === 0 && (minutes === 0 || remainingSeconds > 0)) {
+      segments.push(`${remainingSeconds}s`);
+    }
+
+    if (segments.length === 0) {
+      return "0s";
+    }
+
+    return segments.join(" ");
+  };
+
+  private refreshRecordingTimer = () => {
+    if (!this.overlayRecordingElapsedEl || !this.overlayRecordingStartedAt) {
+      return;
+    }
+
+    const elapsed = Date.now() - this.overlayRecordingStartedAt;
+    this.overlayRecordingElapsedEl.setText(this.formatElapsedDuration(elapsed));
+  };
+
+  private estimateProcessingSeconds = () => {
+    if (this.lastRecordingDurationMs == null) {
+      return null;
+    }
+
+    const durationSeconds = Math.max(
+      1,
+      Math.round(this.lastRecordingDurationMs / 1000)
+    );
+    const estimatedSeconds = Math.max(
+      MIN_TRANSCRIPTION_SECONDS,
+      Math.round(durationSeconds * WHISPER_REALTIME_RATIO)
+    );
+
+    return estimatedSeconds;
+  };
+
+  private refreshProcessingEstimate = () => {
+    if (!this.overlayProcessingEstimateEl) {
+      return;
+    }
+
+    const total = this.processingEstimateSeconds;
+
+    if (total == null) {
+      this.overlayProcessingEstimateEl.setText("Estimating remaining time…");
+      return;
+    }
+
+    if (!this.overlayProcessingStartedAt) {
+      this.overlayProcessingStartedAt = Date.now();
+    }
+
+    const elapsedSeconds = Math.max(
+      0,
+      Math.floor((Date.now() - this.overlayProcessingStartedAt) / 1000)
+    );
+    const remaining = Math.max(0, total - elapsedSeconds);
+
+    if (remaining > 0) {
+      this.overlayProcessingEstimateEl.setText(
+        `≈${this.formatDuration(remaining)} remaining`
+      );
+      return;
+    }
+
+    this.overlayProcessingEstimateEl.setText("Finalizing transcription…");
+  };
+
+  private beginRecordingOverlay = () => {
+    this.clearProcessingTimer();
+    this.processingEstimateSeconds = null;
+    this.overlayProcessingEstimateEl = null;
+    this.overlayProcessingStartedAt = null;
+
+    const container = this.mountOverlayContainer();
+    const card = container.createDiv({
+      cls: "crm-transcription-stage__card",
+    });
+
+    card.createDiv({
+      cls: "crm-transcription-stage__message",
+      text: "Speak naturally",
+    });
+
+    const timerEl = card.createDiv({
+      cls: "crm-transcription-stage__timer",
+      text: this.formatElapsedDuration(0),
+    });
+    this.overlayRecordingElapsedEl = timerEl;
+
+    card.createDiv({
+      cls: "crm-transcription-stage__hint",
+      text: "Tap when you’re ready to transcribe.",
+    });
+
+    const actions = card.createDiv({
+      cls: "crm-transcription-stage__actions",
+    });
+
+    const startButton = actions.createEl("button", {
+      cls: "crm-transcription-stage__button crm-transcription-stage__button--primary mod-cta",
+      text: "Start Transcription",
+    });
+    startButton.type = "button";
+    startButton.addEventListener("click", () => {
+      if (startButton.disabled) {
+        return;
+      }
+      startButton.disabled = true;
+      startButton.classList.add("crm-transcription-stage__button--pending");
+      startButton.textContent = "Starting…";
+      this.startTranscriptionFromOverlay();
+    });
+
+    const cancelButton = actions.createEl("button", {
+      cls: "crm-transcription-stage__button crm-transcription-stage__button--secondary",
+      text: "Cancel",
+    });
+    cancelButton.type = "button";
+    cancelButton.addEventListener("click", this.cancelDictationFlow);
+
+    const overlay = this.ensureOverlay();
+    overlay.setDismissHandler(() => {
+      this.cancelDictationFlow();
+    });
+    void overlay.acquireWakeLock();
+
+    this.clearRecordingTimer();
+    this.overlayRecordingTimer = window.setInterval(
+      this.refreshRecordingTimer,
+      1000
+    );
+    this.refreshRecordingTimer();
+  };
+
+  private beginProcessingOverlay = () => {
+    this.clearRecordingTimer();
+    this.overlayRecordingElapsedEl = null;
+
+    const container = this.mountOverlayContainer();
+    const card = container.createDiv({
+      cls: "crm-transcription-stage__card crm-transcription-stage__card--processing",
+    });
+
+    card.createDiv({
+      cls: "crm-transcription-stage__message",
+      text: "Transcribing your note…",
+    });
+
+    const estimateEl = card.createDiv({
+      cls: "crm-transcription-stage__estimate",
+    });
+    this.overlayProcessingEstimateEl = estimateEl;
+
+    const actions = card.createDiv({
+      cls: "crm-transcription-stage__actions crm-transcription-stage__actions--inline",
+    });
+
+    const cancelButton = actions.createEl("button", {
+      cls: "crm-transcription-stage__button crm-transcription-stage__button--secondary",
+      text: "Cancel",
+    });
+    cancelButton.type = "button";
+    cancelButton.addEventListener("click", this.cancelDictationFlow);
+
+    const overlay = this.ensureOverlay();
+    overlay.setDismissHandler(() => {
+      this.cancelDictationFlow();
+    });
+    void overlay.acquireWakeLock();
+
+    this.processingEstimateSeconds = this.estimateProcessingSeconds();
+    this.overlayProcessingStartedAt = Date.now();
+    this.refreshProcessingEstimate();
+    this.clearProcessingTimer();
+    this.overlayProcessingTimer = window.setInterval(
+      this.refreshProcessingEstimate,
+      1000
+    );
+  };
+
+  private startTranscriptionFromOverlay = () => {
+    const controller = this.controller;
+    if (!controller) {
+      return;
+    }
+
+    const state = controller.getState();
+    if (state.status !== "recording") {
+      return;
+    }
+
+    controller.stop();
+  };
+
+  private cancelDictationFlow = () => {
+    const controller = this.controller;
+
+    if (!controller) {
+      this.teardownTranscriptionOverlay();
+      return;
+    }
+
+    const state = controller.getState();
+
+    if (state.status === "processing") {
+      this.transcriptionAbortController?.abort();
+      this.cancellationNotice?.hide();
+      this.cancellationNotice = new Notice("Transcription canceled.");
+    }
+
+    controller.reset();
+    this.teardownTranscriptionOverlay();
+  };
+
+  private updateTranscriptionOverlay = (state: DictationState) => {
+    const status = state.status;
+
+    if (status === "recording") {
+      if (this.lastDictationStatus !== "recording") {
+        this.overlayRecordingStartedAt = Date.now();
+        this.lastRecordingDurationMs = null;
+        this.beginRecordingOverlay();
+      }
+      this.refreshRecordingTimer();
+    } else if (status === "processing") {
+      if (
+        this.lastDictationStatus === "recording" &&
+        this.overlayRecordingStartedAt
+      ) {
+        this.lastRecordingDurationMs = Date.now() - this.overlayRecordingStartedAt;
+      }
+      if (this.lastDictationStatus !== "processing") {
+        this.beginProcessingOverlay();
+      }
+      this.refreshProcessingEstimate();
+    } else {
+      if (status === "success") {
+        this.cancellationNotice?.hide();
+        this.cancellationNotice = null;
+      }
+      this.teardownTranscriptionOverlay();
+    }
+
+    this.lastDictationStatus = status;
+  };
+
+  private teardownTranscriptionOverlay = () => {
+    this.clearRecordingTimer();
+    this.clearProcessingTimer();
+    this.overlayRecordingElapsedEl = null;
+    this.overlayProcessingEstimateEl = null;
+    this.overlayRecordingStartedAt = null;
+    this.overlayProcessingStartedAt = null;
+    this.processingEstimateSeconds = null;
+    this.lastRecordingDurationMs = null;
+    this.overlayContainer = null;
+
+    const overlay = this.transcriptionOverlay;
+
+    if (!overlay) {
+      return;
+    }
+
+    overlay.setDismissHandler(null);
+    overlay.clear();
+    void overlay.releaseWakeLock();
+    overlay.destroy();
   };
 
   private insertText = (text: string, context: RecordingContext) => {

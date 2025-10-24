@@ -113,7 +113,7 @@ export class VoiceTranscriptionService {
     return key;
   };
 
-  transcribe = async (audio: Blob) => {
+  transcribe = async (audio: Blob, options: { signal?: AbortSignal } = {}) => {
     const apiKey = this.ensureApiKey();
 
     const formData = new FormData();
@@ -126,6 +126,7 @@ export class VoiceTranscriptionService {
         Authorization: `Bearer ${apiKey}`,
       },
       body: formData,
+      signal: options.signal,
     });
 
     if (!response.ok) {
@@ -143,7 +144,7 @@ export class VoiceTranscriptionService {
     return transcript;
   };
 
-  polish = async (transcript: string) => {
+  polish = async (transcript: string, options: { signal?: AbortSignal } = {}) => {
     const apiKey = this.ensureApiKey();
     const model = this.getSelectedModel();
 
@@ -159,6 +160,7 @@ export class VoiceTranscriptionService {
         model,
         input: prompt,
       }),
+      signal: options.signal,
     });
 
     if (!response.ok) {
@@ -176,12 +178,12 @@ export class VoiceTranscriptionService {
     return polished;
   };
 
-  process = async (audio: Blob) => {
-    const transcript = await this.transcribe(audio);
+  process = async (audio: Blob, options: { signal?: AbortSignal } = {}) => {
+    const transcript = await this.transcribe(audio, options);
     if (!this.isPolishEnabled()) {
       return transcript;
     }
-    return this.polish(transcript);
+    return this.polish(transcript, options);
   };
 }
 
