@@ -27,12 +27,24 @@ const toDateObject = (dateValue: unknown, timeValue?: unknown): Date | null => {
 
   const timeString = getTrimmedString(timeValue);
   const hasExplicitTime = dateString.includes("T") || dateString.includes(" ");
-  const isoCandidate =
-    timeString && !hasExplicitTime
-      ? `${dateString}T${timeString}`
-      : dateString.includes("T")
-      ? dateString
-      : `${dateString}T00:00`;
+  const isoCandidate = (() => {
+    if (timeString && !hasExplicitTime) {
+      return `${dateString}T${timeString}`;
+    }
+
+    if (dateString.includes("T")) {
+      return dateString;
+    }
+
+    if (dateString.includes(" ")) {
+      const [datePart, timePart] = dateString.split(" ", 2);
+      if (timePart) {
+        return `${datePart}T${timePart}`;
+      }
+    }
+
+    return `${dateString}T00:00`;
+  })();
 
   const parsed = new Date(isoCandidate);
   if (!Number.isNaN(parsed.getTime())) {

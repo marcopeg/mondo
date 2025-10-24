@@ -2,6 +2,7 @@ import type CRM from "@/main";
 import {
   MarkdownPostProcessorContext,
   Notice,
+  Platform,
   TFile,
   setIcon,
 } from "obsidian";
@@ -38,6 +39,19 @@ type ActiveTranscription = {
 
 type Maybe<T> = T | null | undefined;
 
+type WakeLockSentinel = {
+  released: boolean;
+  release: () => Promise<void>;
+  addEventListener?: (type: "release", listener: () => void) => void;
+  removeEventListener?: (type: "release", listener: () => void) => void;
+};
+
+type NavigatorWithWakeLock = Navigator & {
+  wakeLock?: {
+    request: (type: "screen") => Promise<WakeLockSentinel>;
+  };
+};
+
 const getMimeFromExtension = (extension: Maybe<string>) => {
   if (!extension) {
     return MIME_FALLBACK;
@@ -54,7 +68,17 @@ export class AudioTranscriptionManager {
 
   private readonly renderedEmbeds = new WeakMap<HTMLElement, string>();
 
+  private transcriptionOverlayEl: HTMLElement | null = null;
+
   private transcriptionAlertsContainer: HTMLElement | null = null;
+
+  private transcriptionOverlayCloseButton: HTMLButtonElement | null = null;
+
+  private wakeLock: WakeLockSentinel | null = null;
+
+  private wakeLockReleaseHandler: (() => void) | null = null;
+
+  private overlayDismissHandler: (() => void) | null = null;
 
   private readonly audioDurationCache = new Map<string, number>();
 
@@ -83,6 +107,14 @@ export class AudioTranscriptionManager {
       void this.audioContext.close();
       this.audioContext = null;
     }
+
+    void this.releaseWakeLock();
+
+    this.transcriptionOverlayEl?.remove();
+    this.transcriptionOverlayEl = null;
+    this.transcriptionAlertsContainer = null;
+    this.transcriptionOverlayCloseButton = null;
+    this.overlayDismissHandler = null;
   };
 
   isAudioFile = (file: Maybe<TFile>) => {
@@ -285,8 +317,7 @@ export class AudioTranscriptionManager {
     const frontmatter = [
       "---",
       "type: transcription",
-      `date: ${this.formatIsoDate(now)}`,
-      `time: ${this.formatIsoTime(now)}`,
+      `date: ${this.formatFrontmatterDateTime(now)}`,
       `source: "[[${file.path}]]"`,
       "---",
       "",
@@ -433,6 +464,12 @@ export class AudioTranscriptionManager {
 
     this.activeTranscriptions.set(key, session);
 
+    this.updateOverlayCloseAction(() => {
+      this.cancelTranscription(key);
+    });
+
+    void this.requestWakeLock();
+
     cancelButton.addEventListener("click", (event) => {
       event.preventDefault();
       event.stopPropagation();
@@ -454,11 +491,103 @@ export class AudioTranscriptionManager {
 
     this.activeTranscriptions.delete(key);
 
+    if (this.activeTranscriptions.size === 0) {
+      this.updateOverlayCloseAction(null);
+      void this.releaseWakeLock();
+    } else {
+      const fallbackKey = Array.from(this.activeTranscriptions.keys()).pop();
+
+      if (fallbackKey) {
+        this.updateOverlayCloseAction(() => {
+          this.cancelTranscription(fallbackKey);
+        });
+      }
+    }
+
     const container = this.transcriptionAlertsContainer;
 
     if (container && container.childElementCount === 0) {
-      container.remove();
+      this.transcriptionOverlayEl?.remove();
+      this.transcriptionOverlayEl = null;
       this.transcriptionAlertsContainer = null;
+      this.transcriptionOverlayCloseButton = null;
+      this.overlayDismissHandler = null;
+    }
+  };
+
+  private updateOverlayCloseAction = (handler: (() => void) | null) => {
+    const button = this.transcriptionOverlayCloseButton;
+
+    this.overlayDismissHandler = handler ?? null;
+
+    if (!button) {
+      return;
+    }
+
+    button.onclick = null;
+
+    if (!handler) {
+      button.toggleAttribute("hidden", true);
+      return;
+    }
+
+    button.toggleAttribute("hidden", false);
+    button.onclick = (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      handler();
+    };
+  };
+
+  private requestWakeLock = async () => {
+    if (!Platform.isMobileApp || this.wakeLock || typeof navigator === "undefined") {
+      return;
+    }
+
+    const nav = navigator as NavigatorWithWakeLock;
+    const wakeLockApi = nav.wakeLock;
+
+    if (!wakeLockApi?.request) {
+      return;
+    }
+
+    try {
+      const sentinel = await wakeLockApi.request("screen");
+      const releaseHandler = () => {
+        if (this.wakeLock === sentinel) {
+          this.wakeLock = null;
+          this.wakeLockReleaseHandler = null;
+        }
+        sentinel.removeEventListener?.("release", releaseHandler);
+      };
+
+      sentinel.addEventListener?.("release", releaseHandler);
+
+      this.wakeLock = sentinel;
+      this.wakeLockReleaseHandler = releaseHandler;
+    } catch (error) {
+      console.debug("CRM: unable to acquire wake lock", error);
+    }
+  };
+
+  private releaseWakeLock = async () => {
+    const sentinel = this.wakeLock;
+
+    if (!sentinel) {
+      return;
+    }
+
+    try {
+      await sentinel.release();
+    } catch (error) {
+      console.debug("CRM: unable to release wake lock", error);
+    } finally {
+      if (this.wakeLockReleaseHandler) {
+        sentinel.removeEventListener?.("release", this.wakeLockReleaseHandler);
+      }
+
+      this.wakeLock = null;
+      this.wakeLockReleaseHandler = null;
     }
   };
 
@@ -470,11 +599,45 @@ export class AudioTranscriptionManager {
       return this.transcriptionAlertsContainer;
     }
 
-    this.transcriptionAlertsContainer = document.body.createDiv({
+    const overlay = document.body.createDiv({
+      cls: "crm-transcription-overlay",
+    });
+
+    const backdrop = overlay.createDiv({
+      cls: "crm-transcription-overlay__backdrop",
+    });
+    backdrop.setAttr("aria-hidden", "true");
+
+    const content = overlay.createDiv({
+      cls: "crm-transcription-overlay__content",
+    });
+    content.setAttr("role", "dialog");
+    content.setAttr("aria-modal", "true");
+
+    const closeButton = content.createEl("button", {
+      cls: "clickable-icon crm-transcription-overlay__close",
+    });
+    closeButton.setAttr("type", "button");
+    closeButton.setAttr("aria-label", "Cancel transcription");
+    closeButton.setAttr("title", "Cancel transcription");
+    closeButton.toggleAttribute("hidden", true);
+    setIcon(closeButton, "x");
+
+    const container = content.createDiv({
       cls: "crm-transcription-alerts",
     });
 
-    return this.transcriptionAlertsContainer;
+    backdrop.addEventListener("click", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      this.overlayDismissHandler?.();
+    });
+
+    this.transcriptionOverlayEl = overlay;
+    this.transcriptionOverlayCloseButton = closeButton;
+    this.transcriptionAlertsContainer = container;
+
+    return container;
   };
 
   private populateAudioDuration = async (
@@ -539,20 +702,13 @@ export class AudioTranscriptionManager {
     return `${seconds}s`;
   };
 
-  private formatIsoDate = (value: Date) => {
+  private formatFrontmatterDateTime = (value: Date) => {
     const year = value.getFullYear();
     const month = (value.getMonth() + 1).toString().padStart(2, "0");
     const day = value.getDate().toString().padStart(2, "0");
-
-    return `${year}-${month}-${day}`;
-  };
-
-  private formatIsoTime = (value: Date) => {
     const hours = value.getHours().toString().padStart(2, "0");
     const minutes = value.getMinutes().toString().padStart(2, "0");
-    const seconds = value.getSeconds().toString().padStart(2, "0");
-
-    return `${hours}:${minutes}:${seconds}`;
+    return `${year}-${month}-${day} ${hours}:${minutes}`;
   };
 
   private cancelTranscription = (key: string) => {
