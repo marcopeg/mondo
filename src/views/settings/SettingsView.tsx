@@ -6,6 +6,7 @@ import {
   TFile,
   AbstractInputSuggest,
   Notice,
+  moment,
   type ExtraButtonComponent,
   FuzzySuggestModal,
   type FuzzyMatch,
@@ -16,6 +17,13 @@ import {
   CRM_FILE_TYPES,
   getCRMEntityConfig,
 } from "@/types/CRMFileType";
+import {
+  DEFAULT_TIMESTAMP_SETTINGS,
+  buildTimestampFromMoment,
+  normalizeTimestampSettings,
+  type TimestampSettings,
+} from "@/types/TimestampSettings";
+import type momentModule from "moment";
 
 // Settings view for CRM plugin
 export class SettingsView extends PluginSettingTab {
@@ -51,6 +59,9 @@ export class SettingsView extends PluginSettingTab {
       "boolean"
         ? (this.plugin as any).settings.openAITranscriptionPolishEnabled
         : true;
+    (this.plugin as any).settings.timestamp = normalizeTimestampSettings(
+      (this.plugin as any).settings.timestamp ?? DEFAULT_TIMESTAMP_SETTINGS
+    );
     // Helper: collect folder paths from the vault
     const collectFolderPaths = (root: TFolder, out: string[] = []) => {
       out.push(root.path === "" ? "/" : root.path);
@@ -716,6 +727,91 @@ export class SettingsView extends PluginSettingTab {
         addSelfPersonSetting(section);
       }
     }
+
+    const timestampSettingsSection = createSettingsSection(
+      containerEl,
+      "Timestamps",
+      "Customize how the Add Timestamp command formats new entries."
+    );
+
+    const timestampPreviewDesc = document.createElement("div");
+    const timestampPreviewCode = document.createElement("code");
+    timestampPreviewCode.style.whiteSpace = "pre-wrap";
+    timestampPreviewDesc.appendChild(
+      document.createTextNode("Example output: ")
+    );
+    timestampPreviewDesc.appendChild(timestampPreviewCode);
+
+    const refreshTimestampPreview = () => {
+      const current = normalizeTimestampSettings(
+        (this.plugin as any).settings.timestamp
+      );
+      (this.plugin as any).settings.timestamp = current;
+      const momentFactory = moment as unknown as typeof momentModule;
+      const previewValue = buildTimestampFromMoment({
+        moment: momentFactory(),
+        settings: current,
+        includeTrailingNewLine: true,
+      });
+      timestampPreviewCode.textContent = previewValue;
+    };
+
+    const applyTimestampSettings = async (
+      partial: Partial<TimestampSettings>
+    ) => {
+      const current = normalizeTimestampSettings(
+        (this.plugin as any).settings.timestamp
+      );
+      const merged = normalizeTimestampSettings({ ...current, ...partial });
+      (this.plugin as any).settings.timestamp = merged;
+      await (this.plugin as any).saveSettings();
+      refreshTimestampPreview();
+      return merged;
+    };
+
+    const currentTimestampSettings =
+      ((this.plugin as any).settings.timestamp as TimestampSettings) ??
+      DEFAULT_TIMESTAMP_SETTINGS;
+
+    timestampSettingsSection
+      .createSetting()
+      .setName("Template")
+      .setDesc(
+        "Moment-style format string (e.g. YYYY/MM/DD hh:mm or [YY-MM-DD hh.mm])."
+      )
+      .addText((text) => {
+        text
+          .setPlaceholder(DEFAULT_TIMESTAMP_SETTINGS.template)
+          .setValue(currentTimestampSettings.template)
+          .onChange(async (value) => {
+            const sanitized = await applyTimestampSettings({
+              template: value,
+            });
+            if (sanitized.template !== value) {
+              text.setValue(sanitized.template);
+            }
+          });
+      });
+
+    timestampSettingsSection
+      .createSetting()
+      .setName("Add newline after timestamp")
+      .setDesc("When enabled, an empty line is added immediately after the timestamp.")
+      .addToggle((toggle) => {
+        toggle
+          .setValue(currentTimestampSettings.appendNewLine)
+          .onChange(async (value) => {
+            await applyTimestampSettings({ appendNewLine: value });
+          });
+      });
+
+    const timestampPreviewSetting = timestampSettingsSection.createSetting();
+    timestampPreviewSetting.setName("Preview");
+    const timestampPreviewFragment = document.createDocumentFragment();
+    timestampPreviewFragment.appendChild(timestampPreviewDesc);
+    timestampPreviewSetting.setDesc(timestampPreviewFragment);
+
+    refreshTimestampPreview();
 
     const audioSettingsSection = createSettingsSection(
       containerEl,

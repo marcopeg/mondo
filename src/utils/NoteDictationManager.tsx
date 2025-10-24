@@ -298,16 +298,16 @@ export class NoteDictationManager {
 
     const button = document.createElement("button");
     button.type = "button";
-    button.className = "crm-dictation-toolbar-button";
+    button.className = "crm-mobile-toolbar-button crm-dictation-toolbar-button";
     button.addEventListener("click", this.handleToolbarClick);
 
     const icon = document.createElement("span");
-    icon.className = "crm-dictation-toolbar-button__icon";
+    icon.className = "crm-mobile-toolbar-button__icon";
     button.appendChild(icon);
     setIcon(icon, CRM_DICTATION_ICON_ID);
 
     const label = document.createElement("span");
-    label.className = "crm-dictation-toolbar-button__label";
+    label.className = "crm-mobile-toolbar-button__label";
     label.textContent = "Start dictation";
     button.appendChild(label);
 

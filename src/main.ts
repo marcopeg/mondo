@@ -42,6 +42,7 @@ import { openJournal } from "@/commands/journal.open";
 import { openDailyNote } from "@/commands/daily.open";
 import { addDailyLog } from "@/commands/daily.addLog";
 import { journalMoveFactory } from "@/commands/journal.nav";
+import { insertTimestamp } from "@/commands/timestamp.insert";
 import { injectJournalNav } from "@/events/inject-journal-nav";
 import {
   injectCRMLinks,
@@ -50,6 +51,11 @@ import {
 import { requestGeolocation } from "@/utils/geolocation";
 import { buildVoiceoverText } from "@/utils/buildVoiceoverText";
 import DailyNoteTracker from "@/utils/DailyNoteTracker";
+import { TimestampToolbarManager } from "@/utils/TimestampToolbarManager";
+import {
+  DEFAULT_TIMESTAMP_SETTINGS,
+  normalizeTimestampSettings,
+} from "@/types/TimestampSettings";
 
 // Dev purposes: set to true to always focus on dashboard on startup
 const focusOnDashboard = false;
@@ -75,6 +81,7 @@ export default class CRM extends Plugin {
     openAITranscriptionPolishEnabled: true,
     voiceoverCachePath: "/voiceover",
     selfPersonPath: "",
+    timestamp: DEFAULT_TIMESTAMP_SETTINGS,
   };
 
   private hasFocusedDashboardOnStartup = false;
@@ -82,6 +89,7 @@ export default class CRM extends Plugin {
   private audioTranscriptionManager: AudioTranscriptionManager | null = null;
   private voiceoverManager: VoiceoverManager | null = null;
   private noteDictationManager: NoteDictationManager | null = null;
+  private timestampToolbarManager: TimestampToolbarManager | null = null;
   private dailyNoteTracker: DailyNoteTracker | null = null;
   private geolocationAbortController: AbortController | null = null;
 
@@ -168,6 +176,10 @@ export default class CRM extends Plugin {
     } else {
       this.settings.selfPersonPath = "";
     }
+
+    this.settings.timestamp = normalizeTimestampSettings(
+      this.settings.timestamp
+    );
   }
 
   async saveSettings() {
@@ -194,10 +206,15 @@ export default class CRM extends Plugin {
     this.noteDictationManager.initialize();
     this.noteDictationManager.activateMobileToolbar();
 
+    this.timestampToolbarManager = new TimestampToolbarManager(this);
+    this.timestampToolbarManager.initialize();
+    this.timestampToolbarManager.activateMobileToolbar();
+
     this.dailyNoteTracker = new DailyNoteTracker(this);
 
     this.app.workspace.onLayoutReady(() => {
       this.noteDictationManager?.activateMobileToolbar();
+      this.timestampToolbarManager?.activateMobileToolbar();
     });
 
     // Initialize the CRM file manager in the background (non-blocking)
@@ -295,6 +312,14 @@ export default class CRM extends Plugin {
       name: "Add Log",
       hotkeys: [{ modifiers: ["Mod", "Shift"], key: "l" }],
       callback: async () => addDailyLog(this.app, this),
+    });
+
+    this.addCommand({
+      id: "insert-timestamp",
+      name: "Add Timestamp",
+      editorCallback: () => {
+        insertTimestamp(this.app, this);
+      },
     });
 
     this.addCommand({
@@ -521,6 +546,9 @@ export default class CRM extends Plugin {
 
     this.noteDictationManager?.dispose();
     this.noteDictationManager = null;
+
+    this.timestampToolbarManager?.dispose();
+    this.timestampToolbarManager = null;
   }
 
   private extendFileMenu(menu: Menu, file: TAbstractFile, source?: string) {

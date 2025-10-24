@@ -534,7 +534,7 @@
   box-shadow: 0 0.75rem 1.5rem rgba(0, 0, 0, 0.18);
 }
 
-.crm-dictation-toolbar-button {
+.crm-mobile-toolbar-button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -552,12 +552,16 @@
     color 0.18s ease;
 }
 
-.crm-dictation-toolbar-button:not(:disabled):active {
+.crm-mobile-toolbar-button:not(:disabled):active {
   transform: scale(0.94);
 }
 
-.crm-dictation-toolbar-button:disabled {
+.crm-mobile-toolbar-button:disabled {
   opacity: 0.6;
+}
+
+.crm-dictation-toolbar-button {
+  color: var(--icon-color, var(--text-muted));
 }
 
 .crm-dictation-toolbar-button--recording {
@@ -577,7 +581,7 @@
   color: var(--color-green, #2f9e44);
 }
 
-.crm-dictation-toolbar-button__icon {
+.crm-mobile-toolbar-button__icon {
   width: 1.2rem;
   height: 1.2rem;
   display: inline-flex;
@@ -585,8 +589,17 @@
   justify-content: center;
 }
 
-.crm-dictation-toolbar-button__label {
+.crm-mobile-toolbar-button__label {
   white-space: nowrap;
+}
+
+.crm-timestamp-toolbar-button {
+  color: var(--text-normal);
+}
+
+.crm-timestamp-toolbar-button:not(:disabled):hover,
+.crm-timestamp-toolbar-button:not(:disabled):focus-visible {
+  background: var(--background-modifier-hover);
 }
 
 @keyframes crm-voice-fab-spin {
