@@ -538,7 +538,7 @@
     max-height: none;
     border-radius: 0;
     box-shadow: none;
-  background: transparent; /* let overlay color show through */
+    background: transparent; /* let overlay color show through */
     padding: calc(1.25rem + env(safe-area-inset-top, 0px))
       calc(1rem + env(safe-area-inset-right, 0px))
       calc(1.5rem + env(safe-area-inset-bottom, 0px))
