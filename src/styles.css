@@ -459,30 +459,94 @@
 }
 
 .is-mobile .crm-voiceover-modal {
-  background: color-mix(in srgb, var(--interactive-accent) 50%, transparent);
+  /* Mimic dictation overlay look */
+  background: color-mix(in srgb, var(--interactive-accent) 55%, transparent);
   padding: 0;
   align-items: stretch;
 }
 
 .is-mobile .crm-voiceover-modal .modal-content {
+  /* Fullscreen sheet aligned to the top (like dictation overlay) */
   width: 100%;
   max-width: none;
   height: 100%;
   max-height: none;
   border-radius: 0;
   box-shadow: none;
-  background: var(--background-primary);
-  padding: 1.5rem;
-  justify-content: center;
+  background: transparent; /* let overlay color show through */
+  /* Respect safe areas and align content to the top */
+  padding: calc(1.25rem + env(safe-area-inset-top, 0px))
+    calc(1rem + env(safe-area-inset-right, 0px))
+    calc(1.5rem + env(safe-area-inset-bottom, 0px))
+    calc(1rem + env(safe-area-inset-left, 0px));
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
 }
 
+/* Hide the classic modal header on mobile to match overlay design */
 .is-mobile .crm-voiceover-modal .modal-title {
-  margin-bottom: 0.5rem;
+  display: none;
 }
 
 .is-mobile .crm-voiceover-modal .modal-content::-webkit-scrollbar {
   width: 0;
   height: 0;
+}
+
+/* Also apply overlay-like layout on small screens even if Obsidian isn't marking the app as mobile */
+@media (max-width: 640px) {
+  .crm-voiceover-modal {
+    position: relative;
+    width: 100vw;
+    max-width: none;
+    height: 100vh;
+    max-height: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    align-items: stretch;
+    justify-content: flex-start;
+    background: transparent; /* we'll draw our own tinted backdrop below */
+  }
+
+  .crm-voiceover-modal::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    background-color: color-mix(
+      in srgb,
+      var(--interactive-accent) 55%,
+      transparent
+    );
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .crm-voiceover-modal .modal-title,
+  .crm-voiceover-modal .modal-close-button,
+  .crm-voiceover-modal .modal-close-x {
+    display: none !important;
+  }
+
+  .crm-voiceover-modal .modal-content {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    max-width: none;
+    height: 100%;
+    max-height: none;
+    border-radius: 0;
+    box-shadow: none;
+  background: transparent; /* let overlay color show through */
+    padding: calc(1.25rem + env(safe-area-inset-top, 0px))
+      calc(1rem + env(safe-area-inset-right, 0px))
+      calc(1.5rem + env(safe-area-inset-bottom, 0px))
+      calc(1rem + env(safe-area-inset-left, 0px));
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start; /* align to top */
+  }
 }
 
 .crm-voice-fab__bar {
