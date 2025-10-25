@@ -10,8 +10,8 @@ location:
 const meetingConfig: CRMEntityConfig<
   "meeting",
   | { type: "facts"; collapsed?: boolean }
-  | { type: "meeting-tasks"; collapsed?: boolean }
   | { type: "logs"; collapsed?: boolean }
+  | { type: "meeting-tasks"; collapsed?: boolean }
   | { type: "documents"; collapsed?: boolean }
 > = {
   type: "meeting",

@@ -10,6 +10,8 @@ owner:
 
 const toolConfig: CRMEntityConfig<
   "tool",
+  | { type: "facts"; collapsed?: boolean }
+  | { type: "logs"; collapsed?: boolean }
   | { type: "documents"; collapsed?: boolean }
 > = {
   type: "tool",
@@ -23,9 +25,10 @@ const toolConfig: CRMEntityConfig<
     columns: ["cover", "show", "category", "owner", "location"],
   },
   links: [
+    { type: "facts" },
+    { type: "logs" },
     {
       type: "documents",
-      collapsed: true,
     },
   ],
 };

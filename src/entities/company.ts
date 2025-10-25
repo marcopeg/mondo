@@ -12,8 +12,8 @@ const companyConfig: CRMEntityConfig<
   | { type: "employees"; collapsed?: boolean }
   | { type: "projects"; collapsed?: boolean }
   | { type: "facts"; collapsed?: boolean }
-  | { type: "company-tasks"; collapsed?: boolean }
   | { type: "logs"; collapsed?: boolean }
+  | { type: "company-tasks"; collapsed?: boolean }
   | { type: "documents"; collapsed?: boolean }
 > = {
   type: "company",

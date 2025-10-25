@@ -11,10 +11,10 @@ team: []
 
 const personConfig: CRMEntityConfig<
   "person",
+  | { type: "participant-tasks"; collapsed?: boolean }
   | { type: "teammates"; collapsed?: boolean }
   | { type: "meetings"; collapsed?: boolean }
   | { type: "projects"; collapsed?: boolean }
-  | { type: "participant-tasks"; collapsed?: boolean }
   | { type: "facts"; collapsed?: boolean }
   | { type: "logs"; collapsed?: boolean }
   | { type: "documents"; collapsed?: boolean }
@@ -34,31 +34,24 @@ const personConfig: CRMEntityConfig<
   links: [
     {
       type: "documents",
-      collapsed: true,
     },
     {
       type: "facts",
-      collapsed: true,
     },
     {
       type: "logs",
-      collapsed: true,
     },
     {
       type: "meetings",
-      collapsed: true,
     },
     {
       type: "participant-tasks",
-      collapsed: true,
     },
     {
       type: "projects",
-      collapsed: true,
     },
     {
       type: "teammates",
-      collapsed: true,
     },
   ],
 };
