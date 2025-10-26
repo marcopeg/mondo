@@ -1,4 +1,5 @@
 import type { CRMEntityConfig } from "@/types/CRMEntityConfig";
+import { DEFAULT_BACKLINKS } from "@/entities/default-backlinks";
 
 const template = `
 date: {{date}}
@@ -23,24 +24,24 @@ const personConfig: CRMEntityConfig<"person"> = {
     sort: { column: "show", direction: "asc" },
   },
   links: [
-    {
-      type: "documents",
-    },
-    {
-      type: "facts",
-    },
-    {
-      type: "logs",
-    },
+    // {
+    //   type: "documents",
+    // },
+    // {
+    //   type: "facts",
+    // },
+    // {
+    //   type: "logs",
+    // },
     {
       type: "meetings",
     },
-    {
-      type: "participant-tasks",
-    },
-    {
-      type: "projects",
-    },
+    // {
+    //   type: "participant-tasks",
+    // },
+    // {
+    //   type: "projects",
+    // },
     {
       type: "teammates",
     },
@@ -50,8 +51,27 @@ const personConfig: CRMEntityConfig<"person"> = {
       properties: ["reportsTo"],
       title: "Reports",
       icon: "arrow-up-circle",
-      visibility: "notEmpty",
+      columns: [
+        { type: "cover" },
+        { type: "show" },
+        { type: "attribute", key: "role" },
+      ],
+      sort: {
+        strategy: "column",
+        column: "show",
+        direction: "asc",
+      },
+      createEntity: {
+        enabled: true,
+        title: "New Report",
+        attributes: {
+          company: "{@this.company}",
+          team: "{@this.team}",
+          reportsTo: "{@this}",
+        },
+      },
     },
+    ...DEFAULT_BACKLINKS,
   ],
 };
 

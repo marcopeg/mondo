@@ -166,6 +166,8 @@ export const createEntityForEntity = async ({
       displayName: hostName,
     });
 
+    const linkKeys = new Set(linkProps);
+
     linkProps.forEach((prop) => {
       const key = String(prop).trim();
       if (!key) return;
@@ -185,7 +187,37 @@ export const createEntityForEntity = async ({
 
     // Attribute overrides
     if (attributeTemplates && typeof attributeTemplates === "object") {
+      const hostFM = (hostEntity.cache?.frontmatter as any) ?? {};
+      const deepClone = (val: unknown) => {
+        try {
+          return JSON.parse(JSON.stringify(val));
+        } catch (_) {
+          return val as any;
+        }
+      };
       Object.entries(attributeTemplates).forEach(([k, v]) => {
+        if (typeof v === "string") {
+          const m = v
+            .trim()
+            .match(/^\{\s*@this\s*(?:\.\s*([A-Za-z0-9_-]+)\s*)?\}$/);
+          if (m) {
+            const prop = m[1]?.trim();
+            if (prop) {
+              const src = hostFM[prop];
+              if (src !== undefined) {
+                (frontmatter as any)[k] = deepClone(src);
+              }
+              return;
+            }
+            // {@this} with no property: set a link to the host note
+            // Avoid overwriting linkProps arrays if the same key is used
+            if (!linkKeys.has(k)) {
+              (frontmatter as any)[k] = wiki;
+            }
+            return;
+          }
+        }
+        // Fallback to regular inline token replacement
         const renderedValue = applyInlineTemplate(String(v), {
           dateISO,
           datetimeISO,
