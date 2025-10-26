@@ -36,9 +36,6 @@ const personConfig: CRMEntityConfig<"person"> = {
     {
       type: "meetings",
     },
-    // {
-    //   type: "participant-tasks",
-    // },
     {
       // Also lists indirect through teams
       type: "projects",

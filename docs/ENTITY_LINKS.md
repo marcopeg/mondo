@@ -203,7 +203,6 @@ yarn dev
 
 - Open a note with the target `type:` to see your panel.
 - Reordering panels: change the order of entries in the entity’s `links` array.
-- Note: If a config doesn’t include a `participant-tasks` panel, the system adds one automatically at the end.
 
 ## Reference: Important Files & APIs
 

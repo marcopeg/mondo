@@ -10,7 +10,6 @@ import { MeetingsLinks } from "./panels/MeetingsLinks";
 import { TeamsLinks } from "./panels/TeamsLinks";
 import { EmployeesLinks } from "./panels/EmployeesLinks";
 import { ProjectsLinks } from "./panels/ProjectsLinks";
-import { ParticipantTasksLinks } from "./panels/ParticipantTasksLinks";
 import { RolePeopleLinks } from "./panels/RolePeopleLinks";
 import { RoleTasksLinks } from "./panels/RoleTasksLinks";
 import { ParticipantsAssignmentLinks } from "./panels/ParticipantsAssignmentLinks";
@@ -38,7 +37,6 @@ const entityMap: Record<string, React.ComponentType<LinkPanelProps>> = {
   teams: TeamsLinks,
   employees: EmployeesLinks,
   projects: ProjectsLinks,
-  "participant-tasks": ParticipantTasksLinks,
   "role-people": RolePeopleLinks,
   "role-tasks": RoleTasksLinks,
   "participants-assignment": ParticipantsAssignmentLinks,

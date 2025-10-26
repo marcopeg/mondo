@@ -25,13 +25,6 @@ const PANEL_ACTIONS: Partial<
       ariaLabel: "Create meeting",
     },
     {
-      key: "task",
-      label: "Task",
-      icon: "check-square",
-      panel: "participant-tasks",
-      ariaLabel: "Create task",
-    },
-    {
       key: "project",
       label: "Project",
       icon: "folder-plus",
