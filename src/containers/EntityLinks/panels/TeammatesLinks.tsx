@@ -85,6 +85,44 @@ export const TeammatesLinks = ({ file, config }: TeammatesLinksProps) => {
     return { hasTeams: normalized.length > 0, teams: normalized };
   }, [file.cache?.frontmatter]);
 
+  // Compute panel collapsed state and handlers BEFORE any early returns to keep
+  // the hook order stable across renders.
+  const collapsed = useMemo(() => {
+    const crmState = (file.cache?.frontmatter as any)?.crmState;
+    if (crmState?.teammates?.collapsed === true) return true;
+    if (crmState?.teammates?.collapsed === false) return false;
+    return (config as any)?.collapsed !== false;
+  }, [file.cache?.frontmatter, config]);
+
+  const handleCollapseChange = useCallback(
+    async (isCollapsed: boolean) => {
+      if (!file.file) return;
+      try {
+        await app.fileManager.processFrontMatter(file.file, (frontmatter) => {
+          if (
+            typeof (frontmatter as any).crmState !== "object" ||
+            (frontmatter as any).crmState === null
+          ) {
+            (frontmatter as any).crmState = {};
+          }
+          if (
+            typeof (frontmatter as any).crmState.teammates !== "object" ||
+            (frontmatter as any).crmState.teammates === null
+          ) {
+            (frontmatter as any).crmState.teammates = {};
+          }
+          (frontmatter as any).crmState.teammates.collapsed = isCollapsed;
+        });
+      } catch (error) {
+        console.error(
+          "TeammatesLinks: failed to persist collapse state",
+          error
+        );
+      }
+    },
+    [app, file.file]
+  );
+
   const teammates = useFiles(CRMFileType.PERSON, {
     filter: useCallback(
       (candidate: TCachedFile, app: App) => {
@@ -141,47 +179,6 @@ export const TeammatesLinks = ({ file, config }: TeammatesLinksProps) => {
       [file.file, teamsInfo.teams]
     ),
   });
-
-  // Hide the panel if the current person has no team property, or it is null/empty
-  if (!teamsInfo.hasTeams) {
-    return null;
-  }
-
-  const collapsed = useMemo(() => {
-    const crmState = (file.cache?.frontmatter as any)?.crmState;
-    if (crmState?.teammates?.collapsed === true) return true;
-    if (crmState?.teammates?.collapsed === false) return false;
-    return (config as any)?.collapsed !== false;
-  }, [file.cache?.frontmatter, config]);
-
-  const handleCollapseChange = useCallback(
-    async (isCollapsed: boolean) => {
-      if (!file.file) return;
-      try {
-        await app.fileManager.processFrontMatter(file.file, (frontmatter) => {
-          if (
-            typeof (frontmatter as any).crmState !== "object" ||
-            (frontmatter as any).crmState === null
-          ) {
-            (frontmatter as any).crmState = {};
-          }
-          if (
-            typeof (frontmatter as any).crmState.teammates !== "object" ||
-            (frontmatter as any).crmState.teammates === null
-          ) {
-            (frontmatter as any).crmState.teammates = {};
-          }
-          (frontmatter as any).crmState.teammates.collapsed = isCollapsed;
-        });
-      } catch (error) {
-        console.error(
-          "TeammatesLinks: failed to persist collapse state",
-          error
-        );
-      }
-    },
-    [app, file.file]
-  );
 
   const handleCreateTeammate = useCallback(async () => {
     if (isCreating) return;
@@ -292,6 +289,11 @@ export const TeammatesLinks = ({ file, config }: TeammatesLinksProps) => {
       setIsCreating(false);
     }
   }, [app, file.file, isCreating, teamsInfo.teams]);
+
+  // Hide the panel if the current person has no team property, or it is null/empty
+  if (!teamsInfo.hasTeams) {
+    return null;
+  }
 
   return (
     <Card
