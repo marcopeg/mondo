@@ -147,31 +147,48 @@ export const BacklinksLinks = ({ file, config }: BacklinksLinksProps) => {
     return null;
   }
 
-  // Determine property to match
+  // Determine property to match (memoized for stable identity)
   const legacyTargetIsEntity =
     legacyTargetOriginal && isCRMEntityType(legacyTargetOriginal.toLowerCase());
-  let propertyFromTarget: string[] = [];
-  if (panel.properties || panel.prop) {
-    // handled below in matchProperties
-    propertyFromTarget = [];
-  } else if (targetKeyRawOriginal) {
-    propertyFromTarget = [targetKeyRawOriginal];
-  } else if (legacyTargetOriginal && !legacyTargetIsEntity) {
-    propertyFromTarget = [legacyTargetOriginal];
-  }
+  const propertyFromTarget = useMemo(() => {
+    if (panel.properties || panel.prop) {
+      // handled below in matchProperties
+      return [] as string[];
+    }
+    if (targetKeyRawOriginal) {
+      return [targetKeyRawOriginal];
+    }
+    if (legacyTargetOriginal && !legacyTargetIsEntity) {
+      return [legacyTargetOriginal];
+    }
+    return [] as string[];
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    panel.properties,
+    panel.prop,
+    targetKeyRawOriginal,
+    legacyTargetOriginal,
+    legacyTargetIsEntity,
+  ]);
 
-  const panelKey = `backlinks:${effectiveTargetType}${
-    propertyFromTarget.length ? `:${propertyFromTarget[0]}` : ""
-  }`;
+  const panelKey = useMemo(() => {
+    return `backlinks:${effectiveTargetType}${
+      propertyFromTarget.length ? `:${propertyFromTarget[0]}` : ""
+    }`;
+  }, [effectiveTargetType, propertyFromTarget]);
   const columns =
     panel.columns && panel.columns.length > 0 ? panel.columns : DEFAULT_COLUMNS;
   const visibility = panel.visibility ?? "always";
   const pageSize = panel.pageSize ?? 5;
-  const sortConfig = panel.sort ?? {
-    strategy: "column",
-    column: "show",
-    direction: "asc",
-  };
+  const sortConfig = useMemo(
+    () =>
+      panel.sort ?? {
+        strategy: "column",
+        column: "show",
+        direction: "asc",
+      },
+    [panel.sort]
+  );
 
   const collapsed = useMemo(() => {
     const crmState = (file.cache?.frontmatter as any)?.crmState;
@@ -200,19 +217,23 @@ export const BacklinksLinks = ({ file, config }: BacklinksLinksProps) => {
       return propertyFromTarget;
     }
 
-    return buildMatchProperties(effectiveTargetType);
+    // At this point effectiveTargetType is guaranteed non-null (early return above)
+    return buildMatchProperties(effectiveTargetType as CRMEntityType);
   }, [panel.properties, panel.prop, propertyFromTarget, effectiveTargetType]);
 
-  const entries = useFiles(effectiveTargetType, {
-    filter: useCallback(
-      (candidate: TCachedFile) => {
-        if (!candidate.file || candidate.file.path === hostFile.path)
-          return false;
-        return matchesAnyPropertyLink(candidate, matchProperties, hostFile);
-      },
-      [hostFile, matchProperties]
-    ),
-  });
+  const matchKey = useMemo(() => matchProperties.join("|"), [matchProperties]);
+
+  const filterFn = useCallback(
+    (candidate: TCachedFile) => {
+      if (!candidate.file || candidate.file.path === hostFile.path)
+        return false;
+      return matchesAnyPropertyLink(candidate, matchProperties, hostFile);
+    },
+    // Depend on hostFile path and the stable matchKey to avoid needless re-creation
+    [hostFile, hostFile?.path, matchKey]
+  );
+
+  const entries = useFiles(effectiveTargetType, { filter: filterFn });
 
   const sortByColumn = useCallback(
     (items: TCachedFile[]) => {
@@ -260,6 +281,19 @@ export const BacklinksLinks = ({ file, config }: BacklinksLinksProps) => {
   const handleCollapseChange = useCallback(
     async (isCollapsed: boolean) => {
       if (!hostFile) return;
+      // Guard: avoid writing frontmatter if the value hasn't actually changed.
+      // Some containers may call onCollapseChange on mount or every render.
+      // Persist only when there's a real state transition to prevent re-renders loops.
+      try {
+        const currentCollapsed = (file.cache?.frontmatter as any)?.crmState?.[
+          panelKey
+        ]?.collapsed;
+        if (currentCollapsed === isCollapsed) {
+          return;
+        }
+      } catch (_) {
+        // If reading cache fails, proceed with best effort below.
+      }
       try {
         await app.fileManager.processFrontMatter(hostFile, (frontmatter) => {
           if (
@@ -281,7 +315,7 @@ export const BacklinksLinks = ({ file, config }: BacklinksLinksProps) => {
         );
       }
     },
-    [app, hostFile, panelKey]
+    [app, hostFile, panelKey, file.cache?.frontmatter]
   );
 
   const [isCreating, setIsCreating] = useState(false);
@@ -305,7 +339,7 @@ export const BacklinksLinks = ({ file, config }: BacklinksLinksProps) => {
                 try {
                   await createEntityForEntity({
                     app,
-                    targetType: effectiveTargetType,
+                    targetType: effectiveTargetType as string,
                     hostEntity: file,
                     titleTemplate: createCfg.title,
                     attributeTemplates: createCfg.attributes as any,

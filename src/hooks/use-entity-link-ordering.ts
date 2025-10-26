@@ -98,8 +98,24 @@ export const useEntityLinkOrdering = <TItem>(
   const [displayItems, setDisplayItems] = useState(orderedItems);
 
   useEffect(() => {
-    setDisplayItems(orderedItems);
-  }, [orderedItems]);
+    // Avoid infinite update loops by skipping state updates when the
+    // semantic order hasn't changed. Arrays are often recreated upstream
+    // (e.g., sorting, spreading) which would otherwise retrigger renders.
+    const ids = (arr: TItem[]) =>
+      arr
+        .map((item) => getItemId(item))
+        .filter((id): id is string => Boolean(id));
+
+    const prevIds = ids(displayItems);
+    const nextIds = ids(orderedItems);
+
+    const sameLength = prevIds.length === nextIds.length;
+    const sameOrder = sameLength && prevIds.every((v, i) => v === nextIds[i]);
+
+    if (!sameOrder) {
+      setDisplayItems(orderedItems);
+    }
+  }, [orderedItems, displayItems, getItemId]);
 
   const persistOrder = useCallback(
     (nextItems: TItem[]) => {
