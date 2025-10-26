@@ -33,11 +33,6 @@ const toolConfig: CRMEntityConfig<"tool"> = {
       properties: ["tool"],
       title: "Logs",
       icon: "clipboard-list",
-      sort: {
-        strategy: "column",
-        column: "date",
-        direction: "desc",
-      },
     },
     {
       type: "backlinks",

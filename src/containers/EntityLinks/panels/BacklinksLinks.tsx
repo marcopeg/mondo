@@ -240,8 +240,8 @@ export const BacklinksLinks = ({ file, config }: BacklinksLinksProps) => {
     () =>
       panel.sort ?? {
         strategy: "column",
-        column: "show",
-        direction: "asc",
+        column: "date",
+        direction: "desc",
       },
     [panel.sort]
   );
