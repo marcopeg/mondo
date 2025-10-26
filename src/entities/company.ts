@@ -25,7 +25,6 @@ const companyConfig: CRMEntityConfig<"company"> = {
       properties: ["company"],
       title: "Employees",
       icon: "users",
-      pageSize: 100,
       columns: [
         { type: "cover" },
         { type: "show" },

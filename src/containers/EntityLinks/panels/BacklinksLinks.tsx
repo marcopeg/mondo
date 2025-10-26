@@ -587,17 +587,86 @@ export const BacklinksLinks = ({ file, config }: BacklinksLinksProps) => {
                   );
                 }
                 if (col.type === "attribute") {
-                  const value = getFrontmatterRaw(entry, col.key);
+                  // Read raw frontmatter so we can handle arrays and wiki links [[...]] properly
+                  const fm =
+                    (entry.cache?.frontmatter as
+                      | Record<string, unknown>
+                      | undefined) ?? {};
+                  const raw = fm[col.key];
                   const label = col.label ? `${col.label}: ` : "";
+
+                  const isWikiLink = (s: string): boolean =>
+                    /\[\[[^\]]+\]\]/.test(s.trim());
+                  const parseWikiLink = (
+                    s: string
+                  ): { target: string; alias?: string } => {
+                    const inner = s.trim().slice(2, -2);
+                    const [t, a] = inner.split("|");
+                    return { target: (t || "").trim(), alias: a?.trim() };
+                  };
+                  const resolveWikiToPath = (
+                    app: App,
+                    sourcePath: string | undefined,
+                    target: string
+                  ): string | null => {
+                    const normalized = target.replace(/\.md$/i, "");
+                    const dest = app.metadataCache.getFirstLinkpathDest(
+                      normalized,
+                      sourcePath ?? ""
+                    );
+                    return dest instanceof TFile ? dest.path : null;
+                  };
+
+                  const renderItem = (item: unknown, i: number) => {
+                    if (typeof item === "string" && isWikiLink(item)) {
+                      const { target, alias } = parseWikiLink(item);
+                      const destPath = resolveWikiToPath(
+                        app,
+                        entry.file?.path,
+                        target
+                      );
+                      const text = alias || target;
+                      return destPath ? (
+                        <Button key={`a-${i}`} to={destPath} variant="link">
+                          {text}
+                        </Button>
+                      ) : (
+                        <span key={`a-${i}`}>{text}</span>
+                      );
+                    }
+                    if (
+                      typeof item === "string" ||
+                      typeof item === "number" ||
+                      typeof item === "boolean"
+                    ) {
+                      return <span key={`a-${i}`}>{String(item)}</span>;
+                    }
+                    try {
+                      return <span key={`a-${i}`}>{JSON.stringify(item)}</span>;
+                    } catch (_) {
+                      return <span key={`a-${i}`}>{String(item)}</span>;
+                    }
+                  };
+
+                  const nodes: ReactNode[] = [];
+                  if (Array.isArray(raw)) {
+                    raw.forEach((it, i) => {
+                      if (i > 0) nodes.push(<span key={`s-${i}`}>, </span>);
+                      nodes.push(renderItem(it, i));
+                    });
+                  } else if (raw !== undefined && raw !== null) {
+                    nodes.push(renderItem(raw, 0));
+                  }
+
                   return (
                     <Table.Cell
                       key={`c-${idx}`}
                       className={`px-2 py-2 align-middle ${alignClass}`}
                     >
-                      {value ? (
+                      {nodes.length > 0 ? (
                         <span className="text-xs text-[var(--text-muted)]">
                           {label}
-                          {value}
+                          {nodes}
                         </span>
                       ) : (
                         <span className="text-xs text-[var(--text-muted)]">
