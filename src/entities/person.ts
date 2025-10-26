@@ -9,47 +9,7 @@ team: []
 ---
 `;
 
-const personConfig: CRMEntityConfig<
-  "person",
-  | { type: "participant-tasks"; collapsed?: boolean }
-  | { type: "teammates"; collapsed?: boolean }
-  | { type: "meetings"; collapsed?: boolean }
-  | { type: "projects"; collapsed?: boolean }
-  | { type: "facts"; collapsed?: boolean }
-  | { type: "logs"; collapsed?: boolean }
-  | { type: "documents"; collapsed?: boolean }
-  | {
-      type: "backlinks";
-      collapsed?: boolean;
-      targetType?: string;
-      targetKey?: string;
-      target?: string; // legacy
-      properties?: string | string[];
-      prop?: string | string[]; // legacy alias
-      title?: string;
-      subtitle?: string;
-      icon?: string;
-      visibility?: "always" | "notEmpty";
-      pageSize?: number;
-      columns?: Array<
-        | { type: "cover"; mode?: "cover" | "contain" }
-        | { type: "show"; label?: string }
-        | { type: "date"; label?: string }
-      >;
-      sort?:
-        | { strategy: "manual" }
-        | {
-            strategy: "column";
-            column: "show" | "date";
-            direction?: "asc" | "desc";
-          };
-      createEntity?: {
-        enabled?: boolean;
-        title?: string;
-        attributes?: Record<string, string | number | boolean>;
-      };
-    }
-> = {
+const personConfig: CRMEntityConfig<"person"> = {
   type: "person",
   name: "People",
   icon: "user",

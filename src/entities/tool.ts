@@ -8,43 +8,7 @@ owner:
 ---
 `;
 
-const toolConfig: CRMEntityConfig<
-  "tool",
-  | { type: "facts"; collapsed?: boolean }
-  | { type: "logs"; collapsed?: boolean }
-  | { type: "documents"; collapsed?: boolean }
-  | {
-      type: "backlinks";
-      collapsed?: boolean;
-      targetType?: string;
-      targetKey?: string;
-      target?: string;
-      properties?: string | string[];
-      prop?: string | string[];
-      title?: string;
-      subtitle?: string;
-      icon?: string;
-      visibility?: "always" | "notEmpty";
-      pageSize?: number;
-      columns?: Array<
-        | { type: "cover"; mode?: "cover" | "contain" }
-        | { type: "show"; label?: string }
-        | { type: "date"; label?: string }
-      >;
-      sort?:
-        | { strategy: "manual" }
-        | {
-            strategy: "column";
-            column: "show" | "date";
-            direction?: "asc" | "desc";
-          };
-      createEntity?: {
-        enabled?: boolean;
-        title?: string;
-        attributes?: Record<string, string | number | boolean>;
-      };
-    }
-> = {
+const toolConfig: CRMEntityConfig<"tool"> = {
   type: "tool",
   name: "Tools",
   icon: "hammer",
@@ -62,6 +26,11 @@ const toolConfig: CRMEntityConfig<
       properties: ["tool"],
       title: "Facts",
       icon: "file-text",
+      visibility: "always",
+      createEntity: {
+        enabled: true,
+        title: "Add Fact",
+      },
     },
     {
       type: "backlinks",
@@ -69,6 +38,7 @@ const toolConfig: CRMEntityConfig<
       properties: ["tool"],
       title: "Logs",
       icon: "clipboard-list",
+      visibility: "always",
     },
     {
       type: "backlinks",
@@ -76,6 +46,7 @@ const toolConfig: CRMEntityConfig<
       properties: ["tool"],
       title: "Documents",
       icon: "file-text",
+      visibility: "always",
     },
     {
       type: "backlinks",
@@ -83,6 +54,7 @@ const toolConfig: CRMEntityConfig<
       properties: ["tool"],
       title: "Tasks",
       icon: "check-square",
+      visibility: "always",
     },
   ],
 };
