@@ -4,7 +4,7 @@ export const DEFAULT_BACKLINKS: CRMEntityBacklinksLink[] = [
   {
     type: "backlinks",
     targetType: "fact",
-    properties: ["tool"],
+    properties: ["reference"],
     title: "Facts",
     icon: "file-text",
     sort: {
@@ -14,14 +14,14 @@ export const DEFAULT_BACKLINKS: CRMEntityBacklinksLink[] = [
   {
     type: "backlinks",
     targetType: "log",
-    properties: ["tool"],
+    properties: ["reference"],
     title: "Logs",
     icon: "clipboard-list",
   },
   {
     type: "backlinks",
     targetType: "document",
-    properties: ["tool"],
+    properties: ["reference"],
     title: "Documents",
     icon: "file-text",
     sort: {
@@ -31,7 +31,7 @@ export const DEFAULT_BACKLINKS: CRMEntityBacklinksLink[] = [
   {
     type: "backlinks",
     targetType: "task",
-    properties: ["referece"],
+    properties: ["reference"],
     title: "Tasks1",
     icon: "check-square",
     columns: [
