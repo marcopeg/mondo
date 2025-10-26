@@ -60,7 +60,7 @@ type BacklinksLinksProps = {
 
 const DEFAULT_COLUMNS: BacklinksColumn[] = [
   { type: "show" },
-  { type: "date", label: "Date" },
+  { type: "date", label: "Date", align: "right" },
 ];
 
 const toTitleCase = (value: string): string =>
@@ -218,8 +218,16 @@ export const BacklinksLinks = ({ file, config }: BacklinksLinksProps) => {
   const defaultTitle =
     CRM_ENTITIES[effectiveTargetType]?.name ||
     toTitleCase(effectiveTargetType) + "s";
-  const columns =
+  // Normalize columns: if none configured, use defaults. Also apply sensible
+  // per-type default alignment (dates right, others left) when align omitted.
+  const rawColumns =
     panel.columns && panel.columns.length > 0 ? panel.columns : DEFAULT_COLUMNS;
+  const columns: BacklinksColumn[] = rawColumns.map((c) => {
+    const defaultAlign: Align = c.type === "date" ? "right" : "left";
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const col = c as any;
+    return { ...col, align: col.align ?? defaultAlign } as BacklinksColumn;
+  });
   const visibility = panel.visibility ?? "always";
   const pageSize = panel.pageSize ?? 5;
   const sortConfig = useMemo(
@@ -357,8 +365,9 @@ export const BacklinksLinks = ({ file, config }: BacklinksLinksProps) => {
 
   const [isCreating, setIsCreating] = useState(false);
   const actions = useMemo(() => {
-    const createCfg = panel.createEntity;
-    if (!createCfg || createCfg.enabled === false)
+    // default createEntity.enabled should be true unless explicitly disabled
+    const createCfg = panel.createEntity ?? { enabled: true };
+    if (createCfg.enabled === false)
       return [] as { key: string; content: ReactNode }[];
     // If user didn't specify a title template, provide a sensible default
     // like "Untitled Facts" (based on the target entity's configured name).
