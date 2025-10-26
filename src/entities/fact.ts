@@ -1,8 +1,7 @@
 import type { CRMEntityConfig } from "@/types/CRMEntityConfig";
 
-const template = `---
+const template = `
 date: {{date}}
-participants: []
 ---
 `;
 

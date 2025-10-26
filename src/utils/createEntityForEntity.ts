@@ -135,11 +135,13 @@ export const createEntityForEntity = async ({
   }
 
   const hostFile = hostEntity.file;
+  // Default link properties: do NOT include a generic "related" key by default.
+  // Use only the host entity type (e.g. 'person', 'company') if available.
   const defaultLinkProps = (() => {
     const hostType = String((hostEntity.cache?.frontmatter as any)?.type || "")
       .trim()
       .toLowerCase();
-    const props = ["related"] as string[];
+    const props: string[] = [];
     if (hostType) props.push(hostType);
     return props;
   })();

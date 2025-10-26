@@ -65,7 +65,23 @@ const toTitleCase = (value: string): string =>
   value.length > 0 ? value.charAt(0).toUpperCase() + value.slice(1) : value;
 
 const buildMatchProperties = (hostType: CRMEntityType): string[] => {
+  // For matching existing backlinks we still consider legacy keys (like
+  // "related") plus type-specific pluralizations to maintain backward
+  // compatibility when reading.
   const base = ["related", hostType];
+  if (hostType === "person") base.push("people", "participants");
+  if (hostType === "team") base.push("teams");
+  if (hostType === "company") base.push("companies");
+  return Array.from(
+    new Set(base.map((p) => p.trim()).filter((p): p is string => p.length > 0))
+  );
+};
+
+const buildLinkProperties = (hostType: CRMEntityType): string[] => {
+  // For creating new backlinks, we intentionally avoid the generic "related"
+  // key. We only write the host type (and type-specific pluralizations) to
+  // keep frontmatter clean going forward.
+  const base: string[] = [hostType];
   if (hostType === "person") base.push("people", "participants");
   if (hostType === "team") base.push("teams");
   if (hostType === "company") base.push("companies");
@@ -344,8 +360,8 @@ export const BacklinksLinks = ({ file, config }: BacklinksLinksProps) => {
                     hostEntity: file,
                     titleTemplate,
                     attributeTemplates: createCfg.attributes as any,
-                    // link in both "related" and hostType
-                    linkProperties: buildMatchProperties(
+                    // link back using only hostType-specific properties (no generic "related")
+                    linkProperties: buildLinkProperties(
                       hostType as CRMEntityType
                     ),
                     openAfterCreate: true,

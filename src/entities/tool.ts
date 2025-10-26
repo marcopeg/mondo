@@ -2,9 +2,6 @@ import type { CRMEntityConfig } from "@/types/CRMEntityConfig";
 
 const template = `
 date: {{date}}
-category:
-location: []
-owner:
 ---
 `;
 
@@ -29,6 +26,10 @@ const toolConfig: CRMEntityConfig<"tool"> = {
       visibility: "always",
       createEntity: {
         enabled: true,
+        title: "New Fact",
+        attributes: {
+          hoho: "hihi",
+        },
       },
     },
     {
