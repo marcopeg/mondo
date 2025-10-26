@@ -26,10 +26,6 @@ const toolConfig: CRMEntityConfig<"tool"> = {
       visibility: "always",
       createEntity: {
         enabled: true,
-        title: "New Fact",
-        attributes: {
-          hoho: "hihi",
-        },
       },
     },
     {
@@ -39,6 +35,9 @@ const toolConfig: CRMEntityConfig<"tool"> = {
       title: "Logs",
       icon: "clipboard-list",
       visibility: "always",
+      createEntity: {
+        enabled: true,
+      },
     },
     {
       type: "backlinks",
@@ -47,6 +46,9 @@ const toolConfig: CRMEntityConfig<"tool"> = {
       title: "Documents",
       icon: "file-text",
       visibility: "always",
+      createEntity: {
+        enabled: true,
+      },
     },
     {
       type: "backlinks",
@@ -55,6 +57,14 @@ const toolConfig: CRMEntityConfig<"tool"> = {
       title: "Tasks",
       icon: "check-square",
       visibility: "always",
+      columns: [
+        { type: "show" },
+        { type: "status" },
+        { type: "date", label: "Due Date" },
+      ],
+      createEntity: {
+        enabled: true,
+      },
     },
   ],
 };

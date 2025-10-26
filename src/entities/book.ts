@@ -1,13 +1,13 @@
 import type { CRMEntityConfig } from "@/types/CRMEntityConfig";
 
-const template = `---
+const template = `
 date: {{date}}
 ---
 `;
 
 const bookConfig: CRMEntityConfig<
   "book",
-  | { type: "documents"; collapsed?: boolean }
+  { type: "documents"; collapsed?: boolean }
 > = {
   type: "book",
   name: "Books",

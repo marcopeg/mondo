@@ -4,6 +4,8 @@ const template = `
 date: {{date}}
 company: []
 team: []
+participants: []
+status: draft
 ---
 `;
 

@@ -1,14 +1,9 @@
 import type { CRMEntityConfig } from "@/types/CRMEntityConfig";
 
-const template = `---
-type: document
-category:
+const template = `
+date: {{date}}
 file:
-related: []
 ---
-
-# Notes
-
 `;
 
 const documentConfig: CRMEntityConfig<"document"> = {

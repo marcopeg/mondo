@@ -65,10 +65,9 @@ const toTitleCase = (value: string): string =>
   value.length > 0 ? value.charAt(0).toUpperCase() + value.slice(1) : value;
 
 const buildMatchProperties = (hostType: CRMEntityType): string[] => {
-  // For matching existing backlinks we still consider legacy keys (like
-  // "related") plus type-specific pluralizations to maintain backward
-  // compatibility when reading.
-  const base = ["related", hostType];
+  // Ignore generic "related" unless explicitly provided via panel.properties.
+  // Default matching uses only host-type-specific keys.
+  const base: string[] = [hostType];
   if (hostType === "person") base.push("people", "participants");
   if (hostType === "team") base.push("teams");
   if (hostType === "company") base.push("companies");

@@ -2,10 +2,9 @@ import type { CRMEntityConfig } from "@/types/CRMEntityConfig";
 
 const template = `
 date: {{date}}
-source:
-servings:
-prep_time:
-cook_time:
+category: []
+cookTime:
+calories:
 ---
 
 ## Ingredients
@@ -20,7 +19,7 @@ cook_time:
 
 const recipeConfig: CRMEntityConfig<
   "recipe",
-  | { type: "documents"; collapsed?: boolean }
+  { type: "documents"; collapsed?: boolean }
 > = {
   type: "recipe",
   name: "Cooking Book",
