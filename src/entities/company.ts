@@ -37,6 +37,34 @@ const companyConfig: CRMEntityConfig<"company"> = {
         direction: "asc",
       },
     },
+    {
+      type: "backlinks",
+      targetType: "team",
+      properties: ["company"],
+      title: "Teams",
+      icon: "layers",
+      columns: [{ type: "show" }],
+      sort: {
+        strategy: "column",
+        column: "show",
+        direction: "asc",
+      },
+    },
+    {
+      type: "backlinks",
+      targetType: "project",
+      properties: ["company"],
+      title: "Projects",
+      icon: "briefcase",
+      columns: [
+        { type: "show" },
+        { type: "status" },
+        { type: "date", align: "right" },
+      ],
+      sort: {
+        strategy: "manual",
+      },
+    },
     ...DEFAULT_BACKLINKS,
   ],
 };

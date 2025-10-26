@@ -235,7 +235,11 @@ export const BacklinksLinks = ({ file, config }: BacklinksLinksProps) => {
     return { ...col, align: col.align ?? defaultAlign } as BacklinksColumn;
   });
   const visibility = panel.visibility ?? "always";
-  const pageSize = panel.pageSize ?? 5;
+  // If pageSize is not provided, disable pagination (show all entries)
+  const pageSize =
+    typeof panel.pageSize === "number"
+      ? panel.pageSize
+      : Number.POSITIVE_INFINITY;
   const sortConfig = useMemo(
     () =>
       panel.sort ?? {

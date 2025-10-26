@@ -77,7 +77,7 @@ Backlinks panel config object placed in an entity’s `links` array:
     | { type: "attribute"; key: string; label?: string; align?: "left" | "right" | "center" }
   >;
   visibility?: "always" | "notEmpty"; // default: "always"
-  pageSize?: number; // default: 5
+  pageSize?: number; // default: no pagination; set a number to enable "Load more"
 
   // Sorting
   sort?:
@@ -162,6 +162,7 @@ Defaults overview
 
 - Columns: when omitted, defaults to `[ { type: "show" }, { type: "date", label: "Date", align: "right" } ]`.
 - Sorting: when omitted, defaults to newest-first by date (`{ strategy: "column", column: "date", direction: "desc" }`).
+- Pagination: when `pageSize` is omitted, pagination is disabled (shows all items). Set `pageSize` to enable "Load more".
 - Create: enabled by default; default title is `Untitled <TargetName>`.
 
 ## Collapsing & persistence
