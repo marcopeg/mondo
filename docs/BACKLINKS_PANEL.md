@@ -71,9 +71,10 @@ Backlinks panel config object placed in an entity’s `links` array:
   subtitle?: string; // optional subtitle override (defaults to "Linked to <host>")
   icon?: string;     // optional icon name (defaults to "link-2")
   columns?: Array<
-    | { type: "cover"; mode?: "cover" | "contain" }
-    | { type: "show"; label?: string }
-    | { type: "date"; label?: string }
+    | { type: "cover"; mode?: "cover" | "contain"; align?: "left" | "right" | "center" }
+    | { type: "show"; label?: string; align?: "left" | "right" | "center" }
+    | { type: "date"; label?: string; align?: "left" | "right" | "center" }
+    | { type: "attribute"; key: string; label?: string; align?: "left" | "right" | "center" }
   >;
   visibility?: "always" | "notEmpty"; // default: "always"
   pageSize?: number; // default: 5
@@ -85,8 +86,8 @@ Backlinks panel config object placed in an entity’s `links` array:
 
   // Create (+) button
   createEntity?: {
-    enabled?: boolean; // if false, hides the + button
-    title?: string; // template e.g., "{date} on {show}"
+    enabled?: boolean; // if false, hides the + button (default: true)
+    title?: string; // template e.g., "{date} on {show}" (default: "Untitled <TargetName>")
     attributes?: Record<string, string | number | boolean>; // fm overrides
   };
 
@@ -100,8 +101,8 @@ Backlinks panel config object placed in an entity’s `links` array:
 - Entity mode (targetType is set to an entity type):
 
   - We list notes of that entity type.
-  - Default properties matched are derived from the host entity type:
-    - Always includes `related` and the host type (e.g., `person`, `project`).
+  - Default properties matched are derived from the host entity type and do NOT include `related` unless explicitly configured via `properties`:
+    - Includes the host type (e.g., `person`, `project`).
     - Adds common synonyms for people/teams/companies:
       - person → also matches `people`, `participants`
       - team → also matches `teams`
@@ -121,6 +122,12 @@ Property names are case-sensitive and must match the frontmatter key precisely.
   - mode: `cover` (default) or `contain` for object-fit behavior.
 - show: Renders the display name (falls back to filename).
 - date: Renders the `date` frontmatter field; you can set a custom label.
+- attribute: Renders any raw frontmatter value by key (stringified for non-primitive/array values).
+
+Alignment per column:
+
+- `align?: "left" | "right" | "center"` is supported on all column types.
+- Defaults: `date` columns align right; others align left.
 
 ## Sorting and ordering
 
@@ -134,14 +141,15 @@ Property names are case-sensitive and must match the frontmatter key precisely.
 - Column sorting
   - `sort: { strategy: "column", column: "show" | "date", direction?: "asc" | "desc" }`
   - Simple alphabetical for `show`, string compare for `date`.
+  - Default when `sort` is omitted: `{ strategy: "column", column: "date", direction: "desc" }`.
 
 ## Create (+) button
 
-When `createEntity.enabled` is true, the panel shows a + button that:
+When `createEntity.enabled` is true (default), the panel shows a + button that:
 
 - Creates a new note of the listed entity type (entity mode), or the host’s type (property mode).
 - Uses your configured template and root path for that type.
-- Links the new note back to the host using the default set of properties described in “Entity mode” above (not currently configurable per panel).
+- Links the new note back to the host using the default set of host-type-specific properties described in “Entity mode” (excludes `related` unless you explicitly include it via panel `properties`).
 - Applies `createEntity.attributes` overrides to the new note’s frontmatter.
 
 Template tokens available in title and attributes:
@@ -149,6 +157,12 @@ Template tokens available in title and attributes:
 - `{date}`: YYYY-MM-DD (local date)
 - `{datetime}`: ISO timestamp
 - `{show}`: display name of the host note
+
+Defaults overview
+
+- Columns: when omitted, defaults to `[ { type: "show" }, { type: "date", label: "Date", align: "right" } ]`.
+- Sorting: when omitted, defaults to newest-first by date (`{ strategy: "column", column: "date", direction: "desc" }`).
+- Create: enabled by default; default title is `Untitled <TargetName>`.
 
 ## Collapsing & persistence
 

@@ -1,4 +1,5 @@
 import type { CRMEntityConfig } from "@/types/CRMEntityConfig";
+import { DEFAULT_BACKLINKS } from "@/entities/default-backlinks";
 
 const template = `
 date: {{date}}
@@ -16,50 +17,7 @@ const toolConfig: CRMEntityConfig<"tool"> = {
   list: {
     columns: ["cover", "show", "category", "owner", "location"],
   },
-  links: [
-    {
-      type: "backlinks",
-      targetType: "fact",
-      properties: ["tool"],
-      title: "Facts",
-      icon: "file-text",
-      sort: {
-        strategy: "manual",
-      },
-    },
-    {
-      type: "backlinks",
-      targetType: "log",
-      properties: ["tool"],
-      title: "Logs",
-      icon: "clipboard-list",
-    },
-    {
-      type: "backlinks",
-      targetType: "document",
-      properties: ["tool"],
-      title: "Documents",
-      icon: "file-text",
-      sort: {
-        strategy: "manual",
-      },
-    },
-    {
-      type: "backlinks",
-      targetType: "task",
-      properties: ["tool"],
-      title: "Tasks",
-      icon: "check-square",
-      columns: [
-        { type: "show" },
-        { type: "attribute", key: "status" },
-        { type: "date", align: "right" },
-      ],
-      sort: {
-        strategy: "manual",
-      },
-    },
-  ],
+  links: DEFAULT_BACKLINKS,
 };
 
 export default toolConfig;

@@ -1,14 +1,12 @@
 import type { CRMEntityConfig } from "@/types/CRMEntityConfig";
+import { DEFAULT_BACKLINKS } from "@/entities/default-backlinks";
 
 const template = `
 date: {{date}}
 ---
 `;
 
-const bookConfig: CRMEntityConfig<
-  "book",
-  { type: "documents"; collapsed?: boolean }
-> = {
+const bookConfig: CRMEntityConfig<"book"> = {
   type: "book",
   name: "Books",
   icon: "book",
@@ -19,12 +17,7 @@ const bookConfig: CRMEntityConfig<
   list: {
     columns: ["cover", "show", "author", "status", "genre"],
   },
-  links: [
-    {
-      type: "documents",
-      collapsed: true,
-    },
-  ],
+  links: DEFAULT_BACKLINKS,
 };
 
 export default bookConfig;

@@ -1,4 +1,5 @@
 import type { CRMEntityConfig } from "@/types/CRMEntityConfig";
+import { DEFAULT_BACKLINKS } from "@/entities/default-backlinks";
 
 const template = `
 date: {{date}}
@@ -6,16 +7,7 @@ location: []
 ---
 `;
 
-const companyConfig: CRMEntityConfig<
-  "company",
-  | { type: "teams"; collapsed?: boolean }
-  | { type: "employees"; collapsed?: boolean }
-  | { type: "projects"; collapsed?: boolean }
-  | { type: "facts"; collapsed?: boolean }
-  | { type: "logs"; collapsed?: boolean }
-  | { type: "company-tasks"; collapsed?: boolean }
-  | { type: "documents"; collapsed?: boolean }
-> = {
+const companyConfig: CRMEntityConfig<"company"> = {
   type: "company",
   name: "Companies",
   icon: "building-2",
@@ -28,27 +20,25 @@ const companyConfig: CRMEntityConfig<
   },
   links: [
     {
-      type: "documents",
-      collapsed: true,
+      type: "backlinks",
+      targetType: "person",
+      properties: ["company"],
+      title: "Employees",
+      icon: "users",
+      pageSize: 100,
+      columns: [
+        { type: "cover" },
+        { type: "show" },
+        { type: "attribute", key: "team" },
+        { type: "attribute", key: "role" },
+      ],
+      sort: {
+        strategy: "column",
+        column: "show",
+        direction: "asc",
+      },
     },
-    {
-      type: "employees",
-    },
-    {
-      type: "teams",
-    },
-    {
-      type: "projects",
-    },
-    {
-      type: "facts",
-    },
-    {
-      type: "logs",
-    },
-    {
-      type: "company-tasks",
-    },
+    ...DEFAULT_BACKLINKS,
   ],
 };
 
