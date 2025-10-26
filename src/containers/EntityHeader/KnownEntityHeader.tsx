@@ -279,21 +279,26 @@ export const KnownEntityHeader = ({
 
   const primary = actions[0];
   const secondary = useMemo(
-    () => actions.slice(1).map((action) => ({
-      label: action.label,
-      icon: action.icon,
-      onSelect: () => handleTrigger(action.panel, action.ariaLabel),
-    })),
+    () =>
+      actions.slice(1).map((action) => ({
+        label: action.label,
+        icon: action.icon,
+        onSelect: () => handleTrigger(action.panel, action.ariaLabel),
+      })),
     [actions, handleTrigger]
   );
+
+  // Keep hook calls stable across renders: define the primary click handler
+  // unconditionally even if `primary` is undefined on some renders. The
+  // handler itself guards against missing `primary` at call time.
+  const handlePrimaryClick = useCallback(() => {
+    if (!primary) return;
+    handleTrigger(primary.panel, primary.ariaLabel);
+  }, [handleTrigger, primary]);
 
   if (!primary) {
     return null;
   }
-
-  const handlePrimaryClick = useCallback(() => {
-    handleTrigger(primary.panel, primary.ariaLabel);
-  }, [handleTrigger, primary]);
 
   return (
     <SplitButton

@@ -176,6 +176,9 @@ export const BacklinksLinks = ({ file, config }: BacklinksLinksProps) => {
       propertyFromTarget.length ? `:${propertyFromTarget[0]}` : ""
     }`;
   }, [effectiveTargetType, propertyFromTarget]);
+  const defaultTitle =
+    CRM_ENTITIES[effectiveTargetType]?.name ||
+    toTitleCase(effectiveTargetType) + "s";
   const columns =
     panel.columns && panel.columns.length > 0 ? panel.columns : DEFAULT_COLUMNS;
   const visibility = panel.visibility ?? "always";
@@ -318,6 +321,9 @@ export const BacklinksLinks = ({ file, config }: BacklinksLinksProps) => {
     const createCfg = panel.createEntity;
     if (!createCfg || createCfg.enabled === false)
       return [] as { key: string; content: ReactNode }[];
+    // If user didn't specify a title template, provide a sensible default
+    // like "Untitled Facts" (based on the target entity's configured name).
+    const titleTemplate = createCfg.title ?? `Untitled ${defaultTitle}`;
     return [
       {
         key: "create-entity",
@@ -336,7 +342,7 @@ export const BacklinksLinks = ({ file, config }: BacklinksLinksProps) => {
                     app,
                     targetType: effectiveTargetType as string,
                     hostEntity: file,
-                    titleTemplate: createCfg.title,
+                    titleTemplate,
                     attributeTemplates: createCfg.attributes as any,
                     // link in both "related" and hostType
                     linkProperties: buildMatchProperties(
@@ -365,11 +371,9 @@ export const BacklinksLinks = ({ file, config }: BacklinksLinksProps) => {
     file,
     effectiveTargetType,
     hostType,
+    defaultTitle,
   ]);
 
-  const defaultTitle =
-    CRM_ENTITIES[effectiveTargetType]?.name ||
-    toTitleCase(effectiveTargetType) + "s";
   const panelTitle = panel.title || defaultTitle;
   // Subtitle is optional: if not provided, skip rendering
   const panelSubtitle = panel.subtitle ?? undefined;

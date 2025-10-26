@@ -29,7 +29,6 @@ const toolConfig: CRMEntityConfig<"tool"> = {
       visibility: "always",
       createEntity: {
         enabled: true,
-        title: "Add Fact",
       },
     },
     {
