@@ -157,6 +157,13 @@ Template tokens available in title and attributes:
 - `{date}`: YYYY-MM-DD (local date)
 - `{datetime}`: ISO timestamp
 - `{show}`: display name of the host note
+- `{@this}`: inserts a wiki link to the current note (host) into the target attribute
+- `{@this.<prop>}`: copies the raw frontmatter value of `<prop>` from the current note to the new note (arrays and primitives preserved)
+
+Notes about `{@this}` behavior in attributes:
+
+- If the attribute key you set with `{@this}` is also used in the panel's `properties` for linking (i.e., it's in `properties`/`prop`), the creation flow will avoid overwriting the array created for links and will skip setting a scalar over it. The link back to the host is already handled via `properties`.
+- When using `{@this.<prop>}`, the value is copied as-is from the host frontmatter (deep-cloned), so arrays remain arrays and primitive values remain primitives.
 
 Defaults overview
 
