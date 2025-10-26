@@ -77,6 +77,13 @@ const toolConfig: CRMEntityConfig<
       title: "Documents",
       icon: "file-text",
     },
+    {
+      type: "backlinks",
+      targetType: "task",
+      properties: ["tool"],
+      title: "Tasks",
+      icon: "check-square",
+    },
   ],
 };
 
