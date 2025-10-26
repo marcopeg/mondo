@@ -533,13 +533,14 @@ export const BacklinksLinks = ({ file, config }: BacklinksLinksProps) => {
                   return (
                     <Table.Cell
                       key={`c-${idx}`}
-                      className={`px-2 py-2 align-middle ${alignClass}`}
+                      className={`px-0 py-2 align-middle w-16 ${alignClass}`}
+                      style={{ width: "4rem" }}
                     >
                       {src ? (
                         <img
                           src={src}
                           alt={show}
-                          className="h-16 w-16 mx-auto"
+                          className="h-16 w-16 mx-auto block"
                           style={{
                             objectFit:
                               col.mode === "contain" ? "contain" : "cover",
