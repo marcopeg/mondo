@@ -85,18 +85,7 @@ export const EntityLinks = () => {
 
   const entityConfig = CRM_ENTITIES[entityType];
 
-  const baseLinkConfigs = (entityConfig.links ?? []) as CRMEntityLinkConfig[];
-
-  // Auto-append participant-tasks panel only for person entities
-  const shouldAutoAppendParticipantTasks = entityType === "person";
-  const hasParticipantTasksLink = baseLinkConfigs.some(
-    (config) => config.type === "participant-tasks"
-  );
-
-  const linkConfigs =
-    shouldAutoAppendParticipantTasks && !hasParticipantTasksLink
-      ? [...baseLinkConfigs, { type: "participant-tasks" }]
-      : baseLinkConfigs;
+  const linkConfigs = (entityConfig.links ?? []) as CRMEntityLinkConfig[];
 
   if (linkConfigs.length === 0) {
     if (entityType === "document") {

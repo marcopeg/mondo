@@ -31,8 +31,8 @@ export const DEFAULT_BACKLINKS: CRMEntityBacklinksLink[] = [
   {
     type: "backlinks",
     targetType: "task",
-    properties: ["tool"],
-    title: "Tasks",
+    properties: ["referece"],
+    title: "Tasks1",
     icon: "check-square",
     columns: [
       { type: "show" },
