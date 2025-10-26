@@ -24,6 +24,7 @@ import { MeetingTasksLinks } from "./panels/MeetingTasksLinks";
 import { CompanyTasksLinks } from "./panels/CompanyTasksLinks";
 import { TeamTasksLinks } from "./panels/TeamTasksLinks";
 import { DocumentsLinks } from "./panels/DocumentsLinks";
+import { BacklinksLinks } from "./panels/BacklinksLinks";
 
 type LinkPanelProps = {
   file: TCachedFile;
@@ -51,6 +52,7 @@ const entityMap: Record<string, React.ComponentType<LinkPanelProps>> = {
   "company-tasks": CompanyTasksLinks,
   "team-tasks": TeamTasksLinks,
   documents: DocumentsLinks,
+  backlinks: BacklinksLinks,
 };
 
 const renderMissingConfigError = (message: string, key?: React.Key) => (

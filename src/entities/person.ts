@@ -18,6 +18,18 @@ const personConfig: CRMEntityConfig<
   | { type: "facts"; collapsed?: boolean }
   | { type: "logs"; collapsed?: boolean }
   | { type: "documents"; collapsed?: boolean }
+  | {
+      type: "backlinks";
+      collapsed?: boolean;
+      targetType?: string;
+      targetKey?: string;
+      target?: string; // legacy
+      properties?: string | string[];
+      prop?: string | string[]; // legacy alias
+      title?: string;
+      subtitle?: string;
+      icon?: string;
+    }
 > = {
   type: "person",
   name: "People",
@@ -52,6 +64,14 @@ const personConfig: CRMEntityConfig<
     },
     {
       type: "teammates",
+    },
+    {
+      type: "backlinks",
+      targetType: "person",
+      properties: ["reportsTo"],
+      title: "Reports",
+      subtitle: "People this person reports to",
+      icon: "arrow-up-circle",
     },
   ],
 };
