@@ -29,6 +29,25 @@ const personConfig: CRMEntityConfig<
       title?: string;
       subtitle?: string;
       icon?: string;
+      visibility?: "always" | "notEmpty";
+      pageSize?: number;
+      columns?: Array<
+        | { type: "cover"; mode?: "cover" | "contain" }
+        | { type: "show"; label?: string }
+        | { type: "date"; label?: string }
+      >;
+      sort?:
+        | { strategy: "manual" }
+        | {
+            strategy: "column";
+            column: "show" | "date";
+            direction?: "asc" | "desc";
+          };
+      createEntity?: {
+        enabled?: boolean;
+        title?: string;
+        attributes?: Record<string, string | number | boolean>;
+      };
     }
 > = {
   type: "person",

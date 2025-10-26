@@ -273,11 +273,6 @@ export const BacklinksLinks = ({ file, config }: BacklinksLinksProps) => {
     fallbackSort: (items) => sortByColumn(items),
   });
 
-  const hasEntries = ordered.length > 0;
-  if (!hasEntries && visibility === "notEmpty") {
-    return null;
-  }
-
   const handleCollapseChange = useCallback(
     async (isCollapsed: boolean) => {
       if (!hostFile) return;
@@ -380,6 +375,12 @@ export const BacklinksLinks = ({ file, config }: BacklinksLinksProps) => {
   const panelSubtitle = panel.subtitle ?? undefined;
   // Icon is optional: if not provided, skip rendering
   const panelIcon = panel.icon ?? undefined;
+
+  // After all hooks have executed, check visibility
+  const hasEntries = ordered.length > 0;
+  if (!hasEntries && visibility === "notEmpty") {
+    return null;
+  }
 
   return (
     <Card
