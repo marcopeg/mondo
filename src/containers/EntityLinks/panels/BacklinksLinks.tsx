@@ -1,4 +1,10 @@
-import { useCallback, useMemo, useState, type ReactNode } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from "react";
 import { Card } from "@/components/ui/Card";
 import { Table } from "@/components/ui/Table";
 import { Button } from "@/components/ui/Button";
@@ -323,6 +329,60 @@ export const BacklinksLinks = ({ file, config }: BacklinksLinksProps) => {
     fallbackSort: (items) => sortByColumn(items),
   });
 
+  // Local optimistic ordering to ensure immediate visual update post-drop.
+  // This wraps the hook's onReorder so the UI reflects the final order instantly,
+  // even if persistence or cache updates are momentarily delayed.
+  const [optimisticOrdered, setOptimisticOrdered] = useState<
+    TCachedFile[] | null
+  >(null);
+  const optimisticSetAtRef = useMemo(() => ({ time: 0 }), []);
+  const clearTimerRef = useMemo<{ id: number | null }>(
+    () => ({ id: null }),
+    []
+  );
+  const keyOf = useCallback((e: TCachedFile) => e.file?.path ?? "", []);
+
+  const handleReorderImmediate = useCallback(
+    (next: TCachedFile[]) => {
+      // Reflect new order immediately
+      setOptimisticOrdered(next);
+      optimisticSetAtRef.time = Date.now();
+      // Delegate to the hook for persistence and state sync
+      onReorder?.(next);
+    },
+    [onReorder, optimisticSetAtRef]
+  );
+
+  // Clear the optimistic state once the hook-provided ordered items match
+  // the optimistic order (by identity of file paths), ensuring a smooth handoff.
+  useEffect(() => {
+    if (!optimisticOrdered) return;
+    const a = optimisticOrdered.map(keyOf);
+    const b = ordered.map(keyOf);
+    const sameLength = a.length === b.length;
+    const same = sameLength && a.every((id, i) => id === b[i]);
+    if (!same) return;
+    const MIN_HOLD_MS = 150;
+    const elapsed = Date.now() - optimisticSetAtRef.time;
+    const clear = () => setOptimisticOrdered(null);
+    if (elapsed >= MIN_HOLD_MS) {
+      clear();
+      return;
+    }
+    // Hold the optimistic view a touch longer to absorb cache/UI churn
+    if (clearTimerRef.id) {
+      window.clearTimeout(clearTimerRef.id);
+    }
+    clearTimerRef.id = window.setTimeout(() => {
+      // Re-check match before clearing in case of intervening changes
+      const aa = (optimisticOrdered ?? []).map(keyOf);
+      const bb = ordered.map(keyOf);
+      const ok = aa.length === bb.length && aa.every((id, i) => id === bb[i]);
+      if (ok) clear();
+      clearTimerRef.id = null;
+    }, MIN_HOLD_MS - elapsed);
+  }, [ordered, optimisticOrdered, keyOf, optimisticSetAtRef, clearTimerRef]);
+
   const handleCollapseChange = useCallback(
     async (isCollapsed: boolean) => {
       if (!hostFile) return;
@@ -446,11 +506,13 @@ export const BacklinksLinks = ({ file, config }: BacklinksLinksProps) => {
       onCollapseChange={handleCollapseChange}
     >
       <EntityLinksTable
-        items={ordered}
+        items={optimisticOrdered ?? ordered}
         getKey={(e) => e.file!.path}
         pageSize={pageSize}
         sortable={sortConfig.strategy === "manual" && sortable}
-        onReorder={sortConfig.strategy === "manual" ? onReorder : undefined}
+        onReorder={
+          sortConfig.strategy === "manual" ? handleReorderImmediate : undefined
+        }
         getSortableId={(e) => e.file!.path}
         emptyLabel={`No ${panelTitle.toLowerCase()} yet`}
         renderRow={(entry) => {

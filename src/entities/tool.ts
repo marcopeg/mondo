@@ -23,6 +23,9 @@ const toolConfig: CRMEntityConfig<"tool"> = {
       properties: ["tool"],
       title: "Facts",
       icon: "file-text",
+      sort: {
+        strategy: "manual",
+      },
     },
     {
       type: "backlinks",
@@ -42,6 +45,9 @@ const toolConfig: CRMEntityConfig<"tool"> = {
       properties: ["tool"],
       title: "Documents",
       icon: "file-text",
+      sort: {
+        strategy: "manual",
+      },
     },
     {
       type: "backlinks",
