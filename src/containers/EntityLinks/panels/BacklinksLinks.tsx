@@ -17,7 +17,8 @@ import { TFile, type App } from "obsidian";
 type BacklinksColumn =
   | { type: "cover"; mode?: "cover" | "contain" }
   | { type: "show"; label?: string }
-  | { type: "date"; label?: string };
+  | { type: "date"; label?: string }
+  | { type: "attribute"; key: string; label?: string };
 
 type BacklinksSortConfig =
   | { strategy: "manual" }
@@ -120,6 +121,28 @@ const getCoverResource = (app: App, entry: TCachedFile): string | null => {
   const normalized = target.replace(/\.md$/i, "");
   const dest = app.metadataCache.getFirstLinkpathDest(normalized, "");
   return dest instanceof TFile ? app.vault.getResourcePath(dest) : null;
+};
+
+const getFrontmatterRaw = (entry: TCachedFile, key: string): string => {
+  const fm =
+    (entry.cache?.frontmatter as Record<string, unknown> | undefined) ?? {};
+  const raw = fm[key];
+  if (raw === undefined || raw === null) return "";
+  if (typeof raw === "string") return raw.trim();
+  if (typeof raw === "number" || typeof raw === "boolean") return String(raw);
+  if (Array.isArray(raw)) {
+    return raw
+      .map((v) =>
+        typeof v === "string" ? v : v == null ? "" : JSON.stringify(v)
+      )
+      .filter((s) => s.trim().length > 0)
+      .join(", ");
+  }
+  try {
+    return JSON.stringify(raw);
+  } catch (_) {
+    return String(raw);
+  }
 };
 
 export const BacklinksLinks = ({ file, config }: BacklinksLinksProps) => {
@@ -475,6 +498,27 @@ export const BacklinksLinks = ({ file, config }: BacklinksLinksProps) => {
                         <span className="text-xs text-[var(--text-muted)]">
                           {label}
                           {date}
+                        </span>
+                      ) : (
+                        <span className="text-xs text-[var(--text-muted)]">
+                          —
+                        </span>
+                      )}
+                    </Table.Cell>
+                  );
+                }
+                if (col.type === "attribute") {
+                  const value = getFrontmatterRaw(entry, col.key);
+                  const label = col.label ? `${col.label}: ` : "";
+                  return (
+                    <Table.Cell
+                      key={`c-${idx}`}
+                      className="px-2 py-2 align-top text-right"
+                    >
+                      {value ? (
+                        <span className="text-xs text-[var(--text-muted)]">
+                          {label}
+                          {value}
                         </span>
                       ) : (
                         <span className="text-xs text-[var(--text-muted)]">

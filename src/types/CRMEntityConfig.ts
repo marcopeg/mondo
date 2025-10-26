@@ -45,6 +45,7 @@ export interface CRMEntityBacklinksLink
     | { type: "cover"; mode?: "cover" | "contain" }
     | { type: "show"; label?: string }
     | { type: "date"; label?: string }
+    | { type: "attribute"; key: string; label?: string }
   >;
   sort?:
     | { strategy: "manual" }

@@ -59,8 +59,8 @@ const toolConfig: CRMEntityConfig<"tool"> = {
       visibility: "always",
       columns: [
         { type: "show" },
-        { type: "status" },
-        { type: "date", label: "Due Date" },
+        { type: "attribute", key: "status" },
+        { type: "date" },
       ],
       createEntity: {
         enabled: true,
