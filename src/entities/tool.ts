@@ -30,6 +30,11 @@ const toolConfig: CRMEntityConfig<"tool"> = {
       properties: ["tool"],
       title: "Logs",
       icon: "clipboard-list",
+      sort: {
+        strategy: "column",
+        column: "date",
+        direction: "desc",
+      },
     },
     {
       type: "backlinks",
@@ -49,6 +54,9 @@ const toolConfig: CRMEntityConfig<"tool"> = {
         { type: "attribute", key: "status" },
         { type: "date", align: "right" },
       ],
+      sort: {
+        strategy: "manual",
+      },
     },
   ],
 };
