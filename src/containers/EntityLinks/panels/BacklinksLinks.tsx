@@ -14,11 +14,12 @@ import createEntityForEntity from "@/utils/createEntityForEntity";
 import type { TCachedFile } from "@/types/TCachedFile";
 import { TFile, type App } from "obsidian";
 
+type Align = "left" | "right" | "center";
 type BacklinksColumn =
-  | { type: "cover"; mode?: "cover" | "contain" }
-  | { type: "show"; label?: string }
-  | { type: "date"; label?: string }
-  | { type: "attribute"; key: string; label?: string };
+  | { type: "cover"; mode?: "cover" | "contain"; align?: Align }
+  | { type: "show"; label?: string; align?: Align }
+  | { type: "date"; label?: string; align?: Align }
+  | { type: "attribute"; key: string; label?: string; align?: Align };
 
 type BacklinksSortConfig =
   | { strategy: "manual" }
@@ -450,12 +451,18 @@ export const BacklinksLinks = ({ file, config }: BacklinksLinksProps) => {
           return (
             <>
               {columns.map((col, idx) => {
+                const alignClass =
+                  col.align === "right"
+                    ? "text-right"
+                    : col.align === "center"
+                    ? "text-center"
+                    : "text-left";
                 if (col.type === "cover") {
                   const src = getCoverResource(app, entry);
                   return (
                     <Table.Cell
                       key={`c-${idx}`}
-                      className="px-2 py-2 align-top"
+                      className={`px-2 py-2 align-middle ${alignClass}`}
                     >
                       {src ? (
                         <img
@@ -475,7 +482,7 @@ export const BacklinksLinks = ({ file, config }: BacklinksLinksProps) => {
                   return (
                     <Table.Cell
                       key={`c-${idx}`}
-                      className="px-2 py-2 align-top break-words overflow-hidden"
+                      className={`px-2 py-2 align-middle break-words overflow-hidden ${alignClass}`}
                     >
                       <Button
                         to={path}
@@ -492,7 +499,7 @@ export const BacklinksLinks = ({ file, config }: BacklinksLinksProps) => {
                   return (
                     <Table.Cell
                       key={`c-${idx}`}
-                      className="px-2 py-2 align-top text-right"
+                      className={`px-2 py-2 align-middle ${alignClass}`}
                     >
                       {date ? (
                         <span className="text-xs text-[var(--text-muted)]">
@@ -513,7 +520,7 @@ export const BacklinksLinks = ({ file, config }: BacklinksLinksProps) => {
                   return (
                     <Table.Cell
                       key={`c-${idx}`}
-                      className="px-2 py-2 align-top text-right"
+                      className={`px-2 py-2 align-middle ${alignClass}`}
                     >
                       {value ? (
                         <span className="text-xs text-[var(--text-muted)]">
@@ -529,7 +536,10 @@ export const BacklinksLinks = ({ file, config }: BacklinksLinksProps) => {
                   );
                 }
                 return (
-                  <Table.Cell key={`c-${idx}`} className="px-2 py-2 align-top">
+                  <Table.Cell
+                    key={`c-${idx}`}
+                    className={`px-2 py-2 align-middle ${alignClass}`}
+                  >
                     <span className="text-xs text-[var(--text-muted)]">—</span>
                   </Table.Cell>
                 );

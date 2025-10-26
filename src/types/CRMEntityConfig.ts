@@ -42,10 +42,19 @@ export interface CRMEntityBacklinksLink
   visibility?: "always" | "notEmpty";
   pageSize?: number;
   columns?: Array<
-    | { type: "cover"; mode?: "cover" | "contain" }
-    | { type: "show"; label?: string }
-    | { type: "date"; label?: string }
-    | { type: "attribute"; key: string; label?: string }
+    | {
+        type: "cover";
+        mode?: "cover" | "contain";
+        align?: "left" | "right" | "center";
+      }
+    | { type: "show"; label?: string; align?: "left" | "right" | "center" }
+    | { type: "date"; label?: string; align?: "left" | "right" | "center" }
+    | {
+        type: "attribute";
+        key: string;
+        label?: string;
+        align?: "left" | "right" | "center";
+      }
   >;
   sort?:
     | { strategy: "manual" }

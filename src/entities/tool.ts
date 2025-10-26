@@ -60,7 +60,7 @@ const toolConfig: CRMEntityConfig<"tool"> = {
       columns: [
         { type: "show" },
         { type: "attribute", key: "status" },
-        { type: "date" },
+        { type: "date", align: "right" },
       ],
       createEntity: {
         enabled: true,
