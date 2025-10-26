@@ -84,17 +84,20 @@ const buildMatchProperties = (hostType: CRMEntityType): string[] => {
   );
 };
 
-const buildLinkProperties = (hostType: CRMEntityType): string[] => {
-  // For creating new backlinks, we intentionally avoid the generic "related"
-  // key. We only write the host type (and type-specific pluralizations) to
-  // keep frontmatter clean going forward.
-  const base: string[] = [hostType];
-  if (hostType === "person") base.push("people", "participants");
-  if (hostType === "team") base.push("teams");
-  if (hostType === "company") base.push("companies");
-  return Array.from(
-    new Set(base.map((p) => p.trim()).filter((p): p is string => p.length > 0))
-  );
+const buildLinkProperties = (
+  hostType: CRMEntityType,
+  override?: string | string[]
+): string[] => {
+  // For creating new backlinks, avoid generic "related" and avoid auto-adding
+  // plural synonyms. Use explicit panel overrides when provided; otherwise only
+  // use the host type key (e.g., "company").
+  if (override) {
+    const list = Array.isArray(override) ? override : [override];
+    return Array.from(
+      new Set(list.map((p) => String(p).trim()).filter(Boolean))
+    );
+  }
+  return [hostType].filter(Boolean);
 };
 
 const getFrontmatterString = (entry: TCachedFile, key: string): string => {
@@ -458,7 +461,11 @@ export const BacklinksLinks = ({ file, config }: BacklinksLinksProps) => {
                     attributeTemplates: createCfg.attributes as any,
                     // link back using only hostType-specific properties (no generic "related")
                     linkProperties: buildLinkProperties(
-                      hostType as CRMEntityType
+                      hostType as CRMEntityType,
+                      (panel.properties ?? panel.prop) as
+                        | string
+                        | string[]
+                        | undefined
                     ),
                     openAfterCreate: true,
                   });
@@ -478,6 +485,8 @@ export const BacklinksLinks = ({ file, config }: BacklinksLinksProps) => {
     ];
   }, [
     panel.createEntity,
+    panel.properties,
+    panel.prop,
     isCreating,
     app,
     file,

@@ -58,7 +58,7 @@ const companyConfig: CRMEntityConfig<"company"> = {
       icon: "briefcase",
       columns: [
         { type: "show" },
-        { type: "status" },
+        { type: "attribute", key: "status" },
         { type: "date", align: "right" },
       ],
       sort: {
