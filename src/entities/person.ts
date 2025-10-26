@@ -70,8 +70,8 @@ const personConfig: CRMEntityConfig<
       targetType: "person",
       properties: ["reportsTo"],
       title: "Reports",
-      subtitle: "People this person reports to",
       icon: "arrow-up-circle",
+      visibility: "notEmpty",
     },
   ],
 };

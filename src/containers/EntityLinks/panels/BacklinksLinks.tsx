@@ -378,7 +378,8 @@ export const BacklinksLinks = ({ file, config }: BacklinksLinksProps) => {
   const panelTitle = panel.title || defaultTitle;
   // Subtitle is optional: if not provided, skip rendering
   const panelSubtitle = panel.subtitle ?? undefined;
-  const panelIcon = panel.icon || "link-2";
+  // Icon is optional: if not provided, skip rendering
+  const panelIcon = panel.icon ?? undefined;
 
   return (
     <Card
