@@ -57,6 +57,49 @@ const personConfig: CRMEntityConfig<"person"> = {
     },
     {
       type: "backlinks",
+      targetType: "project",
+      title: "Projects (deep linked)",
+      icon: "folder-tree",
+      columns: [
+        { type: "show" },
+        { type: "attribute", key: "participants" },
+        { type: "date", align: "right" },
+      ],
+      sort: {
+        strategy: "column",
+        column: "date",
+        direction: "desc",
+      },
+      find: {
+        query: [
+          {
+            description: "Direct backlinks via participants/people",
+            steps: [
+              { in: { property: ["participants", "people"], type: "project" } },
+              { unique: true },
+            ],
+          },
+          {
+            description: "Via teams (projects backlink to teams)",
+            steps: [
+              { out: { property: ["team", "teams"], type: "team" } },
+              { in: { property: ["team", "teams"], type: "project" } },
+              { unique: true },
+            ],
+          },
+        ],
+        combine: "union",
+      },
+      filter: {
+        "participants.length": { gt: 1 },
+      },
+      createEntity: {
+        enabled: true,
+        title: "Untitled Project",
+      },
+    },
+    {
+      type: "backlinks",
       targetType: "person",
       properties: ["reportsTo"],
       title: "Reports",

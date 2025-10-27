@@ -19,6 +19,8 @@ import { getEntityDisplayName } from "@/utils/getEntityDisplayName";
 import createEntityForEntity from "@/utils/createEntityForEntity";
 import type { TCachedFile } from "@/types/TCachedFile";
 import { TFile, type App } from "obsidian";
+import { CRMFileManager } from "@/utils/CRMFileManager";
+import { CRM_FILE_TYPES } from "@/types/CRMFileType";
 
 type Align = "left" | "right" | "center";
 type BacklinksColumn =
@@ -57,6 +59,24 @@ type BacklinksPanelConfig = {
   // Create button and sorting
   createEntity?: BacklinksCreateEntityConfig;
   sort?: BacklinksSortConfig;
+  // New: graph query and advanced filtering
+  find?: {
+    query: Array<{
+      description?: string;
+      steps: Array<
+        | { out: { property: string | string[]; type?: string | string[] } }
+        | { in: { property: string | string[]; type?: string | string[] } }
+        | { filter: { type?: string | string[] } }
+        | { dedupe?: true }
+        | { unique?: true }
+        | { not?: "host" }
+      >;
+    }>;
+    combine?: "union" | "intersect" | "subtract";
+  };
+  filter?:
+    | Record<string, unknown>
+    | { all?: unknown[]; any?: unknown[]; not?: unknown };
 };
 
 type BacklinksLinksProps = {
@@ -295,8 +315,391 @@ export const BacklinksLinks = ({ file, config }: BacklinksLinksProps) => {
     // Depend on hostFile path and the stable matchKey to avoid needless re-creation
     [hostFile, hostFile?.path, matchKey]
   );
+  // --- Advanced FIND/Filter DSL evaluation ---------------------------------
+  const fileManager = useMemo(() => CRMFileManager.getInstance(app), [app]);
+  const [refreshTick, setRefreshTick] = useState(0);
 
-  const entries = useFiles(effectiveTargetType, { filter: filterFn });
+  useEffect(() => {
+    const listener = () => setRefreshTick((t) => t + 1);
+    fileManager.addListener(listener);
+    return () => fileManager.removeListener(listener);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fileManager]);
+
+  const toArray = useCallback((v: string | string[] | undefined) => {
+    if (!v) return [] as string[];
+    return Array.isArray(v) ? v : [v];
+  }, []);
+
+  const getType = useCallback((e: TCachedFile | null | undefined): string => {
+    return String((e?.cache?.frontmatter as any)?.type || "").trim();
+  }, []);
+
+  const resolveWikiOrPathToFile = useCallback(
+    (source: TCachedFile, raw: unknown): TFile | null => {
+      if (raw === undefined || raw === null) return null;
+      let value = String(raw).trim();
+      if (!value) return null;
+      if (value.startsWith("[[") && value.endsWith("]]")) {
+        const inner = value.slice(2, -2);
+        value = inner.split("|")[0]?.trim() || inner.trim();
+      }
+      const abs = app.vault.getAbstractFileByPath(value);
+      if (abs instanceof TFile) return abs;
+      const normalized = value.replace(/\.md$/i, "");
+      const dest = app.metadataCache.getFirstLinkpathDest(
+        normalized,
+        source.file?.path ?? ""
+      );
+      return dest instanceof TFile ? dest : null;
+    },
+    [app]
+  );
+
+  const extractLinkedFiles = useCallback(
+    (node: TCachedFile, properties: string[]): TFile[] => {
+      const fm =
+        (node.cache?.frontmatter as Record<string, unknown> | undefined) ?? {};
+      const results: TFile[] = [];
+      for (const key of properties) {
+        const raw = fm[key];
+        const values = Array.isArray(raw)
+          ? raw
+          : raw !== undefined
+          ? [raw]
+          : [];
+        for (const v of values) {
+          const file = resolveWikiOrPathToFile(node, v);
+          if (file) results.push(file);
+        }
+      }
+      return results;
+    },
+    [resolveWikiOrPathToFile]
+  );
+
+  const uniqByPath = useCallback((arr: TCachedFile[]): TCachedFile[] => {
+    const seen = new Set<string>();
+    const out: TCachedFile[] = [];
+    for (const e of arr) {
+      const p = e.file?.path;
+      if (!p || seen.has(p)) continue;
+      seen.add(p);
+      out.push(e);
+    }
+    return out;
+  }, []);
+
+  const evaluateRule = useCallback(
+    (
+      rule: NonNullable<BacklinksPanelConfig["find"]>["query"][number]
+    ): TCachedFile[] => {
+      let S: TCachedFile[] = file ? [file] : [];
+      for (const step of rule.steps) {
+        if ((step as any).out) {
+          const { property, type } = (step as any).out as {
+            property: string | string[];
+            type?: string | string[];
+          };
+          const props = toArray(property);
+          const typeFilter = toArray(type).map((t) => String(t).trim());
+          const next: TCachedFile[] = [];
+          for (const node of S) {
+            const links = extractLinkedFiles(node, props);
+            for (const tf of links) {
+              const cached = fileManager.getFileByPath(tf.path);
+              if (!cached) continue; // only consider CRM-typed files
+              if (
+                typeFilter.length > 0 &&
+                !typeFilter.includes(getType(cached))
+              )
+                continue;
+              next.push(cached);
+            }
+          }
+          S = uniqByPath(next);
+          continue;
+        }
+        if ((step as any).in) {
+          const { property, type } = (step as any).in as {
+            property: string | string[];
+            type?: string | string[];
+          };
+          const props = toArray(property);
+          const typeList = toArray(type);
+          const sourceTargets = S.map((n) => n.file!).filter(Boolean);
+          const scanTypes =
+            typeList.length > 0 ? typeList : (CRM_FILE_TYPES as string[]);
+          const acc: TCachedFile[] = [];
+          for (const tt of scanTypes) {
+            const files = fileManager.getFiles(tt as any);
+            for (const cand of files) {
+              // exclude self unless rule explicitly wants it later
+              if (cand.file?.path === hostFile.path) continue;
+              const match = sourceTargets.some((t) =>
+                matchesAnyPropertyLink(cand, props, t)
+              );
+              if (match) acc.push(cand);
+            }
+          }
+          S = uniqByPath(acc);
+          continue;
+        }
+        if ((step as any).filter) {
+          const { type } = (step as any).filter as {
+            type?: string | string[];
+          };
+          const typeFilter = toArray(type);
+          if (typeFilter.length > 0) {
+            S = S.filter((n) => typeFilter.includes(getType(n)));
+          }
+          continue;
+        }
+        if ((step as any).dedupe || (step as any).unique) {
+          S = uniqByPath(S);
+          continue;
+        }
+        if ((step as any).not === "host") {
+          S = S.filter((n) => n.file?.path !== hostFile.path);
+          continue;
+        }
+      }
+      return uniqByPath(S);
+    },
+    [
+      file,
+      hostFile.path,
+      toArray,
+      extractLinkedFiles,
+      fileManager,
+      getType,
+      uniqByPath,
+    ]
+  );
+
+  type Comparator = {
+    exists?: boolean;
+    eq?: unknown;
+    ne?: unknown;
+    gt?: number;
+    gte?: number;
+    lt?: number;
+    lte?: number;
+    contains?: unknown;
+    notContains?: unknown;
+    in?: unknown[];
+    nin?: unknown[];
+  };
+
+  const getPropValue = useCallback(
+    (entry: TCachedFile, path: string): unknown => {
+      const fm =
+        (entry.cache?.frontmatter as Record<string, unknown> | undefined) ?? {};
+      if (path.endsWith(".length")) {
+        const key = path.slice(0, -7);
+        const raw = fm[key];
+        if (Array.isArray(raw)) return raw.length;
+        if (raw === undefined || raw === null) return 0;
+        return 1;
+      }
+      return (fm as any)[path];
+    },
+    []
+  );
+
+  const normalizeScalar = (v: unknown): string => {
+    if (v === undefined || v === null) return "";
+    const s = String(v).trim();
+    if (s.startsWith("[[") && s.endsWith("]]")) {
+      const inner = s.slice(2, -2);
+      return inner.split("|")[0]?.trim() || inner.trim();
+    }
+    return s;
+  };
+
+  const evalComparator = useCallback(
+    (entry: TCachedFile, propPath: string, cmp: Comparator): boolean => {
+      const val = getPropValue(entry, propPath);
+      const has =
+        val !== undefined &&
+        val !== null &&
+        !(Array.isArray(val) && val.length === 0);
+      if (cmp.exists !== undefined) return cmp.exists ? has : !has;
+
+      const applyToScalar = (scalar: unknown): boolean => {
+        if (cmp.eq !== undefined) return scalar === cmp.eq;
+        if (cmp.ne !== undefined) return scalar !== cmp.ne;
+        if (typeof scalar === "number") {
+          if (cmp.gt !== undefined && !(scalar > (cmp.gt as number)))
+            return false;
+          if (cmp.gte !== undefined && !(scalar >= (cmp.gte as number)))
+            return false;
+          if (cmp.lt !== undefined && !(scalar < (cmp.lt as number)))
+            return false;
+          if (cmp.lte !== undefined && !(scalar <= (cmp.lte as number)))
+            return false;
+        }
+        if (cmp.in && Array.isArray(cmp.in))
+          return (cmp.in as unknown[]).includes(scalar);
+        if (cmp.nin && Array.isArray(cmp.nin))
+          return !(cmp.nin as unknown[]).includes(scalar);
+        return true;
+      };
+
+      // Special handling for contains with @this
+      const containsThis = cmp.contains === "@this";
+      const notContainsThis = cmp.notContains === "@this";
+      if (containsThis || notContainsThis) {
+        // If array => check any element links to host; if string => check it links to host
+        if (Array.isArray(val)) {
+          const ok = val.some((v) => {
+            const tf = resolveWikiOrPathToFile(entry, v);
+            if (!tf) return false;
+            return tf.path === hostFile.path;
+          });
+          return containsThis ? ok : !ok;
+        }
+        const tf = resolveWikiOrPathToFile(entry, val);
+        const ok = !!tf && tf.path === hostFile.path;
+        return containsThis ? ok : !ok;
+      }
+
+      // Generic contains/notContains for arrays/strings
+      if (cmp.contains !== undefined) {
+        const needle = normalizeScalar(cmp.contains);
+        if (Array.isArray(val))
+          return val.map(normalizeScalar).includes(needle);
+        if (typeof val === "string") return normalizeScalar(val) === needle;
+        return false;
+      }
+      if (cmp.notContains !== undefined) {
+        const needle = normalizeScalar(cmp.notContains);
+        if (Array.isArray(val))
+          return !val.map(normalizeScalar).includes(needle);
+        if (typeof val === "string") return normalizeScalar(val) !== needle;
+        return true;
+      }
+
+      if (Array.isArray(val)) {
+        // Apply to array length by default for numeric comparisons
+        const n = val.length;
+        return applyToScalar(n);
+      }
+      if (
+        typeof val === "number" ||
+        typeof val === "string" ||
+        typeof val === "boolean"
+      ) {
+        return applyToScalar(val);
+      }
+      // For unsupported shapes, only 'exists' would have applied earlier
+      return true;
+    },
+    [getPropValue, hostFile.path, resolveWikiOrPathToFile]
+  );
+
+  const evalFilterExpr = useCallback(
+    (entry: TCachedFile, expr: unknown): boolean => {
+      if (!expr) return true;
+      // logical
+      if (typeof expr === "object" && expr !== null) {
+        const obj = expr as Record<string, unknown>;
+        if (Array.isArray((obj as any).all)) {
+          const list = (obj as any).all as unknown[];
+          return list.every((e) => evalFilterExpr(entry, e));
+        }
+        if (Array.isArray((obj as any).any)) {
+          const list = (obj as any).any as unknown[];
+          return list.some((e) => evalFilterExpr(entry, e));
+        }
+        if ((obj as any).not !== undefined) {
+          return !evalFilterExpr(entry, (obj as any).not);
+        }
+        // predicate map: { "prop.path": { cmp... } }
+        return Object.entries(obj).every(([propPath, cmp]) =>
+          evalComparator(entry, propPath, (cmp || {}) as Comparator)
+        );
+      }
+      return true;
+    },
+    [evalComparator]
+  );
+
+  const computedEntries = useMemo((): TCachedFile[] => {
+    // Force recompute when files change
+    void refreshTick;
+    if (!panel.find || !panel.find.query || panel.find.query.length === 0) {
+      return [];
+    }
+    const ruleResults: TCachedFile[][] = panel.find.query.map((r) =>
+      evaluateRule(r)
+    );
+    const byPath = (arr: TCachedFile[]) =>
+      new Set(arr.map((e) => e.file!.path));
+    let combinedPaths = new Set<string>();
+    const combine = panel.find.combine || "union";
+    if (combine === "union") {
+      for (const set of ruleResults) {
+        for (const e of set) combinedPaths.add(e.file!.path);
+      }
+    } else if (combine === "intersect") {
+      if (ruleResults.length === 0) return [];
+      let current = byPath(ruleResults[0]);
+      for (let i = 1; i < ruleResults.length; i++) {
+        const next = byPath(ruleResults[i]);
+        const inter = new Set<string>();
+        current.forEach((p) => {
+          if (next.has(p)) inter.add(p);
+        });
+        current = inter;
+      }
+      combinedPaths = current;
+    } else if (combine === "subtract") {
+      if (ruleResults.length === 0) return [];
+      let current = byPath(ruleResults[0]);
+      const remove = new Set<string>();
+      for (let i = 1; i < ruleResults.length; i++) {
+        for (const e of ruleResults[i]) remove.add(e.file!.path);
+      }
+      const out = new Set<string>();
+      current.forEach((p) => {
+        if (!remove.has(p)) out.add(p);
+      });
+      combinedPaths = out;
+    }
+    // Convert to TCachedFile, apply top-level filter and targetType
+    const allCandidates: TCachedFile[] = [];
+    combinedPaths.forEach((p) => {
+      const c = fileManager.getFileByPath(p);
+      if (c) allCandidates.push(c);
+    });
+    const filtered = allCandidates.filter((c) =>
+      evalFilterExpr(c, panel.filter)
+    );
+    const onlyTarget = filtered.filter(
+      (c) => getType(c) === (effectiveTargetType as string)
+    );
+    return uniqByPath(onlyTarget);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    panel.find,
+    panel.filter,
+    evaluateRule,
+    evalFilterExpr,
+    getType,
+    effectiveTargetType,
+    refreshTick,
+  ]);
+
+  // Fallback legacy dataset gathered via useFiles hook (always call hooks)
+  const legacyEntries = useFiles(effectiveTargetType, { filter: filterFn });
+
+  const entries = useMemo(() => {
+    if (panel.find && panel.find.query && panel.find.query.length > 0) {
+      return computedEntries;
+    }
+    return legacyEntries;
+  }, [panel.find, computedEntries, legacyEntries]);
 
   const sortByColumn = useCallback(
     (items: TCachedFile[]) => {
