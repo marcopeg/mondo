@@ -141,16 +141,6 @@ const personConfig: CRMEntityConfig<"person"> = {
         targetType: "meeting",
         title: "Meetings",
         icon: "calendar",
-        columns: [
-          { type: "show" },
-          { type: "attribute", key: "participants" },
-          { type: "date", align: "right" },
-        ],
-        sort: {
-          strategy: "column",
-          column: "date",
-          direction: "desc",
-        },
         find: {
           query: [
             {
@@ -159,7 +149,6 @@ const personConfig: CRMEntityConfig<"person"> = {
                 {
                   in: { property: ["participants", "people"], type: "meeting" },
                 },
-                { unique: true },
               ],
             },
             {
@@ -167,17 +156,32 @@ const personConfig: CRMEntityConfig<"person"> = {
               steps: [
                 { out: { property: ["team", "teams"], type: "team" } },
                 { in: { property: ["team", "teams"], type: "meeting" } },
-                { unique: true },
               ],
             },
           ],
-          combine: "union",
         },
         filter: {
           any: [
             { "participants.length": { eq: 0 } },
             { "participants.length": { gt: 1 } },
           ],
+        },
+        sort: {
+          strategy: "column",
+          column: "date",
+          direction: "desc",
+        },
+        columns: [
+          { type: "show" },
+          { type: "attribute", key: "participants" },
+          { type: "date", align: "right" },
+        ],
+        createEntity: {
+          enabled: true,
+          title: "{YY}-{MM}-{DD} {hh}.{mm} with {@this.show}",
+          attributes: {
+            participants: ["{@this}"],
+          },
         },
       },
     },
