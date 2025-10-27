@@ -190,25 +190,16 @@ export const createEntityForEntity = async ({
     return props;
   })();
 
-  // Determine if attributeTemplates explicitly reference the host note using {@this}
+  // New rule: when explicit attributes are provided, DO NOT apply default
+  // auto-linking (hostType backlink). Only explicit attributes should be set.
   const attributeTemplatesAny = attributeTemplates as
     | Record<string, unknown>
     | undefined;
-  const containsExplicitHostLink = (() => {
-    if (!attributeTemplatesAny) return false;
-    const hasHostToken = (val: unknown): boolean => {
-      if (typeof val === "string") {
-        return /\{\s*@this\s*\}/i.test(val);
-      }
-      if (Array.isArray(val)) {
-        return val.some((it) => hasHostToken(it));
-      }
-      return false;
-    };
-    return Object.values(attributeTemplatesAny).some((v) => hasHostToken(v));
-  })();
+  const hasExplicitAttributes = !!(
+    attributeTemplatesAny && Object.keys(attributeTemplatesAny).length > 0
+  );
 
-  const linkProps = containsExplicitHostLink
+  const linkProps = hasExplicitAttributes
     ? []
     : Array.isArray(linkProperties) && linkProperties.length > 0
     ? Array.from(
