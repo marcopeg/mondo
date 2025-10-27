@@ -28,17 +28,17 @@ const companyConfig: CRMEntityConfig<"company"> = {
         properties: ["company"],
         title: "Employees",
         icon: "users",
+        sort: {
+          strategy: "column",
+          column: "show",
+          direction: "asc",
+        },
         columns: [
           { type: "cover" },
           { type: "show" },
           { type: "attribute", key: "team" },
           { type: "attribute", key: "role" },
         ],
-        sort: {
-          strategy: "column",
-          column: "show",
-          direction: "asc",
-        },
       },
     },
     {
