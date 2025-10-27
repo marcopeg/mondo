@@ -95,4 +95,50 @@ Right now we use the combo `targetType` and `properties` to find backlinks to th
 
 This works in most usecase where the backlink is direct (the target note links directly back in one of the `properties`).
 
-But there are usecases in
+But there are usecases in which the connection is **indirect** linke in backlinking the projects or teammates:
+
+PROJECTS:
+
+- any type=project with direct backlink to the note
+- any type=project that backlinks to any of the listed "teams" through the team's property "project"
+
+TEAMMATES:
+
+- any type=person that has at least one of the current note's "team" in its attribute "team"
+
+Those are 2 of the most complex usecases.
+
+Devise a configuration structure that allows to define these and similar usecases.
+
+Do not modify any code for now, write your proposal into the `docs/BACKLINKS_INDIRECT.md` file so that we can reason about it together.
+
+---
+
+Add another feature to this proposal. For the meetings, as an example, I need to be able to separate meetings with multiple people from 1o1 (meetings with one single person).
+
+So in the queries dsl I'd need some level of constraints, or a filter AFTER the initial selection of candidate notes.
+
+It could be another first-level parameter "filter".
+
+So that "queries" is used to find notes, "filter" to reduce the selection, "sort" to define the sorting strategy..
+
+example of filter needs:
+
+- only notes where "participants.length" > 2
+- only notes where "participants.length" = 1, and participants.[] = @this // @this is the reference to the same note same as we do in the create note templating system
+
+Improve on the BACKLINKS_INDIRECT.md plan; do not write code outside of this document.
+
+---
+
+Rename the key "queries" into "find" so that we have:
+
+- find: select notes
+- filter: reduces selection
+- sort: applies orders to the final selection
+
+"find.query" is the current "queries" and should still be an array.
+
+"find.combine" should be the current "combine" key (i see union). Make sure you thoroughly document what this does and the possible values.
+
+Refine the plan document
