@@ -11,7 +11,7 @@ export const CRM_DEFAULT_TEMPLATES = Object.freeze(
   Object.fromEntries(
     Object.entries(CRM_ENTITIES).map(([type, config]) => [
       type,
-      config.settings.template,
+      config.template,
     ])
   )
 ) as Readonly<Record<CRMEntityType, string>>;

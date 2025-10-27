@@ -49,9 +49,7 @@
     "person": {
       "name": "People",
       "icon": "user",
-      "settings": {
-        "template": "\ndate: {{date}}\nlocation: []\ncompany: []\nrole: []\nteam: []\n---\n"
-      },
+      "template": "\ndate: {{date}}\nlocation: []\ncompany: []\nrole: []\nteam: []\n---\n",
       "list": {
         "columns": ["cover", "show", "company", "role", "team", "location"],
         "sort": {
@@ -430,9 +428,7 @@
     "fact": {
       "name": "Facts",
       "icon": "bookmark",
-      "settings": {
-        "template": "\ndate: {{date}}\n---\n"
-      },
+      "template": "\ndate: {{date}}\n---\n",
       "list": {
         "columns": ["date", "show"],
         "sort": {
@@ -508,9 +504,7 @@
     "log": {
       "name": "Logs",
       "icon": "file-clock",
-      "settings": {
-        "template": "\ndate: {{date}}\n---\n"
-      },
+      "template": "\ndate: {{date}}\n---\n",
       "list": {
         "columns": ["date", "show"],
         "sort": {
@@ -586,9 +580,7 @@
     "task": {
       "name": "Tasks",
       "icon": "check-square",
-      "settings": {
-        "template": "\ndate: {{date}}\nstatus: open\n---\n"
-      },
+      "template": "\ndate: {{date}}\nstatus: open\n---\n",
       "list": {
         "columns": ["show", "participants", "status"]
       },
@@ -660,9 +652,7 @@
     "project": {
       "name": "Projects",
       "icon": "folder-git-2",
-      "settings": {
-        "template": "\ndate: {{date}}\ncompany: []\nteam: []\nparticipants: []\nstatus: draft\n---\n"
-      },
+      "template": "\ndate: {{date}}\ncompany: []\nteam: []\nparticipants: []\nstatus: draft\n---\n",
       "list": {
         "columns": ["show"]
       },
@@ -783,9 +773,7 @@
     "idea": {
       "name": "Ideas",
       "icon": "lightbulb",
-      "settings": {
-        "template": "\ndate: {{date}}\nstatus: draft\n---\n"
-      },
+      "template": "\ndate: {{date}}\nstatus: draft\n---\n",
       "list": {
         "columns": ["show", "status"]
       },
@@ -857,9 +845,7 @@
     "company": {
       "name": "Companies",
       "icon": "building-2",
-      "settings": {
-        "template": "\ndate: {{date}}\nlocation: []\n---\n"
-      },
+      "template": "\ndate: {{date}}\nlocation: []\n---\n",
       "list": {
         "columns": ["show", "location"]
       },
@@ -1053,9 +1039,7 @@
     "team": {
       "name": "Teams",
       "icon": "users",
-      "settings": {
-        "template": "\ndate: {{date}}\ncompany: []\nlocation: []\n---\n"
-      },
+      "template": "\ndate: {{date}}\ncompany: []\nlocation: []\n---\n",
       "list": {
         "columns": ["show", "company", "area"]
       },
@@ -1185,9 +1169,7 @@
     "meeting": {
       "name": "Meetings",
       "icon": "calendar-clock",
-      "settings": {
-        "template": "\ndate: {{date}}\nparticipants: []\nlocation: []\n---\n"
-      },
+      "template": "\ndate: {{date}}\nparticipants: []\nlocation: []\n---\n",
       "list": {
         "columns": ["date_time", "participants"],
         "sort": {
@@ -1263,9 +1245,7 @@
     "role": {
       "name": "Roles",
       "icon": "briefcase",
-      "settings": {
-        "template": "---\ntype: {{type}}\ndate: {{date}}\n---\n"
-      },
+      "template": "---\ntype: {{type}}\ndate: {{date}}\n---\n",
       "list": {
         "columns": ["show"]
       },
@@ -1396,9 +1376,7 @@
     "location": {
       "name": "Locations",
       "icon": "map-pin",
-      "settings": {
-        "template": "---\ntype: {{type}}\ndate: {{date}}\n---\n"
-      },
+      "template": "---\ntype: {{type}}\ndate: {{date}}\n---\n",
       "list": {
         "columns": ["cover", "show", "country", "region"]
       },
@@ -1621,9 +1599,7 @@
     "restaurant": {
       "name": "Restaurants",
       "icon": "utensils",
-      "settings": {
-        "template": "\ndate: {{date}}\nlocation: []\n---\n"
-      },
+      "template": "\ndate: {{date}}\nlocation: []\n---\n",
       "list": {
         "columns": ["cover", "show", "location"]
       },
@@ -1695,9 +1671,7 @@
     "gear": {
       "name": "Gear",
       "icon": "settings",
-      "settings": {
-        "template": "\ndate: {{date}}\nowner: []\nlocation: []\n---\n"
-      },
+      "template": "\ndate: {{date}}\nowner: []\nlocation: []\n---\n",
       "list": {
         "columns": ["cover", "show", "owner", "location"]
       },
@@ -1769,9 +1743,7 @@
     "tool": {
       "name": "Tools",
       "icon": "hammer",
-      "settings": {
-        "template": "\ndate: {{date}}\n---\n"
-      },
+      "template": "\ndate: {{date}}\n---\n",
       "list": {
         "columns": ["cover", "show", "category", "owner", "location"]
       },
@@ -1843,9 +1815,7 @@
     "recipe": {
       "name": "Cooking Book",
       "icon": "book-open-check",
-      "settings": {
-        "template": "\ndate: {{date}}\ncategory: []\ncookTime:\ncalories:\n---\n\n## Ingredients\n\n- \n\n## Instructions\n\n1. \n\n"
-      },
+      "template": "\ndate: {{date}}\ncategory: []\ncookTime:\ncalories:\n---\n\n## Ingredients\n\n- \n\n## Instructions\n\n1. \n\n",
       "list": {
         "columns": ["cover", "show", "source", "servings"]
       },
@@ -1917,9 +1887,7 @@
     "book": {
       "name": "Books",
       "icon": "book",
-      "settings": {
-        "template": "\ndate: {{date}}\n---\n"
-      },
+      "template": "\ndate: {{date}}\n---\n",
       "list": {
         "columns": ["cover", "show", "author", "status", "genre"]
       },
@@ -1991,9 +1959,7 @@
     "show": {
       "name": "Shows",
       "icon": "clapperboard",
-      "settings": {
-        "template": "\ndate: {{date}}\nformat: movie\ngenre: []\n---\n"
-      },
+      "template": "\ndate: {{date}}\nformat: movie\ngenre: []\n---\n",
       "list": {
         "columns": [
           "cover",
@@ -2072,9 +2038,7 @@
     "document": {
       "name": "Documents",
       "icon": "file-text",
-      "settings": {
-        "template": "\ndate: {{date}}\nfile:\n---\n"
-      },
+      "template": "\ndate: {{date}}\nfile:\n---\n",
       "list": {
         "columns": ["show", "category", "file"]
       },
