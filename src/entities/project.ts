@@ -22,12 +22,39 @@ const projectConfig: CRMEntityConfig<"project"> = {
     columns: ["show"],
   },
   links: [
-    // { type: "documents", collapsed: true },
-    // { type: "participants-assignment" },
-    // { type: "facts" },
-    // { type: "logs" },
-    // { type: "meetings" },
-    // { type: "project-tasks", collapsed: true },
+    {
+      type: "backlinks",
+      key: "meetings",
+      config: {
+        title: "Meetings",
+        icon: "calendar",
+        targetType: "meeting",
+        properties: ["project"],
+        filter: {
+          any: [
+            { "participants.length": { eq: 0 } },
+            { "participants.length": { gt: 1 } },
+          ],
+        },
+        sort: {
+          strategy: "column",
+          column: "date",
+          direction: "desc",
+        },
+        columns: [
+          { type: "show" },
+          { type: "attribute", key: "participants" },
+          { type: "date", align: "right" },
+        ],
+        createEntity: {
+          enabled: true,
+          title: "{YY}-{MM}-{DD} {hh}.{mm} with {@this.show}",
+          attributes: {
+            participants: ["{@this}"],
+          },
+        },
+      },
+    },
     ...makeDefaultBacklinks(["project"]),
   ],
 };
