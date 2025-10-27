@@ -8,7 +8,11 @@ import Button from "@/components/ui/Button";
 import ButtonGroup from "@/components/ui/ButtonGroup";
 import Switch from "@/components/ui/Switch";
 import { Separator } from "@/components/ui/Separator";
-import { CRM_ENTITIES, CRM_UI_CONFIG } from "@/entities";
+import {
+  CRM_ENTITIES,
+  CRM_UI_CONFIG,
+  type CRMEntityType,
+} from "@/entities";
 import { getCRMEntityConfig, type CRMFileType } from "@/types/CRMFileType";
 import { useRelevantNotes } from "./useRelevantNotes";
 import { useRecentCRMNotes } from "@/hooks/use-recent-crm-notes";
@@ -133,13 +137,22 @@ export const RelevantNotes = ({ collapsed = false }: RelevantNotesProps) => {
 
   const filterButtons = useMemo(() => {
     return CRM_UI_CONFIG.relevantNotes.filter.order
-      .map((type) => CRM_ENTITIES[type])
-      .filter(Boolean)
-      .map((config) => ({
-        type: config.type,
-        icon: config.icon,
-        label: config.name,
-      }));
+      .map((type) => {
+        const config = CRM_ENTITIES[type];
+        if (!config) {
+          return null;
+        }
+        return {
+          type,
+          icon: config.icon,
+          label: config.name,
+        };
+      })
+      .filter(Boolean) as Array<{
+      type: CRMEntityType;
+      icon: string;
+      label: string;
+    }>;
   }, []);
 
   const emptyStateMessage =

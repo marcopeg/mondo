@@ -15,7 +15,8 @@
     "jsx": "react-jsx",
     "paths": {
       "@/*": ["src/*"]
-    }
+    },
+    "resolveJsonModule": true
   },
   "include": ["src/**/*", "src/main.ts"],
   "exclude": ["src/main.example.ts"]
