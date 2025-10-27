@@ -1,17 +1,12 @@
 import type { CRMEntityConfig } from "@/types/CRMEntityConfig";
+import { makeDefaultBacklinks } from "@/entities/default-backlinks";
 
-const template = `---
+const template = `
 date: {{date}}
-participants: []
 ---
 `;
 
-const factConfig: CRMEntityConfig<
-  "fact",
-  | { type: "facts"; collapsed?: boolean }
-  | { type: "logs"; collapsed?: boolean }
-  | { type: "documents"; collapsed?: boolean }
-> = {
+const factConfig: CRMEntityConfig<"fact"> = {
   type: "fact",
   name: "Facts",
   icon: "bookmark",
@@ -23,18 +18,7 @@ const factConfig: CRMEntityConfig<
     columns: ["date", "show"],
     sort: { column: "date", direction: "desc" },
   },
-  links: [
-    {
-      type: "documents",
-      collapsed: true,
-    },
-    {
-      type: "facts",
-    },
-    {
-      type: "logs",
-    },
-  ],
+  links: makeDefaultBacklinks(["fact"]),
 };
 
 export default factConfig;

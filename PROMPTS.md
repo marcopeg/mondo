@@ -76,3 +76,124 @@ Focus on the /entities/index.ts - this file should export a configuration object
 when creating a entity=log from the Entity Tab the title should follow the format "{date} {time}" and it should be pre-selected so that the user can confirm with "enter" or just edit to change it. the body should be empty.
 
 Focus on the QuickTaks in the dashboard. when selecting the option "log" to turn a quick tast into a log note, the newly created note should inherith the log's date an time as both title and attributes.
+
+---
+
+This is the current configuration of a BacklinksPanel for listing the projects that are associated with a type=person:
+
+```
+{
+    type: "backlinks",
+    targetType: "project",
+    properties: ["participants"],
+    ...
+}
+```
+
+Focus on how to find the related notes.
+Right now we use the combo `targetType` and `properties` to find backlinks to the current note.
+
+This works in most usecase where the backlink is direct (the target note links directly back in one of the `properties`).
+
+But there are usecases in which the connection is **indirect** linke in backlinking the projects or teammates:
+
+PROJECTS:
+
+- any type=project with direct backlink to the note
+- any type=project that backlinks to any of the listed "teams" through the team's property "project"
+
+TEAMMATES:
+
+- any type=person that has at least one of the current note's "team" in its attribute "team"
+
+Those are 2 of the most complex usecases.
+
+Devise a configuration structure that allows to define these and similar usecases.
+
+Do not modify any code for now, write your proposal into the `docs/BACKLINKS_INDIRECT.md` file so that we can reason about it together.
+
+---
+
+Add another feature to this proposal. For the meetings, as an example, I need to be able to separate meetings with multiple people from 1o1 (meetings with one single person).
+
+So in the queries dsl I'd need some level of constraints, or a filter AFTER the initial selection of candidate notes.
+
+It could be another first-level parameter "filter".
+
+So that "queries" is used to find notes, "filter" to reduce the selection, "sort" to define the sorting strategy..
+
+example of filter needs:
+
+- only notes where "participants.length" > 2
+- only notes where "participants.length" = 1, and participants.[] = @this // @this is the reference to the same note same as we do in the create note templating system
+
+Improve on the BACKLINKS_INDIRECT.md plan; do not write code outside of this document.
+
+---
+
+Rename the key "queries" into "find" so that we have:
+
+- find: select notes
+- filter: reduces selection
+- sort: applies orders to the final selection
+
+"find.query" is the current "queries" and should still be an array.
+
+"find.combine" should be the current "combine" key (i see union). Make sure you thoroughly document what this does and the possible values.
+
+Refine the plan document
+
+---
+
+Refactor the configuration of a backlink items as:
+
+{
+type: "backlinks",
+desc: "Description useful to the developer but never visible in the app",
+config: {
+...rest of the configuration goes here so it is collapsible
+}
+}
+
+IMPORTANT:
+
+- no need to make it bacward compatible
+- go through the existing entities and update the configuration.
+
+---
+
+focus on the #file:BacklinksLinks.tsx .
+
+Refactor the key used to store the state of the backlinks panel in the crmState object.
+
+each backlinks item must define a "key" property (need to add it to the definition)
+
+the template for the state key becomes then "backlinks:{key}"
+
+NOTE: we need to assign keys to every current utilization of the backlings in the entities definition files.
+
+---
+
+refactor #file:role.ts links following the examples in #file:person.ts and #file:company.ts . add the following panels:
+
+- Members (persons linked to the role)
+- Projects (directly linked via "role" attribute)
+- standard backlinks
+
+---
+
+refactor #file:location.ts links following the examples in:
+
+- #file:person.ts
+- #file:company.ts
+- #file:role.ts
+
+add the following panels:
+
+- People (persons linked to the location, expanded by default)
+- Companies (linked to the location, expanded by default)
+- Teams (linked to the location, expanded by default)
+- Gears (linked to the location, expanded by default)
+- Restaurants (linked to the location, expanded by default)
+- Projects (directly linked via "role" attribute)
+- standard backlinks

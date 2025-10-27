@@ -1,4 +1,5 @@
 import type { CRMEntityConfig } from "@/types/CRMEntityConfig";
+import { makeDefaultBacklinks } from "@/entities/default-backlinks";
 
 const template = `
 date: {{date}}
@@ -7,10 +8,7 @@ genre: []
 ---
 `;
 
-const showConfig: CRMEntityConfig<
-  "show",
-  | { type: "documents"; collapsed?: boolean }
-> = {
+const showConfig: CRMEntityConfig<"show"> = {
   type: "show",
   name: "Shows",
   icon: "clapperboard",
@@ -22,12 +20,7 @@ const showConfig: CRMEntityConfig<
   list: {
     columns: ["cover", "show", "format", "status", "platform", "release_date"],
   },
-  links: [
-    {
-      type: "documents",
-      collapsed: true,
-    },
-  ],
+  links: makeDefaultBacklinks(["show"]),
 };
 
 export default showConfig;

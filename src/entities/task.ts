@@ -1,21 +1,13 @@
 import type { CRMEntityConfig } from "@/types/CRMEntityConfig";
+import { makeDefaultBacklinks } from "@/entities/default-backlinks";
 
 const template = `
 date: {{date}}
 status: open
-project: []
-participants: []
 ---
 `;
 
-const taskConfig: CRMEntityConfig<
-  "task",
-  | { type: "participants-assignment" }
-  | { type: "facts"; collapsed?: boolean }
-  | { type: "logs"; collapsed?: boolean }
-  | { type: "task-subtasks"; collapsed?: boolean }
-  | { type: "documents"; collapsed?: boolean }
-> = {
+const taskConfig: CRMEntityConfig<"task"> = {
   type: "task",
   name: "Tasks",
   icon: "check-square",
@@ -26,13 +18,7 @@ const taskConfig: CRMEntityConfig<
   list: {
     columns: ["show", "participants", "status"],
   },
-  links: [
-    { type: "participants-assignment" },
-    { type: "facts" },
-    { type: "logs" },
-    { type: "task-subtasks" },
-    { type: "documents" },
-  ],
+  links: makeDefaultBacklinks(["task"]),
 };
 
 export default taskConfig;

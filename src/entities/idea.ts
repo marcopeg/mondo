@@ -1,19 +1,13 @@
 import type { CRMEntityConfig } from "@/types/CRMEntityConfig";
+import { makeDefaultBacklinks } from "@/entities/default-backlinks";
 
-const template = `---
+const template = `
 date: {{date}}
-type: idea
 status: draft
-related:
 ---
 `;
 
-const ideaConfig: CRMEntityConfig<
-  "idea",
-  | { type: "facts"; collapsed?: boolean }
-  | { type: "logs"; collapsed?: boolean }
-  | { type: "documents"; collapsed?: boolean }
-> = {
+const ideaConfig: CRMEntityConfig<"idea"> = {
   type: "idea",
   name: "Ideas",
   icon: "lightbulb",
@@ -24,11 +18,7 @@ const ideaConfig: CRMEntityConfig<
   list: {
     columns: ["show", "status"],
   },
-  links: [
-    { type: "documents", collapsed: true },
-    { type: "facts", collapsed: true },
-    { type: "logs", collapsed: true },
-  ],
+  links: makeDefaultBacklinks(["idea"]),
 };
 
 export default ideaConfig;

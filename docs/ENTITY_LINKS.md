@@ -36,6 +36,8 @@ src/containers/EntityLinks/
 
 Keep shared utilities that are only used by panels next to the panels (e.g. create a `panels/utils/` folder) so the feature stays self-contained.
 
+Tip: Need a highly flexible, property- or type-driven list? See the Backlinks panel guide in `docs/BACKLINKS_PANEL.md`.
+
 ## Conventions and Building Blocks
 
 - TypeScript style: prefer arrow functions, `const` over `let`, never `var` or `any`. See `AGENTS.md`.
@@ -201,7 +203,6 @@ yarn dev
 
 - Open a note with the target `type:` to see your panel.
 - Reordering panels: change the order of entries in the entity’s `links` array.
-- Note: If a config doesn’t include a `participant-tasks` panel, the system adds one automatically at the end.
 
 ## Reference: Important Files & APIs
 

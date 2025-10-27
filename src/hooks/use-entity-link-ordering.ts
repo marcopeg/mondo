@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useApp } from "@/hooks/use-app";
 import type { TCachedFile } from "@/types/TCachedFile";
 
@@ -96,10 +96,35 @@ export const useEntityLinkOrdering = <TItem>(
   }, [fallbackOrderedItems, getItemId, orderFromFrontmatter]);
 
   const [displayItems, setDisplayItems] = useState(orderedItems);
+  // Avoid visual flicker by not overwriting optimistic local order while
+  // persistence is in-flight.
+  const isPersistingRef = useRef(false);
 
   useEffect(() => {
-    setDisplayItems(orderedItems);
-  }, [orderedItems]);
+    if (isPersistingRef.current) {
+      // Skip syncing from derived order while we're persisting a manual reorder.
+      // This prevents a brief revert to fallback order before the saved order
+      // is read back from frontmatter.
+      return;
+    }
+    // Avoid infinite update loops by skipping state updates when the
+    // semantic order hasn't changed. Arrays are often recreated upstream
+    // (e.g., sorting, spreading) which would otherwise retrigger renders.
+    const ids = (arr: TItem[]) =>
+      arr
+        .map((item) => getItemId(item))
+        .filter((id): id is string => Boolean(id));
+
+    const prevIds = ids(displayItems);
+    const nextIds = ids(orderedItems);
+
+    const sameLength = prevIds.length === nextIds.length;
+    const sameOrder = sameLength && prevIds.every((v, i) => v === nextIds[i]);
+
+    if (!sameOrder) {
+      setDisplayItems(orderedItems);
+    }
+  }, [orderedItems, displayItems, getItemId]);
 
   const persistOrder = useCallback(
     (nextItems: TItem[]) => {
@@ -141,6 +166,8 @@ export const useEntityLinkOrdering = <TItem>(
             `useEntityLinkOrdering: failed to persist order for panel "${frontmatterKey}"`,
             error
           );
+        } finally {
+          isPersistingRef.current = false;
         }
       })();
     },
@@ -149,6 +176,7 @@ export const useEntityLinkOrdering = <TItem>(
 
   const handleReorder = useCallback(
     (nextItems: TItem[]) => {
+      isPersistingRef.current = true;
       setDisplayItems(nextItems);
       persistOrder(nextItems);
     },

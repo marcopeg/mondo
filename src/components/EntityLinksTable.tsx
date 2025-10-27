@@ -7,6 +7,7 @@ import {
   useSensor,
   useSensors,
   type DragEndEvent,
+  type DragStartEvent,
 } from "@dnd-kit/core";
 import {
   SortableContext,
@@ -29,6 +30,24 @@ const restrictToVerticalAxis = ({ transform }: { transform: any }) => {
     x: 0, // Force x-axis to 0, only allow y-axis movement
   };
 };
+
+// Build a modifier that locks to vertical movement and clamps within a given container's bounds
+const makeRestrictToVerticalBounds =
+  (getContainer: () => HTMLElement | null) =>
+  ({ transform, activeNodeRect, draggingNodeRect }: any) => {
+    const next = { ...transform, x: 0 };
+    const container = getContainer();
+    if (!container || !activeNodeRect) return next;
+    const bounds = container.getBoundingClientRect();
+    const h = (draggingNodeRect?.height ?? activeNodeRect.height) || 0;
+    const minY = bounds.top - activeNodeRect.top;
+    const maxY = bounds.bottom - activeNodeRect.top - h;
+    if (Number.isFinite(minY) && Number.isFinite(maxY)) {
+      const y = typeof next.y === "number" ? next.y : 0;
+      next.y = Math.min(Math.max(y, minY), maxY);
+    }
+    return next;
+  };
 
 type EntityLinksTableProps<T> = {
   items: T[];
@@ -54,6 +73,11 @@ export const EntityLinksTable = <T,>({
   getSortableId,
 }: EntityLinksTableProps<T>) => {
   const isSortable = sortable && typeof onReorder === "function";
+  const [isDragging, setIsDragging] = React.useState(false);
+  const [optimisticItems, setOptimisticItems] = React.useState<T[] | null>(
+    null
+  );
+  const wrapperRef = React.useRef<HTMLDivElement | null>(null);
   const getItemId = React.useCallback(
     (item: T, index: number): string | number => {
       const rawId = getSortableId
@@ -88,9 +112,10 @@ export const EntityLinksTable = <T,>({
     });
   }, [isSortable, items.length, pageSize]);
 
+  const baseItems = optimisticItems ?? items;
   const visibleItems = React.useMemo(
-    () => items.slice(0, visibleCount),
-    [items, visibleCount]
+    () => baseItems.slice(0, isSortable ? baseItems.length : visibleCount),
+    [baseItems, isSortable, visibleCount]
   );
 
   const sensors = useSensors(
@@ -107,8 +132,14 @@ export const EntityLinksTable = <T,>({
     })
   );
 
+  const restrictToVerticalBounds = React.useMemo(
+    () => makeRestrictToVerticalBounds(() => wrapperRef.current),
+    []
+  );
+
   const handleDragEnd = React.useCallback(
     (event: DragEndEvent) => {
+      setIsDragging(false);
       if (!isSortable || !onReorder) {
         return;
       }
@@ -126,10 +157,17 @@ export const EntityLinksTable = <T,>({
         return;
       }
 
-      onReorder(arrayMove(items, activeIndex, overIndex));
+      const next = arrayMove(items, activeIndex, overIndex);
+      // Optimistically reflect the new order immediately to avoid flicker
+      setOptimisticItems(next);
+      onReorder(next);
     },
     [getItemId, isSortable, items, onReorder]
   );
+
+  const handleDragStart = React.useCallback((_: DragStartEvent) => {
+    setIsDragging(true);
+  }, []);
 
   const handleLoadMore = React.useCallback(() => {
     setVisibleCount((previous) => Math.min(items.length, previous + pageSize));
@@ -141,6 +179,20 @@ export const EntityLinksTable = <T,>({
     () => visibleItems.map((item, index) => getItemId(item, index)),
     [getItemId, visibleItems]
   );
+
+  // Clear optimistic state once the parent items match the optimistic order
+  React.useEffect(() => {
+    if (!optimisticItems) return;
+    const byKey = (arr: T[]) =>
+      arr.map((item, index) => getItemId(item, index));
+    const a = byKey(optimisticItems);
+    const b = byKey(items);
+    const sameLength = a.length === b.length;
+    const same = sameLength && a.every((id, i) => id === b[i]);
+    if (same) {
+      setOptimisticItems(null);
+    }
+  }, [getItemId, items, optimisticItems]);
 
   const tableContent = (
     <Table className="w-full text-sm">
@@ -187,13 +239,19 @@ export const EntityLinksTable = <T,>({
   );
 
   return (
-    <div className="flex w-full flex-col gap-2 overflow-y-auto">
+    <div
+      className={`flex w-full flex-col gap-2 ${
+        isSortable && isDragging ? "overflow-y-hidden" : "overflow-y-auto"
+      }`}
+      ref={wrapperRef}
+    >
       {isSortable ? (
         <DndContext
           sensors={sensors}
           collisionDetection={closestCenter}
+          onDragStart={handleDragStart}
           onDragEnd={handleDragEnd}
-          modifiers={[restrictToVerticalAxis]}
+          modifiers={[restrictToVerticalBounds]}
         >
           {tableContent}
         </DndContext>
@@ -231,18 +289,12 @@ const SortableRow = ({
   children,
   withHandle = false,
 }: SortableRowProps) => {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id });
+  const { attributes, listeners, setNodeRef, transform, isDragging } =
+    useSortable({ id });
 
   const style: React.CSSProperties = {
     transform: CSS.Transform.toString(transform),
-    transition,
+    // Intentionally omit transition to avoid post-drop flicker animations
   };
 
   return (

@@ -1,4 +1,5 @@
 import type { CRMEntityConfig } from "@/types/CRMEntityConfig";
+import { makeDefaultBacklinks } from "@/entities/default-backlinks";
 
 const template = `
 date: {{date}}
@@ -7,16 +8,7 @@ location: []
 ---
 `;
 
-const teamConfig: CRMEntityConfig<
-  "team",
-  | { type: "team-members"; collapsed?: boolean }
-  | { type: "projects"; collapsed?: boolean }
-  | { type: "meetings"; collapsed?: boolean }
-  | { type: "facts"; collapsed?: boolean }
-  | { type: "team-tasks"; collapsed?: boolean }
-  | { type: "logs"; collapsed?: boolean }
-  | { type: "documents"; collapsed?: boolean }
-> = {
+const teamConfig: CRMEntityConfig<"team"> = {
   type: "team",
   name: "Teams",
   icon: "users",
@@ -29,27 +21,46 @@ const teamConfig: CRMEntityConfig<
   },
   links: [
     {
-      type: "documents",
-      collapsed: true,
+      type: "backlinks",
+      key: "people",
+      config: {
+        targetType: "person",
+        properties: ["team"],
+        title: "People",
+        icon: "users",
+        collapsed: false,
+        sort: {
+          strategy: "column",
+          column: "show",
+          direction: "asc",
+        },
+        columns: [
+          { type: "cover" },
+          { type: "show" },
+          { type: "attribute", key: "company" },
+          { type: "attribute", key: "team" },
+        ],
+      },
     },
     {
-      type: "team-members",
+      type: "backlinks",
+      key: "projects",
+      config: {
+        targetType: "project",
+        properties: ["team"],
+        title: "Projects",
+        icon: "folder-git-2",
+        columns: [
+          { type: "show" },
+          { type: "attribute", key: "status" },
+          { type: "date", align: "right" },
+        ],
+        sort: {
+          strategy: "manual",
+        },
+      },
     },
-    {
-      type: "projects",
-    },
-    {
-      type: "meetings",
-    },
-    {
-      type: "facts",
-    },
-    {
-      type: "logs",
-    },
-    {
-      type: "team-tasks",
-    },
+    ...makeDefaultBacklinks(["team"]),
   ],
 };
 

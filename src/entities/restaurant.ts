@@ -1,4 +1,5 @@
 import type { CRMEntityConfig } from "@/types/CRMEntityConfig";
+import { makeDefaultBacklinks } from "@/entities/default-backlinks";
 
 const template = `
 date: {{date}}
@@ -6,10 +7,7 @@ location: []
 ---
 `;
 
-const restaurantConfig: CRMEntityConfig<
-  "restaurant",
-  | { type: "documents"; collapsed?: boolean }
-> = {
+const restaurantConfig: CRMEntityConfig<"restaurant"> = {
   type: "restaurant",
   name: "Restaurants",
   icon: "utensils",
@@ -20,12 +18,7 @@ const restaurantConfig: CRMEntityConfig<
   list: {
     columns: ["cover", "show", "location"],
   },
-  links: [
-    {
-      type: "documents",
-      collapsed: true,
-    },
-  ],
+  links: makeDefaultBacklinks(["restaurant"]),
 };
 
 export default restaurantConfig;

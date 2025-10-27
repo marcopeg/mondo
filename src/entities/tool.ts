@@ -1,19 +1,12 @@
 import type { CRMEntityConfig } from "@/types/CRMEntityConfig";
+import { makeDefaultBacklinks } from "@/entities/default-backlinks";
 
 const template = `
 date: {{date}}
-category:
-location: []
-owner:
 ---
 `;
 
-const toolConfig: CRMEntityConfig<
-  "tool",
-  | { type: "facts"; collapsed?: boolean }
-  | { type: "logs"; collapsed?: boolean }
-  | { type: "documents"; collapsed?: boolean }
-> = {
+const toolConfig: CRMEntityConfig<"tool"> = {
   type: "tool",
   name: "Tools",
   icon: "hammer",
@@ -24,13 +17,7 @@ const toolConfig: CRMEntityConfig<
   list: {
     columns: ["cover", "show", "category", "owner", "location"],
   },
-  links: [
-    { type: "facts" },
-    { type: "logs" },
-    {
-      type: "documents",
-    },
-  ],
+  links: makeDefaultBacklinks(["tool"]),
 };
 
 export default toolConfig;
