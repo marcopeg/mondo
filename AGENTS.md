@@ -25,23 +25,29 @@ This plugin relies on the frontmatter's attribute `type` to identify CRM-specifi
 
 ## Entities
 
-List of the possible values of the attribute "type":
+Supported values for the `type` frontmatter field are defined in [`src/crm-config.json`](./src/crm-config.json).  
+Current entity types:
 
 - person
-- role
-- team
-- company
-- location
+- fact
+- log
+- task
 - project
 - idea
+- company
+- team
 - meeting
-- log
+- role
+- location
+- restaurant
+- gear
 - tool
 - recipe
 - book
 - show
+- document
 
-Refer to [ENTITY_LINKS.md](./docs/ENTITY_LINKS.md) for detailed guidance on maintaining Entity Links panels and adding new ones.
+The config also drives dashboard tile ordering, relevant-note filters, and per-entity templates. See [`CRM_CONFIG.md`](./docs/CRM_CONFIG.md) for details on maintaining the configuration, and [`ENTITY_LINKS.md`](./docs/ENTITY_LINKS.md) for link panel guidance.
 
 # TypeScript
 
