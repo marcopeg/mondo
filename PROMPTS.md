@@ -171,3 +171,11 @@ each backlinks item must define a "key" property (need to add it to the definiti
 the template for the state key becomes then "backlinks:{key}"
 
 NOTE: we need to assign keys to every current utilization of the backlings in the entities definition files.
+
+---
+
+refactor #file:role.ts links following the examples in #file:person.ts and #file:company.ts . add the following panels:
+
+- Members (persons linked to the role)
+- Projects (directly linked via "role" attribute)
+- standard backlinks
