@@ -24,6 +24,7 @@ Backlinks configurations now use a nested structure with optional developer docu
 // Entity link configuration with nested backlinks
 interface CRMEntityLink {
   type: "backlinks";
+  key?: string; // unique panel key for crmState persistence (recommended)
   desc?: string; // optional: developer-readable description
   config: BacklinksPanelConfig;
 }
@@ -31,7 +32,7 @@ interface CRMEntityLink {
 // Inside config, you can use the advanced `find` and `filter` fields
 interface BacklinksPanelConfig {
   // Targeting
-  targetType: CRMEntityType | string;
+  targetType?: CRMEntityType | string; // optional; defaults to host entity type when omitted
   properties?: string | string[]; // legacy: property names to match
   prop?: string | string[]; // legacy alias for properties
 
@@ -152,6 +153,7 @@ We want:
 ```ts
 {
   type: "backlinks",
+  key: "projects-deep",
   desc: "Projects linked directly via participants or indirectly via shared teams",
   config: {
     targetType: "project",
@@ -203,6 +205,7 @@ We want: People who share at least one team with the host person.
 ```ts
 {
   type: "backlinks",
+  key: "teammates",
   desc: "People who share at least one team with the host person",
   config: {
     targetType: "person",
@@ -243,6 +246,7 @@ We want: Meetings with exactly one participant (the host).
 ```ts
 {
   type: "backlinks",
+  key: "1on1-meetings",
   desc: "Meetings with one participant (1:1 meetings)",
   config: {
     targetType: "meeting",
@@ -283,6 +287,7 @@ We want: Meetings that include the host person and have more than one attendee.
 ```ts
 {
   type: "backlinks",
+  key: "meetings-deep",
   desc: "Meetings with multiple participants, directly or via shared teams",
   config: {
     targetType: "meeting",
@@ -335,6 +340,7 @@ We want: Projects that are both direct participants AND connected via a team hop
 ```ts
 {
   type: "backlinks",
+  key: "core-projects",
   desc: "Core projects (direct + team-mediated)",
   config: {
     targetType: "project",
