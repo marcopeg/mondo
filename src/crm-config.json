@@ -49,7 +49,6 @@
     "person": {
       "name": "People",
       "icon": "user",
-      "aliases": ["people"],
       "dashboard": {},
       "settings": {
         "template": "\ndate: {{date}}\nlocation: []\ncompany: []\nrole: []\nteam: []\n---\n"
@@ -2012,7 +2011,6 @@
       "settings": {
         "template": "\ndate: {{date}}\nformat: movie\ngenre: []\n---\n"
       },
-      "aliases": ["movie", "movies"],
       "list": {
         "columns": [
           "cover",
@@ -2091,7 +2089,6 @@
     "document": {
       "name": "Documents",
       "icon": "file-text",
-      "aliases": ["documents"],
       "dashboard": {},
       "settings": {
         "template": "\ndate: {{date}}\nfile:\n---\n"

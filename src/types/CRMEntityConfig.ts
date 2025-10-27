@@ -115,7 +115,6 @@ export interface CRMEntityConfig<
   icon: string;
   dashboard: CRMEntityDashboardConfig;
   settings: CRMEntitySettingsConfig;
-  aliases?: string[];
   list?: CRMEntityListConfig;
   links?: TLink[];
 }

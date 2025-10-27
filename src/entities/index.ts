@@ -36,14 +36,6 @@ export const resolveCRMEntityType = (value: string): CRMEntityType | null => {
   if (isCRMEntityType(normalized)) {
     return normalized;
   }
-
-  for (const entity of CRM_ENTITY_CONFIG_LIST) {
-    if (!entity.aliases) continue;
-    if (entity.aliases.some((alias) => alias.toLowerCase() === normalized)) {
-      return entity.type as CRMEntityType;
-    }
-  }
-
   return null;
 };
 

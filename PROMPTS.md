@@ -233,3 +233,7 @@ Fix the logic so that the configuration is read from this file and not from the 
 ---
 
 explain me what the crm-configuration `entity.{key}.aliases` do and what is the consequence if we remove it
+
+---
+
+explain me what the crm-configuration `entity.{key}.dashboard` do and what is the consequence if we remove it
