@@ -1,6 +1,5 @@
 import { DEFAULT_TEMPLATE } from "./default-template";
 import type { CRMEntityConfig } from "@/types/CRMEntityConfig";
-import type { CRMEntityBacklinksLink } from "@/types/CRMEntityConfig";
 import { DEFAULT_BACKLINKS } from "@/entities/default-backlinks";
 
 const locationConfig: CRMEntityConfig<"location"> = {
