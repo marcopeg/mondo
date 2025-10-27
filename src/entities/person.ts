@@ -59,6 +59,46 @@ const personConfig: CRMEntityConfig<"person"> = {
         "participants.length": { eq: 1 },
       },
     },
+    // Meetings (deep linked)
+    {
+      type: "backlinks",
+      targetType: "meeting",
+      title: "Meetings (deep linked)",
+      icon: "calendar",
+      columns: [
+        { type: "show" },
+        { type: "attribute", key: "participants" },
+        { type: "date", align: "right" },
+      ],
+      sort: {
+        strategy: "column",
+        column: "date",
+        direction: "desc",
+      },
+      find: {
+        query: [
+          {
+            description: "Direct backlinks via participants/people",
+            steps: [
+              { in: { property: ["participants", "people"], type: "meeting" } },
+              { unique: true },
+            ],
+          },
+          {
+            description: "Via teams (meetings backlink to teams)",
+            steps: [
+              { out: { property: ["team", "teams"], type: "team" } },
+              { in: { property: ["team", "teams"], type: "meeting" } },
+              { unique: true },
+            ],
+          },
+        ],
+        combine: "union",
+      },
+      filter: {
+        "participants.length": { gt: 1 },
+      },
+    },
     // Projects (also indirect through teams)
     {
       type: "backlinks",
