@@ -64,17 +64,43 @@ const companyConfig: CRMEntityConfig<"company"> = {
       desc: "Projects associated with this company",
       config: {
         targetType: "project",
-        properties: ["company"],
         title: "Projects",
-        icon: "briefcase",
-        columns: [
-          { type: "show" },
-          { type: "attribute", key: "status" },
-          { type: "date", align: "right" },
-        ],
+        icon: "folder-git-2",
+        // Use the graph-based `find` DSL to include:
+        // 1) Projects that link directly to the company via `company` frontmatter
+        // 2) Projects that link to teams which in turn belong to this company
+        find: {
+          query: [
+            {
+              description: "Direct projects linked via company property",
+              steps: [
+                { in: { property: ["company"], type: "project" } },
+                { unique: true },
+              ],
+            },
+            {
+              description:
+                "Projects linked to teams that belong to this company",
+              steps: [
+                // Find teams that backlink to this company
+                { in: { property: ["company"], type: "team" } },
+                // From those teams, find projects that backlink to the team
+                { in: { property: ["team", "teams"], type: "project" } },
+                { unique: true },
+              ],
+            },
+          ],
+          combine: "union",
+        },
         sort: {
           strategy: "manual",
         },
+        columns: [
+          { type: "show" },
+          { type: "attribute", key: "status" },
+          { type: "attribute", key: "team" },
+          { type: "date", align: "right" },
+        ],
       },
     },
     ...DEFAULT_BACKLINKS,
