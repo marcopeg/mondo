@@ -24,15 +24,6 @@ const personConfig: CRMEntityConfig<"person"> = {
     sort: { column: "show", direction: "asc" },
   },
   links: [
-    // {
-    //   type: "documents",
-    // },
-    // {
-    //   type: "facts",
-    // },
-    // {
-    //   type: "logs",
-    // },
     {
       type: "meetings",
     },
@@ -42,6 +33,27 @@ const personConfig: CRMEntityConfig<"person"> = {
     },
     {
       type: "teammates",
+    },
+    {
+      type: "backlinks",
+      targetType: "project",
+      properties: ["participants"],
+      title: "Projects (linked)",
+      icon: "folder-git-2",
+      columns: [
+        { type: "show" },
+        { type: "attribute", key: "participants" },
+        { type: "date", align: "right" },
+      ],
+      sort: {
+        strategy: "column",
+        column: "date",
+        direction: "desc",
+      },
+      createEntity: {
+        enabled: true,
+        title: "{YY}-{MM}-{DD} {hh}.{mm} with {@this.show}",
+      },
     },
     {
       type: "backlinks",

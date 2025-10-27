@@ -25,21 +25,55 @@ export type CreateEntityForEntityParams = {
 
 const formatDateParts = (now: Date) => {
   const yyyy = String(now.getFullYear());
-  const mm = String(now.getMonth() + 1).padStart(2, "0");
-  const dd = String(now.getDate()).padStart(2, "0");
-  const hh = String(now.getHours()).padStart(2, "0");
-  const min = String(now.getMinutes()).padStart(2, "0");
-  return { yyyy, mm, dd, hh, min };
+  const yy = yyyy.slice(-2);
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  const hour = String(now.getHours()).padStart(2, "0");
+  const minute = String(now.getMinutes()).padStart(2, "0");
+  return { yyyy, yy, month, day, hour, minute };
 };
 
 const applyInlineTemplate = (
   raw: string,
-  ctx: { dateISO: string; datetimeISO: string; hostName: string }
+  ctx: {
+    dateISO: string;
+    datetimeISO: string;
+    hostName: string;
+    parts: {
+      yyyy: string;
+      yy: string;
+      month: string;
+      day: string;
+      hour: string;
+      minute: string;
+    };
+    hostFM?: Record<string, unknown>;
+  }
 ) => {
-  return String(raw)
+  const s = String(raw);
+  // Handle {@this.show}: resolve to show attribute or fall back to hostName
+  let out = s.replace(/\{\s*@this\.show\s*\}/gi, () => {
+    const hostFM = ctx.hostFM ?? {};
+    const showAttr = hostFM.show;
+    if (typeof showAttr === "string" && showAttr.trim()) {
+      return showAttr.trim();
+    }
+    // Fallback to hostName if show attribute is empty or missing
+    return ctx.hostName;
+  });
+  // Non-ambiguous tokens (case-insensitive)
+  out = out
     .replace(/\{\s*datetime\s*\}/gi, ctx.datetimeISO)
     .replace(/\{\s*date\s*\}/gi, ctx.dateISO)
-    .replace(/\{\s*show\s*\}/gi, ctx.hostName);
+    .replace(/\{\s*show\s*\}/gi, ctx.hostName)
+    .replace(/\{\s*(YYYY|yyyy)\s*\}/g, ctx.parts.yyyy)
+    .replace(/\{\s*(YY|yy)\s*\}/g, ctx.parts.yy)
+    .replace(/\{\s*(DD|dd)\s*\}/g, ctx.parts.day)
+    .replace(/\{\s*hh\s*\}/g, ctx.parts.hour)
+    .replace(/\{\s*mm\s*\}/g, ctx.parts.minute);
+  // Ambiguous between month/minute: treat upper-case MM as month
+  out = out.replace(/\{\s*MM\s*\}/g, ctx.parts.month);
+  return out;
 };
 
 /**
@@ -79,15 +113,22 @@ export const createEntityForEntity = async ({
   }
 
   const now = new Date();
-  const { yyyy, mm, dd, hh, min } = formatDateParts(now);
-  const dateISO = `${yyyy}-${mm}-${dd}`;
+  const { yyyy, yy, month, day, hour, minute } = formatDateParts(now);
+  const dateISO = `${yyyy}-${month}-${day}`;
   const datetimeISO = now.toISOString();
   const hostName = getEntityDisplayName(hostEntity);
 
   const titleRaw = titleTemplate || "Untitled";
   const title =
-    applyInlineTemplate(titleRaw, { dateISO, datetimeISO, hostName }).trim() ||
-    "Untitled";
+    applyInlineTemplate(titleRaw, {
+      dateISO,
+      datetimeISO,
+      hostName,
+      parts: { yyyy, yy, month, day, hour, minute },
+      hostFM: hostEntity.cache?.frontmatter as
+        | Record<string, unknown>
+        | undefined,
+    }).trim() || "Untitled";
 
   const folderSetting = (
     settings.rootPaths?.[normalizedTarget as CRMFileType] ?? "/"
@@ -222,6 +263,8 @@ export const createEntityForEntity = async ({
           dateISO,
           datetimeISO,
           hostName,
+          parts: { yyyy, yy, month, day, hour, minute },
+          hostFM: hostFM,
         });
         (frontmatter as any)[k] = renderedValue;
       });
