@@ -11,7 +11,10 @@ import {
   slugify,
 } from "@/utils/createLinkedNoteHelpers";
 
-export type CreateEntityAttributes = Record<string, string | number | boolean>;
+export type CreateEntityAttributes = Record<
+  string,
+  string | number | boolean | Array<string | number | boolean>
+>;
 
 export type CreateEntityForEntityParams = {
   app: App;
@@ -187,12 +190,31 @@ export const createEntityForEntity = async ({
     return props;
   })();
 
-  const linkProps =
-    Array.isArray(linkProperties) && linkProperties.length > 0
-      ? Array.from(
-          new Set(linkProperties.map((s) => String(s).trim()).filter(Boolean))
-        )
-      : defaultLinkProps;
+  // Determine if attributeTemplates explicitly reference the host note using {@this}
+  const attributeTemplatesAny = attributeTemplates as
+    | Record<string, unknown>
+    | undefined;
+  const containsExplicitHostLink = (() => {
+    if (!attributeTemplatesAny) return false;
+    const hasHostToken = (val: unknown): boolean => {
+      if (typeof val === "string") {
+        return /\{\s*@this\s*\}/i.test(val);
+      }
+      if (Array.isArray(val)) {
+        return val.some((it) => hasHostToken(it));
+      }
+      return false;
+    };
+    return Object.values(attributeTemplatesAny).some((v) => hasHostToken(v));
+  })();
+
+  const linkProps = containsExplicitHostLink
+    ? []
+    : Array.isArray(linkProperties) && linkProperties.length > 0
+    ? Array.from(
+        new Set(linkProperties.map((s) => String(s).trim()).filter(Boolean))
+      )
+    : defaultLinkProps;
 
   // Persist frontmatter: add links and attributes
   await app.fileManager.processFrontMatter(created, (frontmatter) => {
@@ -236,38 +258,84 @@ export const createEntityForEntity = async ({
           return val as any;
         }
       };
-      Object.entries(attributeTemplates).forEach(([k, v]) => {
-        if (typeof v === "string") {
-          const m = v
-            .trim()
-            .match(/^\{\s*@this\s*(?:\.\s*([A-Za-z0-9_-]+)\s*)?\}$/);
-          if (m) {
-            const prop = m[1]?.trim();
-            if (prop) {
-              const src = hostFM[prop];
-              if (src !== undefined) {
-                (frontmatter as any)[k] = deepClone(src);
+      Object.entries(attributeTemplates as Record<string, unknown>).forEach(
+        ([k, v]) => {
+          // Helper to process a single template value into a concrete value
+          const processValue = (val: unknown): unknown => {
+            if (typeof val === "string") {
+              const m = val
+                .trim()
+                .match(/^\{\s*@this\s*(?:\.\s*([A-Za-z0-9_-]+)\s*)?\}$/);
+              if (m) {
+                const prop = m[1]?.trim();
+                if (prop) {
+                  const src = hostFM[prop];
+                  if (src !== undefined) {
+                    return deepClone(src);
+                  }
+                  return undefined;
+                }
+                // {@this} with no property: produce a wikilink to the host
+                return wiki;
               }
+              // Regular inline token replacement for strings
+              return applyInlineTemplate(val, {
+                dateISO,
+                datetimeISO,
+                hostName,
+                parts: { yyyy, yy, month, day, hour, minute },
+                hostFM: hostFM,
+              });
+            }
+            // Preserve primitive types
+            if (typeof val === "number" || typeof val === "boolean") {
+              return val;
+            }
+            // Arrays: process each element
+            if (Array.isArray(val)) {
+              const outArr: unknown[] = [];
+              for (const item of val) {
+                const processed = processValue(item);
+                if (processed === undefined) continue;
+                // If a nested array was returned (e.g., copying {@this.prop} when it's an array),
+                // flatten its items into the parent array to avoid double nesting.
+                if (Array.isArray(processed)) {
+                  outArr.push(...processed.map((x) => deepClone(x)));
+                } else {
+                  outArr.push(processed);
+                }
+              }
+              return outArr;
+            }
+            // Fallback: deep clone objects as-is
+            if (typeof val === "object" && val !== null) {
+              return deepClone(val);
+            }
+            return val;
+          };
+
+          const processed = processValue(v);
+          if (processed === undefined) return;
+          // Avoid overwriting linkProps arrays if the same key is used and default linking is active
+          if (linkKeys.has(k)) {
+            // If processed is an array, merge ensuring uniqueness
+            const existing = (frontmatter as any)[k];
+            if (Array.isArray(existing) && Array.isArray(processed)) {
+              const set = new Set(existing.map((e: unknown) => String(e)));
+              for (const item of processed) {
+                const s = String(item);
+                if (!set.has(s)) existing.push(item);
+              }
+              (frontmatter as any)[k] = existing;
               return;
             }
-            // {@this} with no property: set a link to the host note
-            // Avoid overwriting linkProps arrays if the same key is used
-            if (!linkKeys.has(k)) {
-              (frontmatter as any)[k] = wiki;
-            }
+            // Otherwise, let attributes take precedence over default linking
+            (frontmatter as any)[k] = processed;
             return;
           }
+          (frontmatter as any)[k] = processed;
         }
-        // Fallback to regular inline token replacement
-        const renderedValue = applyInlineTemplate(String(v), {
-          dateISO,
-          datetimeISO,
-          hostName,
-          parts: { yyyy, yy, month, day, hour, minute },
-          hostFM: hostFM,
-        });
-        (frontmatter as any)[k] = renderedValue;
-      });
+      );
     }
   });
 
