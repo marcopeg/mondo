@@ -76,3 +76,23 @@ Focus on the /entities/index.ts - this file should export a configuration object
 when creating a entity=log from the Entity Tab the title should follow the format "{date} {time}" and it should be pre-selected so that the user can confirm with "enter" or just edit to change it. the body should be empty.
 
 Focus on the QuickTaks in the dashboard. when selecting the option "log" to turn a quick tast into a log note, the newly created note should inherith the log's date an time as both title and attributes.
+
+---
+
+This is the current configuration of a BacklinksPanel for listing the projects that are associated with a type=person:
+
+```
+{
+    type: "backlinks",
+    targetType: "project",
+    properties: ["participants"],
+    ...
+}
+```
+
+Focus on how to find the related notes.
+Right now we use the combo `targetType` and `properties` to find backlinks to the current note.
+
+This works in most usecase where the backlink is direct (the target note links directly back in one of the `properties`).
+
+But there are usecases in

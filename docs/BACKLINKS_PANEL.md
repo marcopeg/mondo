@@ -50,6 +50,24 @@ This lists person notes whose frontmatter `reportsTo` property contains a link t
 }
 ```
 
+### 4) Project with timestamp and person name
+
+```ts
+{
+  type: "backlinks",
+  targetType: "project",
+  properties: ["participants"],
+  title: "Projects (linked)",
+  icon: "folder-git-2",
+  createEntity: {
+    enabled: true,
+    title: "{YY}-{MM}-{DD} {hh}.{mm} with {@this.show}",
+  },
+}
+```
+
+This creates a project with a timestamp and includes the person's name (or display alias).
+
 ## Configuration schema
 
 Backlinks panel config object placed in an entity’s `links` array:
@@ -157,15 +175,53 @@ Template tokens available in title and attributes:
 - `{date}`: YYYY-MM-DD (local date)
 - `{datetime}`: ISO timestamp
 - `{show}`: display name of the host note
+- `{YYYY}` / `{YY}`: full year (e.g., 2025) / 2-digit year (e.g., 25)
+- `{MM}`: zero-padded month (01–12)
+- `{DD}`: zero-padded day (01–31)
+- `{hh}`: zero-padded hour in 24h format (00–23)
+- `{mm}`: zero-padded minutes (00–59)
 - `{@this}`: inserts a wiki link to the current note (host) into the target attribute
+- `{@this.show}`: resolves to the host note's `show` frontmatter value, or falls back to the display name / filename
 - `{@this.<prop>}`: copies the raw frontmatter value of `<prop>` from the current note to the new note (arrays and primitives preserved)
+
+**Example templates:**
+
+```ts
+// Use date and time to create a timestamped title with the person's name:
+createEntity: {
+  enabled: true,
+  title: "{YY}-{MM}-{DD} {hh}.{mm} with {@this.show}",
+  // Result: "25-10-27 06.57 with Jane Smith"
+}
+
+// Create a log entry with ISO timestamp:
+createEntity: {
+  enabled: true,
+  title: "{date} on {show}",
+  attributes: { date: "{datetime}" },
+  // Result: title "2025-10-27 on Project X", date set to ISO timestamp
+}
+
+// Copy host properties into new note:
+createEntity: {
+  enabled: true,
+  title: "New Report",
+  attributes: {
+    company: "{@this.company}",
+    team: "{@this.team}",
+    reportsTo: "{@this}",
+  },
+  // Result: copies company/team arrays from host, sets reportsTo to a link to the host
+}
+```
 
 Notes about `{@this}` behavior in attributes:
 
 - If the attribute key you set with `{@this}` is also used in the panel's `properties` for linking (i.e., it's in `properties`/`prop`), the creation flow will avoid overwriting the array created for links and will skip setting a scalar over it. The link back to the host is already handled via `properties`.
 - When using `{@this.<prop>}`, the value is copied as-is from the host frontmatter (deep-cloned), so arrays remain arrays and primitive values remain primitives.
+- `{@this.show}` is special: if the host's `show` attribute is empty or missing, it falls back to the host's display name / filename.
 
-Defaults overview
+#### Defaults overview
 
 - Columns: when omitted, defaults to `[ { type: "show" }, { type: "date", label: "Date", align: "right" } ]`.
 - Sorting: when omitted, defaults to newest-first by date (`{ strategy: "column", column: "date", direction: "desc" }`).
