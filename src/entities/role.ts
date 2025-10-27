@@ -16,12 +16,13 @@ const roleConfig: CRMEntityConfig<"role"> = {
   links: [
     {
       type: "backlinks",
-      key: "members",
+      key: "people",
       config: {
         targetType: "person",
         properties: ["role"],
-        title: "Members",
+        title: "People",
         icon: "users",
+        collapsed: false,
         sort: {
           strategy: "column",
           column: "show",
