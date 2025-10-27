@@ -24,21 +24,45 @@ const personConfig: CRMEntityConfig<"person"> = {
     sort: { column: "show", direction: "asc" },
   },
   links: [
+    // Teammates (backlinks)
     {
-      type: "teammates",
+      type: "backlinks",
+      targetType: "person",
+      title: "Teammates",
+      icon: "users",
+      find: {
+        query: [
+          {
+            description: "People who share at least one team with the host",
+            steps: [
+              { out: { property: ["team", "teams"], type: "team" } },
+              { in: { property: ["team", "teams"], type: "person" } },
+              { not: "host" },
+              { unique: true },
+            ],
+          },
+        ],
+        combine: "union",
+      },
+      sort: {
+        strategy: "column",
+        column: "show",
+        direction: "asc",
+      },
+      columns: [
+        { type: "cover" },
+        { type: "show" },
+        { type: "attribute", key: "team" },
+        { type: "attribute", key: "role" },
+      ],
     },
     // 1o1s
     {
       type: "backlinks",
       targetType: "meeting",
       title: "1o1s",
-      icon: "users",
+      icon: "calendar",
       columns: [{ type: "show" }, { type: "date", align: "right" }],
-      sort: {
-        strategy: "column",
-        column: "date",
-        direction: "desc",
-      },
       find: {
         query: [
           {
@@ -55,6 +79,11 @@ const personConfig: CRMEntityConfig<"person"> = {
       filter: {
         "participants.length": { eq: 1 },
       },
+      sort: {
+        strategy: "column",
+        column: "date",
+        direction: "desc",
+      },
     },
     // Meetings (deep linked)
     {
@@ -62,16 +91,6 @@ const personConfig: CRMEntityConfig<"person"> = {
       targetType: "meeting",
       title: "Meetings (deep linked)",
       icon: "calendar",
-      columns: [
-        { type: "show" },
-        { type: "attribute", key: "participants" },
-        { type: "date", align: "right" },
-      ],
-      sort: {
-        strategy: "column",
-        column: "date",
-        direction: "desc",
-      },
       find: {
         query: [
           {
@@ -98,12 +117,22 @@ const personConfig: CRMEntityConfig<"person"> = {
           { "participants.length": { gt: 1 } },
         ],
       },
+      sort: {
+        strategy: "column",
+        column: "date",
+        direction: "desc",
+      },
+      columns: [
+        { type: "show" },
+        { type: "attribute", key: "participants" },
+        { type: "date", align: "right" },
+      ],
     },
     // Projects (also indirect through teams)
     {
       type: "backlinks",
       targetType: "project",
-      title: "Projects (deep linked)",
+      title: "Projects",
       icon: "folder-git-2",
       find: {
         query: [
