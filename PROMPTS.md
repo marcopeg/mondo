@@ -179,3 +179,21 @@ refactor #file:role.ts links following the examples in #file:person.ts and #file
 - Members (persons linked to the role)
 - Projects (directly linked via "role" attribute)
 - standard backlinks
+
+---
+
+refactor #file:location.ts links following the examples in:
+
+- #file:person.ts
+- #file:company.ts
+- #file:role.ts
+
+add the following panels:
+
+- People (persons linked to the location, expanded by default)
+- Companies (linked to the location, expanded by default)
+- Teams (linked to the location, expanded by default)
+- Gears (linked to the location, expanded by default)
+- Restaurants (linked to the location, expanded by default)
+- Projects (directly linked via "role" attribute)
+- standard backlinks
