@@ -237,3 +237,13 @@ explain me what the crm-configuration `entity.{key}.aliases` do and what is the 
 ---
 
 explain me what the crm-configuration `entity.{key}.dashboard` do and what is the consequence if we remove it
+
+---
+
+add a new settings with the note picker to pick up a note to be used as source of the configuration for the crm.
+
+when this note is set, the frontmatter of such note takes over the hardcoded configuration.
+
+the system must be able to validate it and prevent using it if it contains any error. every time the content of this file changes the system should re-validate and re-load the configuration.
+
+in case of a bad configuration, a detailed error log should be created in the same folder as the config file with the filename following the template "YYMMDDhhmmss-crm-config-error.md" to help the use fix the configuration issue.
