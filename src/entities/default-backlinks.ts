@@ -34,7 +34,7 @@ export const DEFAULT_BACKLINKS: CRMEntityBacklinksLink[] = [
       targetType: "document",
       properties: ["reference"],
       title: "Documents",
-      icon: "file-text",
+      icon: "paperclip",
       sort: {
         strategy: "manual",
       },
@@ -47,7 +47,7 @@ export const DEFAULT_BACKLINKS: CRMEntityBacklinksLink[] = [
     config: {
       targetType: "task",
       properties: ["reference"],
-      title: "Tasks1",
+      title: "Tasks",
       icon: "check-square",
       columns: [
         { type: "show" },
