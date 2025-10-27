@@ -107,26 +107,23 @@ const personConfig: CRMEntityConfig<"person"> = {
         find: {
           query: [
             {
-              description:
-                "Meetings that backlink to the host via participants/people",
               steps: [
                 {
                   in: { property: ["participants", "people"], type: "meeting" },
                 },
-                { unique: true },
               ],
             },
           ],
-          combine: "union",
+        },
+        filter: {
+          "participants.length": { eq: 1 },
         },
         sort: {
           strategy: "column",
           column: "date",
           direction: "desc",
         },
-        filter: {
-          "participants.length": { eq: 1 },
-        },
+        pageSize: 5,
         columns: [{ type: "show" }, { type: "date", align: "right" }],
         createEntity: {
           enabled: true,
