@@ -25,9 +25,6 @@ const personConfig: CRMEntityConfig<"person"> = {
   },
   links: [
     {
-      type: "meetings",
-    },
-    {
       type: "teammates",
     },
     // 1o1s
@@ -96,7 +93,10 @@ const personConfig: CRMEntityConfig<"person"> = {
         combine: "union",
       },
       filter: {
-        "participants.length": { gt: 1 },
+        any: [
+          { "participants.length": { eq: 0 } },
+          { "participants.length": { gt: 1 } },
+        ],
       },
     },
     // Projects (also indirect through teams)
