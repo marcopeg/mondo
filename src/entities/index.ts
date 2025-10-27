@@ -9,16 +9,20 @@ const CRM_ENTITY_CONFIG_ENTRIES = Object.entries(crmConfig.entities) as Array<
   [CRMEntityType, CRMEntityConfigRecord[CRMEntityType]]
 >;
 
+// Enrich entity configs with a computed `type` derived from the record key
 export const CRM_ENTITY_CONFIG_LIST = CRM_ENTITY_CONFIG_ENTRIES.map(
-  ([, config]) => config as CRMEntityConfig
+  ([type, config]) => ({ ...(config as object), type } as CRMEntityConfig)
 );
 
 export const CRM_ENTITIES = Object.fromEntries(
-  CRM_ENTITY_CONFIG_ENTRIES
+  CRM_ENTITY_CONFIG_ENTRIES.map(([type, config]) => [
+    type,
+    { ...(config as object), type } as CRMEntityConfig,
+  ])
 ) as Record<CRMEntityType, CRMEntityConfig>;
 
-export const CRM_ENTITY_TYPES = CRM_ENTITY_CONFIG_LIST.map(
-  (entity) => entity.type
+export const CRM_ENTITY_TYPES = CRM_ENTITY_CONFIG_ENTRIES.map(
+  ([type]) => type
 ) as CRMEntityType[];
 
 export const CRM_ENTITY_TYPE_SET = new Set(CRM_ENTITY_TYPES);

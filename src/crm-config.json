@@ -47,7 +47,6 @@
   },
   "entities": {
     "person": {
-      "type": "person",
       "name": "People",
       "icon": "user",
       "aliases": ["people"],
@@ -431,7 +430,6 @@
       ]
     },
     "fact": {
-      "type": "fact",
       "name": "Facts",
       "icon": "bookmark",
       "dashboard": {},
@@ -511,7 +509,6 @@
       ]
     },
     "log": {
-      "type": "log",
       "name": "Logs",
       "icon": "file-clock",
       "dashboard": {},
@@ -591,7 +588,6 @@
       ]
     },
     "task": {
-      "type": "task",
       "name": "Tasks",
       "icon": "check-square",
       "dashboard": {},
@@ -667,7 +663,6 @@
       ]
     },
     "project": {
-      "type": "project",
       "name": "Projects",
       "icon": "folder-git-2",
       "dashboard": {},
@@ -792,7 +787,6 @@
       ]
     },
     "idea": {
-      "type": "idea",
       "name": "Ideas",
       "icon": "lightbulb",
       "dashboard": {},
@@ -868,7 +862,6 @@
       ]
     },
     "company": {
-      "type": "company",
       "name": "Companies",
       "icon": "building-2",
       "dashboard": {},
@@ -1066,7 +1059,6 @@
       ]
     },
     "team": {
-      "type": "team",
       "name": "Teams",
       "icon": "users",
       "dashboard": {},
@@ -1200,7 +1192,6 @@
       ]
     },
     "meeting": {
-      "type": "meeting",
       "name": "Meetings",
       "icon": "calendar-clock",
       "dashboard": {},
@@ -1280,7 +1271,6 @@
       ]
     },
     "role": {
-      "type": "role",
       "name": "Roles",
       "icon": "briefcase",
       "dashboard": {},
@@ -1415,7 +1405,6 @@
       ]
     },
     "location": {
-      "type": "location",
       "name": "Locations",
       "icon": "map-pin",
       "dashboard": {},
@@ -1642,7 +1631,6 @@
       ]
     },
     "restaurant": {
-      "type": "restaurant",
       "name": "Restaurants",
       "icon": "utensils",
       "dashboard": {},
@@ -1718,7 +1706,6 @@
       ]
     },
     "gear": {
-      "type": "gear",
       "name": "Gear",
       "icon": "settings",
       "dashboard": {},
@@ -1794,7 +1781,6 @@
       ]
     },
     "tool": {
-      "type": "tool",
       "name": "Tools",
       "icon": "hammer",
       "dashboard": {},
@@ -1870,7 +1856,6 @@
       ]
     },
     "recipe": {
-      "type": "recipe",
       "name": "Cooking Book",
       "icon": "book-open-check",
       "dashboard": {},
@@ -1946,7 +1931,6 @@
       ]
     },
     "book": {
-      "type": "book",
       "name": "Books",
       "icon": "book",
       "dashboard": {},
@@ -2022,7 +2006,6 @@
       ]
     },
     "show": {
-      "type": "show",
       "name": "Shows",
       "icon": "clapperboard",
       "dashboard": {},
@@ -2106,7 +2089,6 @@
       ]
     },
     "document": {
-      "type": "document",
       "name": "Documents",
       "icon": "file-text",
       "aliases": ["documents"],
