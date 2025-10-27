@@ -46,14 +46,14 @@ entities:
     name: People
     icon: user
     template: |
-      
+
       date: {{date}}
       location: []
       company: []
       role: []
       team: []
       ---
-      
+
     list:
       columns:
         - cover
@@ -308,10 +308,10 @@ entities:
     name: Facts
     icon: bookmark
     template: |
-      
+
       date: {{date}}
       ---
-      
+
     list:
       columns:
         - date
@@ -372,10 +372,10 @@ entities:
     name: Logs
     icon: file-clock
     template: |
-      
+
       date: {{date}}
       ---
-      
+
     list:
       columns:
         - date
@@ -436,11 +436,11 @@ entities:
     name: Tasks
     icon: check-square
     template: |
-      
+
       date: {{date}}
       status: open
       ---
-      
+
     list:
       columns:
         - show
@@ -499,14 +499,14 @@ entities:
     name: Projects
     icon: folder-git-2
     template: |
-      
+
       date: {{date}}
       company: []
       team: []
       participants: []
       status: draft
       ---
-      
+
     list:
       columns:
         - show
@@ -594,11 +594,11 @@ entities:
     name: Ideas
     icon: lightbulb
     template: |
-      
+
       date: {{date}}
       status: draft
       ---
-      
+
     list:
       columns:
         - show
@@ -656,11 +656,11 @@ entities:
     name: Companies
     icon: building-2
     template: |
-      
+
       date: {{date}}
       location: []
       ---
-      
+
     list:
       columns:
         - show
@@ -795,12 +795,12 @@ entities:
     name: Teams
     icon: users
     template: |
-      
+
       date: {{date}}
       company: []
       location: []
       ---
-      
+
     list:
       columns:
         - show
@@ -897,12 +897,12 @@ entities:
     name: Meetings
     icon: calendar-clock
     template: |
-      
+
       date: {{date}}
       participants: []
       location: []
       ---
-      
+
     list:
       columns:
         - date_time
@@ -967,7 +967,7 @@ entities:
       type: {{type}}
       date: {{date}}
       ---
-      
+
     list:
       columns:
         - show
@@ -1067,7 +1067,7 @@ entities:
       type: {{type}}
       date: {{date}}
       ---
-      
+
     list:
       columns:
         - cover
@@ -1234,11 +1234,11 @@ entities:
     name: Restaurants
     icon: utensils
     template: |
-      
+
       date: {{date}}
       location: []
       ---
-      
+
     list:
       columns:
         - cover
@@ -1297,12 +1297,12 @@ entities:
     name: Gear
     icon: settings
     template: |
-      
+
       date: {{date}}
       owner: []
       location: []
       ---
-      
+
     list:
       columns:
         - cover
@@ -1362,10 +1362,10 @@ entities:
     name: Tools
     icon: hammer
     template: |
-      
+
       date: {{date}}
       ---
-      
+
     list:
       columns:
         - cover
@@ -1426,21 +1426,21 @@ entities:
     name: Cooking Book
     icon: book-open-check
     template: |
-      
+
       date: {{date}}
       category: []
       cookTime:
       calories:
       ---
-      
+
       ## Ingredients
-      
+
       - 
-      
+
       ## Instructions
-      
-      1. 
-      
+
+      1.
+
     list:
       columns:
         - cover
@@ -1500,10 +1500,10 @@ entities:
     name: Books
     icon: book
     template: |
-      
+
       date: {{date}}
       ---
-      
+
     list:
       columns:
         - cover
@@ -1564,12 +1564,12 @@ entities:
     name: Shows
     icon: clapperboard
     template: |
-      
+
       date: {{date}}
       format: movie
       genre: []
       ---
-      
+
     list:
       columns:
         - cover
@@ -1631,11 +1631,11 @@ entities:
     name: Documents
     icon: file-text
     template: |
-      
+
       date: {{date}}
       file:
       ---
-      
+
     list:
       columns:
         - show
