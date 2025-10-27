@@ -95,12 +95,6 @@ const personConfig: CRMEntityConfig<"person"> = {
         targetType: "meeting",
         title: "1:1s",
         icon: "users",
-        columns: [{ type: "show" }, { type: "date", align: "right" }],
-        sort: {
-          strategy: "column",
-          column: "date",
-          direction: "desc",
-        },
         find: {
           query: [
             {
@@ -116,9 +110,15 @@ const personConfig: CRMEntityConfig<"person"> = {
           ],
           combine: "union",
         },
+        sort: {
+          strategy: "column",
+          column: "date",
+          direction: "desc",
+        },
         filter: {
           "participants.length": { eq: 1 },
         },
+        columns: [{ type: "show" }, { type: "date", align: "right" }],
         createEntity: {
           enabled: true,
           title: "{YY}-{MM}-{DD} {hh}.{mm} with {@this.show}",
