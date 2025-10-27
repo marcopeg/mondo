@@ -190,7 +190,18 @@ export const BacklinksLinks = ({ file, config }: BacklinksLinksProps) => {
     );
   }
 
-  const panel = (config || {}) as BacklinksPanelConfig;
+  // Extract config from new nested structure or use legacy flat structure
+  const extractedConfig = useMemo(() => {
+    const cfg = (config || {}) as any;
+    // If config.config exists, we're using the new structure
+    if (cfg.config && typeof cfg.config === "object") {
+      return cfg.config as BacklinksPanelConfig;
+    }
+    // Otherwise, use legacy flat structure
+    return cfg as BacklinksPanelConfig;
+  }, [config]);
+
+  const panel = extractedConfig as BacklinksPanelConfig;
   const targetTypeRawOriginal = String(panel.targetType ?? "").trim();
   const targetKeyRawOriginal = String(panel.targetKey ?? "").trim();
   const legacyTargetOriginal = String(panel.target ?? "").trim();

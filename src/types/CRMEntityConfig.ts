@@ -29,8 +29,7 @@ export interface CRMEntityLinkConfig<TType extends string = string> {
  * Backlinks panel config — make this available as a built-in/default link shape
  * so individual entity declarations don't need to repeat the whole shape.
  */
-export interface CRMEntityBacklinksLink
-  extends CRMEntityLinkConfig<"backlinks"> {
+export interface CRMEntityBacklinksLinkConfig {
   targetType?: string;
   targetKey?: string;
   target?: string;
@@ -68,7 +67,34 @@ export interface CRMEntityBacklinksLink
     title?: string;
     attributes?: Record<string, string | number | boolean>;
   };
+  find?: {
+    query: Array<{
+      description?: string;
+      steps: Array<
+        | { out: { property: string | string[]; type?: string | string[] } }
+        | { in: { property: string | string[]; type?: string | string[] } }
+        | { filter: { type?: string | string[] } }
+        | { dedupe?: true }
+        | { unique?: true }
+        | { not?: "host" }
+      >;
+    }>;
+    combine?: "union" | "intersect" | "subtract";
+  };
+  filter?:
+    | Record<string, unknown>
+    | { all?: unknown[]; any?: unknown[]; not?: unknown };
 }
+
+export interface CRMEntityBacklinksLink
+  extends CRMEntityLinkConfig<"backlinks"> {
+  desc?: string;
+  config?: CRMEntityBacklinksLinkConfig;
+}
+
+export interface CRMEntityBacklinksLinkLegacy
+  extends CRMEntityLinkConfig<"backlinks">,
+    CRMEntityBacklinksLinkConfig {}
 
 export interface CRMEntityConfig<
   TType extends string = string,
@@ -80,6 +106,7 @@ export interface CRMEntityConfig<
   TLink extends CRMEntityLinkConfig =
     | CRMEntityLinkConfig
     | CRMEntityBacklinksLink
+    | CRMEntityBacklinksLinkLegacy
 > {
   type: TType;
   name: string;

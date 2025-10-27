@@ -142,3 +142,20 @@ Rename the key "queries" into "find" so that we have:
 "find.combine" should be the current "combine" key (i see union). Make sure you thoroughly document what this does and the possible values.
 
 Refine the plan document
+
+---
+
+Refactor the configuration of a backlink items as:
+
+{
+type: "backlinks",
+desc: "Description useful to the developer but never visible in the app",
+config: {
+...rest of the configuration goes here so it is collapsible
+}
+}
+
+IMPORTANT:
+
+- no need to make it bacward compatible
+- go through the existing entities and update the configuration.
