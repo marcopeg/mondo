@@ -192,16 +192,6 @@ const personConfig: CRMEntityConfig<"person"> = {
         targetType: "project",
         title: "Projects",
         icon: "folder-git-2",
-        columns: [
-          { type: "show" },
-          { type: "attribute", key: "participants" },
-          { type: "date", align: "right" },
-        ],
-        sort: {
-          strategy: "column",
-          column: "date",
-          direction: "desc",
-        },
         find: {
           query: [
             {
@@ -210,7 +200,6 @@ const personConfig: CRMEntityConfig<"person"> = {
                 {
                   in: { property: ["participants", "people"], type: "project" },
                 },
-                { unique: true },
               ],
             },
             {
@@ -218,18 +207,23 @@ const personConfig: CRMEntityConfig<"person"> = {
               steps: [
                 { out: { property: ["team", "teams"], type: "team" } },
                 { in: { property: ["team", "teams"], type: "project" } },
-                { unique: true },
               ],
             },
           ],
-          combine: "union",
         },
-        filter: {
-          "participants.length": { gt: 1 },
+        sort: {
+          strategy: "manual",
         },
+        columns: [
+          { type: "show" },
+          { type: "attribute", key: "participants" },
+          { type: "date", align: "right" },
+        ],
         createEntity: {
-          enabled: true,
-          title: "{YY}-{MM}-{DD} {hh}.{mm} with {@this.show}",
+          title: "Untitled Project with {@this.show}",
+          attributes: {
+            participants: ["{@this}"],
+          },
         },
       },
     },
