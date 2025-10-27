@@ -29,26 +29,24 @@ const personConfig: CRMEntityConfig<"person"> = {
       key: "reports",
       desc: "People who report directly to the host",
       config: {
-        targetType: "person",
         title: "Reports",
         icon: "arrow-up-circle",
-        columns: [
-          { type: "cover" },
-          { type: "show" },
-          { type: "attribute", key: "role" },
-        ],
+        targetType: "person",
+        properties: ["reportsTo"],
         sort: {
           strategy: "column",
           column: "show",
           direction: "asc",
         },
-        properties: ["reportsTo"],
+        columns: [
+          { type: "cover" },
+          { type: "show" },
+          { type: "attribute", key: "role" },
+        ],
         createEntity: {
           enabled: true,
-          title: "New Report",
+          title: "Untitled Report",
           attributes: {
-            company: "{@this.company}",
-            team: "{@this.team}",
             reportsTo: "{@this}",
           },
         },
