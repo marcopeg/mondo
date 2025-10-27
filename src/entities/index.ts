@@ -1,9 +1,9 @@
 import crmConfig from "@/crm-config.json";
 import type { CRMEntityConfig } from "@/types/CRMEntityConfig";
-
-type CRMConfig = typeof crmConfig;
-type CRMEntityConfigRecord = CRMConfig["entities"];
-export type CRMEntityType = Extract<keyof CRMEntityConfigRecord, string>;
+import type {
+  CRMEntityType,
+  CRMEntityConfigRecord,
+} from "@/types/CRMEntityTypes";
 
 const CRM_ENTITY_CONFIG_ENTRIES = Object.entries(crmConfig.entities) as Array<
   [CRMEntityType, CRMEntityConfigRecord[CRMEntityType]]
@@ -60,3 +60,4 @@ export const CRM_UI_CONFIG = {
 } as const;
 
 export type { CRMEntityConfig };
+export type { CRMEntityType } from "@/types/CRMEntityTypes";

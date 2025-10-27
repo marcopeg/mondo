@@ -229,3 +229,7 @@ This first step of refactoring should place one single `/src/crm-config.json` th
 You should convert all the current entites files into this single json.
 
 Fix the logic so that the configuration is read from this file and not from the entities as it is now.
+
+---
+
+explain me what the crm-configuration `entity.{key}.aliases` do and what is the consequence if we remove it
