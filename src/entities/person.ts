@@ -28,38 +28,42 @@ const personConfig: CRMEntityConfig<"person"> = {
       type: "meetings",
     },
     {
-      // Also lists indirect through teams
-      type: "projects",
-    },
-    {
       type: "teammates",
     },
     {
       type: "backlinks",
-      targetType: "project",
-      properties: ["participants"],
-      title: "Projects (linked)",
-      icon: "folder-git-2",
-      columns: [
-        { type: "show" },
-        { type: "attribute", key: "participants" },
-        { type: "date", align: "right" },
-      ],
+      targetType: "meeting",
+      title: "1o1s",
+      icon: "users",
+      columns: [{ type: "show" }, { type: "date", align: "right" }],
       sort: {
         strategy: "column",
         column: "date",
         direction: "desc",
       },
-      createEntity: {
-        enabled: true,
-        title: "{YY}-{MM}-{DD} {hh}.{mm} with {@this.show}",
+      find: {
+        query: [
+          {
+            description:
+              "Meetings that backlink to the host via participants/people",
+            steps: [
+              { in: { property: ["participants", "people"], type: "meeting" } },
+              { unique: true },
+            ],
+          },
+        ],
+        combine: "union",
+      },
+      filter: {
+        "participants.length": { eq: 1 },
       },
     },
+    // Projects
     {
       type: "backlinks",
       targetType: "project",
       title: "Projects (deep linked)",
-      icon: "folder-tree",
+      icon: "folder-git-2",
       columns: [
         { type: "show" },
         { type: "attribute", key: "participants" },
@@ -95,7 +99,7 @@ const personConfig: CRMEntityConfig<"person"> = {
       },
       createEntity: {
         enabled: true,
-        title: "Untitled Project",
+        title: "{YY}-{MM}-{DD} {hh}.{mm} with {@this.show}",
       },
     },
     {
