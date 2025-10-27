@@ -4,25 +4,6 @@ import { CRM_ENTITIES, isCRMEntityType } from "@/entities";
 import type { TCachedFile } from "@/types/TCachedFile";
 import type { CRMEntityLinkConfig } from "@/types/CRMEntityConfig";
 import { Stack } from "@/components/ui/Stack";
-import { TeammatesLinks } from "./panels/TeammatesLinks";
-import { TeamMembersLinks } from "./panels/TeamMembersLinks";
-import { MeetingsLinks } from "./panels/MeetingsLinks";
-import { TeamsLinks } from "./panels/TeamsLinks";
-import { EmployeesLinks } from "./panels/EmployeesLinks";
-import { ProjectsLinks } from "./panels/ProjectsLinks";
-import { RolePeopleLinks } from "./panels/RolePeopleLinks";
-import { RoleTasksLinks } from "./panels/RoleTasksLinks";
-import { ParticipantsAssignmentLinks } from "./panels/ParticipantsAssignmentLinks";
-import { FactsLinks } from "./panels/FactsLinks";
-import { LogsLinks } from "./panels/LogsLinks";
-import { LocationPeopleLinks } from "./panels/LocationPeopleLinks";
-import { LocationCompaniesLinks } from "./panels/LocationCompaniesLinks";
-import { TaskSubtasksLinks } from "./panels/TaskSubtasksLinks";
-import { ProjectTasksLinks } from "./panels/ProjectTasksLinks";
-import { MeetingTasksLinks } from "./panels/MeetingTasksLinks";
-import { CompanyTasksLinks } from "./panels/CompanyTasksLinks";
-import { TeamTasksLinks } from "./panels/TeamTasksLinks";
-import { DocumentsLinks } from "./panels/DocumentsLinks";
 import { BacklinksLinks } from "./panels/BacklinksLinks";
 
 type LinkPanelProps = {
@@ -31,25 +12,6 @@ type LinkPanelProps = {
 };
 
 const entityMap: Record<string, React.ComponentType<LinkPanelProps>> = {
-  teammates: TeammatesLinks,
-  "team-members": TeamMembersLinks,
-  meetings: MeetingsLinks,
-  teams: TeamsLinks,
-  employees: EmployeesLinks,
-  projects: ProjectsLinks,
-  "role-people": RolePeopleLinks,
-  "role-tasks": RoleTasksLinks,
-  "participants-assignment": ParticipantsAssignmentLinks,
-  facts: FactsLinks,
-  logs: LogsLinks,
-  "location-people": LocationPeopleLinks,
-  "location-companies": LocationCompaniesLinks,
-  "task-subtasks": TaskSubtasksLinks,
-  "project-tasks": ProjectTasksLinks,
-  "meeting-tasks": MeetingTasksLinks,
-  "company-tasks": CompanyTasksLinks,
-  "team-tasks": TeamTasksLinks,
-  documents: DocumentsLinks,
   backlinks: BacklinksLinks,
 };
 
