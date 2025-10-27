@@ -379,41 +379,37 @@ export class SettingsView extends PluginSettingTab {
             await setValue(v || "/");
           });
 
-          // Attach native suggest to the input element
-          // AbstractInputSuggest expects the global Obsidian to exist
-          try {
-            const sugg = new FolderSuggest(
-              this.app,
-              s.inputEl as HTMLInputElement,
-              async (picked: string) => {
-                // Update UI
-                try {
-                  s.setValue(picked);
-                } catch (e) {
-                  s.inputEl.value = picked;
-                  s.inputEl.dispatchEvent(
-                    new Event("input", { bubbles: true })
-                  );
-                  s.inputEl.dispatchEvent(
-                    new Event("change", { bubbles: true })
-                  );
-                }
-
-                // Persist via the provided setter
-                try {
-                  await setValue(picked || "/");
-                } catch (e) {
-                  // ignore persistence errors here
-                }
+        // Attach native suggest to the input element
+        // AbstractInputSuggest expects the global Obsidian to exist
+        try {
+          const sugg = new FolderSuggest(
+            this.app,
+            s.inputEl as HTMLInputElement,
+            async (picked: string) => {
+              // Update UI
+              try {
+                s.setValue(picked);
+              } catch (e) {
+                s.inputEl.value = picked;
+                s.inputEl.dispatchEvent(new Event("input", { bubbles: true }));
+                s.inputEl.dispatchEvent(new Event("change", { bubbles: true }));
               }
-            );
-            // Keep a reference to avoid GC and allow later cleanup
-            (this as any)._suggesters = (this as any)._suggesters || [];
-            (this as any)._suggesters.push(sugg);
-          } catch (e) {
-            // Fallback: no suggest available
-          }
-        });
+
+              // Persist via the provided setter
+              try {
+                await setValue(picked || "/");
+              } catch (e) {
+                // ignore persistence errors here
+              }
+            }
+          );
+          // Keep a reference to avoid GC and allow later cleanup
+          (this as any)._suggesters = (this as any)._suggesters || [];
+          (this as any)._suggesters.push(sugg);
+        } catch (e) {
+          // Fallback: no suggest available
+        }
+      });
 
       return setting;
     };
@@ -423,24 +419,17 @@ export class SettingsView extends PluginSettingTab {
       heading: string,
       description?: string
     ) => {
-      const sectionEl = parent.createDiv("crm-settings-section");
+      const createSetting = () => new Setting(parent);
 
-      const applyRowStyles = (setting: Setting) => {
-        setting.settingEl.addClass("crm-settings-section__row");
-        return setting;
-      };
-
-      const headingSetting = applyRowStyles(new Setting(sectionEl));
+      const headingSetting = createSetting();
       headingSetting.setName(heading);
       if (description) {
         headingSetting.setDesc(description);
       }
       headingSetting.setHeading();
 
-      const createSetting = () => applyRowStyles(new Setting(sectionEl));
-
       return {
-        element: sectionEl,
+        element: parent,
         createSetting,
       };
     };
@@ -796,7 +785,9 @@ export class SettingsView extends PluginSettingTab {
     timestampSettingsSection
       .createSetting()
       .setName("Add newline after timestamp")
-      .setDesc("When enabled, an empty line is added immediately after the timestamp.")
+      .setDesc(
+        "When enabled, an empty line is added immediately after the timestamp."
+      )
       .addToggle((toggle) => {
         toggle
           .setValue(currentTimestampSettings.appendNewLine)
@@ -1168,7 +1159,7 @@ export class SettingsView extends PluginSettingTab {
               (this.plugin as any).settings.daily || {};
             (this.plugin as any).settings.daily.section = v;
             await (this.plugin as any).saveSettings();
-        });
+          });
       });
 
     dailySettingsSection
