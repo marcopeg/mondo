@@ -1,7 +1,3 @@
-export interface CRMEntityDashboardConfig {
-  // Dashboard config is intentionally empty
-}
-
 export interface CRMEntitySettingsConfig {
   entity?: Record<string, never>;
   template: string;
@@ -113,7 +109,6 @@ export interface CRMEntityConfig<
   type: TType;
   name: string;
   icon: string;
-  dashboard: CRMEntityDashboardConfig;
   settings: CRMEntitySettingsConfig;
   list?: CRMEntityListConfig;
   links?: TLink[];

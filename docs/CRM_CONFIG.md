@@ -26,7 +26,6 @@ Keeping the configuration centralized ensures the UI, hooks, and utilities stay 
       "type": "<entityType>",
       "name": "<display name>",
       "icon": "<lucide icon id>",
-      "dashboard": { },
       "settings": {
         "template": "<default frontmatter & body>"
       },
@@ -64,8 +63,7 @@ An object keyed by the CRM entity type. Each value must comply with the `CRMEnti
 - `settings.template`: Default frontmatter/body inserted when creating a note of this type.
 - `list`: Table configuration used by entity list views (`columns`, `sort`).
 - `links`: Link panel definitions. For guidance on link shapes see [`ENTITY_LINKS.md`](./ENTITY_LINKS.md).
-
-Other properties defined in `CRMEntityConfig` (e.g. `dashboard`) can be extended as needed.
+  Other properties defined in `CRMEntityConfig` can be extended as needed as the schema evolves.
 
 ## Editing Guidelines
 
