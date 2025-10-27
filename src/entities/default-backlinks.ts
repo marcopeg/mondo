@@ -3,6 +3,7 @@ import type { CRMEntityBacklinksLink } from "@/types/CRMEntityConfig";
 export const DEFAULT_BACKLINKS: CRMEntityBacklinksLink[] = [
   {
     type: "backlinks",
+    key: "facts",
     desc: "Facts that reference this entity",
     config: {
       targetType: "fact",
@@ -16,6 +17,7 @@ export const DEFAULT_BACKLINKS: CRMEntityBacklinksLink[] = [
   },
   {
     type: "backlinks",
+    key: "logs",
     desc: "Logs that reference this entity",
     config: {
       targetType: "log",
@@ -26,6 +28,7 @@ export const DEFAULT_BACKLINKS: CRMEntityBacklinksLink[] = [
   },
   {
     type: "backlinks",
+    key: "documents",
     desc: "Documents that reference this entity",
     config: {
       targetType: "document",
@@ -39,6 +42,7 @@ export const DEFAULT_BACKLINKS: CRMEntityBacklinksLink[] = [
   },
   {
     type: "backlinks",
+    key: "tasks",
     desc: "Tasks that reference this entity",
     config: {
       targetType: "task",

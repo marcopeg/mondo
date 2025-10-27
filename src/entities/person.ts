@@ -26,7 +26,37 @@ const personConfig: CRMEntityConfig<"person"> = {
   links: [
     {
       type: "backlinks",
-      desc: "Teammates",
+      key: "reports",
+      desc: "People who report directly to the host",
+      config: {
+        targetType: "person",
+        title: "Reports",
+        icon: "arrow-up-circle",
+        columns: [
+          { type: "cover" },
+          { type: "show" },
+          { type: "attribute", key: "role" },
+        ],
+        sort: {
+          strategy: "column",
+          column: "show",
+          direction: "asc",
+        },
+        properties: ["reportsTo"],
+        createEntity: {
+          enabled: true,
+          title: "New Report",
+          attributes: {
+            company: "{@this.company}",
+            team: "{@this.team}",
+            reportsTo: "{@this}",
+          },
+        },
+      },
+    },
+    {
+      type: "backlinks",
+      key: "teammates",
       config: {
         targetType: "person",
         title: "Teammates",
@@ -60,7 +90,7 @@ const personConfig: CRMEntityConfig<"person"> = {
     },
     {
       type: "backlinks",
-      desc: "1:1 meetings",
+      key: "1o1s",
       config: {
         targetType: "meeting",
         title: "1:1s",
@@ -89,14 +119,21 @@ const personConfig: CRMEntityConfig<"person"> = {
         filter: {
           "participants.length": { eq: 1 },
         },
+        createEntity: {
+          enabled: true,
+          title: "{YY}-{MM}-{DD} {hh}.{mm} with {@this.show}",
+          attributes: {
+            participants: ["{@this}"],
+          },
+        },
       },
     },
     {
       type: "backlinks",
-      desc: "Meetings",
+      key: "meetings",
       config: {
         targetType: "meeting",
-        title: "Meetings (deep linked)",
+        title: "Meetings",
         icon: "calendar",
         columns: [
           { type: "show" },
@@ -138,13 +175,12 @@ const personConfig: CRMEntityConfig<"person"> = {
         },
       },
     },
-    // Projects (deep linked)
     {
       type: "backlinks",
-      desc: "Projects linked directly via participants or indirectly via shared teams",
+      key: "projects",
       config: {
         targetType: "project",
-        title: "Projects (deep linked)",
+        title: "Projects",
         icon: "folder-git-2",
         columns: [
           { type: "show" },
@@ -184,36 +220,6 @@ const personConfig: CRMEntityConfig<"person"> = {
         createEntity: {
           enabled: true,
           title: "{YY}-{MM}-{DD} {hh}.{mm} with {@this.show}",
-        },
-      },
-    },
-    // Reports
-    {
-      type: "backlinks",
-      desc: "People who report directly to the host",
-      config: {
-        targetType: "person",
-        title: "Reports",
-        icon: "arrow-up-circle",
-        columns: [
-          { type: "cover" },
-          { type: "show" },
-          { type: "attribute", key: "role" },
-        ],
-        sort: {
-          strategy: "column",
-          column: "show",
-          direction: "asc",
-        },
-        properties: ["reportsTo"],
-        createEntity: {
-          enabled: true,
-          title: "New Report",
-          attributes: {
-            company: "{@this.company}",
-            team: "{@this.team}",
-            reportsTo: "{@this}",
-          },
         },
       },
     },

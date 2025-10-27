@@ -21,6 +21,7 @@ import type { TCachedFile } from "@/types/TCachedFile";
 import { TFile, type App } from "obsidian";
 import { CRMFileManager } from "@/utils/CRMFileManager";
 import { CRM_FILE_TYPES } from "@/types/CRMFileType";
+import type { CRMEntityBacklinksLinkConfig } from "@/types/CRMEntityConfig";
 
 type Align = "left" | "right" | "center";
 type BacklinksColumn =
@@ -39,45 +40,7 @@ type BacklinksCreateEntityConfig = {
   attributes?: Record<string, string | number | boolean>;
 };
 
-type BacklinksPanelConfig = {
-  collapsed?: boolean;
-  // New API
-  targetType?: CRMEntityType | string; // filter notes by this entity type
-  targetKey?: string; // property to match on the target notes
-  // Backward compatibility (deprecated)
-  target?: CRMEntityType | string; // used previously as either type or property
-  // Property overrides (highest priority)
-  properties?: string[] | string;
-  prop?: string[] | string; // legacy/alias
-  // Presentation
-  title?: string;
-  subtitle?: string;
-  icon?: string;
-  columns?: BacklinksColumn[];
-  visibility?: "always" | "notEmpty";
-  pageSize?: number;
-  // Create button and sorting
-  createEntity?: BacklinksCreateEntityConfig;
-  sort?: BacklinksSortConfig;
-  // New: graph query and advanced filtering
-  find?: {
-    query: Array<{
-      description?: string;
-      steps: Array<
-        | { out: { property: string | string[]; type?: string | string[] } }
-        | { in: { property: string | string[]; type?: string | string[] } }
-        | { filter: { type?: string | string[] } }
-        | { dedupe?: true }
-        | { unique?: true }
-        | { not?: "host" }
-      >;
-    }>;
-    combine?: "union" | "intersect" | "subtract";
-  };
-  filter?:
-    | Record<string, unknown>
-    | { all?: unknown[]; any?: unknown[]; not?: unknown };
-};
+type BacklinksPanelConfig = CRMEntityBacklinksLinkConfig;
 
 type BacklinksLinksProps = {
   file: TCachedFile;
@@ -251,10 +214,16 @@ export const BacklinksLinks = ({ file, config }: BacklinksLinksProps) => {
   ]);
 
   const panelKey = useMemo(() => {
+    // Use the explicit key property if available (from top-level config)
+    const topLevelKey = (config as any)?.key;
+    if (topLevelKey) {
+      return `backlinks:${topLevelKey}`;
+    }
+    // Otherwise fall back to computed key
     return `backlinks:${effectiveTargetType}${
       propertyFromTarget.length ? `:${propertyFromTarget[0]}` : ""
     }`;
-  }, [effectiveTargetType, propertyFromTarget]);
+  }, [config, effectiveTargetType, propertyFromTarget]);
   const defaultTitle =
     CRM_ENTITIES[effectiveTargetType]?.name ||
     toTitleCase(effectiveTargetType) + "s";

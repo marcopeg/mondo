@@ -21,6 +21,7 @@ const companyConfig: CRMEntityConfig<"company"> = {
   links: [
     {
       type: "backlinks",
+      key: "employees",
       desc: "Employees working at this company",
       config: {
         targetType: "person",
@@ -42,6 +43,7 @@ const companyConfig: CRMEntityConfig<"company"> = {
     },
     {
       type: "backlinks",
+      key: "teams",
       desc: "Teams within this company",
       config: {
         targetType: "team",
@@ -58,6 +60,7 @@ const companyConfig: CRMEntityConfig<"company"> = {
     },
     {
       type: "backlinks",
+      key: "projects",
       desc: "Projects associated with this company",
       config: {
         targetType: "project",

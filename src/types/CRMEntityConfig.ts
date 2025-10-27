@@ -30,6 +30,7 @@ export interface CRMEntityLinkConfig<TType extends string = string> {
  * so individual entity declarations don't need to repeat the whole shape.
  */
 export interface CRMEntityBacklinksLinkConfig {
+  collapsed?: boolean;
   targetType?: string;
   targetKey?: string;
   target?: string;
@@ -88,6 +89,7 @@ export interface CRMEntityBacklinksLinkConfig {
 
 export interface CRMEntityBacklinksLink
   extends CRMEntityLinkConfig<"backlinks"> {
+  key?: string;
   desc?: string;
   config?: CRMEntityBacklinksLinkConfig;
 }
