@@ -1,5 +1,5 @@
 import type { CRMEntityConfig } from "@/types/CRMEntityConfig";
-import { DEFAULT_BACKLINKS } from "@/entities/default-backlinks";
+import { makeDefaultBacklinks } from "@/entities/default-backlinks";
 
 const template = `
 date: {{date}}
@@ -18,7 +18,7 @@ const taskConfig: CRMEntityConfig<"task"> = {
   list: {
     columns: ["show", "participants", "status"],
   },
-  links: [{ type: "participants-assignment" }, ...DEFAULT_BACKLINKS],
+  links: makeDefaultBacklinks(["task"]),
 };
 
 export default taskConfig;

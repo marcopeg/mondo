@@ -1,5 +1,5 @@
 import type { CRMEntityConfig } from "@/types/CRMEntityConfig";
-import { DEFAULT_BACKLINKS } from "@/entities/default-backlinks";
+import { makeDefaultBacklinks } from "@/entities/default-backlinks";
 
 const template = `
 date: {{date}}
@@ -18,7 +18,7 @@ const logConfig: CRMEntityConfig<"log"> = {
     columns: ["date", "show"],
     sort: { column: "date", direction: "desc" },
   },
-  links: [...DEFAULT_BACKLINKS],
+  links: makeDefaultBacklinks(["log"]),
 };
 
 export default logConfig;

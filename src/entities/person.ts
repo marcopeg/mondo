@@ -1,6 +1,5 @@
 import type { CRMEntityConfig } from "@/types/CRMEntityConfig";
-import { DEFAULT_BACKLINKS } from "@/entities/default-backlinks";
-import { create } from "domain";
+import { makeDefaultBacklinks } from "@/entities/default-backlinks";
 
 const template = `
 date: {{date}}
@@ -227,7 +226,7 @@ const personConfig: CRMEntityConfig<"person"> = {
         },
       },
     },
-    ...DEFAULT_BACKLINKS,
+    ...makeDefaultBacklinks(["participants"]),
   ],
 };
 

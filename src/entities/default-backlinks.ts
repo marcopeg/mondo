@@ -56,3 +56,15 @@ export const DEFAULT_BACKLINKS: CRMEntityBacklinksLink[] = [
     },
   },
 ];
+
+export const makeDefaultBacklinks = (
+  properties: string[]
+): CRMEntityBacklinksLink[] => {
+  return DEFAULT_BACKLINKS.map((link) => ({
+    ...link,
+    config: {
+      ...link.config,
+      properties: properties,
+    },
+  }));
+};

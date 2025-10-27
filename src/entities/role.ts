@@ -1,6 +1,6 @@
 import { DEFAULT_TEMPLATE } from "./default-template";
 import type { CRMEntityConfig } from "@/types/CRMEntityConfig";
-import { DEFAULT_BACKLINKS } from "@/entities/default-backlinks";
+import { makeDefaultBacklinks } from "@/entities/default-backlinks";
 
 const roleConfig: CRMEntityConfig<"role"> = {
   type: "role",
@@ -55,7 +55,7 @@ const roleConfig: CRMEntityConfig<"role"> = {
         },
       },
     },
-    ...DEFAULT_BACKLINKS,
+    ...makeDefaultBacklinks(["location"]),
   ],
 };
 

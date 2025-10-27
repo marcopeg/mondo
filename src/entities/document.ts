@@ -1,5 +1,5 @@
 import type { CRMEntityConfig } from "@/types/CRMEntityConfig";
-import { DEFAULT_BACKLINKS } from "@/entities/default-backlinks";
+import { makeDefaultBacklinks } from "@/entities/default-backlinks";
 
 const template = `
 date: {{date}}
@@ -19,7 +19,7 @@ const documentConfig: CRMEntityConfig<"document"> = {
   list: {
     columns: ["show", "category", "file"],
   },
-  links: [...DEFAULT_BACKLINKS],
+  links: makeDefaultBacklinks(["document"]),
 };
 
 export default documentConfig;
