@@ -159,3 +159,15 @@ IMPORTANT:
 
 - no need to make it bacward compatible
 - go through the existing entities and update the configuration.
+
+---
+
+focus on the #file:BacklinksLinks.tsx .
+
+Refactor the key used to store the state of the backlinks panel in the crmState object.
+
+each backlinks item must define a "key" property (need to add it to the definition)
+
+the template for the state key becomes then "backlinks:{key}"
+
+NOTE: we need to assign keys to every current utilization of the backlings in the entities definition files.
