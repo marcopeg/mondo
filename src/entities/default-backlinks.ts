@@ -4,10 +4,9 @@ export const DEFAULT_BACKLINKS: CRMEntityBacklinksLink[] = [
   {
     type: "backlinks",
     key: "facts",
-    desc: "Facts that reference this entity",
     config: {
       targetType: "fact",
-      properties: ["reference"],
+      properties: ["link"],
       title: "Facts",
       icon: "file-text",
       sort: {
@@ -18,10 +17,9 @@ export const DEFAULT_BACKLINKS: CRMEntityBacklinksLink[] = [
   {
     type: "backlinks",
     key: "logs",
-    desc: "Logs that reference this entity",
     config: {
       targetType: "log",
-      properties: ["reference"],
+      properties: ["link"],
       title: "Logs",
       icon: "clipboard-list",
     },
@@ -29,10 +27,9 @@ export const DEFAULT_BACKLINKS: CRMEntityBacklinksLink[] = [
   {
     type: "backlinks",
     key: "documents",
-    desc: "Documents that reference this entity",
     config: {
       targetType: "document",
-      properties: ["reference"],
+      properties: ["link"],
       title: "Documents",
       icon: "paperclip",
       sort: {
@@ -43,10 +40,9 @@ export const DEFAULT_BACKLINKS: CRMEntityBacklinksLink[] = [
   {
     type: "backlinks",
     key: "tasks",
-    desc: "Tasks that reference this entity",
     config: {
       targetType: "task",
-      properties: ["reference"],
+      properties: ["link"],
       title: "Tasks",
       icon: "check-square",
       columns: [

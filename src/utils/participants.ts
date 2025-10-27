@@ -50,16 +50,16 @@ export const addParticipantLink = async (
 
   let updated = false;
   await app.fileManager.processFrontMatter(file, (fm) => {
-    const existing = parseParticipants((fm as Record<string, unknown>).participants);
+    const existing = parseParticipants((fm as Record<string, unknown>).link);
     const hasLink = existing.some(
       (value) => normalizeParticipantLink(String(value)) === normalizedLink
     );
     if (hasLink) {
-      fm.participants = existing.length > 0 ? existing : [link];
+      fm.link = existing.length > 0 ? existing : [link];
       updated = true;
       return;
     }
-    fm.participants = [...existing, link];
+    fm.link = [...existing, link];
     updated = true;
   });
 
