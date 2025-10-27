@@ -27,12 +27,16 @@ const personConfig: CRMEntityConfig<"person"> = {
     {
       type: "backlinks",
       key: "reports",
-      desc: "People who report directly to the host",
       config: {
         title: "Reports",
         icon: "arrow-up-circle",
-        targetType: "person",
-        properties: ["reportsTo"],
+        find: {
+          query: [
+            {
+              steps: [{ in: { property: ["reportsTo"], type: "person" } }],
+            },
+          ],
+        },
         sort: {
           strategy: "column",
           column: "show",
