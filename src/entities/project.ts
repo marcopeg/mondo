@@ -1,4 +1,5 @@
 import type { CRMEntityConfig } from "@/types/CRMEntityConfig";
+import { makeDefaultBacklinks } from "@/entities/default-backlinks";
 
 const template = `
 date: {{date}}
@@ -9,15 +10,7 @@ status: draft
 ---
 `;
 
-const projectConfig: CRMEntityConfig<
-  "project",
-  | { type: "participants-assignment" }
-  | { type: "facts"; collapsed?: boolean }
-  | { type: "project-tasks"; collapsed?: boolean }
-  | { type: "meetings" }
-  | { type: "logs"; collapsed?: boolean }
-  | { type: "documents"; collapsed?: boolean }
-> = {
+const projectConfig: CRMEntityConfig<"project"> = {
   type: "project",
   name: "Projects",
   icon: "folder-git-2",
@@ -29,12 +22,13 @@ const projectConfig: CRMEntityConfig<
     columns: ["show"],
   },
   links: [
-    { type: "documents", collapsed: true },
-    { type: "participants-assignment" },
-    { type: "facts" },
-    { type: "logs" },
-    { type: "meetings" },
-    { type: "project-tasks", collapsed: true },
+    // { type: "documents", collapsed: true },
+    // { type: "participants-assignment" },
+    // { type: "facts" },
+    // { type: "logs" },
+    // { type: "meetings" },
+    // { type: "project-tasks", collapsed: true },
+    ...makeDefaultBacklinks(["project"]),
   ],
 };
 

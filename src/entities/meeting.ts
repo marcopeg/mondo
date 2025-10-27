@@ -1,4 +1,5 @@
 import type { CRMEntityConfig } from "@/types/CRMEntityConfig";
+import { makeDefaultBacklinks } from "@/entities/default-backlinks";
 
 const template = `
 date: {{date}}
@@ -7,13 +8,7 @@ location: []
 ---
 `;
 
-const meetingConfig: CRMEntityConfig<
-  "meeting",
-  | { type: "facts"; collapsed?: boolean }
-  | { type: "logs"; collapsed?: boolean }
-  | { type: "meeting-tasks"; collapsed?: boolean }
-  | { type: "documents"; collapsed?: boolean }
-> = {
+const meetingConfig: CRMEntityConfig<"meeting"> = {
   type: "meeting",
   name: "Meetings",
   icon: "calendar-clock",
@@ -25,22 +20,7 @@ const meetingConfig: CRMEntityConfig<
     columns: ["date_time", "participants"],
     sort: { column: "date_time", direction: "desc" },
   },
-  links: [
-    {
-      type: "documents",
-      collapsed: true,
-    },
-    {
-      type: "facts",
-    },
-    {
-      type: "logs",
-    },
-    {
-      type: "meeting-tasks",
-      collapsed: true,
-    },
-  ],
+  links: makeDefaultBacklinks(["meeting"]),
 };
 
 export default meetingConfig;

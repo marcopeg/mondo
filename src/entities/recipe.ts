@@ -1,4 +1,5 @@
 import type { CRMEntityConfig } from "@/types/CRMEntityConfig";
+import { makeDefaultBacklinks } from "@/entities/default-backlinks";
 
 const template = `
 date: {{date}}
@@ -17,10 +18,7 @@ calories:
 
 `;
 
-const recipeConfig: CRMEntityConfig<
-  "recipe",
-  { type: "documents"; collapsed?: boolean }
-> = {
+const recipeConfig: CRMEntityConfig<"recipe"> = {
   type: "recipe",
   name: "Cooking Book",
   icon: "book-open-check",
@@ -31,12 +29,7 @@ const recipeConfig: CRMEntityConfig<
   list: {
     columns: ["cover", "show", "source", "servings"],
   },
-  links: [
-    {
-      type: "documents",
-      collapsed: true,
-    },
-  ],
+  links: makeDefaultBacklinks(["recipe"]),
 };
 
 export default recipeConfig;
