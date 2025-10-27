@@ -1,6 +1,14 @@
-import crmConfig from "@/crm-config.json";
+export interface CRMConfig {
+  titles?: {
+    order?: string[];
+  };
+  relevantNotes?: {
+    filter?: {
+      order?: string[];
+    };
+  };
+  entities: Record<string, Record<string, unknown>>;
+}
 
-// Types derived from the CRM config JSON schema
-export type CRMConfig = typeof crmConfig;
 export type CRMEntityConfigRecord = CRMConfig["entities"];
-export type CRMEntityType = Extract<keyof CRMEntityConfigRecord, string>;
+export type CRMEntityType = string;

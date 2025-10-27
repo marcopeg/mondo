@@ -46,6 +46,7 @@ import { CRMFileManager } from "@/utils/CRMFileManager";
 import { AudioTranscriptionManager } from "@/utils/AudioTranscriptionManager";
 import { VoiceoverManager } from "@/utils/VoiceoverManager";
 import { NoteDictationManager } from "@/utils/NoteDictationManager";
+import { CRMConfigManager } from "@/utils/CRMConfigManager";
 import {
   CRM_DICTATION_ICON_ID,
   registerDictationIcon,
@@ -103,6 +104,7 @@ export default class CRM extends Plugin {
     openAITranscriptionPolishEnabled: true,
     voiceoverCachePath: "/voiceover",
     selfPersonPath: "",
+    crmConfigNotePath: "",
     timestamp: DEFAULT_TIMESTAMP_SETTINGS,
   };
 
@@ -114,6 +116,7 @@ export default class CRM extends Plugin {
   private timestampToolbarManager: TimestampToolbarManager | null = null;
   private dailyNoteTracker: DailyNoteTracker | null = null;
   private geolocationAbortController: AbortController | null = null;
+  private crmConfigManager: CRMConfigManager | null = null;
   private audioLogsRibbonEl: HTMLElement | null = null;
 
   private applyGeolocationToFile = async (
@@ -200,6 +203,16 @@ export default class CRM extends Plugin {
       this.settings.selfPersonPath = "";
     }
 
+    const configNotePath = this.settings.crmConfigNotePath;
+    if (typeof configNotePath === "string") {
+      const trimmed = configNotePath.trim();
+      this.settings.crmConfigNotePath = trimmed.toLowerCase().endsWith(".json")
+        ? trimmed
+        : "";
+    } else {
+      this.settings.crmConfigNotePath = "";
+    }
+
     this.settings.timestamp = normalizeTimestampSettings(
       this.settings.timestamp
     );
@@ -209,6 +222,26 @@ export default class CRM extends Plugin {
     await this.saveData(this.settings);
   }
 
+  async setCRMConfigNotePath(path: string | null) {
+    const normalized =
+      typeof path === "string" ? path.trim() : "";
+
+    if (normalized && !normalized.toLowerCase().endsWith(".json")) {
+      new Notice("CRM configuration must be a JSON file.");
+      this.settings.crmConfigNotePath = "";
+      await this.saveSettings();
+      await this.crmConfigManager?.setConfigFilePath(null);
+      return;
+    }
+
+    this.settings.crmConfigNotePath = normalized;
+    await this.saveSettings();
+
+    await this.crmConfigManager?.setConfigFilePath(
+      normalized.length > 0 ? normalized : null
+    );
+  }
+
   async onload() {
     console.clear();
     console.log("CRM: Loading plugin");
@@ -216,6 +249,16 @@ export default class CRM extends Plugin {
     // Initialize settings
     this.addSettingTab(new SettingsView(this.app, this));
     await this.loadSettings();
+
+    this.crmConfigManager = new CRMConfigManager(this.app, {
+      onConfigNotePathChange: async (path: string | null) => {
+        this.settings.crmConfigNotePath = path ?? "";
+        await this.saveSettings();
+      },
+    });
+    await this.crmConfigManager.initialize(
+      this.settings.crmConfigNotePath || null
+    );
 
     registerDictationIcon();
 
@@ -601,6 +644,9 @@ export default class CRM extends Plugin {
 
   onunload() {
     console.log("CRM: Unloading plugin");
+
+    this.crmConfigManager?.dispose();
+    this.crmConfigManager = null;
 
     // Cleanup the CRM file manager
     const fileManager = CRMFileManager.getInstance(this.app);

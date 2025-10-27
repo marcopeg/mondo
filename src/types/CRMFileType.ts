@@ -2,6 +2,7 @@ import {
   CRM_ENTITIES,
   CRM_ENTITY_TYPE_SET,
   CRM_ENTITY_TYPES,
+  onCRMConfigChange,
   type CRMEntityType,
 } from "@/entities";
 
@@ -26,26 +27,46 @@ export type CRMFileType = CRMEntityType | SpecialCRMType;
 
 type UppercaseType<T extends string> = Uppercase<T>;
 
-type CRMFileTypeConst = {
-  [K in CRMEntityType as UppercaseType<K>]: CRMEntityType;
+type CRMFileTypeConst = Record<string, CRMEntityType>;
+
+const buildFileTypeMapping = () => {
+  const mapping = CRM_ENTITY_TYPES.reduce((acc, type) => {
+    const key = type.toUpperCase() as UppercaseType<typeof type>;
+    acc[key] = type;
+    return acc;
+  }, {} as Record<string, CRMEntityType>);
+
+  const list: CRMFileType[] = [
+    ...CRM_ENTITY_TYPES,
+    ...SPECIAL_CRM_TYPES.filter(
+      (type) => !CRM_ENTITY_TYPE_SET.has(type as CRMEntityType)
+    ),
+  ];
+
+  return {
+    mapping: Object.freeze(mapping) as CRMFileTypeConst,
+    list,
+  };
 };
 
-export const CRMFileType = Object.freeze(
-  CRM_ENTITY_TYPES.reduce((acc, type) => {
-    const key = type.toUpperCase() as UppercaseType<typeof type>;
-    (acc as Record<string, CRMEntityType>)[key] = type;
-    return acc;
-  }, {} as Record<string, CRMEntityType>)
-) as CRMFileTypeConst;
+const initialMapping = buildFileTypeMapping();
 
-export const CRM_FILE_TYPES: CRMFileType[] = [
-  ...CRM_ENTITY_TYPES,
-  ...SPECIAL_CRM_TYPES.filter(
-    (type) => !CRM_ENTITY_TYPE_SET.has(type as CRMEntityType)
-  ),
-];
+export let CRMFileType: CRMFileTypeConst = initialMapping.mapping;
 
-export const CRM_FILE_TYPE_LOOKUP = CRM_ENTITY_TYPE_SET;
+export let CRM_FILE_TYPES: CRMFileType[] = initialMapping.list;
+
+export let CRM_FILE_TYPE_LOOKUP = CRM_ENTITY_TYPE_SET;
+
+const refreshFileTypeMapping = () => {
+  const { mapping, list } = buildFileTypeMapping();
+  CRMFileType = mapping;
+  CRM_FILE_TYPES = list;
+  CRM_FILE_TYPE_LOOKUP = CRM_ENTITY_TYPE_SET;
+};
+
+refreshFileTypeMapping();
+
+onCRMConfigChange(refreshFileTypeMapping);
 const SPECIAL_CRM_TYPE_SET = new Set<SpecialCRMType>(SPECIAL_CRM_TYPES);
 
 export type DailyNoteType = typeof DAILY_NOTE_TYPE | typeof LEGACY_DAILY_NOTE_TYPE;
