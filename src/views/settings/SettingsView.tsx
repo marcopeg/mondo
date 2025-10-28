@@ -13,7 +13,6 @@ import {
   type FuzzyMatch,
 } from "obsidian";
 import type CRM from "@/main";
-import { validateCRMConfig } from "@/utils/CRMConfigManager";
 import { CRM_ENTITY_CONFIG_LIST } from "@/entities";
 import {
   DEFAULT_TIMESTAMP_SETTINGS,
@@ -22,6 +21,7 @@ import {
   type TimestampSettings,
 } from "@/types/TimestampSettings";
 import type momentModule from "moment";
+import { renderEntityConfigurationSection } from "./SettingsView_Entities";
 
 // Settings view for CRM plugin
 export class SettingsView extends PluginSettingTab {
@@ -32,7 +32,7 @@ export class SettingsView extends PluginSettingTab {
     this.plugin = plugin;
   }
 
-  display(): void {
+  async display(): Promise<void> {
     const { containerEl } = this;
     containerEl.empty();
 
@@ -633,45 +633,7 @@ export class SettingsView extends PluginSettingTab {
 
     addSelfPersonSetting(generalSection.element);
 
-    // Custom CRM Configuration section
-    const customConfigContainer = containerEl.createDiv();
-    const customConfigSection = createSettingsSection(
-      customConfigContainer,
-      "Custom CRM configuration",
-      "Paste JSON here to override the built-in CRM configuration. Leave empty to use defaults."
-    );
-
-    // Full-width block under the setting for textarea + actions
-    const configBlock = customConfigContainer.createDiv();
-    configBlock.style.width = "100%";
-    configBlock.style.background = "var(--background-secondary)";
-    configBlock.style.border = "1px solid var(--background-modifier-border)";
-    configBlock.style.borderRadius = "8px";
-    configBlock.style.padding = "12px";
-    configBlock.style.marginTop = "8px";
-
-    const textArea = document.createElement("textarea");
-    textArea.rows = 14;
-    textArea.style.width = "100%";
-    textArea.style.minHeight = "220px";
-    textArea.style.fontFamily = "var(--font-monospace)";
-    textArea.placeholder = '{\n  "entities": { ... }\n}';
-    textArea.value = (this.plugin as any).settings?.crmConfigJson ?? "";
-    textArea.addEventListener("change", async () => {
-      (this.plugin as any).settings.crmConfigJson = textArea.value;
-      await (this.plugin as any).saveSettings();
-    });
-    configBlock.appendChild(textArea);
-
-    // Actions row aligned to the right
-    const actionsRow = document.createElement("div");
-    actionsRow.style.display = "flex";
-    actionsRow.style.justifyContent = "flex-end";
-    actionsRow.style.gap = "8px";
-    actionsRow.style.marginTop = "10px";
-    configBlock.appendChild(actionsRow);
-
-    // Modal helpers
+    // Modal helper
     class SimpleModal extends Modal {
       private readonly title: string;
       private readonly contentNodes: (HTMLElement | string)[];
@@ -710,37 +672,6 @@ export class SettingsView extends PluginSettingTab {
       modal.open();
     };
 
-    const confirmReset = async (): Promise<boolean> => {
-      return await new Promise<boolean>((resolve) => {
-        class ConfirmModal extends Modal {
-          onOpen() {
-            const { contentEl, titleEl } = this;
-            titleEl.setText("Reset configuration?");
-            contentEl.empty();
-            contentEl.createEl("p", {
-              text: "This will clear the custom JSON and restore the built-in defaults.",
-            });
-            const footer = contentEl.createDiv({
-              cls: "modal-button-container",
-            });
-            const cancel = footer.createEl("button", { text: "Cancel" });
-            const ok = footer.createEl("button", { text: "Reset" });
-            ok.addClass("mod-warning");
-            cancel.addEventListener("click", () => {
-              this.close();
-              resolve(false);
-            });
-            ok.addEventListener("click", () => {
-              this.close();
-              resolve(true);
-            });
-          }
-        }
-        new ConfirmModal(this.app).open();
-      });
-    };
-
-    // Modal helper for restart confirmation (reused across Apply and Reset flows)
     const showRestartPrompt = async (): Promise<boolean> => {
       return await new Promise<boolean>((resolve) => {
         class RestartModal extends Modal {
@@ -773,241 +704,16 @@ export class SettingsView extends PluginSettingTab {
       });
     };
 
-    // Validate & Apply button
-    const applyBtn = actionsRow.createEl("button", {
-      text: "Validate & Apply",
+    // Render entity configuration and custom CRM configuration sections
+    await renderEntityConfigurationSection({
+      app: this.app,
+      plugin: this.plugin,
+      containerEl,
+      folderPaths,
+      addFolderSetting,
+      showErrorModal,
+      showRestartPrompt,
     });
-    applyBtn.addClass("mod-cta");
-    applyBtn.addEventListener("click", async () => {
-      const raw = (textArea.value ?? "").trim();
-      if (!raw) {
-        // Nothing to validate; delegate to plugin (applies defaults)
-        await (this.plugin as any).applyCRMConfigFromSettings();
-        await (this.plugin as any).saveSettings?.();
-        if (await showRestartPrompt()) {
-          try {
-            (this.app as any)?.commands?.executeCommandById?.("app:reload");
-          } catch (_) {}
-          try {
-            window.location.reload();
-          } catch (_) {}
-        }
-        return;
-      }
-      // Try to parse and validate ourselves so we can show a detailed modal on errors
-      let parsed: unknown;
-      try {
-        parsed = JSON.parse(raw);
-      } catch (e) {
-        const msg = e instanceof Error ? e.message : String(e);
-        showErrorModal("Invalid JSON", [msg]);
-        return;
-      }
-
-      const result = validateCRMConfig(parsed);
-      if (!result.ok) {
-        const issues = result.issues.map((i) => `${i.path}: ${i.message}`);
-        showErrorModal("Configuration issues", issues);
-        return;
-      }
-
-      await (this.plugin as any).applyCRMConfigFromSettings();
-      await (this.plugin as any).saveSettings?.();
-
-      if (await showRestartPrompt()) {
-        try {
-          (this.app as any)?.commands?.executeCommandById?.("app:reload");
-        } catch (_) {}
-        try {
-          window.location.reload();
-        } catch (_) {}
-      }
-    });
-
-    // Reset button (Use defaults)
-    const resetBtn = actionsRow.createEl("button", { text: "Use defaults" });
-    resetBtn.addEventListener("click", async () => {
-      const confirmed = await confirmReset();
-      if (!confirmed) return;
-      (this.plugin as any).settings.crmConfigJson = "";
-      await (this.plugin as any).saveSettings();
-      await (this.plugin as any).applyCRMConfigFromSettings();
-      textArea.value = "";
-      if (await showRestartPrompt()) {
-        try {
-          (this.app as any)?.commands?.executeCommandById?.("app:reload");
-        } catch (_) {}
-        try {
-          window.location.reload();
-        } catch (_) {}
-      }
-    });
-
-    // Only include actual configured entities; exclude special types like daily/log/journal
-    const entityDefinitions = CRM_ENTITY_CONFIG_LIST.map((cfg) => ({
-      type: cfg.type,
-      label: cfg.name ?? cfg.type,
-    }));
-
-    // Render Entities section only if there are configured entities
-    if (entityDefinitions.length > 0) {
-      const entitiesToggleContainer = containerEl.createDiv(
-        "crm-settings-entities-toggle"
-      );
-      const entitiesToggleButton = entitiesToggleContainer.createEl("a", {
-        text: "Show entities options",
-      });
-      entitiesToggleButton.addClass("crm-settings-entities-toggle-link");
-      entitiesToggleButton.setAttribute("href", "#");
-
-      const entitiesContent = containerEl.createDiv("crm-settings-entities");
-      const entitiesContentId = "crm-settings-entities-content";
-      entitiesContent.setAttribute("id", entitiesContentId);
-      entitiesToggleButton.setAttribute("aria-controls", entitiesContentId);
-      entitiesToggleButton.setAttribute("aria-expanded", "false");
-
-      let entitiesVisible = false;
-      const applyEntitiesVisibility = (visible: boolean) => {
-        entitiesVisible = visible;
-        entitiesContent.toggleClass("is-hidden", !visible);
-        entitiesContent.setAttribute("aria-hidden", visible ? "false" : "true");
-        entitiesToggleButton.setText(
-          visible ? "Hide entities options" : "Show entities options"
-        );
-        entitiesToggleButton.setAttribute(
-          "aria-expanded",
-          visible ? "true" : "false"
-        );
-      };
-
-      applyEntitiesVisibility(false);
-
-      entitiesToggleButton.addEventListener("click", (event) => {
-        event.preventDefault();
-        applyEntitiesVisibility(!entitiesVisible);
-      });
-
-      for (const { label, type } of entityDefinitions) {
-        const section = entitiesContent.createDiv("crm-settings-entity");
-        new Setting(section).setName(label).setHeading();
-
-        addFolderSetting(
-          section,
-          "Documents Store",
-          "Pick a folder in which to store all the documents for this entity",
-          () => (this.plugin as any).settings.rootPaths[type],
-          async (v) => {
-            (this.plugin as any).settings.rootPaths[type] = v || "/";
-            await (this.plugin as any).saveSettings();
-          }
-        );
-
-        const getStoredTemplatePath = (): string =>
-          ((this.plugin as any).settings.templates?.[type] ?? "") as string;
-
-        const persistTemplatePath = async (raw: string) => {
-          (this.plugin as any).settings.templates =
-            (this.plugin as any).settings.templates || {};
-
-          const normalized =
-            raw.includes("\n") || raw.includes("{{") || raw.includes("---")
-              ? raw
-              : raw.trim();
-          const current = ((this.plugin as any).settings.templates?.[type] ??
-            "") as string;
-
-          if (current === normalized) {
-            return;
-          }
-
-          (this.plugin as any).settings.templates[type] = normalized;
-          await (this.plugin as any).saveSettings();
-        };
-
-        let syncTemplateInput = false;
-        let applyTemplateInput: ((value: string) => void) | null = null;
-
-        const updateTemplatePath = async (value: string) => {
-          await persistTemplatePath(value);
-          if (applyTemplateInput) {
-            applyTemplateInput(value);
-          }
-        };
-
-        new Setting(section)
-          .setName("Custom Template")
-          .setDesc("Pick a note to copy over whenever creating a new entity")
-          .addSearch((search) => {
-            const showPicker = () => {
-              const modal = new TemplatePickerModal(this.app, async (file) => {
-                await updateTemplatePath(file.path);
-              });
-
-              modal.open();
-            };
-
-            search
-              .setPlaceholder("Select a template note…")
-              .setValue(getStoredTemplatePath())
-              .onChange(async (value) => {
-                if (syncTemplateInput) {
-                  return;
-                }
-
-                await persistTemplatePath(value);
-              });
-
-            applyTemplateInput = (value: string) => {
-              syncTemplateInput = true;
-              try {
-                search.setValue(value);
-              } catch (error) {
-                search.inputEl.value = value;
-                search.inputEl.dispatchEvent(
-                  new Event("input", { bubbles: true })
-                );
-                search.inputEl.dispatchEvent(
-                  new Event("change", { bubbles: true })
-                );
-              } finally {
-                syncTemplateInput = false;
-              }
-            };
-
-            const buttonEl = (search as any).buttonEl as
-              | HTMLButtonElement
-              | undefined;
-
-            if (buttonEl) {
-              buttonEl.setAttribute("aria-label", "Browse template notes");
-              buttonEl.addEventListener("click", (event) => {
-                event.preventDefault();
-                event.stopPropagation();
-                showPicker();
-              });
-            }
-
-            try {
-              const suggester = new MarkdownFileSuggest(
-                this.app,
-                search.inputEl as HTMLInputElement,
-                async (file) => {
-                  await updateTemplatePath(file.path);
-                }
-              );
-              (this as any)._suggesters = (this as any)._suggesters || [];
-              (this as any)._suggesters.push(suggester);
-            } catch (error) {
-              // ignore suggest attachment issues
-            }
-          });
-      }
-
-      // Add separator inside the entities content div so it only shows when expanded
-      const entitiesSeparator = entitiesContent.createEl("hr");
-      entitiesSeparator.style.margin = "24px 0";
-      entitiesSeparator.style.opacity = "0.5";
-    }
 
     const timestampSettingsSection = createSettingsSection(
       containerEl,
