@@ -1,0 +1,7 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    // Use a value accepted by the installed TS (5.6.x) to avoid TS5103
+    "ignoreDeprecations": "5.0"
+  }
+}
