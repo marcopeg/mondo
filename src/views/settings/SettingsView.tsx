@@ -625,6 +625,46 @@ export class SettingsView extends PluginSettingTab {
       if (!raw) {
         // Nothing to validate; delegate to plugin (applies defaults)
         await (this.plugin as any).applyCRMConfigFromSettings();
+        await (this.plugin as any).saveSettings?.();
+        const confirmRestart = async (): Promise<boolean> => {
+          return await new Promise<boolean>((resolve) => {
+            class RestartModal extends Modal {
+              onOpen() {
+                const { contentEl, titleEl } = this;
+                titleEl.setText("Restart required");
+                contentEl.empty();
+                contentEl.createEl("p", {
+                  text: "Your vault needs to be restarted for these changes to take effect. Restart now?",
+                });
+                const footer = contentEl.createDiv({
+                  cls: "modal-button-container",
+                });
+                const later = footer.createEl("button", {
+                  text: "I'll do it later",
+                });
+                const yes = footer.createEl("button", { text: "Yes" });
+                yes.addClass("mod-cta");
+                later.addEventListener("click", () => {
+                  this.close();
+                  resolve(false);
+                });
+                yes.addEventListener("click", () => {
+                  this.close();
+                  resolve(true);
+                });
+              }
+            }
+            new RestartModal(this.app).open();
+          });
+        };
+        if (await confirmRestart()) {
+          try {
+            (this.app as any)?.commands?.executeCommandById?.("app:reload");
+          } catch (_) {}
+          try {
+            window.location.reload();
+          } catch (_) {}
+        }
         return;
       }
       // Try to parse and validate ourselves so we can show a detailed modal on errors
@@ -645,6 +685,48 @@ export class SettingsView extends PluginSettingTab {
       }
 
       await (this.plugin as any).applyCRMConfigFromSettings();
+      await (this.plugin as any).saveSettings?.();
+
+      const confirmRestart = async (): Promise<boolean> => {
+        return await new Promise<boolean>((resolve) => {
+          class RestartModal extends Modal {
+            onOpen() {
+              const { contentEl, titleEl } = this;
+              titleEl.setText("Restart required");
+              contentEl.empty();
+              contentEl.createEl("p", {
+                text: "Your vault needs to be restarted for these changes to take effect. Restart now?",
+              });
+              const footer = contentEl.createDiv({
+                cls: "modal-button-container",
+              });
+              const later = footer.createEl("button", {
+                text: "I'll do it later",
+              });
+              const yes = footer.createEl("button", { text: "Yes" });
+              yes.addClass("mod-cta");
+              later.addEventListener("click", () => {
+                this.close();
+                resolve(false);
+              });
+              yes.addEventListener("click", () => {
+                this.close();
+                resolve(true);
+              });
+            }
+          }
+          new RestartModal(this.app).open();
+        });
+      };
+
+      if (await confirmRestart()) {
+        try {
+          (this.app as any)?.commands?.executeCommandById?.("app:reload");
+        } catch (_) {}
+        try {
+          window.location.reload();
+        } catch (_) {}
+      }
     });
 
     // Reset button (Use defaults)
