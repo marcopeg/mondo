@@ -48,12 +48,7 @@ export const EntityLinks = () => {
   const linkConfigs = (entityConfig.links ?? []) as CRMEntityLinkConfig[];
 
   if (linkConfigs.length === 0) {
-    if (entityType === "document") {
-      return null;
-    }
-    return renderMissingConfigError(
-      `no link configuration defined for "${entityType}"`
-    );
+    return null;
   }
 
   return (
