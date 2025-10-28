@@ -220,8 +220,8 @@ export const renderEntityConfigurationSection = async (
   const customConfigContainer = containerEl.createDiv();
   const customConfigSection = createSettingsSection(
     customConfigContainer,
-    "Custom CRM configuration",
-    "Paste JSON here to override the built-in CRM configuration. Leave empty to use defaults."
+    "CRM Entities",
+    "Paste JSON here to override the built-in CRM Entities configuration.\nLeave empty to use defaults."
   );
 
   // Full-width block under the setting for textarea + actions

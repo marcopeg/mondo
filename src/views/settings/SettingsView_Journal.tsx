@@ -1,5 +1,6 @@
 import { Setting } from "obsidian";
 import type CRM from "@/main";
+import { createSettingsSection } from "./SettingsView_utils";
 
 interface SettingsJournalProps {
   plugin: CRM;
@@ -13,26 +14,6 @@ interface SettingsJournalProps {
   ) => Setting;
   onDisplayUpdate: () => Promise<void>;
 }
-
-const createSettingsSection = (
-  parent: HTMLElement,
-  heading: string,
-  description?: string
-) => {
-  const createSetting = () => new Setting(parent);
-
-  const headingSetting = createSetting();
-  headingSetting.setName(heading);
-  if (description) {
-    headingSetting.setDesc(description);
-  }
-  headingSetting.setHeading();
-
-  return {
-    element: parent,
-    createSetting,
-  };
-};
 
 export const renderJournalSection = (props: SettingsJournalProps): void => {
   const { plugin, containerEl, addFolderSetting, onDisplayUpdate } = props;

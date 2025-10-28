@@ -6,6 +6,7 @@ import {
   type FuzzyMatch,
 } from "obsidian";
 import type CRM from "@/main";
+import { createSettingsSection } from "./SettingsView_utils";
 
 type PersonEntry = {
   path: string;
@@ -166,26 +167,6 @@ class PersonPickerModal extends FuzzySuggestModal<PersonEntry> {
     }
   }
 }
-
-const createSettingsSection = (
-  parent: HTMLElement,
-  heading: string,
-  description?: string
-) => {
-  const createSetting = () => new Setting(parent);
-
-  const headingSetting = createSetting();
-  headingSetting.setName(heading);
-  if (description) {
-    headingSetting.setDesc(description);
-  }
-  headingSetting.setHeading();
-
-  return {
-    element: parent,
-    createSetting,
-  };
-};
 
 export const renderGeneralSection = (props: SettingsGeneralProps): void => {
   const { app, plugin, containerEl } = props;

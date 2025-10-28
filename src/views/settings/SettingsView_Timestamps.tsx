@@ -7,31 +7,12 @@ import {
   type TimestampSettings,
 } from "@/types/TimestampSettings";
 import type momentModule from "moment";
+import { createSettingsSection } from "./SettingsView_utils";
 
 interface SettingsTimestampsProps {
   plugin: CRM;
   containerEl: HTMLElement;
 }
-
-const createSettingsSection = (
-  parent: HTMLElement,
-  heading: string,
-  description?: string
-) => {
-  const createSetting = () => new Setting(parent);
-
-  const headingSetting = createSetting();
-  headingSetting.setName(heading);
-  if (description) {
-    headingSetting.setDesc(description);
-  }
-  headingSetting.setHeading();
-
-  return {
-    element: parent,
-    createSetting,
-  };
-};
 
 export const renderTimestampsSection = (
   props: SettingsTimestampsProps

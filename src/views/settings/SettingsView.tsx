@@ -256,17 +256,6 @@ export class SettingsView extends PluginSettingTab {
       containerEl,
     });
 
-    // Render entity configuration and custom CRM configuration sections
-    await renderEntityConfigurationSection({
-      app: this.app,
-      plugin: this.plugin,
-      containerEl,
-      folderPaths,
-      addFolderSetting,
-      showErrorModal,
-      showRestartPrompt,
-    });
-
     // Render timestamp section
     renderTimestampsSection({
       plugin: this.plugin,
@@ -292,6 +281,17 @@ export class SettingsView extends PluginSettingTab {
       containerEl,
       addFolderSetting,
       onDisplayUpdate: () => this.display(),
+    });
+
+    // Render entity configuration and custom CRM configuration sections
+    await renderEntityConfigurationSection({
+      app: this.app,
+      plugin: this.plugin,
+      containerEl,
+      folderPaths,
+      addFolderSetting,
+      showErrorModal,
+      showRestartPrompt,
     });
   }
 }
