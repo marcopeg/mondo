@@ -1,61 +1,120 @@
-import company from "./company";
-import document from "./document";
-import gear from "./gear";
-import tool from "./tool";
-import recipe from "./recipe";
-import book from "./book";
-import show from "./show";
-import location from "./location";
-import meeting from "./meeting";
-import person from "./person";
-import project from "./project";
-import idea from "./idea";
-import role from "./role";
-import team from "./team";
-import restaurant from "./restaurant";
-import task from "./task";
-import fact from "./fact";
-import log from "./log";
+import crmConfig from "@/crm-config.json";
 import type { CRMEntityConfig } from "@/types/CRMEntityConfig";
+import type { CRMEntityType, CRMConfig } from "@/types/CRMEntityTypes";
 
-const ENTITIES = [
-  person,
-  fact,
-  log,
-  task,
-  project,
-  idea,
-  company,
-  team,
-  meeting,
-  role,
-  location,
-  restaurant,
-  gear,
-  tool,
-  recipe,
-  book,
-  show,
-  document,
-] as const;
+const cloneConfig = <T>(value: T): T => JSON.parse(JSON.stringify(value)) as T;
 
-type EntityConfig = (typeof ENTITIES)[number];
+type CRMConfigListener = (config: CRMConfig) => void;
 
-export type CRMEntityType = EntityConfig["type"];
+type CRMEntityState = {
+  list: CRMEntityConfig[];
+  entities: Record<CRMEntityType, CRMEntityConfig>;
+  types: CRMEntityType[];
+  typeSet: Set<CRMEntityType>;
+  ui: {
+    tiles: { order: CRMEntityType[] };
+    relevantNotes: { filter: { order: CRMEntityType[] } };
+  };
+};
 
-const buildEntityRecord = () =>
-  ENTITIES.reduce<Record<CRMEntityType, EntityConfig>>((acc, entity) => {
-    acc[entity.type] = entity;
-    return acc;
-  }, {} as Record<CRMEntityType, EntityConfig>);
+const buildState = (config: CRMConfig): CRMEntityState => {
+  const entries = Object.entries(config.entities) as Array<
+    [CRMEntityType, Record<string, unknown>]
+  >;
 
-export const CRM_ENTITIES = buildEntityRecord();
+  const list = entries.map(([type, entityConfig]) => {
+    const normalizedConfig = entityConfig as Record<string, unknown>;
+    return { ...(normalizedConfig as object), type } as CRMEntityConfig;
+  });
 
-export const CRM_ENTITY_TYPES = ENTITIES.map(
-  (entity) => entity.type
-) as CRMEntityType[];
+  const entities = Object.fromEntries(
+    list.map((entityConfig) => [entityConfig.type, entityConfig])
+  ) as Record<CRMEntityType, CRMEntityConfig>;
 
-export const CRM_ENTITY_TYPE_SET = new Set(CRM_ENTITY_TYPES);
+  const types = list.map(
+    (entityConfig) => entityConfig.type
+  ) as CRMEntityType[];
+  const typeSet = new Set(types);
+
+  const titlesOrder = Array.isArray(config.titles?.order)
+    ? (config.titles?.order as CRMEntityType[])
+    : types;
+  const relevantOrder = Array.isArray(config.relevantNotes?.filter?.order)
+    ? (config.relevantNotes?.filter?.order as CRMEntityType[])
+    : types;
+
+  const ui = {
+    tiles: {
+      order: titlesOrder,
+    },
+    relevantNotes: {
+      filter: {
+        order: relevantOrder,
+      },
+    },
+  } as const;
+
+  return {
+    list,
+    entities,
+    types,
+    typeSet,
+    ui,
+  };
+};
+
+let currentConfig = cloneConfig(crmConfig) as CRMConfig;
+let currentState = buildState(currentConfig);
+
+export let CRM_ENTITY_CONFIG_LIST = currentState.list;
+
+export let CRM_ENTITIES = currentState.entities;
+
+export let CRM_ENTITY_TYPES = currentState.types;
+
+export let CRM_ENTITY_TYPE_SET = currentState.typeSet;
+
+// UI configuration: controls ordering for tiles and relevant notes filters
+export let CRM_UI_CONFIG = currentState.ui;
+
+const listeners = new Set<CRMConfigListener>();
+
+export const getCRMConfig = (): CRMConfig => currentConfig;
+
+export const setCRMConfig = (nextConfig: CRMConfig) => {
+  currentConfig = cloneConfig(nextConfig);
+  currentState = buildState(currentConfig);
+
+  CRM_ENTITY_CONFIG_LIST = currentState.list;
+  CRM_ENTITIES = currentState.entities;
+  CRM_ENTITY_TYPES = currentState.types;
+  CRM_ENTITY_TYPE_SET = currentState.typeSet;
+  CRM_UI_CONFIG = currentState.ui;
+
+  console.log(
+    `CRM: setCRMConfig applied with ${CRM_ENTITY_TYPES.length} entity types`
+  );
+
+  listeners.forEach((listener) => {
+    try {
+      listener(currentConfig);
+    } catch (error) {
+      console.error("CRM: config listener failed", error);
+    }
+  });
+};
+
+export const onCRMConfigChange = (listener: CRMConfigListener) => {
+  listeners.add(listener);
+  try {
+    listener(currentConfig);
+  } catch (error) {
+    console.error("CRM: config listener failed during registration", error);
+  }
+  return () => {
+    listeners.delete(listener);
+  };
+};
 
 export const isCRMEntityType = (value: string): value is CRMEntityType =>
   CRM_ENTITY_TYPE_SET.has(value as CRMEntityType);
@@ -66,32 +125,8 @@ export const resolveCRMEntityType = (value: string): CRMEntityType | null => {
   if (isCRMEntityType(normalized)) {
     return normalized;
   }
-
-  for (const entity of ENTITIES) {
-    if (!entity.aliases) continue;
-    if (entity.aliases.some((alias) => alias.toLowerCase() === normalized)) {
-      return entity.type;
-    }
-  }
-
   return null;
 };
 
-// UI configuration: controls ordering for tiles and relevant notes filters
-export const CRM_UI_CONFIG = {
-  tiles: {
-    // Order of entity tiles shown in the dashboard
-    // Default: follow the declared ENTITIES order
-    order: CRM_ENTITY_TYPES as CRMEntityType[],
-  },
-  relevantNotes: {
-    filter: {
-      // Order of type filter buttons in the Relevant Notes panel
-      // Default: follow the declared ENTITIES order
-      order: CRM_ENTITY_TYPES as CRMEntityType[],
-    },
-  },
-} as const;
-
 export type { CRMEntityConfig };
-export { ENTITIES as CRM_ENTITY_CONFIG_LIST };
+export type { CRMEntityType } from "@/types/CRMEntityTypes";

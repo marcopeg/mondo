@@ -18,9 +18,7 @@ import {
   AUDIO_LOGS_ICON,
   AUDIO_LOGS_VIEW,
 } from "@/views/audio-logs-view/constants";
-import {
-  CRMVaultImagesViewWrapper,
-} from "@/views/vault-images-view/wrapper";
+import { CRMVaultImagesViewWrapper } from "@/views/vault-images-view/wrapper";
 import {
   VAULT_IMAGES_ICON,
   VAULT_IMAGES_VIEW,
@@ -46,6 +44,7 @@ import { CRMFileManager } from "@/utils/CRMFileManager";
 import { AudioTranscriptionManager } from "@/utils/AudioTranscriptionManager";
 import { VoiceoverManager } from "@/utils/VoiceoverManager";
 import { NoteDictationManager } from "@/utils/NoteDictationManager";
+import { validateCRMConfig } from "@/utils/CRMConfigManager";
 import {
   CRM_DICTATION_ICON_ID,
   registerDictationIcon,
@@ -55,7 +54,8 @@ import {
   CRM_FILE_TYPES,
   getCRMEntityConfig,
 } from "@/types/CRMFileType";
-import { CRM_ENTITY_TYPES } from "@/entities";
+import { CRM_ENTITY_TYPES, setCRMConfig } from "@/entities";
+import defaultCRMConfig from "@/crm-config.json";
 import {
   DEFAULT_CRM_JOURNAL_SETTINGS,
   DEFAULT_CRM_DAILY_SETTINGS,
@@ -103,6 +103,8 @@ export default class CRM extends Plugin {
     openAITranscriptionPolishEnabled: true,
     voiceoverCachePath: "/voiceover",
     selfPersonPath: "",
+    crmConfigJson: "",
+    crmConfigNotePath: "", // deprecated; no longer used
     timestamp: DEFAULT_TIMESTAMP_SETTINGS,
   };
 
@@ -114,6 +116,7 @@ export default class CRM extends Plugin {
   private timestampToolbarManager: TimestampToolbarManager | null = null;
   private dailyNoteTracker: DailyNoteTracker | null = null;
   private geolocationAbortController: AbortController | null = null;
+  private crmConfigManager: null = null;
   private audioLogsRibbonEl: HTMLElement | null = null;
 
   private applyGeolocationToFile = async (
@@ -200,6 +203,17 @@ export default class CRM extends Plugin {
       this.settings.selfPersonPath = "";
     }
 
+    // Normalize settings-based custom JSON configuration (textarea)
+    const customJson = this.settings.crmConfigJson;
+    this.settings.crmConfigJson =
+      typeof customJson === "string" ? customJson : "";
+
+    // Deprecated: file-based config path is ignored, keep only as stored string
+    const configNotePath = this.settings.crmConfigNotePath;
+    if (typeof configNotePath !== "string") {
+      this.settings.crmConfigNotePath = "";
+    }
+
     this.settings.timestamp = normalizeTimestampSettings(
       this.settings.timestamp
     );
@@ -209,6 +223,53 @@ export default class CRM extends Plugin {
     await this.saveData(this.settings);
   }
 
+  // Apply CRM configuration from the settings textarea
+  async applyCRMConfigFromSettings() {
+    const raw = (this.settings.crmConfigJson ?? "").trim();
+    if (!raw) {
+      setCRMConfig(defaultCRMConfig as any);
+      console.log("CRM: applied built-in CRM config (no custom JSON)");
+      this.app.workspace.trigger("crm:config-updated", {
+        source: "default",
+        notePath: null,
+      });
+      return;
+    }
+
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(raw);
+    } catch (e) {
+      new Notice(
+        `Invalid CRM configuration JSON: ${
+          e instanceof Error ? e.message : String(e)
+        }`
+      );
+      return;
+    }
+
+    const validation = validateCRMConfig(parsed);
+    if (!validation.ok) {
+      const details = validation.issues
+        .map((i) => `${i.path}: ${i.message}`)
+        .join("\n");
+      console.warn("CRM: invalid pasted configuration\n" + details);
+      new Notice("CRM configuration is invalid. See console for details.");
+      return;
+    }
+
+    setCRMConfig(validation.config as any);
+    console.log(
+      `CRM: applied custom CRM config from settings with ${
+        Object.keys(validation.config.entities).length
+      } entities`
+    );
+    this.app.workspace.trigger("crm:config-updated", {
+      source: "custom",
+      notePath: null,
+    });
+  }
+
   async onload() {
     console.clear();
     console.log("CRM: Loading plugin");
@@ -216,6 +277,9 @@ export default class CRM extends Plugin {
     // Initialize settings
     this.addSettingTab(new SettingsView(this.app, this));
     await this.loadSettings();
+
+    // Apply configuration from settings (custom JSON or defaults)
+    await this.applyCRMConfigFromSettings();
 
     registerDictationIcon();
 
@@ -469,6 +533,15 @@ export default class CRM extends Plugin {
       callback: () => journalMove("next"),
     });
 
+    this.addCommand({
+      id: "open-crm-settings",
+      name: "Open CRM settings",
+      callback: () => {
+        (this.app as any).setting.open();
+        (this.app as any).setting.openTabById(this.manifest.id);
+      },
+    });
+
     this.registerMarkdownCodeBlockProcessor(
       "crm",
       async (...args) => new CRMInlineViewWrapper(this.app, ...args)
@@ -601,6 +674,9 @@ export default class CRM extends Plugin {
 
   onunload() {
     console.log("CRM: Unloading plugin");
+
+    // No config manager to dispose; settings-based config only
+    this.crmConfigManager = null;
 
     // Cleanup the CRM file manager
     const fileManager = CRMFileManager.getInstance(this.app);

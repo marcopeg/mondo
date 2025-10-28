@@ -86,18 +86,17 @@ export const DashboardView = () => {
     }
   }, [app, selfPerson]);
 
-  const entityTiles = useMemo(
-    () =>
-      CRM_UI_CONFIG.tiles.order
-        .map((type) => CRM_ENTITIES[type])
-        .filter(Boolean)
-        .map((config) => ({
-          type: config.type,
-          icon: config.icon,
-          title: config.name,
-        })),
-    []
-  );
+  const entityTiles = useMemo(() => {
+    const order = CRM_UI_CONFIG?.tiles?.order ?? [];
+    return order
+      .map((type) => CRM_ENTITIES[type])
+      .filter(Boolean)
+      .map((config) => ({
+        type: config.type,
+        icon: config.icon,
+        title: config.name,
+      }));
+  }, []);
 
   const quickActions = useMemo(
     () =>
@@ -158,10 +157,14 @@ export const DashboardView = () => {
         <QuickTasks collapsed={quickTasksCollapsed} state={inboxTasksState} />
         <RelevantNotes collapsed={relevantNotesCollapsed} />
       </div>
-      <Typography variant="h1">CRM Entities</Typography>
-      <div className="mt-4">
-        <EntityTilesGrid items={entityTiles} onOpen={onOpenEntityPanel} />
-      </div>
+      {entityTiles.length > 0 && (
+        <>
+          <Typography variant="h1">CRM Entities</Typography>
+          <div className="mt-4">
+            <EntityTilesGrid items={entityTiles} onOpen={onOpenEntityPanel} />
+          </div>
+        </>
+      )}
       <div className="mt-6">
         <VaultStatsCard />
       </div>

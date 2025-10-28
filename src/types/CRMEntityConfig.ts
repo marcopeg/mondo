@@ -1,11 +1,5 @@
-export interface CRMEntityDashboardConfig {
-  // Dashboard config is intentionally empty
-}
-
-export interface CRMEntitySettingsConfig {
-  entity?: Record<string, never>;
-  template: string;
-}
+// Settings wrapper has been removed from the config schema.
+// Template is now a top-level property on the entity config.
 
 export type CRMEntityListSortDirection = "asc" | "desc";
 
@@ -113,9 +107,7 @@ export interface CRMEntityConfig<
   type: TType;
   name: string;
   icon: string;
-  dashboard: CRMEntityDashboardConfig;
-  settings: CRMEntitySettingsConfig;
-  aliases?: string[];
+  template: string;
   list?: CRMEntityListConfig;
   links?: TLink[];
 }

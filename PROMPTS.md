@@ -197,3 +197,53 @@ add the following panels:
 - Restaurants (linked to the location, expanded by default)
 - Projects (directly linked via "role" attribute)
 - standard backlinks
+
+---
+
+Focus on the `/src/entities` folder that as of now exposes the full configuration for the CRM.
+
+I want to move the entire configuration into one single JSON file structured as:
+
+```json
+{
+    "titles": {
+        "order": [ ...entity types for the order of the tiles...],
+    }
+    "relevantNotes": {
+        "filter": {
+            "order": [[ ...entity types for the order of the filters...]]
+        }
+    },
+    "entities": {
+        "person": {
+            "name": "People",
+            "icon": "user",
+            ...the other props of a type
+        }
+    }
+}
+```
+
+This first step of refactoring should place one single `/src/crm-config.json` that is read to setup the crm at boot time.
+
+You should convert all the current entites files into this single json.
+
+Fix the logic so that the configuration is read from this file and not from the entities as it is now.
+
+---
+
+explain me what the crm-configuration `entity.{key}.aliases` do and what is the consequence if we remove it
+
+---
+
+explain me what the crm-configuration `entity.{key}.dashboard` do and what is the consequence if we remove it
+
+---
+
+add a new settings with the note picker to pick up a note to be used as source of the configuration for the crm.
+
+when this note is set, the frontmatter of such note takes over the hardcoded configuration.
+
+the system must be able to validate it and prevent using it if it contains any error. every time the content of this file changes the system should re-validate and re-load the configuration.
+
+in case of a bad configuration, a detailed error log should be created in the same folder as the config file with the filename following the template "YYMMDDhhmmss-crm-config-error.md" to help the use fix the configuration issue.

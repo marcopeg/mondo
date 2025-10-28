@@ -232,48 +232,6 @@
   margin-top: var(--size-4-4, 1rem);
 }
 
-.crm-settings-section {
-  margin-top: var(--size-4-4, 1rem);
-  padding: var(--size-4-3, 0.75rem) var(--size-4-4, 1rem);
-  border-radius: var(--radius-l, 0.75rem);
-  border: 1px solid var(--background-modifier-border);
-  background-color: var(--background-secondary);
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-}
-
-.crm-settings-section:first-of-type {
-  margin-top: 0;
-}
-
-.crm-settings-section__row {
-  margin: 0;
-  padding: var(--size-4-2, 0.5rem) 0;
-}
-
-.crm-settings-section__row:first-child {
-  padding-top: 0;
-}
-
-.crm-settings-section__row:last-child {
-  padding-bottom: 0;
-}
-
-.crm-settings-section__row + .crm-settings-section__row {
-  border-top: 1px solid var(--background-modifier-border);
-}
-
-.crm-settings-section__row.setting-item-heading {
-  padding-bottom: var(--size-4-2, 0.5rem);
-  margin-bottom: 0;
-}
-
-.crm-settings-section__row.setting-item-heading + .crm-settings-section__row {
-  border-top: none;
-  padding-top: 0;
-}
-
 .crm-textfield__mic-icon {
   width: 1.15rem;
   height: 1.15rem;

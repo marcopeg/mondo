@@ -68,3 +68,36 @@ https://github.com/marcopeg/obsidian-crm
 ```
 
 I suggest you keep it updated to the latest version, but at this point feel free to install whatever available release.
+
+## ⚙️ Custom CRM configuration
+
+You can override the built‑in CRM entities and UI ordering by pasting a JSON configuration in the plugin settings:
+
+- Open Settings → Community Plugins → CRM → Custom CRM configuration (JSON)
+- Paste your JSON config and click “Validate & Apply”
+- Clear the textarea and click “Use defaults” to restore the built‑in config
+
+Defaults and reference:
+
+- Built‑in defaults now come from `src/crm-config.json` (kept minimal by design).
+- A complete reference/example is provided in `src/crm-config.full.json`.
+  You can copy snippets from the full file into the settings JSON.
+
+The expected shape matches `src/crm-config.full.json`:
+
+```
+{
+  "titles": { "order": ["person", "company", "project", "…"] },
+  "relevantNotes": { "filter": { "order": ["person", "…"] } },
+  "entities": {
+    "person": { "name": "People", "icon": "user", "template": "…", "links": [ … ] }
+  }
+}
+```
+
+Invalid JSON or schema issues won’t be applied; a notice appears and details are logged to the console.
+
+Restart behavior:
+
+- After Apply or Use defaults, you’ll be prompted to restart the vault so changes apply everywhere.
+  Choosing “Yes” triggers a reload; “I’ll do it later” keeps the new config saved for the next reload.

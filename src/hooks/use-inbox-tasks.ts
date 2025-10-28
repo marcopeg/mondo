@@ -217,7 +217,7 @@ export type InboxTask = {
   hasExplicitTime: boolean;
 };
 
-type PromoteTargetType = Extract<CRMFileType, "task" | "project" | "log">;
+type PromoteTargetType = "task" | "project" | "log";
 
 const slugify = (value: string): string =>
   value

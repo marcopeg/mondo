@@ -2,14 +2,17 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { App } from "obsidian";
 import { Notice } from "obsidian";
 import Button from "@/components/ui/Button";
-import { CRM_ENTITIES, type CRMEntityType } from "@/entities";
+import {
+  CRM_ENTITIES,
+  CRM_ENTITY_TYPES,
+  type CRMEntityType,
+} from "@/entities";
 import type { TCachedFile } from "@/types/TCachedFile";
 
 const buildEntityOptions = () =>
-  Object.values(CRM_ENTITIES)
-    .map((entity) => ({
-      type: entity.type,
-      label: entity.name,
+  CRM_ENTITY_TYPES.map((type) => ({
+    type,
+    label: CRM_ENTITIES[type].name,
     }))
     .sort((a, b) => a.label.localeCompare(b.label));
 

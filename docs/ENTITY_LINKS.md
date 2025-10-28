@@ -4,9 +4,11 @@ This guide explains how to add custom panels to CRM entity notes using the Entit
 
 - Injected area is created by the plugin when opening a Markdown file: see `src/events/inject-crm-links.tsx`.
 - For CRM entity types, it renders `EntityLinks`: `src/containers/EntityLinks/EntityLinks.tsx`.
-- The set of panels shown for a given entity type is controlled by that entity’s config: `src/entities/<entity>.ts` as `links: [...]`.
+- The set of panels shown for a given entity type is controlled by that entity’s config in `src/crm-config.json` (`entities.<type>.links`).
 
-If you want to add a new panel, you’ll create a component, register it in a central registry, and reference it from the target entity’s `links` list.
+If you want to add a new panel, you’ll create a component, register it in a central registry, and reference it from the target entity’s `links` list inside the JSON configuration.
+
+> **Note:** Legacy per-entity link definitions were removed. All panels — including the reusable Backlinks panel — now live in `crm-config.json`.
 
 ## Architecture Overview
 
@@ -18,9 +20,9 @@ If you want to add a new panel, you’ll create a component, register it in a ce
   - Loads the entity config from `CRM_ENTITIES`.
   - Iterates `entityConfig.links` and, for each item `{ type: string, ...config }`, picks a component from `entityMap[type]`.
   - If a type is not registered in `entityMap`, it shows an InlineError.
-- Entity configs: `src/entities/*.ts`
-  - Define `links: TLink[]` where `TLink` is a union of link configuration shapes, e.g. `{ type: "meetings"; collapsed?: boolean }`.
-  - You can add your own `{ type: "my-custom"; ... }` link entry.
+- Entity config: `src/crm-config.json`
+  - Each entity defines a `links` array with panel descriptors.
+  - Add your own `{ "type": "my-custom", ... }` link entry.
 
 ### Folder layout
 
@@ -122,37 +124,18 @@ The string key (e.g. `"my-custom"`) is what entity configs will reference.
 
 ### 3) Add it to an entity configuration
 
-Open the entity config file, e.g. `src/entities/person.ts` (or `company.ts`, `project.ts`, etc.).
+Open `src/crm-config.json`, locate the target entity, and append your link object to its `links` array:
 
-- Add your link entry to the `links` array:
+```jsonc
+"links": [
+  { "type": "meetings" },
+  { "type": "projects" },
 
-```ts
-links: [
-  // existing panels
-  { type: "meetings" },
-  { type: "projects" },
-
-  // your custom panel
-  { type: "my-custom", collapsed: true, foo: "bar" },
-],
+  { "type": "my-custom", "collapsed": true, "foo": "bar" }
+]
 ```
 
-- Optional but recommended: extend the `CRMEntityConfig` generic union for strong typing and autocompletion:
-
-```ts
-const personConfig: CRMEntityConfig<
-  "person",
-  | { type: "teammates"; collapsed?: boolean }
-  | { type: "meetings"; collapsed?: boolean }
-  | { type: "projects"; collapsed?: boolean }
-  | { type: "facts"; collapsed?: boolean }
-  | { type: "my-custom"; collapsed?: boolean; foo?: string }
-> = {
-  // ...
-};
-```
-
-Repeat for other entities if you want the same panel elsewhere.
+Repeat for other entities if you want the same panel elsewhere. Because the JSON is loaded directly at runtime, make sure you keep the structure valid and property names aligned with `CRMEntityConfig`.
 
 ## Example: Add a "Contacts" panel to Company
 
@@ -160,9 +143,8 @@ Repeat for other entities if you want the same panel elsewhere.
 2. Register it in `EntityLinks.tsx`:
    - `import { ContactsLinks } from "./panels/ContactsLinks";`
    - `entityMap["contacts"] = ContactsLinks;`
-3. Edit `src/entities/company.ts`:
-   - Extend the `CRMEntityConfig` union with `| { type: "contacts"; collapsed?: boolean }`.
-   - Add `{ type: "contacts", collapsed: true }` to `links`.
+3. Edit `src/crm-config.json`:
+   - Inside the `"company"` entity, append `{ "type": "contacts", "collapsed": true }` to `links`.
 4. Start dev server and open a company note to verify.
 
 ## Advanced Patterns
@@ -178,6 +160,8 @@ Repeat for other entities if you want the same panel elsewhere.
   - Pass `actions=[{ key, content: <Button ... /> }]` to `Card` like in `MeetingsLinks.tsx`.
 - Icons:
   - Use existing icon names (lucide) already used across the project, e.g. `calendar`, `puzzle`, `users`, etc.
+- Backlinks panel:
+  - Legacy bespoke panels have been consolidated into the configurable Backlinks renderer (`type: "backlinks"`). See [`BACKLINKS_PANEL.md`](./BACKLINKS_PANEL.md) for full schema and examples.
 
 ## Troubleshooting
 
@@ -209,8 +193,9 @@ yarn dev
 - Injection and rendering:
   - `src/events/inject-crm-links.tsx`
   - `src/containers/EntityLinks/EntityLinks.tsx`
-- Entity configs:
-  - `src/entities/*.ts` (e.g. `person.ts`, `company.ts`)
+- Entity configuration:
+  - `src/crm-config.json`
+  - [`docs/CRM_CONFIG.md`](./CRM_CONFIG.md)
 - Types:
   - `src/types/CRMEntityConfig.ts`
   - `src/types/CRMFileType.ts`
