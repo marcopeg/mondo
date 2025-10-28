@@ -4,24 +4,20 @@ import {
   App,
   Modal,
   TFolder,
-  TFile,
   AbstractInputSuggest,
-  Notice,
-  moment,
-  type ExtraButtonComponent,
-  FuzzySuggestModal,
-  type FuzzyMatch,
 } from "obsidian";
 import type CRM from "@/main";
 import { CRM_ENTITY_CONFIG_LIST } from "@/entities";
 import {
   DEFAULT_TIMESTAMP_SETTINGS,
-  buildTimestampFromMoment,
   normalizeTimestampSettings,
-  type TimestampSettings,
 } from "@/types/TimestampSettings";
-import type momentModule from "moment";
 import { renderEntityConfigurationSection } from "./SettingsView_Entities";
+import { renderGeneralSection } from "./SettingsView_General";
+import { renderTimestampsSection } from "./SettingsView_Timestamps";
+import { renderAudioSection } from "./SettingsView_Audio";
+import { renderDailySection } from "./SettingsView_Daily";
+import { renderJournalSection } from "./SettingsView_Journal";
 
 // Settings view for CRM plugin
 export class SettingsView extends PluginSettingTab {
@@ -64,7 +60,10 @@ export class SettingsView extends PluginSettingTab {
       (this.plugin as any).settings.timestamp ?? DEFAULT_TIMESTAMP_SETTINGS
     );
     // Helper: collect folder paths from the vault
-    const collectFolderPaths = (root: TFolder, out: string[] = []) => {
+    const collectFolderPaths = (
+      root: TFolder,
+      out: string[] = []
+    ): string[] => {
       out.push(root.path === "" ? "/" : root.path);
       for (const child of root.children) {
         if (child instanceof TFolder) collectFolderPaths(child as TFolder, out);
@@ -87,21 +86,23 @@ export class SettingsView extends PluginSettingTab {
         this._onPick = onPick;
       }
 
-      getSuggestions(query: string) {
+      getSuggestions(query: string): string[] {
         const q = query.toLowerCase();
         return folderPaths.filter((p) => p.toLowerCase().includes(q));
       }
 
-      renderSuggestion(item: string, el: HTMLElement) {
+      renderSuggestion(item: string, el: HTMLElement): void {
         el.setText(item);
       }
 
-      selectSuggestion(item: string) {
+      selectSuggestion(item: string): void {
         // Prefer callback to set the value via the SearchComponent
         if (this._onPick) {
           try {
             this._onPick(item);
-          } catch (e) {}
+          } catch (e) {
+            // ignore
+          }
         } else {
           const input = (this as any).inputEl as HTMLInputElement | undefined;
           if (input) {
@@ -121,439 +122,13 @@ export class SettingsView extends PluginSettingTab {
       }
     }
 
-    class MarkdownFileSuggest extends AbstractInputSuggest<TFile> {
-      private readonly onPick?: (file: TFile) => void | Promise<void>;
-
-      constructor(
-        app: App,
-        inputEl: HTMLInputElement,
-        onPick?: (file: TFile) => void | Promise<void>
-      ) {
-        super(app, inputEl);
-        this.onPick = onPick;
-      }
-
-      getSuggestions(query: string): TFile[] {
-        const files = this.app.vault.getMarkdownFiles();
-        if (!query) {
-          return files.slice(0, 50);
-        }
-
-        const normalized = query.toLowerCase();
-        return files.filter((file) =>
-          file.path.toLowerCase().includes(normalized)
-        );
-      }
-
-      renderSuggestion(file: TFile, el: HTMLElement) {
-        el.setText(file.path);
-      }
-
-      selectSuggestion(file: TFile) {
-        if (this.onPick) {
-          try {
-            void this.onPick(file);
-          } catch (error) {
-            // ignore persistence issues triggered during suggestion pick
-          }
-        } else {
-          const input = (this as any).inputEl as HTMLInputElement | undefined;
-          if (input) {
-            input.value = file.path;
-            input.dispatchEvent(new Event("input", { bubbles: true }));
-            input.dispatchEvent(new Event("change", { bubbles: true }));
-          }
-        }
-
-        try {
-          (this as any).close();
-        } catch (error) {
-          // ignore inability to close suggest UI
-        }
-      }
-    }
-
-    const collectJsonFiles = () =>
-      this.app.vault
-        .getFiles()
-        .filter((file) => {
-          if (file.extension.toLowerCase() !== "json") {
-            return false;
-          }
-          return !file.path.split("/").includes(".obsidian");
-        })
-        .sort((first, second) =>
-          first.path.localeCompare(second.path, undefined, {
-            sensitivity: "base",
-          })
-        );
-
-    class JsonFileSuggest extends AbstractInputSuggest<TFile> {
-      private readonly getFiles: () => TFile[];
-      private readonly onPick?: (file: TFile) => void | Promise<void>;
-
-      constructor(
-        app: App,
-        inputEl: HTMLInputElement,
-        getFiles: () => TFile[],
-        onPick?: (file: TFile) => void | Promise<void>
-      ) {
-        super(app, inputEl);
-        this.getFiles = getFiles;
-        this.onPick = onPick;
-      }
-
-      getSuggestions(query: string): TFile[] {
-        const files = this.getFiles();
-        if (!query) {
-          return files.slice(0, 50);
-        }
-        const normalized = query.toLowerCase();
-        return files
-          .filter((file) => file.path.toLowerCase().includes(normalized))
-          .slice(0, 50);
-      }
-
-      renderSuggestion(file: TFile, el: HTMLElement) {
-        el.setText(file.path);
-      }
-
-      selectSuggestion(file: TFile) {
-        if (this.onPick) {
-          try {
-            void this.onPick(file);
-          } catch (error) {
-            // ignore persistence errors raised by the selection handler
-          }
-        } else {
-          const input = (this as any).inputEl as HTMLInputElement | undefined;
-          if (input) {
-            input.value = file.path;
-            input.dispatchEvent(new Event("input", { bubbles: true }));
-            input.dispatchEvent(new Event("change", { bubbles: true }));
-          }
-        }
-
-        try {
-          (this as any).close();
-        } catch (error) {
-          // ignore inability to close suggest UI
-        }
-      }
-    }
-
-    class TemplatePickerModal extends FuzzySuggestModal<TFile> {
-      private readonly onSelect: (file: TFile) => void | Promise<void>;
-
-      constructor(app: App, onSelect: (file: TFile) => void | Promise<void>) {
-        super(app);
-        this.onSelect = onSelect;
-        this.setPlaceholder("Select a template note");
-      }
-
-      getItems(): TFile[] {
-        return this.app.vault.getMarkdownFiles();
-      }
-
-      getItemText(file: TFile): string {
-        return file.path;
-      }
-
-      onChooseItem(file: TFile, _evt?: MouseEvent | KeyboardEvent) {
-        try {
-          void this.onSelect(file);
-        } catch (error) {
-          // ignore persistence errors raised by selection handler
-        }
-      }
-    }
-
-    type PersonEntry = {
-      path: string;
-      label: string;
-      search: string;
-    };
-
-    const collectPersonEntries = (): PersonEntry[] => {
-      const markdownFiles = this.app.vault.getMarkdownFiles();
-      return markdownFiles
-        .map((file) => {
-          const cache = this.app.metadataCache.getFileCache(file);
-          const frontmatter = cache?.frontmatter as
-            | Record<string, unknown>
-            | undefined;
-          const type =
-            typeof frontmatter?.type === "string"
-              ? frontmatter.type.trim().toLowerCase()
-              : "";
-          if (type !== "person") {
-            return null;
-          }
-          const show =
-            typeof frontmatter?.show === "string"
-              ? frontmatter.show.trim()
-              : "";
-          const name =
-            typeof frontmatter?.name === "string"
-              ? frontmatter.name.trim()
-              : "";
-          const label = show || name || file.basename;
-          const path = file.path;
-          return {
-            path,
-            label,
-            search: `${label.toLowerCase()} ${path.toLowerCase()}`,
-          } as PersonEntry;
-        })
-        .filter((entry): entry is PersonEntry => Boolean(entry))
-        .sort((first, second) =>
-          first.label.localeCompare(second.label, undefined, {
-            sensitivity: "base",
-          })
-        );
-    };
-
-    const findPersonEntry = (value: string): PersonEntry | null => {
-      const trimmed = value.trim();
-      if (!trimmed) {
-        return null;
-      }
-      const entries = collectPersonEntries();
-      const normalized = trimmed.endsWith(".md") ? trimmed : `${trimmed}.md`;
-      const normalizedNoExt = normalized.replace(/\.md$/iu, "");
-      return (
-        entries.find((entry) => {
-          const entryNoExt = entry.path.replace(/\.md$/iu, "");
-          return (
-            entry.path === trimmed ||
-            entry.path === normalized ||
-            entryNoExt === trimmed ||
-            entryNoExt === normalizedNoExt
-          );
-        }) ?? null
-      );
-    };
-
-    const renderPersonSuggestion = (item: PersonEntry, el: HTMLElement) => {
-      el.empty();
-      el.createEl("div", {
-        text: item.label,
-        cls: "crm-settings-person-label",
-      });
-      if (item.path !== item.label) {
-        el.createEl("div", {
-          text: item.path,
-          cls: "crm-settings-person-path",
-        });
-      }
-    };
-
-    class PersonSuggest extends AbstractInputSuggest<PersonEntry> {
-      private readonly getEntries: () => PersonEntry[];
-      // Use a distinct name to avoid conflicting with AbstractInputSuggest.onSelect method signature
-      private readonly handleSelect?: (
-        entry: PersonEntry
-      ) => void | Promise<void>;
-
-      constructor(
-        app: App,
-        inputEl: HTMLInputElement,
-        getEntries: () => PersonEntry[],
-        onSelect?: (entry: PersonEntry) => void | Promise<void>
-      ) {
-        super(app, inputEl);
-        this.getEntries = getEntries;
-        this.handleSelect = onSelect;
-      }
-
-      getSuggestions(query: string) {
-        const entries = this.getEntries();
-        const normalized = query.trim().toLowerCase();
-        if (!normalized) {
-          return entries;
-        }
-        return entries.filter((entry) => entry.search.includes(normalized));
-      }
-
-      renderSuggestion(item: PersonEntry, el: HTMLElement) {
-        renderPersonSuggestion(item, el);
-      }
-
-      selectSuggestion(item: PersonEntry) {
-        if (this.handleSelect) {
-          try {
-            void this.handleSelect(item);
-          } catch (error) {
-            // ignore persistence errors from select callback
-          }
-        }
-
-        this.close();
-      }
-    }
-
-    class PersonPickerModal extends FuzzySuggestModal<PersonEntry> {
-      private readonly getEntries: () => PersonEntry[];
-      private readonly onSelect: (entry: PersonEntry) => void | Promise<void>;
-
-      constructor(
-        app: App,
-        getEntries: () => PersonEntry[],
-        onSelect: (entry: PersonEntry) => void | Promise<void>
-      ) {
-        super(app);
-        this.getEntries = getEntries;
-        this.onSelect = onSelect;
-        this.setPlaceholder("Select a person note");
-      }
-
-      getItems(): PersonEntry[] {
-        return this.getEntries();
-      }
-
-      getItemText(item: PersonEntry): string {
-        return item.label;
-      }
-
-      renderSuggestion(match: FuzzyMatch<PersonEntry>, el: HTMLElement) {
-        renderPersonSuggestion(match.item, el);
-      }
-
-      onChooseItem(item: PersonEntry, _evt?: MouseEvent | KeyboardEvent) {
-        try {
-          void this.onSelect(item);
-        } catch (error) {
-          // ignore persistence errors from select callback
-        }
-      }
-    }
-
-    const addSelfPersonSetting = (container: HTMLElement) => {
-      const storedSelfPath = (
-        (this.plugin as any).settings?.selfPersonPath?.toString?.() ?? ""
-      ).trim();
-
-      const selfSetting = new Setting(container)
-        .setName("Who's me?")
-        .setDesc(
-          'Pick a person that will be used to mean "myself" in the CRM.'
-        );
-
-      selfSetting.addSearch((search) => {
-        const applyStoredValue = (value: string) => {
-          try {
-            search.setValue(value);
-          } catch (error) {
-            search.inputEl.value = value;
-            search.inputEl.dispatchEvent(new Event("input", { bubbles: true }));
-            search.inputEl.dispatchEvent(
-              new Event("change", { bubbles: true })
-            );
-          }
-        };
-
-        const persistSelfPersonPath = async (path: string) => {
-          const normalized = path.trim();
-          if ((this.plugin as any).settings.selfPersonPath !== normalized) {
-            (this.plugin as any).settings.selfPersonPath = normalized;
-            await (this.plugin as any).saveSettings();
-          }
-        };
-
-        const applyPersonSelection = async (entry: PersonEntry) => {
-          if (search.inputEl.value !== entry.path) {
-            applyStoredValue(entry.path);
-          }
-          await persistSelfPersonPath(entry.path);
-        };
-
-        const clearSelfPerson = async () => {
-          if ((this.plugin as any).settings.selfPersonPath) {
-            (this.plugin as any).settings.selfPersonPath = "";
-            await (this.plugin as any).saveSettings();
-          }
-        };
-
-        search
-          .setPlaceholder("Select a person note…")
-          .setValue(storedSelfPath)
-          .onChange(async (value) => {
-            const trimmed = value.trim();
-            if (!trimmed) {
-              await clearSelfPerson();
-              return;
-            }
-
-            const entry = findPersonEntry(trimmed);
-            if (!entry) {
-              return;
-            }
-
-            await applyPersonSelection(entry);
-          });
-
-        const buttonEl = (search as any).buttonEl as
-          | HTMLButtonElement
-          | undefined;
-        if (buttonEl) {
-          buttonEl.setAttribute("aria-label", "Select a person note");
-          buttonEl.setAttribute("title", "Select a person note");
-          buttonEl.onclick = (event) => {
-            event.preventDefault();
-            event.stopPropagation();
-            const modal = new PersonPickerModal(
-              this.app,
-              collectPersonEntries,
-              async (entry) => {
-                await applyPersonSelection(entry);
-              }
-            );
-            modal.open();
-            return false;
-          };
-        }
-
-        try {
-          const suggest = new PersonSuggest(
-            this.app,
-            search.inputEl as HTMLInputElement,
-            collectPersonEntries,
-            async (entry) => {
-              await applyPersonSelection(entry);
-            }
-          );
-          (this as any)._suggesters = (this as any)._suggesters || [];
-          (this as any)._suggesters.push(suggest);
-        } catch (error) {
-          // Suggest is unavailable (e.g. tests); ignore.
-        }
-
-        try {
-          const clearButton = (search as any).clearButtonEl as
-            | HTMLButtonElement
-            | undefined;
-          if (clearButton) {
-            clearButton.onclick = async (event) => {
-              event.preventDefault();
-              event.stopPropagation();
-              search.setValue("");
-              await clearSelfPerson();
-              return false;
-            };
-          }
-        } catch (error) {
-          // Ignore issues while wiring the clear button.
-        }
-      });
-    };
-
     const addFolderSetting = (
       container: HTMLElement | (() => Setting),
       name: string,
       desc: string,
       getValue: () => string,
       setValue: (v: string) => Promise<void>
-    ) => {
+    ): Setting => {
       const createSetting =
         container instanceof HTMLElement
           ? () => new Setting(container)
@@ -603,36 +178,6 @@ export class SettingsView extends PluginSettingTab {
       return setting;
     };
 
-    const createSettingsSection = (
-      parent: HTMLElement,
-      heading: string,
-      description?: string
-    ) => {
-      const createSetting = () => new Setting(parent);
-
-      const headingSetting = createSetting();
-      headingSetting.setName(heading);
-      if (description) {
-        headingSetting.setDesc(description);
-      }
-      headingSetting.setHeading();
-
-      return {
-        element: parent,
-        createSetting,
-      };
-    };
-
-    // General settings section (first block) - create in separate container
-    const generalSectionContainer = containerEl.createDiv();
-    const generalSection = createSettingsSection(
-      generalSectionContainer,
-      "General",
-      "General settings for the CRM"
-    );
-
-    addSelfPersonSetting(generalSection.element);
-
     // Modal helper
     class SimpleModal extends Modal {
       private readonly title: string;
@@ -660,7 +205,7 @@ export class SettingsView extends PluginSettingTab {
       }
     }
 
-    const showErrorModal = (title: string, issues: string[]) => {
+    const showErrorModal = (title: string, issues: string[]): void => {
       const list = document.createElement("ul");
       list.style.paddingLeft = "1.2em";
       issues.forEach((msg) => {
@@ -704,6 +249,13 @@ export class SettingsView extends PluginSettingTab {
       });
     };
 
+    // Render sections
+    renderGeneralSection({
+      app: this.app,
+      plugin: this.plugin,
+      containerEl,
+    });
+
     // Render entity configuration and custom CRM configuration sections
     await renderEntityConfigurationSection({
       app: this.app,
@@ -715,323 +267,31 @@ export class SettingsView extends PluginSettingTab {
       showRestartPrompt,
     });
 
-    const timestampSettingsSection = createSettingsSection(
+    // Render timestamp section
+    renderTimestampsSection({
+      plugin: this.plugin,
       containerEl,
-      "Timestamps",
-      "Customize how the Add Timestamp command formats new entries."
-    );
+    });
 
-    const timestampPreviewDesc = document.createElement("div");
-    const timestampPreviewCode = document.createElement("code");
-    timestampPreviewCode.style.whiteSpace = "pre-wrap";
-    timestampPreviewDesc.appendChild(
-      document.createTextNode("Example output: ")
-    );
-    timestampPreviewDesc.appendChild(timestampPreviewCode);
-
-    const refreshTimestampPreview = () => {
-      const current = normalizeTimestampSettings(
-        (this.plugin as any).settings.timestamp
-      );
-      (this.plugin as any).settings.timestamp = current;
-      const momentFactory = moment as unknown as typeof momentModule;
-      const previewValue = buildTimestampFromMoment({
-        moment: momentFactory(),
-        settings: current,
-        includeTrailingNewLine: true,
-      });
-      timestampPreviewCode.textContent = previewValue;
-    };
-
-    const applyTimestampSettings = async (
-      partial: Partial<TimestampSettings>
-    ) => {
-      const current = normalizeTimestampSettings(
-        (this.plugin as any).settings.timestamp
-      );
-      const merged = normalizeTimestampSettings({ ...current, ...partial });
-      (this.plugin as any).settings.timestamp = merged;
-      await (this.plugin as any).saveSettings();
-      refreshTimestampPreview();
-      return merged;
-    };
-
-    const currentTimestampSettings =
-      ((this.plugin as any).settings.timestamp as TimestampSettings) ??
-      DEFAULT_TIMESTAMP_SETTINGS;
-
-    timestampSettingsSection
-      .createSetting()
-      .setName("Template")
-      .setDesc(
-        "Moment-style format string (e.g. YYYY/MM/DD hh:mm or [YY-MM-DD hh.mm])."
-      )
-      .addText((text) => {
-        text
-          .setPlaceholder(DEFAULT_TIMESTAMP_SETTINGS.template)
-          .setValue(currentTimestampSettings.template)
-          .onChange(async (value) => {
-            const sanitized = await applyTimestampSettings({
-              template: value,
-            });
-            if (sanitized.template !== value) {
-              text.setValue(sanitized.template);
-            }
-          });
-      });
-
-    timestampSettingsSection
-      .createSetting()
-      .setName("Add newline after timestamp")
-      .setDesc(
-        "When enabled, an empty line is added immediately after the timestamp."
-      )
-      .addToggle((toggle) => {
-        toggle
-          .setValue(currentTimestampSettings.appendNewLine)
-          .onChange(async (value) => {
-            await applyTimestampSettings({ appendNewLine: value });
-          });
-      });
-
-    const timestampPreviewSetting = timestampSettingsSection.createSetting();
-    timestampPreviewSetting.setName("Preview");
-    const timestampPreviewFragment = document.createDocumentFragment();
-    timestampPreviewFragment.appendChild(timestampPreviewDesc);
-    timestampPreviewSetting.setDesc(timestampPreviewFragment);
-
-    refreshTimestampPreview();
-
-    const audioSettingsSection = createSettingsSection(
+    // Render audio section
+    renderAudioSection({
+      plugin: this.plugin,
       containerEl,
-      "Audio Transcription",
-      "Configure AI transcription for embedded audio."
-    );
+    });
 
-    audioSettingsSection
-      .createSetting()
-      .setName("OpenAI Whisper API key")
-      .setDesc(
-        "Used to transcribe embedded audio with OpenAI Whisper-compatible models."
-      )
-      .addText((text) => {
-        text
-          .setPlaceholder("sk-...")
-          .setValue(
-            (this.plugin as any).settings.openAIWhisperApiKey?.toString?.() ??
-              ""
-          )
-          .onChange(async (value) => {
-            (this.plugin as any).settings.openAIWhisperApiKey = value.trim();
-            await (this.plugin as any).saveSettings();
-          });
-
-        try {
-          (text.inputEl as HTMLInputElement).type = "password";
-        } catch (e) {}
-      });
-
-    const dailySettingsSection = createSettingsSection(
+    // Render daily section
+    renderDailySection({
+      plugin: this.plugin,
       containerEl,
-      "Daily Logs",
-      "Settings for Daily Logs"
-    );
+      addFolderSetting,
+    });
 
-    addFolderSetting(
-      dailySettingsSection.createSetting,
-      "Daily root",
-      "Where do you want to store your Daily Logs?\n(Default: Daily)",
-      () => (this.plugin as any).settings.daily?.root ?? "Daily",
-      async (v) => {
-        (this.plugin as any).settings.daily =
-          (this.plugin as any).settings.daily || {};
-        (this.plugin as any).settings.daily.root = v || "Daily";
-        await (this.plugin as any).saveSettings();
-      }
-    );
-
-    dailySettingsSection
-      .createSetting()
-      .setName("Entry format")
-      .setDesc("Filename format for daily entries (default: YYYY-MM-DD)")
-      .addText((t) => {
-        t.setPlaceholder("YYYY-MM-DD")
-          .setValue((this.plugin as any).settings.daily?.entry ?? "YYYY-MM-DD")
-          .onChange(async (v) => {
-            (this.plugin as any).settings.daily =
-              (this.plugin as any).settings.daily || {};
-            (this.plugin as any).settings.daily.entry = v || "YYYY-MM-DD";
-            await (this.plugin as any).saveSettings();
-          });
-        try {
-          (t.inputEl as HTMLInputElement).style.textAlign = "right";
-        } catch (e) {}
-      });
-
-    dailySettingsSection
-      .createSetting()
-      .setName("Section Level")
-      .setDesc("Heading level used for daily notes (default: h2)")
-      .addDropdown((d) => {
-        const opts: Record<string, string> = {
-          h1: "H1",
-          h2: "H2",
-          h3: "H3",
-          h4: "H4",
-          h5: "H5",
-          h6: "H6",
-        };
-        const current = (this.plugin as any).settings.daily?.section ?? "h2";
-        d.addOptions(opts)
-          .setValue(current)
-          .onChange(async (v) => {
-            (this.plugin as any).settings.daily =
-              (this.plugin as any).settings.daily || {};
-            (this.plugin as any).settings.daily.section = v;
-            await (this.plugin as any).saveSettings();
-          });
-      });
-
-    dailySettingsSection
-      .createSetting()
-      .setName("Section Title")
-      .setDesc("Time format for notes inside daily logs (default: HH:MM)")
-      .addText((t) => {
-        t.setPlaceholder("HH:MM")
-          .setValue((this.plugin as any).settings.daily?.note ?? "HH:MM")
-          .onChange(async (v) => {
-            (this.plugin as any).settings.daily =
-              (this.plugin as any).settings.daily || {};
-            (this.plugin as any).settings.daily.note = v || "HH:MM";
-            await (this.plugin as any).saveSettings();
-          });
-        try {
-          (t.inputEl as HTMLInputElement).style.textAlign = "right";
-        } catch (e) {}
-      });
-
-    // New: toggle for inserting bullets in daily logs
-    const dailyUseBullets = (this.plugin as any).settings.daily?.useBullets;
-    dailySettingsSection
-      .createSetting()
-      .setName("Use bullets for entries")
-      .setDesc(
-        "If enabled, new daily entries will be prefixed with a bullet ('- ')."
-      )
-      .addToggle((t) => {
-        t.setValue(dailyUseBullets ?? true).onChange(async (v) => {
-          (this.plugin as any).settings.daily =
-            (this.plugin as any).settings.daily || {};
-          (this.plugin as any).settings.daily.useBullets = v;
-          await (this.plugin as any).saveSettings();
-        });
-      });
-
-    // Journal section
-    const journalSettingsSection = createSettingsSection(
+    // Render journal section
+    renderJournalSection({
+      plugin: this.plugin,
       containerEl,
-      "Journal",
-      "Settings for the Journal feature"
-    );
-
-    addFolderSetting(
-      journalSettingsSection.createSetting,
-      "Journal root",
-      "Where do you want to store your Journaling notes?\n(Default: Journal)",
-      () => (this.plugin as any).settings.journal?.root ?? "Journal",
-      async (v) => {
-        (this.plugin as any).settings.journal =
-          (this.plugin as any).settings.journal || {};
-        (this.plugin as any).settings.journal.root = v || "Journal";
-        await (this.plugin as any).saveSettings();
-      }
-    );
-
-    journalSettingsSection
-      .createSetting()
-      .setName("Entry format")
-      .setDesc("Filename format for journal entries (default: YYYY-MM-DD)")
-      .addText((t) => {
-        t.setPlaceholder("YYYY-MM-DD")
-          .setValue(
-            (this.plugin as any).settings.journal?.entry ?? "YYYY-MM-DD"
-          )
-          .onChange(async (v) => {
-            (this.plugin as any).settings.journal =
-              (this.plugin as any).settings.journal || {};
-            (this.plugin as any).settings.journal.entry = v || "YYYY-MM-DD";
-            await (this.plugin as any).saveSettings();
-          });
-        try {
-          (t.inputEl as HTMLInputElement).style.textAlign = "right";
-        } catch (e) {}
-      });
-
-    // Journal sections toggle + conditional settings
-    const journalUseSections =
-      (this.plugin as any).settings.journal?.useSections ?? false;
-
-    journalSettingsSection
-      .createSetting()
-      .setName("Enable Sections")
-      .setDesc("Organize your journal by time entries")
-      .addToggle((t) => {
-        t.setValue(journalUseSections).onChange(async (v) => {
-          (this.plugin as any).settings.journal =
-            (this.plugin as any).settings.journal || {};
-          (this.plugin as any).settings.journal.useSections = v;
-          await (this.plugin as any).saveSettings();
-          // Re-render settings so conditional fields appear/disappear
-          this.display();
-        });
-      });
-
-    if (journalUseSections) {
-      journalSettingsSection
-        .createSetting()
-        .setName("Section Level")
-        .setDesc("Heading level used for journal notes (default: h3)")
-        .addDropdown((d) => {
-          const opts: Record<string, string> = {
-            inline: "Inline",
-            h1: "H1",
-            h2: "H2",
-            h3: "H3",
-            h4: "H4",
-            h5: "H5",
-            h6: "H6",
-          };
-          const current =
-            (this.plugin as any).settings.journal?.section ?? "h3";
-          d.addOptions(opts)
-            .setValue(current)
-            .onChange(async (v) => {
-              (this.plugin as any).settings.journal =
-                (this.plugin as any).settings.journal || {};
-              (this.plugin as any).settings.journal.section = v;
-              await (this.plugin as any).saveSettings();
-            });
-        });
-
-      journalSettingsSection
-        .createSetting()
-        .setName("Section Title")
-        .setDesc(
-          "Time format for notes inside journal entries (default: HH:MM)"
-        )
-        .addText((t) => {
-          t.setPlaceholder("HH:MM")
-            .setValue((this.plugin as any).settings.journal?.note ?? "HH:MM")
-            .onChange(async (v) => {
-              (this.plugin as any).settings.journal =
-                (this.plugin as any).settings.journal || {};
-              (this.plugin as any).settings.journal.note = v || "HH:MM";
-              await (this.plugin as any).saveSettings();
-            });
-          try {
-            (t.inputEl as HTMLInputElement).style.textAlign = "right";
-          } catch (e) {}
-        });
-    }
+      addFolderSetting,
+      onDisplayUpdate: () => this.display(),
+    });
   }
 }
