@@ -533,6 +533,15 @@ export default class CRM extends Plugin {
       callback: () => journalMove("next"),
     });
 
+    this.addCommand({
+      id: "open-crm-settings",
+      name: "Open CRM settings",
+      callback: () => {
+        (this.app as any).setting.open();
+        (this.app as any).setting.openTabById(this.manifest.id);
+      },
+    });
+
     this.registerMarkdownCodeBlockProcessor(
       "crm",
       async (...args) => new CRMInlineViewWrapper(this.app, ...args)
