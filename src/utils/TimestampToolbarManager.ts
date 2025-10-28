@@ -1,5 +1,5 @@
 import { MarkdownView, Platform, setIcon } from "obsidian";
-import type CRM from "@/main";
+import type Mondo from "@/main";
 import { insertTimestamp } from "@/commands/timestamp.insert";
 
 const TOOLBAR_SELECTORS = [
@@ -9,12 +9,12 @@ const TOOLBAR_SELECTORS = [
 ];
 
 export class TimestampToolbarManager {
-  private readonly plugin: CRM;
+  private readonly plugin: Mondo;
   private button: HTMLButtonElement | null = null;
   private retryTimeout: number | null = null;
   private active = false;
 
-  constructor(plugin: CRM) {
+  constructor(plugin: Mondo) {
     this.plugin = plugin;
   }
 
@@ -76,7 +76,7 @@ export class TimestampToolbarManager {
     const button = document.createElement("button");
     button.type = "button";
     button.className =
-      "crm-mobile-toolbar-button crm-timestamp-toolbar-button";
+      "mondo-mobile-toolbar-button mondo-timestamp-toolbar-button";
     button.setAttribute("aria-label", "Insert timestamp");
     button.setAttribute("title", "Insert timestamp");
     button.addEventListener("click", () => {
@@ -84,12 +84,12 @@ export class TimestampToolbarManager {
     });
 
     const icon = document.createElement("span");
-    icon.className = "crm-mobile-toolbar-button__icon";
+    icon.className = "mondo-mobile-toolbar-button__icon";
     setIcon(icon, "clock");
     button.appendChild(icon);
 
     const label = document.createElement("span");
-    label.className = "crm-mobile-toolbar-button__label";
+    label.className = "mondo-mobile-toolbar-button__label";
     label.textContent = "Timestamp";
     button.appendChild(label);
 

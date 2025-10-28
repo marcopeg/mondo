@@ -3,9 +3,9 @@ import { useCallback, useMemo, useState } from "react";
 import type { App } from "obsidian";
 import { Notice, TFile } from "obsidian";
 import { useApp } from "@/hooks/use-app";
-import { CRMFileType, getCRMEntityConfig } from "@/types/CRMFileType";
+import { MondoFileType, getMondoEntityConfig } from "@/types/MondoFileType";
 import { normalizeFolderPath } from "@/utils/normalizeFolderPath";
-import { getTemplateForType, renderTemplate } from "@/utils/CRMTemplates";
+import { getTemplateForType, renderTemplate } from "@/utils/MondoTemplates";
 import { addParticipantLink } from "@/utils/participants";
 import { resolveSelfPerson } from "@/utils/selfPerson";
 import { useEntityPanels } from "./useEntityPanels";
@@ -13,7 +13,7 @@ import { EntityGrid } from "./components/EntityGrid";
 
 type CreateEntityFileOptions = {
   app: App;
-  entityType: CRMFileType;
+  entityType: MondoFileType;
   title: string;
 };
 
@@ -90,7 +90,7 @@ const ensureFolderExists = async (app: App, folderPath: string) => {
   }
 };
 
-const buildEntityLabel = (entityType: CRMFileType) =>
+const buildEntityLabel = (entityType: MondoFileType) =>
   entityType
     .split(/[-_\s]+/)
     .filter((segment) => segment.length > 0)
@@ -102,15 +102,15 @@ const createEntityFile = async ({
   entityType,
   title,
 }: CreateEntityFileOptions): Promise<CreateEntityFileResult> => {
-  const pluginInstance = (app as any)?.plugins?.plugins?.crm as
+  const pluginInstance = (app as any)?.plugins?.plugins?.mondo as
     | { settings?: Record<string, unknown> }
     | undefined;
   const settings = (pluginInstance?.settings ?? {}) as Record<string, unknown>;
   const rootPaths = (settings.rootPaths ?? {}) as Partial<
-    Record<CRMFileType, string>
+    Record<MondoFileType, string>
   >;
   const templates = (settings.templates ?? {}) as Partial<
-    Record<CRMFileType, string>
+    Record<MondoFileType, string>
   >;
 
   const folderSetting = rootPaths[entityType] ?? "/";
@@ -123,7 +123,7 @@ const createEntityFile = async ({
   const baseTitle = title.trim() || "Untitled";
   // Sanitize filename to be Obsidian/OS friendly (remove invalid characters like : * ? " < > |)
   const sanitizedBase = (
-    entityType === CRMFileType.LOG
+    entityType === MondoFileType.LOG
       ? // Obsidian forbids ':' in filenames; convert it to '-'.
         baseTitle.replace(/:/g, "-").replace(/[\\/*?"<>|]+/g, "-")
       : baseTitle.replace(/[\\/:*?"<>|]+/g, "-")
@@ -158,7 +158,7 @@ const createEntityFile = async ({
 
   const createdFile = await app.vault.create(filePath, content);
 
-  if (entityType === CRMFileType.TASK) {
+  if (entityType === MondoFileType.TASK) {
     try {
       const selfParticipant = resolveSelfPerson(app, createdFile.path);
       if (selfParticipant) {
@@ -176,13 +176,13 @@ const createEntityFile = async ({
 };
 
 type EntityViewProps = {
-  entityType: CRMFileType;
+  entityType: MondoFileType;
 };
 
 export const EntityView: FC<EntityViewProps> = ({ entityType }) => {
   const app = useApp();
   const { columns, rows } = useEntityPanels(entityType);
-  const config = getCRMEntityConfig(entityType);
+  const config = getMondoEntityConfig(entityType);
   const title = config?.name ?? entityType;
   const entityLabel = useMemo(() => buildEntityLabel(entityType), [entityType]);
   const [isCreating, setIsCreating] = useState(false);
@@ -197,7 +197,7 @@ export const EntityView: FC<EntityViewProps> = ({ entityType }) => {
     try {
       // For logs, default to "{date} {time}" to allow quick confirm with Enter
       let titleForEntity = `Untitled ${entityLabel}`;
-      if (entityType === CRMFileType.LOG) {
+      if (entityType === MondoFileType.LOG) {
         const now = new Date();
         const yyyy = String(now.getFullYear());
         const mm = String(now.getMonth() + 1).padStart(2, "0");

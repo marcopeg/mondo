@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useApp } from "@/hooks/use-app";
 import { useSetting } from "@/hooks/use-setting";
-import { getTemplateForType, renderTemplate } from "@/utils/CRMTemplates";
-import { CRMFileType } from "@/types/CRMFileType";
+import { getTemplateForType, renderTemplate } from "@/utils/MondoTemplates";
+import { MondoFileType } from "@/types/MondoFileType";
 import { TFile } from "obsidian";
 import { addParticipantLink } from "@/utils/participants";
 import { resolveSelfPerson } from "@/utils/selfPerson";
@@ -537,11 +537,11 @@ export const useInboxTasks = () => {
   const promoteTask = useCallback(
     async (target: InboxTask, targetType: PromoteTargetType) => {
       try {
-        const plugin = ((app as any)?.plugins?.plugins?.crm as any) ?? null;
+        const plugin = ((app as any)?.plugins?.plugins?.mondo as any) ?? null;
         const settings = plugin?.settings ?? {};
         const rootPaths = settings.rootPaths ?? {};
         const templates = (settings.templates ?? {}) as Partial<
-          Record<CRMFileType, string>
+          Record<MondoFileType, string>
         >;
 
         const folderSetting = rootPaths[targetType] ?? "/";
@@ -557,7 +557,7 @@ export const useInboxTasks = () => {
         // - For logs, inherit the Quick Task's resolved timestamp (date and time)
         // - Otherwise, use "now"
         const selectedDate =
-          targetType === CRMFileType.LOG && target?.occurredAt
+          targetType === MondoFileType.LOG && target?.occurredAt
             ? new Date(target.occurredAt)
             : new Date();
 
@@ -574,13 +574,13 @@ export const useInboxTasks = () => {
         // - For logs: "YYYY-MM-DD HH:mm" (so user can just hit Enter)
         // - For others: derive from task text (Title Case)
         const fallbackTitle =
-          targetType === CRMFileType.PROJECT
+          targetType === MondoFileType.PROJECT
             ? "New Project Task"
-            : targetType === CRMFileType.LOG
+            : targetType === MondoFileType.LOG
             ? `${localDateStr} ${localTimeStrDot}`
             : "New Task";
         let titleBase =
-          targetType === CRMFileType.LOG
+          targetType === MondoFileType.LOG
             ? fallbackTitle
             : toTitleCase(sourceText).slice(0, 120) || fallbackTitle;
         const safeBase = sanitizeFileName(titleBase) || "Untitled";
@@ -607,7 +607,7 @@ export const useInboxTasks = () => {
 
         // Ensure title matches the actual chosen filename for logs,
         // so wiki links and note headings are consistent with the file basename.
-        if (targetType === CRMFileType.LOG) {
+        if (targetType === MondoFileType.LOG) {
           const finalBaseName = fileName.replace(/\.md$/i, "");
           titleBase = finalBaseName;
         }
@@ -623,7 +623,7 @@ export const useInboxTasks = () => {
           title: titleBase,
           type: targetType,
           filename: fileName,
-          slug: targetType === CRMFileType.LOG ? slugify(titleBase) : slug,
+          slug: targetType === MondoFileType.LOG ? slugify(titleBase) : slug,
           date: iso,
         };
 
@@ -650,7 +650,7 @@ export const useInboxTasks = () => {
 
         const created = await app.vault.create(filePath, combined);
 
-        if (targetType === CRMFileType.TASK) {
+        if (targetType === MondoFileType.TASK) {
           try {
             const selfParticipant = resolveSelfPerson(app, created.path);
             if (selfParticipant) {

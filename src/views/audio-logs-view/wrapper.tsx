@@ -1,16 +1,16 @@
 import { ItemView, WorkspaceLeaf } from "obsidian";
 import { createRoot, Root } from "react-dom/client";
-import type CRM from "@/main";
+import type Mondo from "@/main";
 import { AppProvider } from "@/context/AppProvider";
 import { AUDIO_LOGS_VIEW } from "./constants";
 import { AudioLogsView } from "./AudioLogsView";
 
-export class CRMAudioLogsViewWrapper extends ItemView {
+export class MondoAudioLogsViewWrapper extends ItemView {
   private root: Root | null = null;
-  private plugin: CRM;
+  private plugin: Mondo;
   private iconName: string;
 
-  constructor(plugin: CRM, leaf: WorkspaceLeaf, iconName: string) {
+  constructor(plugin: Mondo, leaf: WorkspaceLeaf, iconName: string) {
     super(leaf);
     this.plugin = plugin;
     this.iconName = iconName;

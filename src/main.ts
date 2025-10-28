@@ -10,57 +10,57 @@ import {
   type WorkspaceLeaf,
 } from "obsidian";
 import {
-  CRMDashboardViewWrapper,
+  MondoDashboardViewWrapper,
   DASHBOARD_VIEW,
 } from "@/views/dashboard-view/wrapper";
-import { CRMAudioLogsViewWrapper } from "@/views/audio-logs-view/wrapper";
+import { MondoAudioLogsViewWrapper } from "@/views/audio-logs-view/wrapper";
 import {
   AUDIO_LOGS_ICON,
   AUDIO_LOGS_VIEW,
 } from "@/views/audio-logs-view/constants";
-import { CRMVaultImagesViewWrapper } from "@/views/vault-images-view/wrapper";
+import { MondoVaultImagesViewWrapper } from "@/views/vault-images-view/wrapper";
 import {
   VAULT_IMAGES_ICON,
   VAULT_IMAGES_VIEW,
 } from "@/views/vault-images-view/constants";
-import { CRMVaultFilesViewWrapper } from "@/views/vault-files-view/wrapper";
+import { MondoVaultFilesViewWrapper } from "@/views/vault-files-view/wrapper";
 import {
   VAULT_FILES_ICON,
   VAULT_FILES_VIEW,
 } from "@/views/vault-files-view/constants";
-import { CRMVaultNotesViewWrapper } from "@/views/vault-notes-view/wrapper";
+import { MondoVaultNotesViewWrapper } from "@/views/vault-notes-view/wrapper";
 import {
   VAULT_NOTES_ICON,
   VAULT_NOTES_VIEW,
 } from "@/views/vault-notes-view/constants";
 import {
-  CRMEntityPanelViewWrapper,
+  MondoEntityPanelViewWrapper,
   ENTITY_PANEL_VIEW,
-  type CRMEntityPanelViewState,
+  type MondoEntityPanelViewState,
 } from "@/views/entity-panel-view/wrapper";
-import { CRMInlineViewWrapper } from "@/views/code-block-view/wrapper";
+import { MondoInlineViewWrapper } from "@/views/code-block-view/wrapper";
 import { SettingsView } from "@/views/settings/SettingsView";
-import { CRMFileManager } from "@/utils/CRMFileManager";
+import { MondoFileManager } from "@/utils/MondoFileManager";
 import { AudioTranscriptionManager } from "@/utils/AudioTranscriptionManager";
 import { VoiceoverManager } from "@/utils/VoiceoverManager";
 import { NoteDictationManager } from "@/utils/NoteDictationManager";
-import { validateCRMConfig } from "@/utils/CRMConfigManager";
+import { validateMondoConfig } from "@/utils/MondoConfigManager";
 import { normalizeFolderPath } from "@/utils/normalizeFolderPath";
 import {
-  CRM_DICTATION_ICON_ID,
+  MONDO_DICTATION_ICON_ID,
   registerDictationIcon,
 } from "@/utils/registerDictationIcon";
 import {
-  CRMFileType,
-  CRM_FILE_TYPES,
-  getCRMEntityConfig,
-} from "@/types/CRMFileType";
-import { CRM_ENTITY_TYPES, setCRMConfig } from "@/entities";
-import defaultCRMConfig from "@/crm-config.json";
+  MondoFileType,
+  MONDO_FILE_TYPES,
+  getMondoEntityConfig,
+} from "@/types/MondoFileType";
+import { MONDO_ENTITY_TYPES, setMondoConfig } from "@/entities";
+import defaultMondoConfig from "@/mondo-config.json";
 import {
-  DEFAULT_CRM_JOURNAL_SETTINGS,
-  DEFAULT_CRM_DAILY_SETTINGS,
-} from "@/types/CRMOtherPaths";
+  DEFAULT_MONDO_JOURNAL_SETTINGS,
+  DEFAULT_MONDO_DAILY_SETTINGS,
+} from "@/types/MondoOtherPaths";
 import { openJournal } from "@/commands/journal.open";
 import { openDailyNote } from "@/commands/daily.open";
 import { addDailyLog } from "@/commands/daily.addLog";
@@ -69,9 +69,9 @@ import { insertTimestamp } from "@/commands/timestamp.insert";
 import { sendToChatGPT } from "@/commands/chatgpt.send";
 import { injectJournalNav } from "@/events/inject-journal-nav";
 import {
-  injectCRMLinks,
-  disposeCRMLinkInjections,
-} from "@/events/inject-crm-links";
+  injectMondoLinks,
+  disposeMondoLinkInjections,
+} from "@/events/inject-mondo-links";
 import { requestGeolocation } from "@/utils/geolocation";
 import { buildVoiceoverText } from "@/utils/buildVoiceoverText";
 import DailyNoteTracker from "@/utils/DailyNoteTracker";
@@ -80,32 +80,32 @@ import {
   DEFAULT_TIMESTAMP_SETTINGS,
   normalizeTimestampSettings,
 } from "@/types/TimestampSettings";
-import { getTemplateForType, renderTemplate } from "@/utils/CRMTemplates";
+import { getTemplateForType, renderTemplate } from "@/utils/MondoTemplates";
 import { slugify, focusAndSelectTitle } from "@/utils/createLinkedNoteHelpers";
 
-const CRM_ICON = "anchor";
+const MONDO_ICON = "anchor";
 
 type PanelOpenOptions = {
   state?: Record<string, unknown>;
   reuseMatching?: (leaf: WorkspaceLeaf) => boolean;
 };
 
-export default class CRM extends Plugin {
+export default class Mondo extends Plugin {
   // Settings shape and defaults
   settings: any = {
-    // default rootPaths: map every known CRM type to '/'
-    rootPaths: Object.fromEntries(CRM_FILE_TYPES.map((t) => [String(t), "/"])),
-    journal: DEFAULT_CRM_JOURNAL_SETTINGS,
-    daily: DEFAULT_CRM_DAILY_SETTINGS,
-    templates: Object.fromEntries(CRM_FILE_TYPES.map((t) => [String(t), ""])),
+    // default rootPaths: map every known Mondo type to '/'
+    rootPaths: Object.fromEntries(MONDO_FILE_TYPES.map((t) => [String(t), "/"])),
+    journal: DEFAULT_MONDO_JOURNAL_SETTINGS,
+    daily: DEFAULT_MONDO_DAILY_SETTINGS,
+    templates: Object.fromEntries(MONDO_FILE_TYPES.map((t) => [String(t), ""])),
     openAIWhisperApiKey: "",
     openAIVoice: "",
     openAIModel: "gpt-5-nano",
     openAITranscriptionPolishEnabled: true,
     voiceoverCachePath: "/voiceover",
     selfPersonPath: "",
-    crmConfigJson: "",
-    crmConfigNotePath: "", // deprecated; no longer used
+    mondoConfigJson: "",
+    mondoConfigNotePath: "", // deprecated; no longer used
     timestamp: DEFAULT_TIMESTAMP_SETTINGS,
     dashboard: {
       openAtBoot: false,
@@ -124,7 +124,7 @@ export default class CRM extends Plugin {
   private timestampToolbarManager: TimestampToolbarManager | null = null;
   private dailyNoteTracker: DailyNoteTracker | null = null;
   private geolocationAbortController: AbortController | null = null;
-  private crmConfigManager: null = null;
+  private mondoConfigManager: null = null;
   private audioLogsRibbonEl: HTMLElement | null = null;
 
   private applyGeolocationToFile = async (
@@ -155,7 +155,7 @@ export default class CRM extends Plugin {
 
       return true;
     } catch (error) {
-      console.error("CRM: Failed to capture geolocation", error);
+      console.error("Mondo: Failed to capture geolocation", error);
 
       if (notify) {
         const message =
@@ -181,12 +181,12 @@ export default class CRM extends Plugin {
     this.settings = Object.assign(this.settings, data ?? {});
 
     this.settings.rootPaths = Object.assign(
-      Object.fromEntries(CRM_FILE_TYPES.map((t) => [String(t), "/"])),
+      Object.fromEntries(MONDO_FILE_TYPES.map((t) => [String(t), "/"])),
       this.settings.rootPaths ?? {}
     );
 
     this.settings.templates = Object.assign(
-      Object.fromEntries(CRM_FILE_TYPES.map((t) => [String(t), ""])),
+      Object.fromEntries(MONDO_FILE_TYPES.map((t) => [String(t), ""])),
       this.settings.templates ?? {}
     );
 
@@ -212,14 +212,14 @@ export default class CRM extends Plugin {
     }
 
     // Normalize settings-based custom JSON configuration (textarea)
-    const customJson = this.settings.crmConfigJson;
-    this.settings.crmConfigJson =
+    const customJson = this.settings.mondoConfigJson;
+    this.settings.mondoConfigJson =
       typeof customJson === "string" ? customJson : "";
 
     // Deprecated: file-based config path is ignored, keep only as stored string
-    const configNotePath = this.settings.crmConfigNotePath;
+    const configNotePath = this.settings.mondoConfigNotePath;
     if (typeof configNotePath !== "string") {
-      this.settings.crmConfigNotePath = "";
+      this.settings.mondoConfigNotePath = "";
     }
 
     this.settings.timestamp = normalizeTimestampSettings(
@@ -241,13 +241,13 @@ export default class CRM extends Plugin {
     await this.saveData(this.settings);
   }
 
-  // Apply CRM configuration from the settings textarea
-  async applyCRMConfigFromSettings() {
-    const raw = (this.settings.crmConfigJson ?? "").trim();
+  // Apply Mondo configuration from the settings textarea
+  async applyMondoConfigFromSettings() {
+    const raw = (this.settings.mondoConfigJson ?? "").trim();
     if (!raw) {
-      setCRMConfig(defaultCRMConfig as any);
-      console.log("CRM: applied built-in CRM config (no custom JSON)");
-      this.app.workspace.trigger("crm:config-updated", {
+      setMondoConfig(defaultMondoConfig as any);
+      console.log("Mondo: applied built-in Mondo config (no custom JSON)");
+      this.app.workspace.trigger("mondo:config-updated", {
         source: "default",
         notePath: null,
       });
@@ -259,30 +259,30 @@ export default class CRM extends Plugin {
       parsed = JSON.parse(raw);
     } catch (e) {
       new Notice(
-        `Invalid CRM configuration JSON: ${
+        `Invalid Mondo configuration JSON: ${
           e instanceof Error ? e.message : String(e)
         }`
       );
       return;
     }
 
-    const validation = validateCRMConfig(parsed);
+    const validation = validateMondoConfig(parsed);
     if (!validation.ok) {
       const details = validation.issues
         .map((i) => `${i.path}: ${i.message}`)
         .join("\n");
-      console.warn("CRM: invalid pasted configuration\n" + details);
-      new Notice("CRM configuration is invalid. See console for details.");
+      console.warn("Mondo: invalid pasted configuration\n" + details);
+      new Notice("Mondo configuration is invalid. See console for details.");
       return;
     }
 
-    setCRMConfig(validation.config as any);
+    setMondoConfig(validation.config as any);
     console.log(
-      `CRM: applied custom CRM config from settings with ${
+      `Mondo: applied custom Mondo config from settings with ${
         Object.keys(validation.config.entities).length
       } entities`
     );
-    this.app.workspace.trigger("crm:config-updated", {
+    this.app.workspace.trigger("mondo:config-updated", {
       source: "custom",
       notePath: null,
     });
@@ -290,14 +290,14 @@ export default class CRM extends Plugin {
 
   async onload() {
     console.clear();
-    console.log("CRM: Loading plugin");
+    console.log("Mondo: Loading plugin");
 
     // Initialize settings
     this.addSettingTab(new SettingsView(this.app, this));
     await this.loadSettings();
 
     // Apply configuration from settings (custom JSON or defaults)
-    await this.applyCRMConfigFromSettings();
+    await this.applyMondoConfigFromSettings();
 
     registerDictationIcon();
 
@@ -322,10 +322,10 @@ export default class CRM extends Plugin {
       this.timestampToolbarManager?.activateMobileToolbar();
     });
 
-    // Initialize the CRM file manager in the background (non-blocking)
-    const fileManager = CRMFileManager.getInstance(this.app);
+    // Initialize the Mondo file manager in the background (non-blocking)
+    const fileManager = MondoFileManager.getInstance(this.app);
     fileManager.initialize().catch((err) => {
-      console.error("CRM: Failed to initialize file manager:", err);
+      console.error("Mondo: Failed to initialize file manager:", err);
     });
 
     this.registerEvent(
@@ -350,7 +350,7 @@ export default class CRM extends Plugin {
 
     this.addCommand({
       id: "open-dashboard",
-      name: "Open CRM Dashboard",
+      name: "Open Mondo Dashboard",
       hotkeys: [{ modifiers: ["Mod", "Shift"], key: "m" }], // Cmd/Ctrl+Shift+M (user can change later)
       callback: () => this.showPanel(DASHBOARD_VIEW, "main"),
     });
@@ -401,10 +401,10 @@ export default class CRM extends Plugin {
     });
 
     this.addCommand({
-      id: "crm-toggle-note-dictation",
+      id: "mondo-toggle-note-dictation",
       name: "Start Dictation (Mobile)",
       mobileOnly: true,
-      icon: CRM_DICTATION_ICON_ID,
+      icon: MONDO_DICTATION_ICON_ID,
       editorCallback: async () => {
         const result = await this.noteDictationManager?.toggleRecording();
         if (result === "started") {
@@ -425,7 +425,7 @@ export default class CRM extends Plugin {
           console.log("Opening journal...");
           await openJournal(this.app, this);
         } catch (e) {
-          console.error("CRM: Failed to open journal:", e);
+          console.error("Mondo: Failed to open journal:", e);
         }
       },
     });
@@ -537,8 +537,8 @@ export default class CRM extends Plugin {
       },
     });
 
-    CRM_ENTITY_TYPES.forEach((fileType) => {
-      const config = getCRMEntityConfig(fileType);
+    MONDO_ENTITY_TYPES.forEach((fileType) => {
+      const config = getMondoEntityConfig(fileType);
       const label = config?.name ?? fileType;
       this.addCommand({
         id: `open-${fileType}`,
@@ -572,8 +572,8 @@ export default class CRM extends Plugin {
     });
 
     this.addCommand({
-      id: "open-crm-settings",
-      name: "Open CRM settings",
+      id: "open-mondo-settings",
+      name: "Open Mondo settings",
       callback: () => {
         (this.app as any).setting.open();
         (this.app as any).setting.openTabById(this.manifest.id);
@@ -581,8 +581,8 @@ export default class CRM extends Plugin {
     });
 
     this.registerMarkdownCodeBlockProcessor(
-      "crm",
-      async (...args) => new CRMInlineViewWrapper(this.app, ...args)
+      "mondo",
+      async (...args) => new MondoInlineViewWrapper(this.app, ...args)
     );
 
     this.registerMarkdownPostProcessor((element, context) => {
@@ -596,38 +596,38 @@ export default class CRM extends Plugin {
     );
 
     // this.registerView(
-    //   CRM_SIDE_VIEW,
-    //   (leaf) => new CRMSideViewWrapper(leaf, CRM_ICON)
+    //   MONDO_SIDE_VIEW,
+    //   (leaf) => new MondoSideViewWrapper(leaf, MONDO_ICON)
     // );
 
     this.registerView(
       DASHBOARD_VIEW,
-      (leaf) => new CRMDashboardViewWrapper(leaf, CRM_ICON)
+      (leaf) => new MondoDashboardViewWrapper(leaf, MONDO_ICON)
     );
 
     this.registerView(
       AUDIO_LOGS_VIEW,
-      (leaf) => new CRMAudioLogsViewWrapper(this, leaf, AUDIO_LOGS_ICON)
+      (leaf) => new MondoAudioLogsViewWrapper(this, leaf, AUDIO_LOGS_ICON)
     );
 
     this.registerView(
       VAULT_IMAGES_VIEW,
-      (leaf) => new CRMVaultImagesViewWrapper(leaf, VAULT_IMAGES_ICON)
+      (leaf) => new MondoVaultImagesViewWrapper(leaf, VAULT_IMAGES_ICON)
     );
 
     this.registerView(
       VAULT_FILES_VIEW,
-      (leaf) => new CRMVaultFilesViewWrapper(leaf, VAULT_FILES_ICON)
+      (leaf) => new MondoVaultFilesViewWrapper(leaf, VAULT_FILES_ICON)
     );
 
     this.registerView(
       VAULT_NOTES_VIEW,
-      (leaf) => new CRMVaultNotesViewWrapper(leaf, VAULT_NOTES_ICON)
+      (leaf) => new MondoVaultNotesViewWrapper(leaf, VAULT_NOTES_ICON)
     );
 
     this.registerView(
       ENTITY_PANEL_VIEW,
-      (leaf) => new CRMEntityPanelViewWrapper(leaf, CRM_ICON)
+      (leaf) => new MondoEntityPanelViewWrapper(leaf, MONDO_ICON)
     );
 
     if (Platform.isDesktopApp) {
@@ -670,9 +670,9 @@ export default class CRM extends Plugin {
       this.app.workspace.on("active-leaf-change", injectJournalNav(this))
     );
 
-    // Inject a small "Hello World" div for CRM-type notes (company/person/project/team)
+    // Inject a small "Hello World" div for Mondo-type notes (company/person/project/team)
     this.registerEvent(
-      this.app.workspace.on("active-leaf-change", injectCRMLinks(this))
+      this.app.workspace.on("active-leaf-change", injectMondoLinks(this))
     );
 
     this.registerEvent(
@@ -711,13 +711,13 @@ export default class CRM extends Plugin {
   }
 
   onunload() {
-    console.log("CRM: Unloading plugin");
+    console.log("Mondo: Unloading plugin");
 
     // No config manager to dispose; settings-based config only
-    this.crmConfigManager = null;
+    this.mondoConfigManager = null;
 
-    // Cleanup the CRM file manager
-    const fileManager = CRMFileManager.getInstance(this.app);
+    // Cleanup the Mondo file manager
+    const fileManager = MondoFileManager.getInstance(this.app);
     fileManager.cleanup();
 
     this.app.workspace
@@ -733,7 +733,7 @@ export default class CRM extends Plugin {
     this.audioLogsRibbonEl?.remove();
     this.audioLogsRibbonEl = null;
 
-    disposeCRMLinkInjections();
+    disposeMondoLinkInjections();
 
     this.audioTranscriptionManager?.dispose();
     this.audioTranscriptionManager = null;
@@ -821,9 +821,9 @@ export default class CRM extends Plugin {
   }
 
   private async createEntityNote(
-    entityType: CRMFileType
+    entityType: MondoFileType
   ): Promise<TFile | null> {
-    const config = getCRMEntityConfig(entityType);
+    const config = getMondoEntityConfig(entityType);
     const label = config?.name ?? entityType;
 
     const sanitizeFileBase = (value: string): string =>
@@ -836,8 +836,8 @@ export default class CRM extends Plugin {
     try {
       const now = new Date();
       const settings = this.settings as {
-        rootPaths?: Partial<Record<CRMFileType, string>>;
-        templates?: Partial<Record<CRMFileType, string>>;
+        rootPaths?: Partial<Record<MondoFileType, string>>;
+        templates?: Partial<Record<MondoFileType, string>>;
       };
 
       const folderSetting = settings.rootPaths?.[entityType] ?? "/";
@@ -908,16 +908,16 @@ export default class CRM extends Plugin {
       new Notice(`Created new ${label} note.`);
       return created;
     } catch (error) {
-      console.error(`CRM: failed to create ${label} note`, error);
+      console.error(`Mondo: failed to create ${label} note`, error);
       new Notice(`Failed to create ${label} note.`);
       return null;
     }
   }
 
-  private async openEntityPanel(entityType: CRMFileType) {
-    const state: CRMEntityPanelViewState = { entityType };
-    if (!getCRMEntityConfig(entityType)) {
-      console.warn("CRM: attempted to open panel for unknown type", entityType);
+  private async openEntityPanel(entityType: MondoFileType) {
+    const state: MondoEntityPanelViewState = { entityType };
+    if (!getMondoEntityConfig(entityType)) {
+      console.warn("Mondo: attempted to open panel for unknown type", entityType);
       return;
     }
     await this.showPanel(ENTITY_PANEL_VIEW, "main", {
@@ -925,7 +925,7 @@ export default class CRM extends Plugin {
       reuseMatching: (leaf) => {
         const viewState = leaf.getViewState();
         const entityState = viewState.state as
-          | CRMEntityPanelViewState
+          | MondoEntityPanelViewState
           | undefined;
         return entityState?.entityType === entityType;
       },
@@ -1013,7 +1013,7 @@ export default class CRM extends Plugin {
     const normalize = (value?: string) =>
       (value ?? "").replace(/^\/+|\/+$/g, "");
     const journalRoot = normalize(
-      this.settings?.journal?.root ?? DEFAULT_CRM_JOURNAL_SETTINGS.root
+      this.settings?.journal?.root ?? DEFAULT_MONDO_JOURNAL_SETTINGS.root
     );
     const activeFile = this.app.workspace.getActiveFile();
     const activePath = normalize(activeFile?.path);

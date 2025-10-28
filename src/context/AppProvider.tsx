@@ -7,6 +7,6 @@ interface AppProviderProps extends PropsWithChildren<{ app: App }> {}
 
 export const AppProvider = ({ app, children }: AppProviderProps) => (
   <AppContext.Provider value={app}>
-    <div className="crm">{children}</div>
+    <div className="mondo">{children}</div>
   </AppContext.Provider>
 );

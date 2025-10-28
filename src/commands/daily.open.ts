@@ -1,5 +1,5 @@
 import { App, TFile } from "obsidian";
-import type CRM from "@/main";
+import type Mondo from "@/main";
 
 const pad = (value: number) => String(value).padStart(2, "0");
 
@@ -12,7 +12,7 @@ const formatDate = (format: string, date: Date) =>
     .split("DD")
     .join(pad(date.getDate()));
 
-export const openDailyNote = async (app: App, plugin: CRM) => {
+export const openDailyNote = async (app: App, plugin: Mondo) => {
   const settings = (plugin as any).settings || {};
   const dailySettings = settings.daily || {
     root: "Daily",

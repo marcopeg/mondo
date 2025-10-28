@@ -1,24 +1,24 @@
 import { useEffect, useState } from "react";
 import { useApp } from "@/hooks/use-app";
 import {
-  CRMFileManager,
-  type CRMFilesChangedEvent,
-} from "@/utils/CRMFileManager";
+  MondoFileManager,
+  type MondoFilesChangedEvent,
+} from "@/utils/MondoFileManager";
 import {
-  CRM_FILE_TYPES,
-  type CRMFileType,
-} from "@/types/CRMFileType";
+  MONDO_FILE_TYPES,
+  type MondoFileType,
+} from "@/types/MondoFileType";
 import type { TCachedFile } from "@/types/TCachedFile";
 
-export type RecentCRMNote = {
+export type RecentMondoNote = {
   path: string;
   label: string;
-  type: CRMFileType;
+  type: MondoFileType;
   modified: Date;
 };
 
-export type RecentCRMNotesResult = {
-  notes: RecentCRMNote[];
+export type RecentMondoNotesResult = {
+  notes: RecentMondoNote[];
   total: number;
   hasMore: boolean;
 };
@@ -53,7 +53,7 @@ const resolveTimestamp = (cached: TCachedFile): number => {
   return Math.max(...candidates);
 };
 
-const toRecentNote = (cached: TCachedFile, type: CRMFileType): RecentCRMNote => {
+const toRecentNote = (cached: TCachedFile, type: MondoFileType): RecentMondoNote => {
   const timestamp = resolveTimestamp(cached);
   return {
     path: cached.file.path,
@@ -64,11 +64,11 @@ const toRecentNote = (cached: TCachedFile, type: CRMFileType): RecentCRMNote => 
 };
 
 const collectRecentNotes = (
-  manager: CRMFileManager,
+  manager: MondoFileManager,
   limit: number,
-  type?: CRMFileType | null
-): RecentCRMNotesResult => {
-  const types = type ? [type] : CRM_FILE_TYPES;
+  type?: MondoFileType | null
+): RecentMondoNotesResult => {
+  const types = type ? [type] : MONDO_FILE_TYPES;
   const entries = types.flatMap((entryType) =>
     manager
       .getFiles(entryType)
@@ -89,19 +89,19 @@ const collectRecentNotes = (
   };
 };
 
-export const useRecentCRMNotes = (
+export const useRecentMondoNotes = (
   limit = 10,
-  type?: CRMFileType | null
-): RecentCRMNotesResult => {
+  type?: MondoFileType | null
+): RecentMondoNotesResult => {
   const app = useApp();
-  const [result, setResult] = useState<RecentCRMNotesResult>({
+  const [result, setResult] = useState<RecentMondoNotesResult>({
     notes: [],
     total: 0,
     hasMore: false,
   });
 
   useEffect(() => {
-    const manager = CRMFileManager.getInstance(app);
+    const manager = MondoFileManager.getInstance(app);
 
     const update = () => {
       setResult(collectRecentNotes(manager, limit, type));
@@ -109,7 +109,7 @@ export const useRecentCRMNotes = (
 
     update();
 
-    const listener = (_event: CRMFilesChangedEvent) => {
+    const listener = (_event: MondoFilesChangedEvent) => {
       update();
     };
 

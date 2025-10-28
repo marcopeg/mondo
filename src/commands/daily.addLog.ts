@@ -1,6 +1,6 @@
 import { App, TFile, MarkdownView } from "obsidian";
-import type CRM from "@/main";
-import { DAILY_NOTE_TYPE, LEGACY_DAILY_NOTE_TYPE } from "@/types/CRMFileType";
+import type Mondo from "@/main";
+import { DAILY_NOTE_TYPE, LEGACY_DAILY_NOTE_TYPE } from "@/types/MondoFileType";
 
 function pad(n: number) {
   return String(n).padStart(2, "0");
@@ -36,7 +36,7 @@ export interface AddDailyLogOptions {
 
 export async function addDailyLog(
   app: App,
-  plugin: CRM,
+  plugin: Mondo,
   options: AddDailyLogOptions = {}
 ) {
   const settings = (plugin as any).settings || {};

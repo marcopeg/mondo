@@ -1,26 +1,26 @@
 # Dynamic Links Panels — How to Add Custom Components
 
-This guide explains how to add custom panels to CRM entity notes using the EntityLinks system. These panels show up inline when viewing a note with a CRM entity `type` in frontmatter, e.g. `type: person`.
+This guide explains how to add custom panels to Mondo entity notes using the EntityLinks system. These panels show up inline when viewing a note with a Mondo entity `type` in frontmatter, e.g. `type: person`.
 
-- Injected area is created by the plugin when opening a Markdown file: see `src/events/inject-crm-links.tsx`.
-- For CRM entity types, it renders `EntityLinks`: `src/containers/EntityLinks/EntityLinks.tsx`.
-- The set of panels shown for a given entity type is controlled by that entity’s config in `src/crm-config.json` (`entities.<type>.links`).
+- Injected area is created by the plugin when opening a Markdown file: see `src/events/inject-mondo-links.tsx`.
+- For Mondo entity types, it renders `EntityLinks`: `src/containers/EntityLinks/EntityLinks.tsx`.
+- The set of panels shown for a given entity type is controlled by that entity’s config in `src/mondo-config.json` (`entities.<type>.links`).
 
 If you want to add a new panel, you’ll create a component, register it in a central registry, and reference it from the target entity’s `links` list inside the JSON configuration.
 
-> **Note:** Legacy per-entity link definitions were removed. All panels — including the reusable Backlinks panel — now live in `crm-config.json`.
+> **Note:** Legacy per-entity link definitions were removed. All panels — including the reusable Backlinks panel — now live in `mondo-config.json`.
 
 ## Architecture Overview
 
-- Rendering entrypoint: `inject-crm-links.tsx`
+- Rendering entrypoint: `inject-mondo-links.tsx`
   - Determines the current file and its frontmatter `type`.
-  - For CRM types, renders `<EntityLinks />` within React providers (`AppProvider` + `EntityFileProvider`).
+  - For Mondo types, renders `<EntityLinks />` within React providers (`AppProvider` + `EntityFileProvider`).
 - Dynamic renderer: `src/containers/EntityLinks/EntityLinks.tsx`
   - Reads the focused file via `useEntityFile()`.
-  - Loads the entity config from `CRM_ENTITIES`.
+  - Loads the entity config from `MONDO_ENTITIES`.
   - Iterates `entityConfig.links` and, for each item `{ type: string, ...config }`, picks a component from `entityMap[type]`.
   - If a type is not registered in `entityMap`, it shows an InlineError.
-- Entity config: `src/crm-config.json`
+- Entity config: `src/mondo-config.json`
   - Each entity defines a `links` array with panel descriptors.
   - Add your own `{ "type": "my-custom", ... }` link entry.
 
@@ -124,7 +124,7 @@ The string key (e.g. `"my-custom"`) is what entity configs will reference.
 
 ### 3) Add it to an entity configuration
 
-Open `src/crm-config.json`, locate the target entity, and append your link object to its `links` array:
+Open `src/mondo-config.json`, locate the target entity, and append your link object to its `links` array:
 
 ```jsonc
 "links": [
@@ -135,7 +135,7 @@ Open `src/crm-config.json`, locate the target entity, and append your link objec
 ]
 ```
 
-Repeat for other entities if you want the same panel elsewhere. Because the JSON is loaded directly at runtime, make sure you keep the structure valid and property names aligned with `CRMEntityConfig`.
+Repeat for other entities if you want the same panel elsewhere. Because the JSON is loaded directly at runtime, make sure you keep the structure valid and property names aligned with `MondoEntityConfig`.
 
 ## Example: Add a "Contacts" panel to Company
 
@@ -143,7 +143,7 @@ Repeat for other entities if you want the same panel elsewhere. Because the JSON
 2. Register it in `EntityLinks.tsx`:
    - `import { ContactsLinks } from "./panels/ContactsLinks";`
    - `entityMap["contacts"] = ContactsLinks;`
-3. Edit `src/crm-config.json`:
+3. Edit `src/mondo-config.json`:
    - Inside the `"company"` entity, append `{ "type": "contacts", "collapsed": true }` to `links`.
 4. Start dev server and open a company note to verify.
 
@@ -153,7 +153,7 @@ Repeat for other entities if you want the same panel elsewhere. Because the JSON
   - `const { file } = useEntityFile();` (already provided to your panel via props)
   - Frontmatter: `file.cache?.frontmatter`
 - Querying related notes:
-  - `useFiles(CRMFileType.PERSON, { filter: (cached) => matchesPropertyLink(cached, "company", file.file) })`
+  - `useFiles(MondoFileType.PERSON, { filter: (cached) => matchesPropertyLink(cached, "company", file.file) })`
 - Creating linked artifacts:
   - See `MeetingsLinks.tsx` for a full example using `createMeetingForEntity` to make a meeting pre-linked to the current entity.
 - Card actions (buttons in panel header):
@@ -168,7 +168,7 @@ Repeat for other entities if you want the same panel elsewhere. Because the JSON
 - "EntityLinks: current file is missing a frontmatter type"
   - Add `type: <entity>` to the file’s frontmatter.
 - "EntityLinks: unknown entity type"
-  - The `type` in frontmatter must match one of `CRM_ENTITY_TYPES` (see `src/entities/index.ts`).
+  - The `type` in frontmatter must match one of `MONDO_ENTITY_TYPES` (see `src/entities/index.ts`).
 - "EntityLinks: no renderer registered for link type \"<x>\""
   - You added a `{ type: "<x>" }` to `links` but didn’t register it in `entityMap`.
 - "EntityLinks: no link configuration defined for \"<entity>\""
@@ -191,14 +191,14 @@ yarn dev
 ## Reference: Important Files & APIs
 
 - Injection and rendering:
-  - `src/events/inject-crm-links.tsx`
+  - `src/events/inject-mondo-links.tsx`
   - `src/containers/EntityLinks/EntityLinks.tsx`
 - Entity configuration:
-  - `src/crm-config.json`
-  - [`docs/CRM_CONFIG.md`](./CRM_CONFIG.md)
+  - `src/mondo-config.json`
+  - [`docs/MONDO_CONFIG.md`](./MONDO_CONFIG.md)
 - Types:
-  - `src/types/CRMEntityConfig.ts`
-  - `src/types/CRMFileType.ts`
+  - `src/types/MondoEntityConfig.ts`
+  - `src/types/MondoFileType.ts`
 - Context & hooks:
   - `src/context/EntityFileProvider.tsx`
   - `src/hooks/use-files.ts`
@@ -215,4 +215,4 @@ yarn dev
 
 ---
 
-With these steps, you can add robust, reusable panels to any CRM entity type with minimal wiring. If you share the target entity and desired functionality, we can scaffold a ready-to-run component for you.
+With these steps, you can add robust, reusable panels to any Mondo entity type with minimal wiring. If you share the target entity and desired functionality, we can scaffold a ready-to-run component for you.

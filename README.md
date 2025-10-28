@@ -9,7 +9,7 @@ _Mondo_ is a general purpose plugin that adds plentiful of utilities to a standa
 - **📆 Daily Notes:** quick and timestamped annotations
 - **🕰️ Timestamps:** quickly add timestamps into your notes
 - **🤖 Open in ChatGPT:** use your notes as templates for ChatGPT prompts
-- **👫 CRM:** typed entities with strong relations
+- **👫 Mondo:** typed entities with strong relations
 - **🖌️ Journaling:** distraction-free journaling experience
 - **📈 Habits Tracker:** embed a streak tracking app in any note
 - **⏱️ Training Timers:** embed a training trimer app in any note
@@ -18,7 +18,7 @@ _Mondo_ is a general purpose plugin that adds plentiful of utilities to a standa
 
 # How to Install & Update
 
-ObsidianCRM is under active development so you would install it as a _Beta Tester_ at your own risk. But it's fine, I use it for myself first and it works, even if it needs a lot of love still!
+ObsidianMondo is under active development so you would install it as a _Beta Tester_ at your own risk. But it's fine, I use it for myself first and it works, even if it needs a lot of love still!
 
 1. First, install the [BRAT](https://obsidian.md/plugins?id=obsidian42-brat) that lets you install orther plugins directly from GitHub.
 
@@ -27,7 +27,7 @@ ObsidianCRM is under active development so you would install it as a _Beta Teste
 3. Paste the following url:
 
 ```bash
-https://github.com/marcopeg/obsidian-crm
+https://github.com/marcopeg/obsidian-mondo
 ```
 
 > I suggest you keep it updated to the latest version, but at this point feel free to install whatever available release.

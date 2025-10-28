@@ -1,5 +1,5 @@
 /**
- * Example usage of the optimized CRM file manager
+ * Example usage of the optimized Mondo file manager
  *
  * This file demonstrates how to use the new singleton-based
  * file management system in your components.
@@ -7,12 +7,12 @@
 
 import React from "react";
 import { useFiles } from "@/hooks/use-files";
-import { CRMFileType } from "@/types/CRMFileType";
+import { MondoFileType } from "@/types/MondoFileType";
 
-// Example 1: Using the existing useFiles hook (now optimized for CRM types)
+// Example 1: Using the existing useFiles hook (now optimized for Mondo types)
 export function CompanyList() {
   // This automatically uses the optimized path for 'company' type
-  const companies = useFiles(CRMFileType.COMPANY);
+  const companies = useFiles(MondoFileType.COMPANY);
 
   return (
     <div>
@@ -32,10 +32,10 @@ export function CompanyList() {
   );
 }
 
-// Example 2: Using the new useCRMFiles hook directly
+// Example 2: Using the new useMondoFiles hook directly
 export function PeopleInCompany({ companyName }: { companyName: string }) {
   // Optimized hook with custom filtering
-  const people = useFiles(CRMFileType.PERSON, {
+  const people = useFiles(MondoFileType.PERSON, {
     filter: (cached) => {
       const companies = cached.cache?.frontmatter?.company || [];
       return companies.some((company: string) => company.includes(companyName));
@@ -59,19 +59,19 @@ export function PeopleInCompany({ companyName }: { companyName: string }) {
 }
 
 // Example 3: Multi-type dashboard (multiple optimized hooks)
-export function CRMDashboard() {
+export function MondoDashboard() {
   // All of these use the optimized singleton cache
-  const companies = useFiles(CRMFileType.COMPANY);
-  const people = useFiles(CRMFileType.PERSON);
-  const projects = useFiles(CRMFileType.PROJECT);
-  const teams = useFiles(CRMFileType.TEAM);
+  const companies = useFiles(MondoFileType.COMPANY);
+  const people = useFiles(MondoFileType.PERSON);
+  const projects = useFiles(MondoFileType.PROJECT);
+  const teams = useFiles(MondoFileType.TEAM);
 
   const totalEntities =
     companies.length + people.length + projects.length + teams.length;
 
   return (
     <div>
-      <h2>CRM Dashboard</h2>
+      <h2>Mondo Dashboard</h2>
       <div
         style={{
           display: "grid",
@@ -108,14 +108,14 @@ export function CRMDashboard() {
         </div>
       </div>
 
-      <p>Total CRM entities: {totalEntities}</p>
+      <p>Total Mondo entities: {totalEntities}</p>
     </div>
   );
 }
 
 // Example 4: Advanced filtering with folder constraints
 export function TechCompanies() {
-  const techCompanies = useFiles(CRMFileType.COMPANY, {
+  const techCompanies = useFiles(MondoFileType.COMPANY, {
     filter: (cached) => {
       const tags = cached.cache?.frontmatter?.tags || [];
       const industry = cached.cache?.frontmatter?.industry;
@@ -143,17 +143,17 @@ export function TechCompanies() {
 }
 
 // Example 5: Getting file manager statistics
-import { CRMFileManager } from "@/utils/CRMFileManager";
+import { MondoFileManager } from "@/utils/MondoFileManager";
 import { useApp } from "@/hooks/use-app";
 
-export function CRMStats() {
+export function MondoStats() {
   const app = useApp();
-  const fileManager = CRMFileManager.getInstance(app);
+  const fileManager = MondoFileManager.getInstance(app);
   const stats = fileManager.getStats();
 
   return (
     <div>
-      <h3>CRM Statistics</h3>
+      <h3>Mondo Statistics</h3>
       <table>
         <thead>
           <tr>

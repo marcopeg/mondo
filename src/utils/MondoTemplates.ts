@@ -1,5 +1,5 @@
 import { App, TFile } from "obsidian";
-import { CRMFileType } from "@/types/CRMFileType";
+import { MondoFileType } from "@/types/MondoFileType";
 import { getDefaultTemplate } from "@/templates";
 
 export interface TemplateContext {
@@ -101,12 +101,12 @@ const TEMPLATE_REPLACEMENTS = [
   }),
 ];
 
-const ensureTemplate = (type: CRMFileType): string => getDefaultTemplate(type);
+const ensureTemplate = (type: MondoFileType): string => getDefaultTemplate(type);
 
 export const getTemplateForType = async (
   app: App,
-  templates: Partial<Record<CRMFileType, string>> | undefined,
-  type: CRMFileType
+  templates: Partial<Record<MondoFileType, string>> | undefined,
+  type: MondoFileType
 ): Promise<string> => {
   const userTemplate = templates?.[type];
 
@@ -139,13 +139,13 @@ export const getTemplateForType = async (
           return await app.vault.cachedRead(candidateWithExt);
         } catch (error) {
           console.error(
-            `CRM: failed to read template file at "${candidateWithExt.path}"`,
+            `Mondo: failed to read template file at "${candidateWithExt.path}"`,
             error
           );
         }
       } else {
         console.warn(
-          `CRM: template note "${trimmed}" was not found; falling back to default template.`
+          `Mondo: template note "${trimmed}" was not found; falling back to default template.`
         );
       }
     }

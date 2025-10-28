@@ -1,7 +1,7 @@
 import { useMemo, useCallback } from "react";
 import { TFile } from "obsidian";
 import { useApp } from "@/hooks/use-app";
-import type { CRMEntityListRow } from "@/views/entity-panel-view/useEntityPanels";
+import type { MondoEntityListRow } from "@/views/entity-panel-view/useEntityPanels";
 
 const extractFirstEntry = (value: unknown): string | null => {
   if (!value) return null;
@@ -20,7 +20,7 @@ const extractFirstEntry = (value: unknown): string | null => {
 
 type EntityCoverCellProps = {
   value: unknown;
-  row: CRMEntityListRow;
+  row: MondoEntityListRow;
   column: string;
 };
 

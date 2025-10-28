@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import type { App } from "obsidian";
 
 /**
- * Read a plugin setting by dot path from the CRM plugin and keep it up-to-date
+ * Read a plugin setting by dot path from the Mondo plugin and keep it up-to-date
  * when Obsidian metadata changes (a cheap heuristic to refresh UI after saves).
  *
  * Example: useSetting("rootPaths.company", "/")
@@ -14,7 +14,7 @@ export function useSetting<T = any>(path: string, defaultValue: T) {
 
   useEffect(() => {
     const read = () => {
-      const plugin = (app as any)?.plugins?.getPlugin?.("crm") as
+      const plugin = (app as any)?.plugins?.getPlugin?.("mondo") as
         | any
         | undefined;
       const settings = plugin?.settings ?? {};

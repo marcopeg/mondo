@@ -25,18 +25,18 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({
   }, [onCancel]);
 
   return (
-    <div className="crm-loading-screen">
-      <div className="crm-loading-screen__overlay" />
-      <div className="crm-loading-screen__content">
+    <div className="mondo-loading-screen">
+      <div className="mondo-loading-screen__overlay" />
+      <div className="mondo-loading-screen__content">
         {icon && (
-          <div className="crm-loading-screen__icon">
+          <div className="mondo-loading-screen__icon">
             <Icon name={icon} className="w-16 h-16" />
           </div>
         )}
-        <p className="crm-loading-screen__text">{text}</p>
+        <p className="mondo-loading-screen__text">{text}</p>
         {onCancel && (
           <button
-            className="crm-loading-screen__cancel-button"
+            className="mondo-loading-screen__cancel-button"
             onClick={onCancel}
             aria-label="Cancel"
           >

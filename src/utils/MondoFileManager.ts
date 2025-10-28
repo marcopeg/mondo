@@ -1,30 +1,30 @@
 import { TFile, App, EventRef } from "obsidian";
 import { TCachedFile } from "@/types/TCachedFile";
 import {
-  CRMFileType,
-  CRM_FILE_TYPES,
-  isCRMFileType,
-} from "@/types/CRMFileType";
+  MondoFileType,
+  MONDO_FILE_TYPES,
+  isMondoFileType,
+} from "@/types/MondoFileType";
 
 /**
- * Event emitted when the CRM files list changes
+ * Event emitted when the Mondo files list changes
  */
-export interface CRMFilesChangedEvent {
+export interface MondoFilesChangedEvent {
   type: "files-changed";
-  files: Map<CRMFileType, TCachedFile[]>;
+  files: Map<MondoFileType, TCachedFile[]>;
 }
 
 /**
- * Singleton class to manage CRM files efficiently.
- * Keeps an in-memory cache of all CRM files and listens for file system changes.
+ * Singleton class to manage Mondo files efficiently.
+ * Keeps an in-memory cache of all Mondo files and listens for file system changes.
  */
-export class CRMFileManager {
-  private static instance: CRMFileManager | null = null;
+export class MondoFileManager {
+  private static instance: MondoFileManager | null = null;
 
   private app: App;
-  private files: Map<CRMFileType, TCachedFile[]> = new Map();
+  private files: Map<MondoFileType, TCachedFile[]> = new Map();
   private eventRefs: EventRef[] = [];
-  private listeners: Set<(event: CRMFilesChangedEvent) => void> = new Set();
+  private listeners: Set<(event: MondoFilesChangedEvent) => void> = new Set();
   private isInitialized = false;
   private isScanning = false;
   private pendingInitPromise: Promise<void> | null = null;
@@ -34,7 +34,7 @@ export class CRMFileManager {
     this.app = app;
 
     // Initialize empty arrays for each file type
-    CRM_FILE_TYPES.forEach((type) => {
+    MONDO_FILE_TYPES.forEach((type) => {
       this.files.set(type, []);
     });
   }
@@ -42,11 +42,11 @@ export class CRMFileManager {
   /**
    * Get or create the singleton instance
    */
-  public static getInstance(app: App): CRMFileManager {
-    if (!CRMFileManager.instance) {
-      CRMFileManager.instance = new CRMFileManager(app);
+  public static getInstance(app: App): MondoFileManager {
+    if (!MondoFileManager.instance) {
+      MondoFileManager.instance = new MondoFileManager(app);
     }
-    return CRMFileManager.instance;
+    return MondoFileManager.instance;
   }
 
   /**
@@ -139,7 +139,7 @@ export class CRMFileManager {
     this.files.clear();
 
     this.isInitialized = false;
-    CRMFileManager.instance = null;
+    MondoFileManager.instance = null;
   }
 
   /**
@@ -165,7 +165,7 @@ export class CRMFileManager {
 
     try {
       // Clear current files
-      CRM_FILE_TYPES.forEach((type) => {
+      MONDO_FILE_TYPES.forEach((type) => {
         this.files.set(type, []);
       });
 
@@ -184,8 +184,8 @@ export class CRMFileManager {
 
         const fileType = cache?.frontmatter?.type;
 
-        // Check if this is a CRM file
-        if (fileType && isCRMFileType(fileType)) {
+        // Check if this is a Mondo file
+        if (fileType && isMondoFileType(fileType)) {
           this.addFileToCache(fileType, file, cache);
         }
       }
@@ -208,11 +208,11 @@ export class CRMFileManager {
    * Get files of a specific type
    * Ensures initialization if not already done
    */
-  public getFiles(type: CRMFileType): TCachedFile[] {
+  public getFiles(type: MondoFileType): TCachedFile[] {
     // Trigger initialization if not started yet
     if (!this.isInitialized && !this.pendingInitPromise) {
       this.initialize().catch((err) => {
-        console.error("CRMFileManager: Failed to auto-initialize:", err);
+        console.error("MondoFileManager: Failed to auto-initialize:", err);
       });
     }
     return this.files.get(type) || [];
@@ -221,7 +221,7 @@ export class CRMFileManager {
   public getFileByPath(path: string): TCachedFile | undefined {
     if (!this.isInitialized && !this.pendingInitPromise) {
       this.initialize().catch((err) => {
-        console.error("CRMFileManager: Failed to auto-initialize:", err);
+        console.error("MondoFileManager: Failed to auto-initialize:", err);
       });
     }
 
@@ -237,7 +237,7 @@ export class CRMFileManager {
    * Get files of a specific type with additional filtering
    */
   public getFilesFiltered(
-    type: CRMFileType,
+    type: MondoFileType,
     filter?: (cached: TCachedFile, app: App) => boolean
   ): TCachedFile[] {
     const files = this.getFiles(type);
@@ -249,7 +249,7 @@ export class CRMFileManager {
         return filter(cachedFile, this.app);
       } catch (e) {
         // If user filter throws, exclude the file and don't break
-        console.error("CRMFileManager filter error:", e);
+        console.error("MondoFileManager filter error:", e);
         return false;
       }
     });
@@ -267,7 +267,7 @@ export class CRMFileManager {
       if (cache) {
         const fileType = cache?.frontmatter?.type;
 
-        if (fileType && isCRMFileType(fileType)) {
+        if (fileType && isMondoFileType(fileType)) {
           const wasAdded = this.addFileToCache(fileType, file, cache);
           if (wasAdded) {
             hasNewFiles = true;
@@ -287,7 +287,7 @@ export class CRMFileManager {
    * Returns true if file was actually added (not a duplicate)
    */
   private addFileToCache(
-    fileType: CRMFileType,
+    fileType: MondoFileType,
     file: TFile,
     cache: any
   ): boolean {
@@ -333,14 +333,14 @@ export class CRMFileManager {
   /**
    * Add a listener for file changes
    */
-  public addListener(listener: (event: CRMFilesChangedEvent) => void): void {
+  public addListener(listener: (event: MondoFilesChangedEvent) => void): void {
     this.listeners.add(listener);
   }
 
   /**
    * Remove a listener
    */
-  public removeListener(listener: (event: CRMFilesChangedEvent) => void): void {
+  public removeListener(listener: (event: MondoFilesChangedEvent) => void): void {
     this.listeners.delete(listener);
   }
 
@@ -348,7 +348,7 @@ export class CRMFileManager {
    * Notify all listeners of changes
    */
   private notifyListeners(): void {
-    const event: CRMFilesChangedEvent = {
+    const event: MondoFilesChangedEvent = {
       type: "files-changed",
       files: new Map(this.files), // Create a copy
     };
@@ -357,7 +357,7 @@ export class CRMFileManager {
       try {
         listener(event);
       } catch (e) {
-        console.error("CRMFileManager listener error:", e);
+        console.error("MondoFileManager listener error:", e);
       }
     });
   }
@@ -372,10 +372,10 @@ export class CRMFileManager {
   /**
    * Get statistics about cached files
    */
-  public getStats(): { [K in CRMFileType]: number } {
-    const stats = {} as { [K in CRMFileType]: number };
+  public getStats(): { [K in MondoFileType]: number } {
+    const stats = {} as { [K in MondoFileType]: number };
 
-    CRM_FILE_TYPES.forEach((type) => {
+    MONDO_FILE_TYPES.forEach((type) => {
       stats[type] = this.files.get(type)?.length || 0;
     });
 

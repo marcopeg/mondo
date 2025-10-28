@@ -2,7 +2,7 @@ import React, { useEffect } from "react";
 import { useApp } from "@/hooks/use-app";
 
 interface LinkProps {
-  to: string; // vault-relative path, e.g. "CRM/People/Jakob.md"
+  to: string; // vault-relative path, e.g. "Mondo/People/Jakob.md"
   children: React.ReactNode;
   className?: string;
   onClick?: (e: MouseEvent) => void;

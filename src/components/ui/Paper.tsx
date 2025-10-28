@@ -33,7 +33,7 @@ export const Paper: React.FC<PaperProps> = ({
   return (
     <Box
       {...(rest as any)}
-      className={[paddingClass, "crm-paper", "mod-card", className]
+      className={[paddingClass, "mondo-paper", "mod-card", className]
         .filter(Boolean)
         .join(" ")}
       style={{ ...visualStyle, ...style }}

@@ -1,4 +1,4 @@
-import type CRM from "@/main";
+import type Mondo from "@/main";
 import {
   MarkdownPostProcessorContext,
   Notice,
@@ -49,7 +49,7 @@ const getMimeFromExtension = (extension: Maybe<string>) => {
 };
 
 export class AudioTranscriptionManager {
-  private readonly plugin: CRM;
+  private readonly plugin: Mondo;
 
   private readonly activeTranscriptions = new Map<string, ActiveTranscription>();
 
@@ -65,7 +65,7 @@ export class AudioTranscriptionManager {
 
   private audioContext: AudioContext | null = null;
 
-  constructor(plugin: CRM) {
+  constructor(plugin: Mondo) {
     this.plugin = plugin;
   }
 
@@ -189,7 +189,7 @@ export class AudioTranscriptionManager {
 
     if (!apiKey) {
       new Notice(
-        "Set your OpenAI Whisper API key in the CRM settings before transcribing."
+        "Set your OpenAI Whisper API key in the Mondo settings before transcribing."
       );
       return null;
     }
@@ -228,7 +228,7 @@ export class AudioTranscriptionManager {
       if (error instanceof DOMException && error.name === "AbortError") {
         new Notice("Transcription canceled.");
       } else {
-        console.error("CRM: failed to transcribe audio note", error);
+        console.error("Mondo: failed to transcribe audio note", error);
         const message =
           error instanceof Error
             ? error.message
@@ -265,12 +265,12 @@ export class AudioTranscriptionManager {
         return;
       }
 
-      embed.setAttribute("data-crm-audio-path", audioFile.path);
+      embed.setAttribute("data-mondo-audio-path", audioFile.path);
       this.renderedEmbeds.set(embed, context.sourcePath);
 
-      let actions = embed.querySelector<HTMLElement>(".crm-audio-actions");
+      let actions = embed.querySelector<HTMLElement>(".mondo-audio-actions");
       if (!actions) {
-        actions = embed.createDiv({ cls: "crm-audio-actions" });
+        actions = embed.createDiv({ cls: "mondo-audio-actions" });
       }
 
       this.renderActionButtons(actions, audioFile, context.sourcePath);
@@ -351,7 +351,7 @@ export class AudioTranscriptionManager {
         errorMessage = payload?.error?.message ?? errorMessage;
       } catch (parseError) {
         console.warn(
-          "CRM: unable to parse transcription error payload",
+          "Mondo: unable to parse transcription error payload",
           parseError
         );
       }
@@ -403,13 +403,13 @@ export class AudioTranscriptionManager {
     originPath: string
   ) => {
     container.replaceChildren();
-    container.classList.add("crm-audio-actions");
+    container.classList.add("mondo-audio-actions");
 
     const transcription = this.getTranscriptionNoteFile(audioFile);
     const inProgress = this.activeTranscriptions.has(audioFile.path);
 
     const transcribeButton = container.createEl("button", {
-      cls: "crm-audio-action-button mod-cta",
+      cls: "mondo-audio-action-button mod-cta",
     });
     transcribeButton.setAttr("type", "button");
     transcribeButton.setAttr(
@@ -417,7 +417,7 @@ export class AudioTranscriptionManager {
       "Transcribe this recording with Whisper and link the note"
     );
     const transcribeIcon = transcribeButton.createSpan({
-      cls: "crm-audio-action-icon",
+      cls: "mondo-audio-action-icon",
     });
     setIcon(transcribeIcon, inProgress ? "loader-2" : "wand-2");
     transcribeButton.createSpan({
@@ -434,14 +434,14 @@ export class AudioTranscriptionManager {
 
     if (transcription) {
       const openButton = container.createEl("button", {
-        cls: "crm-audio-action-button",
+        cls: "mondo-audio-action-button",
       });
       openButton.setAttr("type", "button");
       openButton.setAttr(
         "title",
         "Open the linked transcription note in a new pane"
       );
-      const openIcon = openButton.createSpan({ cls: "crm-audio-action-icon" });
+      const openIcon = openButton.createSpan({ cls: "mondo-audio-action-icon" });
       setIcon(openIcon, "file-text");
       openButton.createSpan({ text: "Open transcription" });
 
@@ -456,46 +456,46 @@ export class AudioTranscriptionManager {
   private startTranscriptionSession = (file: TFile) => {
     const key = file.path;
     const container = this.ensureTranscriptionAlertsContainer();
-    const alertEl = container.createDiv({ cls: "crm-transcription-alert" });
+    const alertEl = container.createDiv({ cls: "mondo-transcription-alert" });
     alertEl.setAttr("role", "status");
     alertEl.setAttr("aria-live", "polite");
 
     const audioName = file.basename || file.name;
 
-    const headerEl = alertEl.createDiv({ cls: "crm-transcription-alert__header" });
+    const headerEl = alertEl.createDiv({ cls: "mondo-transcription-alert__header" });
 
     const labelEl = headerEl.createSpan({
-      cls: "crm-transcription-alert__message",
+      cls: "mondo-transcription-alert__message",
       text: `Transcribing ${audioName}...`,
     });
 
     const cancelButton = headerEl.createEl("button", {
-      cls: "crm-transcription-alert__cancel mod-warning",
+      cls: "mondo-transcription-alert__cancel mod-warning",
       text: "Cancel",
     });
     cancelButton.setAttr("type", "button");
 
-    const metaEl = alertEl.createDiv({ cls: "crm-transcription-alert__meta" });
+    const metaEl = alertEl.createDiv({ cls: "mondo-transcription-alert__meta" });
     metaEl.createSpan({
-      cls: "crm-transcription-alert__meta-label",
+      cls: "mondo-transcription-alert__meta-label",
       text: "Audio:",
     });
     const durationEl = metaEl.createSpan({
-      cls: "crm-transcription-alert__meta-value",
+      cls: "mondo-transcription-alert__meta-value",
       text: "--",
     });
 
-    metaEl.createSpan({ cls: "crm-transcription-alert__meta-separator", text: ";" });
+    metaEl.createSpan({ cls: "mondo-transcription-alert__meta-separator", text: ";" });
 
     metaEl.createSpan({
-      cls: "crm-transcription-alert__meta-label",
+      cls: "mondo-transcription-alert__meta-label",
       text: "Elapsed:",
     });
     const timerEl = metaEl.createSpan({
-      cls: "crm-transcription-alert__timer",
+      cls: "mondo-transcription-alert__timer",
     });
     const estimateEl = metaEl.createSpan({
-      cls: "crm-transcription-alert__estimate",
+      cls: "mondo-transcription-alert__estimate",
     });
     estimateEl.toggleAttribute("hidden", true);
 
@@ -584,7 +584,7 @@ export class AudioTranscriptionManager {
     }
 
     const container = this.overlay.ensureContainer({
-      className: "crm-transcription-alerts",
+      className: "mondo-transcription-alerts",
     });
 
     this.transcriptionAlertsContainer = container;
@@ -702,7 +702,7 @@ export class AudioTranscriptionManager {
           return decoded;
         }
       } catch (error) {
-        console.warn("CRM: failed to decode audio buffer for duration", error);
+        console.warn("Mondo: failed to decode audio buffer for duration", error);
       }
 
       const metadataDuration = await this.loadAudioMetadataDuration(file);
@@ -714,7 +714,7 @@ export class AudioTranscriptionManager {
       return metadataDuration;
     })()
       .catch((error) => {
-        console.warn("CRM: failed to resolve audio duration", error);
+        console.warn("Mondo: failed to resolve audio duration", error);
         return null;
       })
       .finally(() => {
@@ -768,7 +768,7 @@ export class AudioTranscriptionManager {
 
       return audioBuffer.duration;
     } catch (error) {
-      console.warn("CRM: unable to decode audio duration", error);
+      console.warn("Mondo: unable to decode audio duration", error);
       return null;
     }
   };
@@ -833,14 +833,14 @@ export class AudioTranscriptionManager {
     }
 
     const selectorPath = audioPath.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
-    const selector = `[data-crm-audio-path="${selectorPath}"]`;
+    const selector = `[data-mondo-audio-path="${selectorPath}"]`;
     const embeds = Array.from(
       document.querySelectorAll<HTMLElement>(selector)
     );
 
     embeds.forEach((embed) => {
       const origin = this.renderedEmbeds.get(embed) ?? file.path;
-      const container = embed.querySelector<HTMLElement>(".crm-audio-actions");
+      const container = embed.querySelector<HTMLElement>(".mondo-audio-actions");
 
       if (!container) {
         return;

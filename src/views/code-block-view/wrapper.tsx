@@ -3,7 +3,7 @@ import { createRoot } from "react-dom/client";
 import { AppProvider } from "@/context/AppProvider";
 import { CodeBlockView } from "./CodeBlockView";
 
-export class CRMInlineViewWrapper {
+export class MondoInlineViewWrapper {
   constructor(
     app: App,
     source: string,

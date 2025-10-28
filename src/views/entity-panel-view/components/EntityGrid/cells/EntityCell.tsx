@@ -1,4 +1,4 @@
-import type { CRMEntityListRow } from "@/views/entity-panel-view/useEntityPanels";
+import type { MondoEntityListRow } from "@/views/entity-panel-view/useEntityPanels";
 
 const formatValue = (value: unknown): string => {
   if (value === null || value === undefined) return "";
@@ -13,7 +13,7 @@ const formatValue = (value: unknown): string => {
 
 type EntityCellProps = {
   value: unknown;
-  row: CRMEntityListRow;
+  row: MondoEntityListRow;
   column: string;
 };
 

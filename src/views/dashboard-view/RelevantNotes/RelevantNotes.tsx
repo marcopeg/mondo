@@ -9,13 +9,13 @@ import ButtonGroup from "@/components/ui/ButtonGroup";
 import Switch from "@/components/ui/Switch";
 import { Separator } from "@/components/ui/Separator";
 import {
-  CRM_ENTITIES,
-  CRM_UI_CONFIG,
-  type CRMEntityType,
+  MONDO_ENTITIES,
+  MONDO_UI_CONFIG,
+  type MondoEntityType,
 } from "@/entities";
-import { getCRMEntityConfig, type CRMFileType } from "@/types/CRMFileType";
+import { getMondoEntityConfig, type MondoFileType } from "@/types/MondoFileType";
 import { useRelevantNotes } from "./useRelevantNotes";
-import { useRecentCRMNotes } from "@/hooks/use-recent-crm-notes";
+import { useRecentMondoNotes } from "@/hooks/use-recent-mondo-notes";
 
 const formatReferenceCount = (count: number): string => {
   if (count === 1) {
@@ -65,12 +65,12 @@ const DATE_FORMAT_OPTIONS: Intl.DateTimeFormatOptions = {
 };
 
 export const RelevantNotes = ({ collapsed = false }: RelevantNotesProps) => {
-  const [selectedType, setSelectedType] = useState<CRMFileType | null>(null);
+  const [selectedType, setSelectedType] = useState<MondoFileType | null>(null);
   const [mode, setMode] = useState<NotesMode>("hits");
   const [hitsVisibleCount, setHitsVisibleCount] = useState(5);
   const [historyLimit, setHistoryLimit] = useState(5);
   const hitsNotes = useRelevantNotes(25);
-  const { notes: historyNotes, hasMore: historyHasMore } = useRecentCRMNotes(
+  const { notes: historyNotes, hasMore: historyHasMore } = useRecentMondoNotes(
     historyLimit,
     selectedType
   );
@@ -117,7 +117,7 @@ export const RelevantNotes = ({ collapsed = false }: RelevantNotesProps) => {
     }
   }, [mode]);
 
-  const toggleFilter = useCallback((type: CRMFileType) => {
+  const toggleFilter = useCallback((type: MondoFileType) => {
     setSelectedType((previous) => (previous === type ? null : type));
   }, []);
 
@@ -136,9 +136,9 @@ export const RelevantNotes = ({ collapsed = false }: RelevantNotesProps) => {
   const hasMore = mode === "history" ? historyHasMore : hitsHasMore;
 
   const filterButtons = useMemo(() => {
-    return CRM_UI_CONFIG.relevantNotes.filter.order
+    return MONDO_UI_CONFIG.relevantNotes.filter.order
       .map((type) => {
-        const config = CRM_ENTITIES[type];
+        const config = MONDO_ENTITIES[type];
         if (!config) {
           return null;
         }
@@ -149,7 +149,7 @@ export const RelevantNotes = ({ collapsed = false }: RelevantNotesProps) => {
         };
       })
       .filter(Boolean) as Array<{
-      type: CRMEntityType;
+      type: MondoEntityType;
       icon: string;
       label: string;
     }>;
@@ -157,7 +157,7 @@ export const RelevantNotes = ({ collapsed = false }: RelevantNotesProps) => {
 
   const emptyStateMessage =
     mode === "history"
-      ? "No CRM notes found yet."
+      ? "No Mondo notes found yet."
       : "No referenced notes found yet.";
 
   return (
@@ -185,7 +185,7 @@ export const RelevantNotes = ({ collapsed = false }: RelevantNotesProps) => {
       <Stack direction="column" gap={3} className="w-full">
         <Stack className="gap-2 flex-col sm:flex-row sm:items-center sm:justify-between -mt-2 -mx-2 px-2">
           <div className="-mx-2 flex-1 overflow-x-auto pb-1">
-            <ButtonGroup className="crm-relevant-notes__filters-group flex-nowrap mx-0">
+            <ButtonGroup className="mondo-relevant-notes__filters-group flex-nowrap mx-0">
               {filterButtons.map((button) => {
                 const isActive = selectedType === button.type;
                 return (
@@ -219,7 +219,7 @@ export const RelevantNotes = ({ collapsed = false }: RelevantNotesProps) => {
         ) : mode === "history" ? (
           <>
             {historyNotes.map((note) => {
-              const config = getCRMEntityConfig(note.type);
+              const config = getMondoEntityConfig(note.type);
               const entityName = config?.name ?? note.type;
               const iconName = config?.icon;
               return (
@@ -267,7 +267,7 @@ export const RelevantNotes = ({ collapsed = false }: RelevantNotesProps) => {
           <>
             {visibleHits.map((note) => {
               const entityName = note.type
-                ? getCRMEntityConfig(note.type)?.name ?? note.type
+                ? getMondoEntityConfig(note.type)?.name ?? note.type
                 : "note";
               const totalReferences = getTotalHits(note);
               const lastOpened = formatDateForDisplay(note.lastOpened);

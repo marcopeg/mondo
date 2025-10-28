@@ -1,6 +1,6 @@
 import {
   getDisplayValue,
-  type CRMEntityListRow,
+  type MondoEntityListRow,
 } from "@/views/entity-panel-view/useEntityPanels";
 import {
   EntityCell,
@@ -29,7 +29,7 @@ const formatColumnLabel = (column: string): string =>
 
 type EntityGridProps = {
   columns: string[];
-  rows: CRMEntityListRow[];
+  rows: MondoEntityListRow[];
 };
 
 const getCellRenderer = (column: string) => {

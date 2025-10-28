@@ -22,9 +22,9 @@ Backlinks configurations now use a nested structure with optional developer docu
 
 ```ts
 // Entity link configuration with nested backlinks
-interface CRMEntityLink {
+interface MondoEntityLink {
   type: "backlinks";
-  key?: string; // unique panel key for crmState persistence (recommended)
+  key?: string; // unique panel key for mondoState persistence (recommended)
   desc?: string; // optional: developer-readable description
   config: BacklinksPanelConfig;
 }
@@ -32,7 +32,7 @@ interface CRMEntityLink {
 // Inside config, you can use the advanced `find` and `filter` fields
 interface BacklinksPanelConfig {
   // Targeting
-  targetType?: CRMEntityType | string; // optional; defaults to host entity type when omitted
+  targetType?: MondoEntityType | string; // optional; defaults to host entity type when omitted
   properties?: string | string[]; // legacy: property names to match
   prop?: string | string[]; // legacy alias for properties
 

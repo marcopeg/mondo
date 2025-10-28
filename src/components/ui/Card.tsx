@@ -372,12 +372,12 @@ export const Card: React.FC<CardProps> = ({
 
       {!isCollapsed && (
         <Box
-          className={[innerPaddingClass, "crm-card-content"].join(" ")}
+          className={[innerPaddingClass, "mondo-card-content"].join(" ")}
           style={{
             ...innerPaddingStyle,
             // expose effective horizontal padding as CSS var for full-bleed children
             // consumers (e.g. filters bar) can use negative margins based on this value
-            ["--crm-card-pad-x" as any]: `${headerPaddingValues.x * 0.25}rem`,
+            ["--mondo-card-pad-x" as any]: `${headerPaddingValues.x * 0.25}rem`,
           }}
         >
           {children}

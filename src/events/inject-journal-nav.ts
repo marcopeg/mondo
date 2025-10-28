@@ -1,6 +1,6 @@
 import { WorkspaceLeaf, MarkdownView, Plugin } from "obsidian";
 
-import { DEFAULT_CRM_JOURNAL_SETTINGS } from "@/types/CRMOtherPaths";
+import { DEFAULT_MONDO_JOURNAL_SETTINGS } from "@/types/MondoOtherPaths";
 
 const normalize = (p?: string) => (p ?? "").replace(/^\/+|\/+$/g, "");
 
@@ -25,8 +25,8 @@ export const getLeafFilePath = (leaf: WorkspaceLeaf | null): string | null => {
   return null;
 };
 
-const PREV_ID = "crm-focus-mode-nav-prev-btn";
-const NEXT_ID = "crm-focus-mode-nav-next-btn";
+const PREV_ID = "mondo-focus-mode-nav-prev-btn";
+const NEXT_ID = "mondo-focus-mode-nav-next-btn";
 
 const makeButton = (
   id: string,
@@ -38,7 +38,7 @@ const makeButton = (
   if (btn) return btn;
   btn = document.createElement("button");
   btn.id = id;
-  btn.className = "crm-focus-mode-nav-btn";
+  btn.className = "mondo-focus-mode-nav-btn";
   btn.title = title;
   btn.type = "button";
   btn.innerHTML = svg;
@@ -68,7 +68,7 @@ const injectNav = (leaf: WorkspaceLeaf, plugin: Plugin) => {
   if (!(leaf?.view instanceof MarkdownView)) return;
 
   // Styles are provided by `src/styles.css` in the plugin. They include
-  // positioning for #crm-focus-mode-nav-prev-btn (left) and #crm-focus-mode-nav-next-btn (right).
+  // positioning for #mondo-focus-mode-nav-prev-btn (left) and #mondo-focus-mode-nav-next-btn (right).
 
   const leftSvg = `
   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M15 18l-6-6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
@@ -77,12 +77,12 @@ const injectNav = (leaf: WorkspaceLeaf, plugin: Plugin) => {
 
   makeButton(PREV_ID, "Previous journal note", leftSvg, () => {
     const commands = (plugin.app as any).commands;
-    commands.executeCommandById("crm:journal-prev");
+    commands.executeCommandById("mondo:journal-prev");
   });
 
   makeButton(NEXT_ID, "Next journal note", rightSvg, () => {
     const commands = (plugin.app as any).commands;
-    commands.executeCommandById("crm:journal-next");
+    commands.executeCommandById("mondo:journal-next");
   });
 };
 
@@ -99,7 +99,7 @@ export const injectJournalNav =
     // Read journal root from plugin settings (fall back to default if missing)
     const pluginAny = plugin as any;
     const journalRoot = normalize(
-      pluginAny?.settings?.journal?.root ?? DEFAULT_CRM_JOURNAL_SETTINGS.root
+      pluginAny?.settings?.journal?.root ?? DEFAULT_MONDO_JOURNAL_SETTINGS.root
     );
 
     // If no configured journal root, remove nav.

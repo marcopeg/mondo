@@ -127,7 +127,7 @@ const getMacDefaultBrowserBundleId = async (): Promise<string | null> => {
 
     return typeof bundleId === "string" && bundleId.trim() ? bundleId.trim() : null;
   } catch (error) {
-    console.error("CRM: Unable to determine macOS default browser", error);
+    console.error("Mondo: Unable to determine macOS default browser", error);
     return null;
   }
 };
@@ -173,7 +173,7 @@ const openUrlOnMac = async (url: string): Promise<boolean> => {
       }
     }
   } catch (error) {
-    console.error("CRM: Unable to open ChatGPT in macOS browser", error);
+    console.error("Mondo: Unable to open ChatGPT in macOS browser", error);
   }
 
   return false;
@@ -209,7 +209,7 @@ const getWindowsDefaultBrowserCommand = async (): Promise<string | null> => {
 
     return command && command.length > 0 ? command : null;
   } catch (error) {
-    console.error("CRM: Unable to determine Windows default browser", error);
+    console.error("Mondo: Unable to determine Windows default browser", error);
     return null;
   }
 };
@@ -235,7 +235,7 @@ const openUrlOnWindows = async (url: string): Promise<boolean> => {
           await execFileOutput(executable, args, { windowsHide: true });
           return true;
         } catch (error) {
-          console.error("CRM: Unable to launch default Windows browser", error);
+          console.error("Mondo: Unable to launch default Windows browser", error);
         }
       }
     }
@@ -246,10 +246,10 @@ const openUrlOnWindows = async (url: string): Promise<boolean> => {
       });
       return true;
     } catch (error) {
-      console.error("CRM: rundll32 fallback failed", error);
+      console.error("Mondo: rundll32 fallback failed", error);
     }
   } catch (error) {
-    console.error("CRM: Unable to open ChatGPT in Windows browser", error);
+    console.error("Mondo: Unable to open ChatGPT in Windows browser", error);
   }
 
   return false;
@@ -293,7 +293,7 @@ const openChatGPTLink = async (url: string): Promise<boolean> => {
         }
       }
     } catch (error) {
-      console.error("CRM: Failed to open ChatGPT link on desktop", error);
+      console.error("Mondo: Failed to open ChatGPT link on desktop", error);
     }
   }
 

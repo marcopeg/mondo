@@ -1,4 +1,4 @@
-import type CRM from "@/main";
+import type Mondo from "@/main";
 
 const TRANSCRIPTION_MODEL = "gpt-4o-mini-transcribe";
 const DEFAULT_MODEL = "gpt-5-nano";
@@ -76,9 +76,9 @@ const extractModelOutputText = (payload: Record<string, unknown>) => {
 };
 
 export class VoiceTranscriptionService {
-  private readonly plugin: CRM;
+  private readonly plugin: Mondo;
 
-  constructor(plugin: CRM) {
+  constructor(plugin: Mondo) {
     this.plugin = plugin;
   }
 
@@ -108,7 +108,7 @@ export class VoiceTranscriptionService {
   private ensureApiKey = () => {
     const key = this.getApiKey();
     if (!key) {
-      throw new Error("Set your OpenAI API key in the CRM settings.");
+      throw new Error("Set your OpenAI API key in the Mondo settings.");
     }
     return key;
   };

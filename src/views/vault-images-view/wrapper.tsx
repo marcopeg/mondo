@@ -4,7 +4,7 @@ import { AppProvider } from "@/context/AppProvider";
 import { VAULT_IMAGES_ICON, VAULT_IMAGES_VIEW } from "./constants";
 import { VaultImagesView } from "./VaultImagesView";
 
-export class CRMVaultImagesViewWrapper extends ItemView {
+export class MondoVaultImagesViewWrapper extends ItemView {
   private root: Root | null = null;
   private iconName: string;
 

@@ -11,11 +11,11 @@ import NoteDictationController, {
   type DictationState,
 } from "@/utils/NoteDictationController";
 import VoiceTranscriptionService from "@/utils/VoiceTranscriptionService";
-import getCRMPlugin from "@/utils/getCRMPlugin";
-import type CRM from "@/main";
+import getMondoPlugin from "@/utils/getMondoPlugin";
+import type Mondo from "@/main";
 import Button from "@/components/ui/Button";
 import {
-  CRM_DICTATION_ICON_ID,
+  MONDO_DICTATION_ICON_ID,
   registerDictationIcon,
 } from "@/utils/registerDictationIcon";
 
@@ -38,7 +38,7 @@ const setNativeInputValue = (input: HTMLInputElement, value: string) => {
 const resolveIconName = (status: DictationState["status"]) => {
   if (status === "recording") {
     // Use a stable, always-available icon while recording
-    return CRM_DICTATION_ICON_ID;
+    return MONDO_DICTATION_ICON_ID;
   }
   if (status === "processing") {
     return "loader-2";
@@ -49,7 +49,7 @@ const resolveIconName = (status: DictationState["status"]) => {
   if (status === "error") {
     return "alert-circle";
   }
-  return CRM_DICTATION_ICON_ID;
+  return MONDO_DICTATION_ICON_ID;
 };
 
 const deriveButtonLabel = (status: DictationState["status"]) => {
@@ -88,7 +88,7 @@ const TextField = forwardRef<HTMLInputElement, TextFieldProps>(
     const inputRef = useRef<HTMLInputElement | null>(null);
     const controllerRef = useRef<NoteDictationController | null>(null);
     const unsubscribeRef = useRef<(() => void) | null>(null);
-    const pluginRef = useRef<CRM | null>(null);
+    const pluginRef = useRef<Mondo | null>(null);
     const serviceRef = useRef<VoiceTranscriptionService | null>(null);
     const [dictationState, setDictationState] = useState<DictationState | null>(
       null
@@ -109,7 +109,7 @@ const TextField = forwardRef<HTMLInputElement, TextFieldProps>(
     );
 
     const ensureService = useCallback(() => {
-      const plugin = getCRMPlugin(app);
+      const plugin = getMondoPlugin(app);
       if (!plugin) {
         pluginRef.current = null;
         serviceRef.current = null;
@@ -131,13 +131,13 @@ const TextField = forwardRef<HTMLInputElement, TextFieldProps>(
     const handleStart = useCallback(async () => {
       const service = ensureService();
       if (!service) {
-        const message = "CRM plugin is not ready yet.";
+        const message = "Mondo plugin is not ready yet.";
         new Notice(message);
         throw new Error(message);
       }
 
       if (!service.hasApiKey()) {
-        const message = "Set your OpenAI API key in the CRM settings.";
+        const message = "Set your OpenAI API key in the Mondo settings.";
         new Notice(message);
         throw new Error(message);
       }
@@ -147,7 +147,7 @@ const TextField = forwardRef<HTMLInputElement, TextFieldProps>(
       async (audio: Blob) => {
         const service = ensureService();
         if (!service) {
-          const message = "CRM plugin is not ready yet.";
+          const message = "Mondo plugin is not ready yet.";
           new Notice(message);
           throw new Error(message);
         }
@@ -172,7 +172,7 @@ const TextField = forwardRef<HTMLInputElement, TextFieldProps>(
             try {
               input.setSelectionRange(caret, caret);
             } catch (error) {
-              console.debug("CRM: unable to set selection range", error);
+              console.debug("Mondo: unable to set selection range", error);
             }
             input.focus({ preventScroll: true });
           });
@@ -227,12 +227,12 @@ const TextField = forwardRef<HTMLInputElement, TextFieldProps>(
     const isError = status === "error";
     const isSuccess = status === "success";
 
-    const plugin = getCRMPlugin(app);
+    const plugin = getMondoPlugin(app);
     const hasApiKey = Boolean(plugin?.settings?.openAIWhisperApiKey?.trim?.());
     const micUnavailableReason = !plugin
-      ? "CRM plugin is not ready yet."
+      ? "Mondo plugin is not ready yet."
       : !hasApiKey
-      ? "Set your OpenAI API key in the CRM settings."
+      ? "Set your OpenAI API key in the Mondo settings."
       : null;
 
     // No direct DOM icon mutation needed; Button will render dynamic icon from state.
@@ -271,9 +271,9 @@ const TextField = forwardRef<HTMLInputElement, TextFieldProps>(
     const buttonDisabled =
       Boolean(disabled) || Boolean(readOnly) || !whisper || isProcessing;
 
-    const wrapperClassName = whisper ? "crm-textfield" : undefined;
+    const wrapperClassName = whisper ? "mondo-textfield" : undefined;
     const inputClassName = whisper
-      ? [className, "crm-textfield__input"].filter(Boolean).join(" ")
+      ? [className, "mondo-textfield__input"].filter(Boolean).join(" ")
       : className;
 
     if (!whisper) {
@@ -289,24 +289,24 @@ const TextField = forwardRef<HTMLInputElement, TextFieldProps>(
       );
     }
 
-    const buttonClasses = ["crm-textfield__mic"];
+    const buttonClasses = ["mondo-textfield__mic"];
     if (isRecording) {
-      buttonClasses.push("crm-textfield__mic--recording");
+      buttonClasses.push("mondo-textfield__mic--recording");
     }
     if (isProcessing) {
-      buttonClasses.push("crm-textfield__mic--processing");
+      buttonClasses.push("mondo-textfield__mic--processing");
     }
     if (isError) {
-      buttonClasses.push("crm-textfield__mic--error");
+      buttonClasses.push("mondo-textfield__mic--error");
     }
     if (isSuccess) {
-      buttonClasses.push("crm-textfield__mic--success");
+      buttonClasses.push("mondo-textfield__mic--success");
     }
 
     const iconName = resolveIconName(status);
     const iconClassName = [
-      "crm-textfield__mic-icon",
-      isProcessing ? "crm-voice-fab-icon--spin" : undefined,
+      "mondo-textfield__mic-icon",
+      isProcessing ? "mondo-voice-fab-icon--spin" : undefined,
     ]
       .filter(Boolean)
       .join(" ");

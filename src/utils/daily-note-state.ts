@@ -19,7 +19,7 @@ export const getDailyNoteState = (
   }
 
   const root = frontmatter as Record<string, unknown> & {
-    crmState?: unknown;
+    mondoState?: unknown;
     createdToday?: unknown;
     changedToday?: unknown;
     modifiedToday?: unknown;
@@ -30,26 +30,26 @@ export const getDailyNoteState = (
   let changed: unknown = undefined;
   let opened: unknown = undefined;
 
-  if (isPlainObject(root.crmState)) {
-    const crmState = root.crmState as Record<string, unknown> & {
+  if (isPlainObject(root.mondoState)) {
+    const mondoState = root.mondoState as Record<string, unknown> & {
       created?: unknown;
       changed?: unknown;
       opened?: unknown;
       dailyNote?: unknown;
     };
 
-    if (crmState.created !== undefined) {
-      created = crmState.created;
+    if (mondoState.created !== undefined) {
+      created = mondoState.created;
     }
-    if (crmState.changed !== undefined) {
-      changed = crmState.changed;
+    if (mondoState.changed !== undefined) {
+      changed = mondoState.changed;
     }
-    if (crmState.opened !== undefined) {
-      opened = crmState.opened;
+    if (mondoState.opened !== undefined) {
+      opened = mondoState.opened;
     }
 
-    if (isPlainObject(crmState.dailyNote)) {
-      const legacyDailyNote = crmState.dailyNote as Record<string, unknown> & {
+    if (isPlainObject(mondoState.dailyNote)) {
+      const legacyDailyNote = mondoState.dailyNote as Record<string, unknown> & {
         created?: unknown;
         createdToday?: unknown;
         changed?: unknown;

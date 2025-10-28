@@ -1,5 +1,5 @@
 import type { App } from "obsidian";
-import type CRM from "@/main";
+import type Mondo from "@/main";
 
 type MaybeApp = App | null | undefined;
 
@@ -11,7 +11,7 @@ type MaybeWithPlugins = {
   plugins?: PluginManager;
 };
 
-export const getCRMPlugin = (app: MaybeApp): CRM | null => {
+export const getMondoPlugin = (app: MaybeApp): Mondo | null => {
   if (!app) {
     return null;
   }
@@ -22,8 +22,8 @@ export const getCRMPlugin = (app: MaybeApp): CRM | null => {
     return null;
   }
 
-  const plugin = manager.getPlugin("crm");
-  return (plugin as CRM | undefined) ?? null;
+  const plugin = manager.getPlugin("mondo");
+  return (plugin as Mondo | undefined) ?? null;
 };
 
-export default getCRMPlugin;
+export default getMondoPlugin;

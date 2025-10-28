@@ -6,13 +6,13 @@ focus on the Projects EntityLink for type=person. When clicking on "+" it should
 
 focus on the Projects EntityLink for type=person. When clicking on "+" on the Meetings, the new note (it already works) file name should be "{date} with {person's "show" or "filename" attribute}. Also, the file name should pre selected so that it's easy for the user to modify it by typing the new value.
 
-focus on the Projects EntityLink for type=person. When collapsing or expanding the panel, the state for this particular panel should be persisted in the note's frontmatter in a key named `crmState` that is a json document where different panels can edit and add their own keys. make it so the `crmState` key gets created at the first need if not available.
+focus on the Projects EntityLink for type=person. When collapsing or expanding the panel, the state for this particular panel should be persisted in the note's frontmatter in a key named `mondoState` that is a json document where different panels can edit and add their own keys. make it so the `mondoState` key gets created at the first need if not available.
 
-focus on the Tasks EntityLink for type=person. When collapsing or expanding the panel, the state for this particular panel should be persisted in the note's frontmatter in a key named `crmState` that is a json document where different panels can edit and add their own keys. make it so the `crmState` key gets created at the first need if not available.
+focus on the Tasks EntityLink for type=person. When collapsing or expanding the panel, the state for this particular panel should be persisted in the note's frontmatter in a key named `mondoState` that is a json document where different panels can edit and add their own keys. make it so the `mondoState` key gets created at the first need if not available.
 
-focus on the Facts EntityLink for type=person. When collapsing or expanding the panel, the state for this particular panel should be persisted in the note's frontmatter in a key named `crmState` that is a json document where different panels can edit and add their own keys. make it so the `crmState` key gets created at the first need if not available.
+focus on the Facts EntityLink for type=person. When collapsing or expanding the panel, the state for this particular panel should be persisted in the note's frontmatter in a key named `mondoState` that is a json document where different panels can edit and add their own keys. make it so the `mondoState` key gets created at the first need if not available.
 
-focus on the Meetings EntityLink for type=person. When collapsing or expanding the panel, the state for this particular panel should be persisted in the note's frontmatter in a key named `crmState` that is a json document where different panels can edit and add their own keys. make it so the `crmState` key gets created at the first need if not available.
+focus on the Meetings EntityLink for type=person. When collapsing or expanding the panel, the state for this particular panel should be persisted in the note's frontmatter in a key named `mondoState` that is a json document where different panels can edit and add their own keys. make it so the `mondoState` key gets created at the first need if not available.
 
 focus on the Facts EntityLink for type=project. When clicking on "+" it should create a new fact note linked to the person (this works already). The note's file name should be "Untitled Fact". The note's file name content should be slected so that it's easy for the user to modify it by typing the new value.
 
@@ -42,7 +42,7 @@ focs on the EntityLink "Teams" on the entity "company". This already lists the t
 
 focs on the EntityLink "Employees" on the entity "company". This already lists the persons connected with the company. Add the button "+" to create a new person document (type=person) linked to the company via "company" attribute. The default title should be "Untitled Person. The new note's file name content should be slected so that it's easy for the user to modify it by typing the new value.
 
-focus on the EntityLink that allows for drag and drop sorting; change the persist strategy so that they use the `crmState` frontmatter key as "{panel}.order".
+focus on the EntityLink that allows for drag and drop sorting; change the persist strategy so that they use the `mondoState` frontmatter key as "{panel}.order".
 
 focus on the EntityLink "projects" of the entity type "team". Fix the UI so that it matches in padding and spacing the UI of the "facts" block for the entity type "person".
 
@@ -66,7 +66,7 @@ focus on the dashboard, move the "create quick tasks" container into the title a
 
 Focus on the Quick Tasks list in the dashboard. It looks like the date that is associated with each entry is wrong. the date should be picked by the attribute "date" of the note, falling back into parsing the fileName that should already be in a date format.
 
-Focus on the Dashboard, the CRM Entities part. Discard the quick entity component and implement a tiles wall inspired by Windows' Cortana style: flat tiles with centered icons and text. Don't use the ui/Button. Implement a custom EntityTiles component inside the dashboard area so to link to each EntityTab. The tiles should be squared and on mobile i envision 2 tiles per row.
+Focus on the Dashboard, the Mondo Entities part. Discard the quick entity component and implement a tiles wall inspired by Windows' Cortana style: flat tiles with centered icons and text. Don't use the ui/Button. Implement a custom EntityTiles component inside the dashboard area so to link to each EntityTab. The tiles should be squared and on mobile i envision 2 tiles per row.
 
 Focus on the /entities/index.ts - this file should export a configuration object that contains the entites list, but that has other information as well:
 
@@ -164,7 +164,7 @@ IMPORTANT:
 
 focus on the #file:BacklinksLinks.tsx .
 
-Refactor the key used to store the state of the backlinks panel in the crmState object.
+Refactor the key used to store the state of the backlinks panel in the mondoState object.
 
 each backlinks item must define a "key" property (need to add it to the definition)
 
@@ -200,7 +200,7 @@ add the following panels:
 
 ---
 
-Focus on the `/src/entities` folder that as of now exposes the full configuration for the CRM.
+Focus on the `/src/entities` folder that as of now exposes the full configuration for the Mondo.
 
 I want to move the entire configuration into one single JSON file structured as:
 
@@ -224,7 +224,7 @@ I want to move the entire configuration into one single JSON file structured as:
 }
 ```
 
-This first step of refactoring should place one single `/src/crm-config.json` that is read to setup the crm at boot time.
+This first step of refactoring should place one single `/src/mondo-config.json` that is read to setup the mondo at boot time.
 
 You should convert all the current entites files into this single json.
 
@@ -232,18 +232,18 @@ Fix the logic so that the configuration is read from this file and not from the 
 
 ---
 
-explain me what the crm-configuration `entity.{key}.aliases` do and what is the consequence if we remove it
+explain me what the mondo-configuration `entity.{key}.aliases` do and what is the consequence if we remove it
 
 ---
 
-explain me what the crm-configuration `entity.{key}.dashboard` do and what is the consequence if we remove it
+explain me what the mondo-configuration `entity.{key}.dashboard` do and what is the consequence if we remove it
 
 ---
 
-add a new settings with the note picker to pick up a note to be used as source of the configuration for the crm.
+add a new settings with the note picker to pick up a note to be used as source of the configuration for the mondo.
 
 when this note is set, the frontmatter of such note takes over the hardcoded configuration.
 
 the system must be able to validate it and prevent using it if it contains any error. every time the content of this file changes the system should re-validate and re-load the configuration.
 
-in case of a bad configuration, a detailed error log should be created in the same folder as the config file with the filename following the template "YYMMDDhhmmss-crm-config-error.md" to help the use fix the configuration issue.
+in case of a bad configuration, a detailed error log should be created in the same folder as the config file with the filename following the template "YYMMDDhhmmss-mondo-config-error.md" to help the use fix the configuration issue.

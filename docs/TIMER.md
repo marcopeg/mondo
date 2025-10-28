@@ -14,7 +14,7 @@ Both render the same UI component and accept similar props. You can pass props v
 ### Simple Focus Timer (work + rest)
 
 ````
-```crm
+```mondo
 timer?duration=25&interval=5
 ````
 
@@ -28,7 +28,7 @@ timer?duration=25&interval=5
 
 ```
 
-```crm
+```mondo
 timer?duration=20&interval=0&title=Deep%20Work&color=#55aaff
 ```
 
@@ -38,7 +38,7 @@ timer?duration=20&interval=0&title=Deep%20Work&color=#55aaff
 
 ```
 
-```crm
+```mondo
 timer?duration=15&interval=5&heptic=both
 ```
 
@@ -51,7 +51,7 @@ timer?duration=15&interval=5&heptic=both
 
 ```
 
-```crm
+```mondo
 time-plan
 title: Gym Session
 steps:
@@ -79,7 +79,7 @@ steps:
 
 ```
 
-```crm
+```mondo
 time-plan?loop=2&color=#55aaff
 title: Morning Plan
 steps:

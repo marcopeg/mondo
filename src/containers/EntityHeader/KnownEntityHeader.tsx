@@ -2,11 +2,11 @@ import { useCallback, useMemo } from "react";
 import type { RefObject } from "react";
 import { Notice } from "obsidian";
 import { SplitButton } from "@/components/ui/SplitButton";
-import type { CRMEntityType } from "@/entities";
+import type { MondoEntityType } from "@/entities";
 
 const PANEL_ACTIONS: Partial<
   Record<
-    CRMEntityType,
+    MondoEntityType,
     {
       key: string;
       label: string;
@@ -232,7 +232,7 @@ const PANEL_ACTIONS: Partial<
 
 type KnownEntityHeaderProps = {
   containerRef: RefObject<HTMLDivElement | null>;
-  entityType: CRMEntityType;
+  entityType: MondoEntityType;
 };
 
 const findPanelButton = (
@@ -244,7 +244,7 @@ const findPanelButton = (
     return null;
   }
 
-  const root = container.closest(".crm-injected-hello-root") ?? container;
+  const root = container.closest(".mondo-injected-hello-root") ?? container;
   const selector = `[data-entity-panel="${panel}"] button[aria-label="${ariaLabel}"]`;
   return root.querySelector<HTMLButtonElement>(selector);
 };

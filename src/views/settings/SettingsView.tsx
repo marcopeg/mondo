@@ -6,8 +6,8 @@ import {
   TFolder,
   AbstractInputSuggest,
 } from "obsidian";
-import type CRM from "@/main";
-import { CRM_ENTITY_CONFIG_LIST } from "@/entities";
+import type Mondo from "@/main";
+import { MONDO_ENTITY_CONFIG_LIST } from "@/entities";
 import {
   DEFAULT_TIMESTAMP_SETTINGS,
   normalizeTimestampSettings,
@@ -20,11 +20,11 @@ import { renderDailySection } from "./SettingsView_Daily";
 import { renderJournalSection } from "./SettingsView_Journal";
 import { renderDashboardSection } from "./SettingsView_Dashboard";
 
-// Settings view for CRM plugin
+// Settings view for Mondo plugin
 export class SettingsView extends PluginSettingTab {
-  plugin: CRM;
+  plugin: Mondo;
 
-  constructor(app: App, plugin: CRM) {
+  constructor(app: App, plugin: Mondo) {
     super(app, plugin);
     this.plugin = plugin;
   }
@@ -37,7 +37,7 @@ export class SettingsView extends PluginSettingTab {
     (this.plugin as any).settings = (this.plugin as any).settings ?? {
       // Initialize only with entity types; special types (daily, journal, etc.) have dedicated sections below
       rootPaths: Object.fromEntries(
-        CRM_ENTITY_CONFIG_LIST.map((cfg) => [String(cfg.type), "/"])
+        MONDO_ENTITY_CONFIG_LIST.map((cfg) => [String(cfg.type), "/"])
       ),
     };
     // Ensure journal/daily settings exist with sensible defaults
@@ -50,7 +50,7 @@ export class SettingsView extends PluginSettingTab {
     (this.plugin as any).settings.templates =
       (this.plugin as any).settings.templates ??
       Object.fromEntries(
-        CRM_ENTITY_CONFIG_LIST.map((cfg) => [String(cfg.type), ""])
+        MONDO_ENTITY_CONFIG_LIST.map((cfg) => [String(cfg.type), ""])
       );
     (this.plugin as any).settings.openAITranscriptionPolishEnabled =
       typeof (this.plugin as any).settings.openAITranscriptionPolishEnabled ===
@@ -298,7 +298,7 @@ export class SettingsView extends PluginSettingTab {
       onDisplayUpdate: () => this.display(),
     });
 
-    // Render entity configuration and custom CRM configuration sections
+    // Render entity configuration and custom Mondo configuration sections
     await renderEntityConfigurationSection({
       app: this.app,
       plugin: this.plugin,

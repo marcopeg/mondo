@@ -2,18 +2,18 @@
 
 ## Overview
 
-Refactored the key used to store the state of backlinks panels in the `crmState` frontmatter object.
+Refactored the key used to store the state of backlinks panels in the `mondoState` frontmatter object.
 
 ## Changes Made
 
-### 1. Type Definition Update (`src/types/CRMEntityConfig.ts`)
+### 1. Type Definition Update (`src/types/MondoEntityConfig.ts`)
 
-- Added `key?: string` property to `CRMEntityBacklinksLinkConfig` interface
-- Added `collapsed?: boolean` property to `CRMEntityBacklinksLinkConfig` interface
+- Added `key?: string` property to `MondoEntityBacklinksLinkConfig` interface
+- Added `collapsed?: boolean` property to `MondoEntityBacklinksLinkConfig` interface
 
 ### 2. Component Update (`src/containers/EntityLinks/panels/BacklinksLinks.tsx`)
 
-- Updated `BacklinksPanelConfig` type to use the imported `CRMEntityBacklinksLinkConfig` interface
+- Updated `BacklinksPanelConfig` type to use the imported `MondoEntityBacklinksLinkConfig` interface
 - Updated `panelKey` computation to use the explicit `key` property from the config when available
 - **New pattern**: `backlinks:{key}`
 - **Fallback pattern** (for backward compatibility): `backlinks:{targetType}:{property}`
@@ -49,10 +49,10 @@ Backlinks with assigned keys:
 
 ## Frontend State Storage Pattern
 
-The new pattern for storing backlinks panel state in frontmatter `crmState`:
+The new pattern for storing backlinks panel state in frontmatter `mondoState`:
 
 ```yaml
-crmState:
+mondoState:
   backlinks:teammates:
     collapsed: false
   backlinks:1on1-meetings:

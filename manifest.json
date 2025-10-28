@@ -1,11 +1,11 @@
 {
-	"id": "crm",
-	"name": "CRM",
-	"version": "0.0.22",
-	"minAppVersion": "0.15.0",
-	"description": "Build a personal CRM",
-	"author": "Marco Pegoraro",
-	"authorUrl": "https://marcopeg.com",
-	"fundingUrl": "https://obsidian.md/pricing",
-	"isDesktopOnly": false
+        "id": "mondo",
+        "name": "Mondo",
+        "version": "0.0.20",
+        "minAppVersion": "0.15.0",
+        "description": "Build a personal Mondo workspace",
+        "author": "Marco Pegoraro",
+        "authorUrl": "https://marcopeg.com",
+        "fundingUrl": "https://obsidian.md/pricing",
+        "isDesktopOnly": false
 }

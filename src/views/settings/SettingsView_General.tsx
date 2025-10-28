@@ -5,7 +5,7 @@ import {
   Setting,
   type FuzzyMatch,
 } from "obsidian";
-import type CRM from "@/main";
+import type Mondo from "@/main";
 import { createSettingsSection } from "./SettingsView_utils";
 
 type PersonEntry = {
@@ -16,7 +16,7 @@ type PersonEntry = {
 
 interface SettingsGeneralProps {
   app: App;
-  plugin: CRM;
+  plugin: Mondo;
   containerEl: HTMLElement;
 }
 
@@ -80,12 +80,12 @@ const renderPersonSuggestion = (item: PersonEntry, el: HTMLElement) => {
   el.empty();
   el.createEl("div", {
     text: item.label,
-    cls: "crm-settings-person-label",
+    cls: "mondo-settings-person-label",
   });
   if (item.path !== item.label) {
     el.createEl("div", {
       text: item.path,
-      cls: "crm-settings-person-path",
+      cls: "mondo-settings-person-path",
     });
   }
 };
@@ -175,7 +175,7 @@ export const renderGeneralSection = (props: SettingsGeneralProps): void => {
   const generalSection = createSettingsSection(
     generalSectionContainer,
     "General",
-    "General settings for the CRM"
+    "General settings for the Mondo"
   );
 
   const storedSelfPath = (
@@ -184,7 +184,7 @@ export const renderGeneralSection = (props: SettingsGeneralProps): void => {
 
   const selfSetting = new Setting(generalSection.element)
     .setName("Who's me?")
-    .setDesc('Pick a person that will be used to mean "myself" in the CRM.');
+    .setDesc('Pick a person that will be used to mean "myself" in the Mondo.');
 
   selfSetting.addSearch((search) => {
     const applyStoredValue = (value: string) => {

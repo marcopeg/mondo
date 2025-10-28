@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { useActiveTab } from "@/hooks/use-active-tab";
 import { useApp } from "@/hooks/use-app";
-import { CRMFileManager } from "@/utils/CRMFileManager";
+import { MondoFileManager } from "@/utils/MondoFileManager";
 import type { TCachedFile } from "@/types/TCachedFile";
 
 type EntityFileContextValue = {
@@ -29,7 +29,7 @@ const useManagerFile = (path: string | undefined): TCachedFile | undefined => {
   const app = useApp();
   const [cached, setCached] = useState<TCachedFile | undefined>(() => {
     if (!path) return undefined;
-    const manager = CRMFileManager.getInstance(app);
+    const manager = MondoFileManager.getInstance(app);
     return manager.getFileByPath(path) ?? undefined;
   });
 
@@ -39,7 +39,7 @@ const useManagerFile = (path: string | undefined): TCachedFile | undefined => {
       return;
     }
 
-    const manager = CRMFileManager.getInstance(app);
+    const manager = MondoFileManager.getInstance(app);
 
     const update = () => {
       setCached(manager.getFileByPath(path) ?? undefined);

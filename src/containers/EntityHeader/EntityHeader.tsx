@@ -2,18 +2,18 @@ import type { RefObject } from "react";
 import { useMemo } from "react";
 import { useEntityFile } from "@/context/EntityFileProvider";
 import { useApp } from "@/hooks/use-app";
-import { CRM_ENTITIES, type CRMEntityType } from "@/entities";
-import { isCRMEntityType } from "@/types/CRMFileType";
+import { MONDO_ENTITIES, type MondoEntityType } from "@/entities";
+import { isMondoEntityType } from "@/types/MondoFileType";
 import type { TCachedFile } from "@/types/TCachedFile";
 import { KnownEntityHeader } from "./KnownEntityHeader";
 import { UnknownEntityHeader } from "./UnknownEntityHeader";
 
-const buildHeaderLabel = (entityType: CRMEntityType | null) => {
+const buildHeaderLabel = (entityType: MondoEntityType | null) => {
   if (!entityType) {
     return "Unknown note";
   }
 
-  const config = CRM_ENTITIES[entityType];
+  const config = MONDO_ENTITIES[entityType];
   return config?.name ?? entityType;
 };
 
@@ -31,7 +31,7 @@ export const EntityHeader = ({ containerRef, type }: EntityHeaderProps) => {
       return null;
     }
 
-    return isCRMEntityType(type) ? (type as CRMEntityType) : null;
+    return isMondoEntityType(type) ? (type as MondoEntityType) : null;
   }, [type]);
 
   const label = useMemo(() => buildHeaderLabel(entityType), [entityType]);
@@ -48,7 +48,7 @@ export const EntityHeader = ({ containerRef, type }: EntityHeaderProps) => {
     <div className={headerClasses}>
       <div className="flex flex-col">
         <span className="text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">
-          CRM Note
+          Mondo Note
         </span>
         <span className="text-sm font-medium text-[var(--text-normal)]">{label}</span>
       </div>

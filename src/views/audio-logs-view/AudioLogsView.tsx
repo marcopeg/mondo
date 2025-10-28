@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type CRM from "@/main";
+import type Mondo from "@/main";
 import { useApp } from "@/hooks/use-app";
 import Table from "@/components/ui/Table";
 import Button from "@/components/ui/Button";
@@ -140,7 +140,7 @@ const openFileInWorkspace = async (app: App, file: TFile) => {
     const leaf = app.workspace.getLeaf(true);
     await leaf.openFile(file);
   } catch (error) {
-    console.error("CRM Audio Logs: failed to open file", error);
+    console.error("Mondo Audio Logs: failed to open file", error);
   }
 };
 
@@ -157,7 +157,7 @@ type MetadataMap = Record<string, AudioMetadata>;
 type MatchingState = Record<string, "queued" | "active">;
 
 type AudioLogsViewProps = {
-  plugin: CRM;
+  plugin: Mondo;
 };
 
 export const AudioLogsView = ({ plugin }: AudioLogsViewProps) => {
@@ -534,7 +534,7 @@ export const AudioLogsView = ({ plugin }: AudioLogsViewProps) => {
           durationSeconds = (await manager.getAudioDurationSeconds(file)) ?? null;
         } catch (error) {
           console.warn(
-            "CRM Audio Logs: failed to load audio metadata",
+            "Mondo Audio Logs: failed to load audio metadata",
             file.path,
             error
           );
@@ -551,7 +551,7 @@ export const AudioLogsView = ({ plugin }: AudioLogsViewProps) => {
             title = extractTranscriptionTitle(app, transcriptionFile);
           } catch (error) {
             console.warn(
-              "CRM Audio Logs: failed to read transcription note",
+              "Mondo Audio Logs: failed to read transcription note",
               error
             );
           }
@@ -649,7 +649,7 @@ export const AudioLogsView = ({ plugin }: AudioLogsViewProps) => {
         await audio.play();
         setPlayingPath(file.path);
       } catch (error) {
-        console.error("CRM Audio Logs: failed to play audio", error);
+        console.error("Mondo Audio Logs: failed to play audio", error);
         setPlayingPath(null);
       }
     },
@@ -702,7 +702,7 @@ export const AudioLogsView = ({ plugin }: AudioLogsViewProps) => {
       try {
         await app.vault.delete(file);
       } catch (error) {
-        console.error("CRM Audio Logs: failed to delete audio file", error);
+        console.error("Mondo Audio Logs: failed to delete audio file", error);
         return;
       }
 
@@ -711,7 +711,7 @@ export const AudioLogsView = ({ plugin }: AudioLogsViewProps) => {
           await app.vault.delete(transcriptionFile);
         } catch (error) {
           console.error(
-            "CRM Audio Logs: failed to delete transcription note",
+            "Mondo Audio Logs: failed to delete transcription note",
             error
           );
         }

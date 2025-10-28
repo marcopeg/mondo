@@ -127,7 +127,7 @@ export const buildVoiceoverText = (
     try {
       frontmatter = parseFrontmatter(frontmatterStr);
     } catch (error) {
-      console.warn("CRM: failed to parse frontmatter", error);
+      console.warn("Mondo: failed to parse frontmatter", error);
     }
   }
 

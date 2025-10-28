@@ -1,9 +1,9 @@
 import { useMemo } from "react";
 import type { TFile } from "obsidian";
 import { useFiles } from "@/hooks/use-files";
-import { CRMFileType, getCRMEntityConfig } from "@/types/CRMFileType";
+import { MondoFileType, getMondoEntityConfig } from "@/types/MondoFileType";
 
-export type CRMEntityListRow = {
+export type MondoEntityListRow = {
   path: string;
   label: string;
   fileName: string;
@@ -109,14 +109,14 @@ const combineDateAndTimeValues = (
   };
 };
 
-export type CRMEntityDateInfo = DateValueInfo & {
+export type MondoEntityDateInfo = DateValueInfo & {
   source: "frontmatter" | "legacy" | "created" | null;
 };
 
 export const getDateInfoForValue = (value: unknown): DateValueInfo =>
   parseDateLikeValue(value);
 
-export const getRowDateInfo = (row: CRMEntityListRow): CRMEntityDateInfo => {
+export const getRowDateInfo = (row: MondoEntityListRow): MondoEntityDateInfo => {
   const frontmatter = row.frontmatter ?? {};
   const primary = parseDateLikeValue(frontmatter.date);
   const combined = combineDateAndTimeValues(frontmatter.date, frontmatter.time);
@@ -155,7 +155,7 @@ export const getRowDateInfo = (row: CRMEntityListRow): CRMEntityDateInfo => {
   return { date: null, raw: fallbackRaw, hasTime: false, source: null };
 };
 
-const columnRules: Partial<Record<string, (row: CRMEntityListRow) => unknown>> = {
+const columnRules: Partial<Record<string, (row: MondoEntityListRow) => unknown>> = {
   date: (row) => {
     const info = getRowDateInfo(row);
     return info.date ?? info.raw ?? undefined;
@@ -180,7 +180,7 @@ const formatFrontmatterValue = (value: unknown): string => {
   return String(value);
 };
 
-const getColumnRawValue = (row: CRMEntityListRow, column: string): unknown => {
+const getColumnRawValue = (row: MondoEntityListRow, column: string): unknown => {
   if (!column) return "";
 
   if (column === DEFAULT_COLUMN) {
@@ -206,11 +206,11 @@ const getColumnRawValue = (row: CRMEntityListRow, column: string): unknown => {
   return row.frontmatter?.[column];
 };
 
-export const useEntityPanels = (entityType: CRMFileType) => {
+export const useEntityPanels = (entityType: MondoFileType) => {
   const files = useFiles(entityType);
 
   const { columns, rows } = useMemo(() => {
-    const config = getCRMEntityConfig(entityType);
+    const config = getMondoEntityConfig(entityType);
     const configuredColumns = config?.list?.columns?.filter((column) => column);
     const columns =
       configuredColumns && configuredColumns.length > 0
@@ -228,7 +228,7 @@ export const useEntityPanels = (entityType: CRMFileType) => {
     const sortDirection =
       config?.list?.sort?.direction === "desc" ? "desc" : "asc";
 
-    const rows = files.map<CRMEntityListRow>((cached) => {
+    const rows = files.map<MondoEntityListRow>((cached) => {
       const { file, cache } = cached;
       const frontmatter = (cache?.frontmatter ?? {}) as Record<string, unknown>;
 
@@ -267,6 +267,6 @@ export const useEntityPanels = (entityType: CRMFileType) => {
 };
 
 export const getDisplayValue = (
-  row: CRMEntityListRow,
+  row: MondoEntityListRow,
   column: string
 ): unknown => getColumnRawValue(row, column);

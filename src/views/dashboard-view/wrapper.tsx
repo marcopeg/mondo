@@ -5,7 +5,7 @@ import { DashboardView } from "./DashboardView";
 
 export const DASHBOARD_VIEW = "dashboard-view";
 
-export class CRMDashboardViewWrapper extends ItemView {
+export class MondoDashboardViewWrapper extends ItemView {
   private root: Root | null = null;
   private iconName: string;
 
@@ -18,7 +18,7 @@ export class CRMDashboardViewWrapper extends ItemView {
     return DASHBOARD_VIEW;
   }
   getDisplayText() {
-    return "CRM Dashboard";
+    return "Mondo Dashboard";
   }
   getIcon(): string {
     return this.iconName;

@@ -1,5 +1,5 @@
 import { moment, Setting } from "obsidian";
-import type CRM from "@/main";
+import type Mondo from "@/main";
 import {
   DEFAULT_TIMESTAMP_SETTINGS,
   buildTimestampFromMoment,
@@ -10,7 +10,7 @@ import type momentModule from "moment";
 import { createSettingsSection } from "./SettingsView_utils";
 
 interface SettingsTimestampsProps {
-  plugin: CRM;
+  plugin: Mondo;
   containerEl: HTMLElement;
 }
 

@@ -1,8 +1,8 @@
-import type { CRMEntityListRow } from "@/views/entity-panel-view/useEntityPanels";
-import { CRMFileLink } from "../../CRMFileLink";
+import type { MondoEntityListRow } from "@/views/entity-panel-view/useEntityPanels";
+import { MondoFileLink } from "../../MondoFileLink";
 
 type EntityTitleCellProps = {
-  row: CRMEntityListRow;
+  row: MondoEntityListRow;
   value: unknown;
   column: string;
 };
@@ -11,5 +11,5 @@ export const EntityTitleCell = ({ row, value }: EntityTitleCellProps) => {
   const label =
     typeof value === "string" && value.trim().length > 0 ? value : row.label;
 
-  return <CRMFileLink path={row.path} label={String(label)} />;
+  return <MondoFileLink path={row.path} label={String(label)} />;
 };

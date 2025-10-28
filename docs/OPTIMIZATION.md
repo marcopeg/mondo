@@ -1,44 +1,44 @@
-# CRM File Manager Optimization
+# Mondo File Manager Optimization
 
 ## Overview
 
-The original `useFiles()` hook was hitting the filesystem on every usage and performing filtering each time, which was inefficient when multiple components needed to access CRM files simultaneously (e.g., both sidebar and main panel).
+The original `useFiles()` hook was hitting the filesystem on every usage and performing filtering each time, which was inefficient when multiple components needed to access Mondo files simultaneously (e.g., both sidebar and main panel).
 
 ## Solution
 
 I've implemented a singleton-based file management system that provides the following optimizations:
 
-### 1. **Singleton CRM File Manager** (`src/utils/CRMFileManager.ts`)
+### 1. **Singleton Mondo File Manager** (`src/utils/MondoFileManager.ts`)
 
-- **Single source of truth**: Maintains an in-memory cache of all CRM files
+- **Single source of truth**: Maintains an in-memory cache of all Mondo files
 - **Event-driven updates**: Listens to filesystem changes and updates cache automatically
 - **Efficient filtering**: Pre-categorizes files by type during scanning
 - **Memory optimization**: Only scans once, then reuses cached data
 
-### 2. **CRM File Types** (`src/types/CRMFileType.ts`)
+### 2. **Mondo File Types** (`src/types/MondoFileType.ts`)
 
-- **Type safety**: Enum defining all valid CRM file types
+- **Type safety**: Enum defining all valid Mondo file types
 - **Extensible**: Easy to add new types (currently: person, company, project, idea, team)
 - **Type guards**: Runtime validation of file types
 
 ### 3. **Optimized Hooks**
 
-#### `useCRMFiles()` (`src/hooks/use-crm-files.ts`)
+#### `useMondoFiles()` (`src/hooks/use-mondo-files.ts`)
 
-- Uses the singleton file manager for CRM file types
+- Uses the singleton file manager for Mondo file types
 - Subscribes to change events for reactive updates
 - Maintains the same API as the original hook
 
 #### Updated `useFiles()` (`src/hooks/use-files.ts`)
 
 - **Backward compatible**: Existing code works without changes
-- **Smart routing**: CRM types use optimized path, others use legacy path
-- **Performance**: Zero filesystem hits for CRM types after initial scan
+- **Smart routing**: Mondo types use optimized path, others use legacy path
+- **Performance**: Zero filesystem hits for Mondo types after initial scan
 
 ### 4. **Plugin Integration**
 
 - **Lifecycle management**: File manager initializes on plugin load, cleans up on unload
-- **Settings support**: All CRM file types included in settings panel
+- **Settings support**: All Mondo file types included in settings panel
 - **Event handling**: Proper cleanup of event listeners to prevent memory leaks
 
 ## Performance Benefits
@@ -72,10 +72,10 @@ const people = useFiles("person", {
 
 ```
 ┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
-│   useFiles()    │    │ CRMFileManager   │    │  Obsidian FS    │
+│   useFiles()    │    │ MondoFileManager   │    │  Obsidian FS    │
 │                 │    │   (Singleton)    │    │     Events      │
 ├─────────────────┤    ├──────────────────┤    ├─────────────────┤
-│ • CRM types     │───▶│ • In-memory      │◀───│ • file changes  │
+│ • Mondo types     │───▶│ • In-memory      │◀───│ • file changes  │
 │   use optimized │    │   cache          │    │ • metadata      │
 │ • Other types   │    │ • Event listeners│    │   updates       │
 │   use legacy    │    │ • Change events  │    │                 │
@@ -96,12 +96,12 @@ const people = useFiles("person", {
 ```
 src/
 ├── types/
-│   ├── CRMFileType.ts          # Enum and type guards
+│   ├── MondoFileType.ts          # Enum and type guards
 │   └── TCachedFile.ts          # Existing cached file type
 ├── utils/
-│   └── CRMFileManager.ts       # Singleton file manager
+│   └── MondoFileManager.ts       # Singleton file manager
 ├── hooks/
-│   ├── use-crm-files.ts        # Optimized hook for CRM types
+│   ├── use-mondo-files.ts        # Optimized hook for Mondo types
 │   └── use-files.ts            # Updated to route to optimized path
 └── main.ts                     # Plugin lifecycle integration
 ```
@@ -109,7 +109,7 @@ src/
 ## Benefits Summary
 
 1. **Performance**: Dramatic reduction in filesystem access
-2. **Scalability**: Adding more CRM file types has minimal overhead
+2. **Scalability**: Adding more Mondo file types has minimal overhead
 3. **Consistency**: All components see the same data simultaneously
 4. **Reactivity**: Changes propagate instantly to all consumers
 5. **Memory**: Efficient caching with proper cleanup

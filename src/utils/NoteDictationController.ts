@@ -136,7 +136,7 @@ export class NoteDictationController {
     try {
       this.mediaRecorder.stop();
     } catch (error) {
-      console.error("CRM: failed to stop recorder", error);
+      console.error("Mondo: failed to stop recorder", error);
       this.cleanupRecording();
       this.setState({
         status: "error",
@@ -150,7 +150,7 @@ export class NoteDictationController {
       try {
         this.mediaRecorder?.stop();
       } catch (error) {
-        console.error("CRM: failed to stop recorder during reset", error);
+        console.error("Mondo: failed to stop recorder during reset", error);
       }
     }
     this.cleanupRecording();
@@ -180,7 +180,7 @@ export class NoteDictationController {
       try {
         listener(snapshot);
       } catch (error) {
-        console.error("CRM: dictation listener failed", error);
+        console.error("Mondo: dictation listener failed", error);
       }
     });
   };
@@ -205,7 +205,7 @@ export class NoteDictationController {
       try {
         recorder.stream.getTracks().forEach((track) => track.stop());
       } catch (error) {
-        console.error("CRM: failed to stop recorder tracks", error);
+        console.error("Mondo: failed to stop recorder tracks", error);
       }
     }
 
@@ -214,7 +214,7 @@ export class NoteDictationController {
       try {
         stream.getTracks().forEach((track) => track.stop());
       } catch (error) {
-        console.error("CRM: failed to stop media stream", error);
+        console.error("Mondo: failed to stop media stream", error);
       }
     }
 
@@ -227,7 +227,7 @@ export class NoteDictationController {
       try {
         analyser.disconnect();
       } catch (error) {
-        console.error("CRM: failed to disconnect analyser", error);
+        console.error("Mondo: failed to disconnect analyser", error);
       }
     }
     this.analyser = null;
@@ -237,7 +237,7 @@ export class NoteDictationController {
       try {
         void audioContext.close();
       } catch (error) {
-        console.error("CRM: failed to close audio context", error);
+        console.error("Mondo: failed to close audio context", error);
       }
     }
     this.audioContext = null;
@@ -287,7 +287,7 @@ export class NoteDictationController {
 
       this.updateLevels();
     } catch (error) {
-      console.error("CRM: failed to initialize visualizer", error);
+      console.error("Mondo: failed to initialize visualizer", error);
       this.resetVisualizer();
     }
   };
@@ -330,7 +330,7 @@ export class NoteDictationController {
         return;
       }
 
-      console.error("CRM: voice submission failed", error);
+      console.error("Mondo: voice submission failed", error);
       this.setState({
         status: "error",
         errorMessage:

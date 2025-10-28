@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { useFiles } from "@/hooks/use-files";
 import { useApp } from "@/hooks/use-app";
-import { DAILY_NOTE_TYPE, LEGACY_DAILY_NOTE_TYPE } from "@/types/CRMFileType";
+import { DAILY_NOTE_TYPE, LEGACY_DAILY_NOTE_TYPE } from "@/types/MondoFileType";
 import type { TCachedFile } from "@/types/TCachedFile";
 import {
   extractDailyLinkReferences,

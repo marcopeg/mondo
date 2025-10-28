@@ -64,20 +64,20 @@ export const Button: React.FC<ButtonProps> = ({
   const isPressed = pressed === true;
   const baseClasses = isLinkVariant
     ? [
-        "crm-button-link",
+        "mondo-button-link",
         fullWidth ? "flex" : "inline-flex",
         // When a tone is provided, avoid Tailwind text utilities that override color; use currentColor instead
         tone === "default"
           ? "items-center gap-1 bg-transparent border-0 p-0 m-0 text-left text-[var(--text-normal)] hover:text-[var(--interactive-accent)]"
           : "items-center gap-1 bg-transparent border-0 p-0 m-0 text-left text-current hover:text-current",
       ]
-    : ["crm-button"];
+    : ["mondo-button"];
 
   if (fullWidth) {
     baseClasses.push("w-full");
   }
 
-  const classes = [...baseClasses, className, isPressed ? "crm-button--pressed" : null]
+  const classes = [...baseClasses, className, isPressed ? "mondo-button--pressed" : null]
     .filter(Boolean)
     .join(" ");
 

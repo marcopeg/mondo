@@ -9,7 +9,7 @@ import {
   type Editor,
   type EditorPosition,
 } from "obsidian";
-import type CRM from "@/main";
+import type Mondo from "@/main";
 import VoiceFabButton from "@/components/VoiceFabButton";
 import NoteDictationController, {
   type DictationState,
@@ -17,7 +17,7 @@ import NoteDictationController, {
 import VoiceTranscriptionService from "@/utils/VoiceTranscriptionService";
 import TranscriptionOverlay from "@/utils/TranscriptionOverlay";
 import {
-  CRM_DICTATION_ICON_ID,
+  MONDO_DICTATION_ICON_ID,
   registerDictationIcon,
 } from "@/utils/registerDictationIcon";
 
@@ -33,7 +33,7 @@ type RecordingContext = {
 };
 
 export class NoteDictationManager {
-  private readonly plugin: CRM;
+  private readonly plugin: Mondo;
   private readonly transcriptionService: VoiceTranscriptionService;
   private container: HTMLElement | null = null;
   private root: Root | null = null;
@@ -63,7 +63,7 @@ export class NoteDictationManager {
   private lastDictationStatus: DictationState["status"] = "idle";
   private cancellationNotice: Notice | null = null;
 
-  constructor(plugin: CRM) {
+  constructor(plugin: Mondo) {
     this.plugin = plugin;
     this.transcriptionService = new VoiceTranscriptionService(plugin);
     registerDictationIcon();
@@ -75,7 +75,7 @@ export class NoteDictationManager {
     }
 
     const container = document.createElement("div");
-    container.className = "crm-voice-fab-container";
+    container.className = "mondo-voice-fab-container";
     document.body.appendChild(container);
 
     this.container = container;
@@ -165,7 +165,7 @@ export class NoteDictationManager {
     const apiKey = this.getApiKey();
 
     const tooltip = !apiKey
-      ? "Set your OpenAI API key in the CRM settings."
+      ? "Set your OpenAI API key in the Mondo settings."
       : undefined;
 
     this.container.style.display = visible ? "block" : "none";
@@ -225,7 +225,7 @@ export class NoteDictationManager {
     }
 
     if (!apiKey) {
-      throw new Error("Set your OpenAI API key in the CRM settings.");
+      throw new Error("Set your OpenAI API key in the Mondo settings.");
     }
 
     this.processingNotice?.hide();
@@ -253,13 +253,13 @@ export class NoteDictationManager {
         (error instanceof DOMException && error.name === "AbortError");
 
       if (isAbortError) {
-        console.info("CRM: voice transcription aborted by user.");
+        console.info("Mondo: voice transcription aborted by user.");
         throw new Error("Transcription canceled.");
       }
 
       const message =
         normalizedError.message?.trim() || "Failed to process voice note.";
-      console.error("CRM: failed to process voice note", error);
+      console.error("Mondo: failed to process voice note", error);
       new Notice(`Voice note failed: ${message}`);
       throw new Error(message);
     } finally {
@@ -350,16 +350,16 @@ export class NoteDictationManager {
 
     const button = document.createElement("button");
     button.type = "button";
-    button.className = "crm-mobile-toolbar-button crm-dictation-toolbar-button";
+    button.className = "mondo-mobile-toolbar-button mondo-dictation-toolbar-button";
     button.addEventListener("click", this.handleToolbarClick);
 
     const icon = document.createElement("span");
-    icon.className = "crm-mobile-toolbar-button__icon";
+    icon.className = "mondo-mobile-toolbar-button__icon";
     button.appendChild(icon);
-    setIcon(icon, CRM_DICTATION_ICON_ID);
+    setIcon(icon, MONDO_DICTATION_ICON_ID);
 
     const label = document.createElement("span");
-    label.className = "crm-mobile-toolbar-button__label";
+    label.className = "mondo-mobile-toolbar-button__label";
     label.textContent = "Start dictation";
     button.appendChild(label);
 
@@ -423,15 +423,15 @@ export class NoteDictationManager {
     const isSuccess = state.status === "success";
 
     button.classList.toggle(
-      "crm-dictation-toolbar-button--recording",
+      "mondo-dictation-toolbar-button--recording",
       isRecording
     );
     button.classList.toggle(
-      "crm-dictation-toolbar-button--processing",
+      "mondo-dictation-toolbar-button--processing",
       isProcessing
     );
-    button.classList.toggle("crm-dictation-toolbar-button--error", isError);
-    button.classList.toggle("crm-dictation-toolbar-button--success", isSuccess);
+    button.classList.toggle("mondo-dictation-toolbar-button--error", isError);
+    button.classList.toggle("mondo-dictation-toolbar-button--success", isSuccess);
     button.setAttribute("aria-pressed", isRecording ? "true" : "false");
     button.disabled = this.toolbarDisabled || isProcessing;
 
@@ -440,9 +440,9 @@ export class NoteDictationManager {
       const iconName = this.resolveIconName(state.status);
       setIcon(icon, iconName);
       if (isProcessing) {
-        icon.classList.add("crm-voice-fab-icon--spin");
+        icon.classList.add("mondo-voice-fab-icon--spin");
       } else {
-        icon.classList.remove("crm-voice-fab-icon--spin");
+        icon.classList.remove("mondo-voice-fab-icon--spin");
       }
     }
 
@@ -479,7 +479,7 @@ export class NoteDictationManager {
     if (status === "error") {
       return "alert-circle";
     }
-    return CRM_DICTATION_ICON_ID;
+    return MONDO_DICTATION_ICON_ID;
   };
 
   activateMobileToolbar = () => {
@@ -536,7 +536,7 @@ export class NoteDictationManager {
   private mountOverlayContainer = () => {
     const overlay = this.ensureOverlay();
     const container = overlay.ensureContainer({
-      className: "crm-transcription-stage",
+      className: "mondo-transcription-stage",
     });
     container.replaceChildren();
     this.overlayContainer = container;
@@ -669,31 +669,31 @@ export class NoteDictationManager {
 
     const container = this.mountOverlayContainer();
     const card = container.createDiv({
-      cls: "crm-transcription-stage__card",
+      cls: "mondo-transcription-stage__card",
     });
 
     card.createDiv({
-      cls: "crm-transcription-stage__message",
+      cls: "mondo-transcription-stage__message",
       text: "Speak naturally",
     });
 
     const timerEl = card.createDiv({
-      cls: "crm-transcription-stage__timer",
+      cls: "mondo-transcription-stage__timer",
       text: this.formatElapsedDuration(0),
     });
     this.overlayRecordingElapsedEl = timerEl;
 
     card.createDiv({
-      cls: "crm-transcription-stage__hint",
+      cls: "mondo-transcription-stage__hint",
       text: "Tap when you’re ready to transcribe.",
     });
 
     const actions = card.createDiv({
-      cls: "crm-transcription-stage__actions",
+      cls: "mondo-transcription-stage__actions",
     });
 
     const startButton = actions.createEl("button", {
-      cls: "crm-transcription-stage__button crm-transcription-stage__button--primary mod-cta",
+      cls: "mondo-transcription-stage__button mondo-transcription-stage__button--primary mod-cta",
       text: "Start Transcription",
     });
     startButton.type = "button";
@@ -702,13 +702,13 @@ export class NoteDictationManager {
         return;
       }
       startButton.disabled = true;
-      startButton.classList.add("crm-transcription-stage__button--pending");
+      startButton.classList.add("mondo-transcription-stage__button--pending");
       startButton.textContent = "Starting…";
       this.startTranscriptionFromOverlay();
     });
 
     const cancelButton = actions.createEl("button", {
-      cls: "crm-transcription-stage__button crm-transcription-stage__button--secondary",
+      cls: "mondo-transcription-stage__button mondo-transcription-stage__button--secondary",
       text: "Cancel",
     });
     cancelButton.type = "button";
@@ -734,25 +734,25 @@ export class NoteDictationManager {
 
     const container = this.mountOverlayContainer();
     const card = container.createDiv({
-      cls: "crm-transcription-stage__card crm-transcription-stage__card--processing",
+      cls: "mondo-transcription-stage__card mondo-transcription-stage__card--processing",
     });
 
     card.createDiv({
-      cls: "crm-transcription-stage__message",
+      cls: "mondo-transcription-stage__message",
       text: "Transcribing your note…",
     });
 
     const estimateEl = card.createDiv({
-      cls: "crm-transcription-stage__estimate",
+      cls: "mondo-transcription-stage__estimate",
     });
     this.overlayProcessingEstimateEl = estimateEl;
 
     const actions = card.createDiv({
-      cls: "crm-transcription-stage__actions crm-transcription-stage__actions--inline",
+      cls: "mondo-transcription-stage__actions mondo-transcription-stage__actions--inline",
     });
 
     const cancelButton = actions.createEl("button", {
-      cls: "crm-transcription-stage__button crm-transcription-stage__button--secondary",
+      cls: "mondo-transcription-stage__button mondo-transcription-stage__button--secondary",
       text: "Cancel",
     });
     cancelButton.type = "button";
@@ -891,7 +891,7 @@ export class NoteDictationManager {
         this.plugin.app.workspace.setActiveLeaf(view.leaf, { focus: true });
       }
     } catch (error) {
-      console.error("CRM: failed to focus active leaf", error);
+      console.error("Mondo: failed to focus active leaf", error);
     }
   };
 }

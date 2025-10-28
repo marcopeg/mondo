@@ -1,5 +1,5 @@
-import type CRM from "@/main";
-import { DAILY_NOTE_TYPE, isDailyNoteType } from "@/types/CRMFileType";
+import type Mondo from "@/main";
+import { DAILY_NOTE_TYPE, isDailyNoteType } from "@/types/MondoFileType";
 import type { App, CachedMetadata, TAbstractFile } from "obsidian";
 import { TFile } from "obsidian";
 
@@ -49,7 +49,7 @@ type LinkRecord = {
 const DATE_IN_TITLE_REGEX = /(\d{4})[-/](\d{2})[-/](\d{2})/;
 
 export class DailyNoteTracker {
-  private readonly plugin: CRM;
+  private readonly plugin: Mondo;
 
   private readonly dailyNoteCache = new Map<string, string>();
 
@@ -57,7 +57,7 @@ export class DailyNoteTracker {
 
   private readonly pendingModifyPaths = new Set<string>();
 
-  constructor(plugin: CRM) {
+  constructor(plugin: Mondo) {
     this.plugin = plugin;
   }
 
@@ -327,7 +327,7 @@ export class DailyNoteTracker {
       "---",
       `type: ${DAILY_NOTE_TYPE}`,
       `date: ${dateKey}`,
-      "crmState:",
+      "mondoState:",
       "  created: []",
       "  changed: []",
       "  opened: []",
@@ -393,11 +393,11 @@ export class DailyNoteTracker {
   private ensureDailyNoteState = (
     frontmatter: Record<string, unknown>
   ): DailyNoteState => {
-    if (!this.isPlainObject(frontmatter.crmState)) {
-      frontmatter.crmState = {};
+    if (!this.isPlainObject(frontmatter.mondoState)) {
+      frontmatter.mondoState = {};
     }
 
-    const state = frontmatter.crmState as Record<string, unknown> & {
+    const state = frontmatter.mondoState as Record<string, unknown> & {
       created?: unknown;
       changed?: unknown;
       opened?: unknown;

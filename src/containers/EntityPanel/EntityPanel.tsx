@@ -4,10 +4,10 @@ import { EntityHeader } from "@/containers/EntityHeader";
 import { EntityLinks } from "@/containers/EntityLinks";
 import DailyNoteLinks from "@/containers/DailyNoteLinks";
 import {
-  isCRMEntityType,
-  isCRMFileType,
+  isMondoEntityType,
+  isMondoFileType,
   isDailyNoteType,
-} from "@/types/CRMFileType";
+} from "@/types/MondoFileType";
 
 const normalizeType = (rawType: unknown): string | null => {
   if (typeof rawType !== "string") {
@@ -37,12 +37,12 @@ export const EntityPanel = () => {
       } as const;
     }
 
-    const entity = isCRMEntityType(normalized);
+    const entity = isMondoEntityType(normalized);
     const daily = isDailyNoteType(normalized);
 
     return {
       type: normalized,
-      showHeader: entity || !isCRMFileType(normalized),
+      showHeader: entity || !isMondoFileType(normalized),
       showEntityLinks: entity,
       showDailyLinks: daily,
     } as const;
@@ -62,7 +62,7 @@ export const EntityPanel = () => {
     <div
       ref={containerRef}
       className="flex flex-col gap-2"
-      data-crm-entity-panel-root
+      data-mondo-entity-panel-root
     >
       {showHeader && <EntityHeader containerRef={containerRef} type={type} />}
       {showEntityLinks && <EntityLinks />}

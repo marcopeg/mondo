@@ -2,23 +2,23 @@ import { ItemView, type ViewStateResult, WorkspaceLeaf } from "obsidian";
 import { createRoot, type Root } from "react-dom/client";
 import { AppProvider } from "@/context/AppProvider";
 import { EntityView } from "./EntityView";
-import { CRMFileType, getCRMEntityConfig } from "@/types/CRMFileType";
-import { CRM_ENTITY_TYPES } from "@/entities";
+import { MondoFileType, getMondoEntityConfig } from "@/types/MondoFileType";
+import { MONDO_ENTITY_TYPES } from "@/entities";
 
 export const ENTITY_PANEL_VIEW = "entity-panel-view";
 
-export type CRMEntityPanelViewState = {
-  entityType: CRMFileType;
+export type MondoEntityPanelViewState = {
+  entityType: MondoFileType;
 };
 
-export class CRMEntityPanelViewWrapper extends ItemView {
+export class MondoEntityPanelViewWrapper extends ItemView {
   private root: Root | null = null;
   private iconName: string;
   // Default to the first available entity type from current config to avoid undefined when certain
   // built-in types (like PERSON) are not present in custom configurations.
-  private entityType: CRMFileType = ((): CRMFileType => {
-    const first = CRM_ENTITY_TYPES[0];
-    return (first ?? ("person" as CRMFileType)) as CRMFileType;
+  private entityType: MondoFileType = ((): MondoFileType => {
+    const first = MONDO_ENTITY_TYPES[0];
+    return (first ?? ("person" as MondoFileType)) as MondoFileType;
   })();
 
   constructor(leaf: WorkspaceLeaf, iconName: string) {
@@ -32,7 +32,7 @@ export class CRMEntityPanelViewWrapper extends ItemView {
   }
 
   getDisplayText() {
-    const config = getCRMEntityConfig(this.entityType);
+    const config = getMondoEntityConfig(this.entityType);
     return config?.name ?? this.entityType;
   }
 
@@ -40,12 +40,12 @@ export class CRMEntityPanelViewWrapper extends ItemView {
     return this.iconName;
   }
 
-  getState(): CRMEntityPanelViewState {
+  getState(): MondoEntityPanelViewState {
     return { entityType: this.entityType };
   }
 
   async setState(
-    state: CRMEntityPanelViewState | undefined,
+    state: MondoEntityPanelViewState | undefined,
     result: ViewStateResult
   ): Promise<void> {
     if (state?.entityType) {
@@ -60,7 +60,7 @@ export class CRMEntityPanelViewWrapper extends ItemView {
 
   async onOpen() {
     const { state } = this.leaf.getViewState();
-    const entityState = state as CRMEntityPanelViewState | undefined;
+    const entityState = state as MondoEntityPanelViewState | undefined;
     if (entityState?.entityType) {
       this.entityType = entityState.entityType;
       this.applyEntityConfig(this.entityType);
@@ -71,8 +71,8 @@ export class CRMEntityPanelViewWrapper extends ItemView {
     this.render();
   }
 
-  private applyEntityConfig(entityType: CRMFileType) {
-    const config = getCRMEntityConfig(entityType);
+  private applyEntityConfig(entityType: MondoFileType) {
+    const config = getMondoEntityConfig(entityType);
     if (!config) {
       // Keep the existing iconName when config is missing to avoid flicker/undefined in title bar
       return;

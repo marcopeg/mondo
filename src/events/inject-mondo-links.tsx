@@ -7,8 +7,8 @@ import { EntityPanel } from "@/containers/EntityPanel";
 import type { TCachedFile } from "@/types/TCachedFile";
 import { getLeafFilePath } from "./inject-journal-nav";
 
-const REACT_ROOT = Symbol("__crm_react_root");
-const INJECT_CLASS = "crm-injected-hello";
+const REACT_ROOT = Symbol("__mondo_react_root");
+const INJECT_CLASS = "mondo-injected-hello";
 
 type InjectionRecord = {
   node: HTMLElement;
@@ -68,10 +68,10 @@ const getInsertionTarget = (
 const createInjectionNode = (path: string) => {
   const wrapper = document.createElement("div");
   wrapper.className = INJECT_CLASS;
-  wrapper.setAttribute("data-crm-path", path);
+  wrapper.setAttribute("data-mondo-path", path);
 
   const mount = document.createElement("div");
-  mount.className = "crm-injected-hello-root";
+  mount.className = "mondo-injected-hello-root";
   wrapper.appendChild(mount);
 
   return wrapper;
@@ -102,7 +102,7 @@ const renderReact = (
 
 const unmountAndRemove = (node: HTMLElement) => {
   const mount = node.querySelector(
-    ".crm-injected-hello-root"
+    ".mondo-injected-hello-root"
   ) as HTMLElement | null;
   if (mount) {
     try {
@@ -173,12 +173,12 @@ const ensureInjectionForLeaf = (
 
     if (record.path !== path) {
       record.path = path;
-      record.node.setAttribute("data-crm-path", path);
+      record.node.setAttribute("data-mondo-path", path);
     }
   }
 
   const mount = record.node.querySelector(
-    ".crm-injected-hello-root"
+    ".mondo-injected-hello-root"
   ) as HTMLElement | null;
   if (mount) {
     renderReact(mount, plugin, path, EntityPanel);
@@ -194,7 +194,7 @@ const cleanupMissingLeaves = (seenLeafIds: Set<string>) => {
   }
 };
 
-export const injectCRMLinks =
+export const injectMondoLinks =
   (plugin: Plugin) => (_leaf: WorkspaceLeaf | null) => {
     const leaves = plugin.app.workspace.getLeavesOfType(
       "markdown"
@@ -211,7 +211,7 @@ export const injectCRMLinks =
     cleanupMissingLeaves(seen);
   };
 
-export const disposeCRMLinkInjections = () => {
+export const disposeMondoLinkInjections = () => {
   for (const [, record] of injections) {
     unmountAndRemove(record.node);
   }
