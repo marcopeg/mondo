@@ -428,6 +428,125 @@ export class SettingsView extends PluginSettingTab {
       }
     }
 
+    const addSelfPersonSetting = (container: HTMLElement) => {
+      const storedSelfPath = (
+        (this.plugin as any).settings?.selfPersonPath?.toString?.() ?? ""
+      ).trim();
+
+      const selfSetting = new Setting(container)
+        .setName("Who's me?")
+        .setDesc(
+          'Pick a person that will be used to mean "myself" in the CRM.'
+        );
+
+      selfSetting.addSearch((search) => {
+        const applyStoredValue = (value: string) => {
+          try {
+            search.setValue(value);
+          } catch (error) {
+            search.inputEl.value = value;
+            search.inputEl.dispatchEvent(new Event("input", { bubbles: true }));
+            search.inputEl.dispatchEvent(
+              new Event("change", { bubbles: true })
+            );
+          }
+        };
+
+        const persistSelfPersonPath = async (path: string) => {
+          const normalized = path.trim();
+          if ((this.plugin as any).settings.selfPersonPath !== normalized) {
+            (this.plugin as any).settings.selfPersonPath = normalized;
+            await (this.plugin as any).saveSettings();
+          }
+        };
+
+        const applyPersonSelection = async (entry: PersonEntry) => {
+          if (search.inputEl.value !== entry.path) {
+            applyStoredValue(entry.path);
+          }
+          await persistSelfPersonPath(entry.path);
+        };
+
+        const clearSelfPerson = async () => {
+          if ((this.plugin as any).settings.selfPersonPath) {
+            (this.plugin as any).settings.selfPersonPath = "";
+            await (this.plugin as any).saveSettings();
+          }
+        };
+
+        search
+          .setPlaceholder("Select a person note…")
+          .setValue(storedSelfPath)
+          .onChange(async (value) => {
+            const trimmed = value.trim();
+            if (!trimmed) {
+              await clearSelfPerson();
+              return;
+            }
+
+            const entry = findPersonEntry(trimmed);
+            if (!entry) {
+              return;
+            }
+
+            await applyPersonSelection(entry);
+          });
+
+        const buttonEl = (search as any).buttonEl as
+          | HTMLButtonElement
+          | undefined;
+        if (buttonEl) {
+          buttonEl.setAttribute("aria-label", "Select a person note");
+          buttonEl.setAttribute("title", "Select a person note");
+          buttonEl.onclick = (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            const modal = new PersonPickerModal(
+              this.app,
+              collectPersonEntries,
+              async (entry) => {
+                await applyPersonSelection(entry);
+              }
+            );
+            modal.open();
+            return false;
+          };
+        }
+
+        try {
+          const suggest = new PersonSuggest(
+            this.app,
+            search.inputEl as HTMLInputElement,
+            collectPersonEntries,
+            async (entry) => {
+              await applyPersonSelection(entry);
+            }
+          );
+          (this as any)._suggesters = (this as any)._suggesters || [];
+          (this as any)._suggesters.push(suggest);
+        } catch (error) {
+          // Suggest is unavailable (e.g. tests); ignore.
+        }
+
+        try {
+          const clearButton = (search as any).clearButtonEl as
+            | HTMLButtonElement
+            | undefined;
+          if (clearButton) {
+            clearButton.onclick = async (event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              search.setValue("");
+              await clearSelfPerson();
+              return false;
+            };
+          }
+        } catch (error) {
+          // Ignore issues while wiring the clear button.
+        }
+      });
+    };
+
     const addFolderSetting = (
       container: HTMLElement | (() => Setting),
       name: string,
@@ -504,19 +623,31 @@ export class SettingsView extends PluginSettingTab {
       };
     };
 
-    // Custom configuration header (title + description only)
-    const customConfigSetting = new Setting(containerEl)
-      .setName("Custom CRM configuration (JSON)")
-      .setDesc(
-        "Paste JSON here to override the built-in CRM configuration. Leave empty to use defaults."
-      );
-    // Clear the control slot so our block can appear full-width below
-    try {
-      customConfigSetting.controlEl.empty?.();
-    } catch (_) {}
+    // General settings section (first block) - create in separate container
+    const generalSectionContainer = containerEl.createDiv();
+    const generalSection = createSettingsSection(
+      generalSectionContainer,
+      "General",
+      "General settings for the CRM"
+    );
+
+    addSelfPersonSetting(generalSection.element);
+
+    // Add visual separator between General and next section
+    containerEl.createEl("hr", {
+      cls: "crm-settings-section-separator",
+    });
+
+    // Custom CRM Configuration section
+    const customConfigContainer = containerEl.createDiv();
+    const customConfigSection = createSettingsSection(
+      customConfigContainer,
+      "Custom CRM configuration",
+      "Paste JSON here to override the built-in CRM configuration. Leave empty to use defaults."
+    );
 
     // Full-width block under the setting for textarea + actions
-    const configBlock = containerEl.createDiv();
+    const configBlock = customConfigContainer.createDiv();
     configBlock.style.width = "100%";
     configBlock.style.background = "var(--background-secondary)";
     configBlock.style.border = "1px solid var(--background-modifier-border)";
@@ -723,125 +854,6 @@ export class SettingsView extends PluginSettingTab {
       label: cfg.name ?? cfg.type,
     }));
 
-    const addSelfPersonSetting = (container: HTMLElement) => {
-      const storedSelfPath = (
-        (this.plugin as any).settings?.selfPersonPath?.toString?.() ?? ""
-      ).trim();
-
-      const selfSetting = new Setting(container)
-        .setName("Who's me?")
-        .setDesc(
-          'Pick a person that will be used to mean "myself" in the CRM.'
-        );
-
-      selfSetting.addSearch((search) => {
-        const applyStoredValue = (value: string) => {
-          try {
-            search.setValue(value);
-          } catch (error) {
-            search.inputEl.value = value;
-            search.inputEl.dispatchEvent(new Event("input", { bubbles: true }));
-            search.inputEl.dispatchEvent(
-              new Event("change", { bubbles: true })
-            );
-          }
-        };
-
-        const persistSelfPersonPath = async (path: string) => {
-          const normalized = path.trim();
-          if ((this.plugin as any).settings.selfPersonPath !== normalized) {
-            (this.plugin as any).settings.selfPersonPath = normalized;
-            await (this.plugin as any).saveSettings();
-          }
-        };
-
-        const applyPersonSelection = async (entry: PersonEntry) => {
-          if (search.inputEl.value !== entry.path) {
-            applyStoredValue(entry.path);
-          }
-          await persistSelfPersonPath(entry.path);
-        };
-
-        const clearSelfPerson = async () => {
-          if ((this.plugin as any).settings.selfPersonPath) {
-            (this.plugin as any).settings.selfPersonPath = "";
-            await (this.plugin as any).saveSettings();
-          }
-        };
-
-        search
-          .setPlaceholder("Select a person note…")
-          .setValue(storedSelfPath)
-          .onChange(async (value) => {
-            const trimmed = value.trim();
-            if (!trimmed) {
-              await clearSelfPerson();
-              return;
-            }
-
-            const entry = findPersonEntry(trimmed);
-            if (!entry) {
-              return;
-            }
-
-            await applyPersonSelection(entry);
-          });
-
-        const buttonEl = (search as any).buttonEl as
-          | HTMLButtonElement
-          | undefined;
-        if (buttonEl) {
-          buttonEl.setAttribute("aria-label", "Select a person note");
-          buttonEl.setAttribute("title", "Select a person note");
-          buttonEl.onclick = (event) => {
-            event.preventDefault();
-            event.stopPropagation();
-            const modal = new PersonPickerModal(
-              this.app,
-              collectPersonEntries,
-              async (entry) => {
-                await applyPersonSelection(entry);
-              }
-            );
-            modal.open();
-            return false;
-          };
-        }
-
-        try {
-          const suggest = new PersonSuggest(
-            this.app,
-            search.inputEl as HTMLInputElement,
-            collectPersonEntries,
-            async (entry) => {
-              await applyPersonSelection(entry);
-            }
-          );
-          (this as any)._suggesters = (this as any)._suggesters || [];
-          (this as any)._suggesters.push(suggest);
-        } catch (error) {
-          // Suggest is unavailable (e.g. tests); ignore.
-        }
-
-        try {
-          const clearButton = (search as any).clearButtonEl as
-            | HTMLButtonElement
-            | undefined;
-          if (clearButton) {
-            clearButton.onclick = async (event) => {
-              event.preventDefault();
-              event.stopPropagation();
-              search.setValue("");
-              await clearSelfPerson();
-              return false;
-            };
-          }
-        } catch (error) {
-          // Ignore issues while wiring the clear button.
-        }
-      });
-    };
-
     // Render Entities section only if there are configured entities
     if (entityDefinitions.length > 0) {
       const entitiesToggleContainer = containerEl.createDiv(
@@ -994,10 +1006,6 @@ export class SettingsView extends PluginSettingTab {
               // ignore suggest attachment issues
             }
           });
-
-        if (type === "person") {
-          addSelfPersonSetting(section);
-        }
       }
 
       // Add separator inside the entities content div so it only shows when expanded
