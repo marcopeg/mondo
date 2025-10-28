@@ -83,9 +83,6 @@ import {
 import { getTemplateForType, renderTemplate } from "@/utils/CRMTemplates";
 import { slugify, focusAndSelectTitle } from "@/utils/createLinkedNoteHelpers";
 
-// Dev purposes: set to true to always focus on dashboard on startup
-const focusOnDashboard = false;
-
 const CRM_ICON = "anchor";
 
 type PanelOpenOptions = {
@@ -110,6 +107,13 @@ export default class CRM extends Plugin {
     crmConfigJson: "",
     crmConfigNotePath: "", // deprecated; no longer used
     timestamp: DEFAULT_TIMESTAMP_SETTINGS,
+    dashboard: {
+      openAtBoot: false,
+      forceTab: false,
+      enableQuickTasks: true,
+      enableRelevantNotes: true,
+      enableStats: true,
+    },
   };
 
   private hasFocusedDashboardOnStartup = false;
@@ -221,6 +225,16 @@ export default class CRM extends Plugin {
     this.settings.timestamp = normalizeTimestampSettings(
       this.settings.timestamp
     );
+
+    const dashboardSettings = this.settings.dashboard ?? {};
+    this.settings.dashboard = {
+      openAtBoot: dashboardSettings.openAtBoot === true,
+      forceTab: dashboardSettings.forceTab === true,
+      enableQuickTasks: dashboardSettings.enableQuickTasks !== false,
+      enableRelevantNotes:
+        dashboardSettings.enableRelevantNotes !== false,
+      enableStats: dashboardSettings.enableStats !== false,
+    };
   }
 
   async saveSettings() {
@@ -966,8 +980,13 @@ export default class CRM extends Plugin {
     const ws = this.app.workspace;
 
     const hasAnyNote = ws.getLeavesOfType("markdown").length > 0;
+    const forceDashboardTab = Boolean(this.settings?.dashboard?.forceTab);
 
     if (!hasAnyNote) {
+      if (!forceDashboardTab) {
+        return;
+      }
+
       const dashboardOpen = ws.getLeavesOfType(DASHBOARD_VIEW).length > 0;
       if (!dashboardOpen) {
         await this.showPanel(DASHBOARD_VIEW, "main");
@@ -1015,7 +1034,7 @@ export default class CRM extends Plugin {
   }
 
   private async focusDashboardOnStartup() {
-    if (!focusOnDashboard) return;
+    if (!this.settings?.dashboard?.openAtBoot) return;
     if (this.hasFocusedDashboardOnStartup) return;
     this.hasFocusedDashboardOnStartup = true;
     await this.showPanel(DASHBOARD_VIEW, "main");
