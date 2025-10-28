@@ -104,6 +104,7 @@ export default class Mondo extends Plugin {
     openAITranscriptionPolishEnabled: true,
     voiceoverCachePath: "/voiceover",
     selfPersonPath: "",
+    includeFrontmatterInChatGPT: false,
     mondoConfigJson: "",
     mondoConfigNotePath: "", // deprecated; no longer used
     timestamp: DEFAULT_TIMESTAMP_SETTINGS,
@@ -210,6 +211,9 @@ export default class Mondo extends Plugin {
     } else {
       this.settings.selfPersonPath = "";
     }
+
+    this.settings.includeFrontmatterInChatGPT =
+      this.settings.includeFrontmatterInChatGPT === true;
 
     // Normalize settings-based custom JSON configuration (textarea)
     const customJson = this.settings.mondoConfigJson;
@@ -460,7 +464,11 @@ export default class Mondo extends Plugin {
             ? context
             : this.app.workspace.getActiveViewOfType(MarkdownView);
 
-        void sendToChatGPT(this.app, { editor, view: markdownView });
+        void sendToChatGPT(this.app, {
+          editor,
+          view: markdownView,
+          includeFrontmatter: this.settings.includeFrontmatterInChatGPT,
+        });
       },
     });
 

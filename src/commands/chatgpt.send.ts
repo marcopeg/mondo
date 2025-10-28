@@ -2,6 +2,32 @@ import { App, Editor, MarkdownView, Notice, Platform } from "obsidian";
 
 const CHATGPT_BASE_URL = "https://chat.openai.com";
 
+const removeFrontmatter = (content: string): string => {
+  const normalized = content.replace(/\r\n?/g, "\n");
+  const sanitized = normalized.replace(/^\ufeff/, "");
+
+  if (!sanitized.startsWith("---")) {
+    return content;
+  }
+
+  const lines = sanitized.split("\n");
+
+  if (lines[0].trim() !== "---") {
+    return content;
+  }
+
+  for (let index = 1; index < lines.length; index += 1) {
+    const line = lines[index];
+    const trimmed = line.trim();
+
+    if (trimmed === "---" || trimmed === "...") {
+      return lines.slice(index + 1).join("\n");
+    }
+  }
+
+  return content;
+};
+
 type ExecOptions = import("child_process").ExecFileOptions & {
   encoding?: BufferEncoding | null;
 };
@@ -312,7 +338,11 @@ const openChatGPTLink = async (url: string): Promise<boolean> => {
 
 export const sendToChatGPT = async (
   app: App,
-  options: { editor?: Editor; view?: MarkdownView | null } = {}
+  options: {
+    editor?: Editor;
+    view?: MarkdownView | null;
+    includeFrontmatter?: boolean;
+  } = {}
 ): Promise<boolean> => {
   const view = options.view ?? app.workspace.getActiveViewOfType(MarkdownView);
 
@@ -331,6 +361,8 @@ export const sendToChatGPT = async (
   const selection = editor.getSelection();
   let text = selection;
 
+  const includeFrontmatter = options.includeFrontmatter !== false;
+
   if (!text) {
     const file = view.file;
 
@@ -340,14 +372,19 @@ export const sendToChatGPT = async (
     }
 
     text = await app.vault.cachedRead(file);
+
+    if (!includeFrontmatter) {
+      text = removeFrontmatter(text);
+    }
   }
 
-  if (!text.trim()) {
+  const normalizedText = text.replace(/\r\n?/g, "\n");
+  if (!normalizedText.trim()) {
     new Notice("Nothing to send to ChatGPT.");
     return false;
   }
 
-  const url = `${CHATGPT_BASE_URL}?q=${encodeURIComponent(text.trim())}`;
+  const url = `${CHATGPT_BASE_URL}?q=${encodeURIComponent(normalizedText)}`;
   const opened = await openChatGPTLink(url);
 
   if (!opened) {

@@ -288,4 +288,21 @@ export const renderGeneralSection = (props: SettingsGeneralProps): void => {
       // Ignore issues while wiring the clear button.
     }
   });
+
+  new Setting(generalSection.element)
+    .setName("Include Frontmatter in - Send to ChatGPT")
+    .setDesc(
+      "When enabled, the Send to ChatGPT command will include the note frontmatter when no text is selected."
+    )
+    .addToggle((toggle) => {
+      toggle
+        .setValue(
+          ((plugin as any).settings?.includeFrontmatterInChatGPT as boolean) ===
+            true
+        )
+        .onChange(async (value) => {
+          (plugin as any).settings.includeFrontmatterInChatGPT = value;
+          await (plugin as any).saveSettings();
+        });
+    });
 };
