@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo } from "react";
 import type { App } from "obsidian";
 import { Notice } from "obsidian";
-import Button from "@/components/ui/Button";
+import { SplitButton } from "@/components/ui/SplitButton";
 import {
   CRM_ENTITIES,
   CRM_ENTITY_TYPES,
@@ -12,8 +12,9 @@ import type { TCachedFile } from "@/types/TCachedFile";
 const buildEntityOptions = () =>
   CRM_ENTITY_TYPES.map((type) => ({
     type,
-    label: CRM_ENTITIES[type].name,
-    }))
+    label: CRM_ENTITIES[type]?.name ?? type,
+    icon: CRM_ENTITIES[type]?.icon,
+  }))
     .sort((a, b) => a.label.localeCompare(b.label));
 
 type UnknownEntityHeaderProps = {
@@ -22,52 +23,12 @@ type UnknownEntityHeaderProps = {
 };
 
 export const UnknownEntityHeader = ({ app, file }: UnknownEntityHeaderProps) => {
-  const [isOpen, setIsOpen] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
-
   const options = useMemo(buildEntityOptions, []);
-
-  const closeMenu = useCallback(() => setIsOpen(false), []);
-
-  useEffect(() => {
-    if (!isOpen) {
-      return;
-    }
-
-    const handlePointerDown = (event: MouseEvent) => {
-      if (!menuRef.current) {
-        return;
-      }
-
-      if (!menuRef.current.contains(event.target as Node)) {
-        closeMenu();
-      }
-    };
-
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        closeMenu();
-      }
-    };
-
-    window.addEventListener("mousedown", handlePointerDown);
-    window.addEventListener("keydown", handleKeyDown);
-
-    return () => {
-      window.removeEventListener("mousedown", handlePointerDown);
-      window.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [closeMenu, isOpen]);
-
-  const toggleMenu = useCallback(() => {
-    setIsOpen((prev) => !prev);
-  }, []);
 
   const handleSelect = useCallback(
     async (nextType: CRMEntityType) => {
       if (!file?.file) {
         new Notice("Unable to update note type. Please save the note and try again.");
-        closeMenu();
         return;
       }
 
@@ -78,47 +39,34 @@ export const UnknownEntityHeader = ({ app, file }: UnknownEntityHeaderProps) => 
       } catch (error) {
         console.error("UnknownEntityHeader: failed to assign CRM type", error);
         new Notice("Failed to update the note type.");
-      } finally {
-        closeMenu();
       }
     },
-    [app, closeMenu, file?.file]
+    [app, file?.file]
   );
 
-  const buttonClasses = "relative inline-flex";
-  const menuClasses = [
-    "absolute right-0 top-full z-[999] mt-2 min-w-[12rem]",
-    "overflow-hidden rounded-md border border-[var(--background-modifier-border)]",
-    "bg-[var(--background-primary)] shadow-lg",
-  ].join(" ");
+  const secondaryActions = useMemo(
+    () =>
+      options.map((option) => ({
+        label: option.label,
+        icon: option.icon,
+        onSelect: () => {
+          void handleSelect(option.type);
+        },
+      })),
+    [handleSelect, options]
+  );
 
   return (
-    <div ref={menuRef} className={buttonClasses}>
-      <Button
-        type="button"
-        icon="plus"
-        aria-haspopup="menu"
-        aria-expanded={isOpen}
-        onClick={toggleMenu}
-      >
-        Create as CRM Note
-      </Button>
-      {isOpen && (
-        <div role="menu" className={menuClasses}>
-          {options.map((option) => (
-            <button
-              key={option.type}
-              type="button"
-              role="menuitem"
-              className="flex w-full items-center gap-2 px-3 py-2 text-sm text-[var(--text-normal)] hover:bg-[var(--background-modifier-hover)]"
-              onClick={() => handleSelect(option.type)}
-            >
-              {option.label}
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
+    <SplitButton
+      type="button"
+      icon="plus"
+      menuAriaLabel="Select CRM note type"
+      secondaryActions={secondaryActions}
+      primaryOpensMenu
+      disabled={secondaryActions.length === 0}
+    >
+      Create as CRM Note
+    </SplitButton>
   );
 };
 

@@ -14,12 +14,14 @@ type SplitButtonProps = React.ComponentProps<typeof Button> & {
   secondaryActions: SplitButtonAction[];
   toggleClassName?: string;
   menuAriaLabel?: string;
+  primaryOpensMenu?: boolean;
 };
 
 export const SplitButton = ({
   secondaryActions,
   toggleClassName,
   menuAriaLabel = "Open secondary actions",
+  primaryOpensMenu = false,
   disabled,
   fullWidth = false,
   className,
@@ -30,6 +32,8 @@ export const SplitButton = ({
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
+
+  const { onClick, ...restButtonProps } = buttonProps;
 
   const closeMenu = useCallback(() => {
     setIsOpen(false);
@@ -84,6 +88,23 @@ export const SplitButton = ({
     setIsOpen((prev) => !prev);
   }, [menuDisabled]);
 
+  const handlePrimaryClick = useCallback(
+    (event: ReactMouseEvent<HTMLButtonElement>) => {
+      if (primaryOpensMenu) {
+        if (menuDisabled) {
+          event.preventDefault();
+          return;
+        }
+        setIsOpen((prev) => !prev);
+      }
+
+      if (onClick) {
+        onClick(event);
+      }
+    },
+    [menuDisabled, onClick, primaryOpensMenu]
+  );
+
   const handleActionSelect = useCallback(
     (action: SplitButtonAction) =>
       (event: ReactMouseEvent<HTMLButtonElement>) => {
@@ -95,6 +116,13 @@ export const SplitButton = ({
       },
     [closeMenu]
   );
+
+  const primaryAriaProps = primaryOpensMenu
+    ? ({
+        "aria-haspopup": "menu",
+        "aria-expanded": isOpen,
+      } as const)
+    : {};
 
   const containerClasses = [
     "relative inline-flex items-stretch",
@@ -200,11 +228,13 @@ export const SplitButton = ({
   return (
     <div ref={containerRef} className={containerClasses}>
       <Button
-        {...buttonProps}
+        {...restButtonProps}
+        {...primaryAriaProps}
         disabled={disabled}
         className={mainButtonClasses}
         fullWidth={secondaryActions.length === 0 ? fullWidth : false}
         iconClassName={iconClassName}
+        onClick={handlePrimaryClick}
       >
         {children}
       </Button>
