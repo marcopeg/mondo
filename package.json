@@ -5,7 +5,7 @@
   "main": "src/main.ts",
   "scripts": {
     "dev": "concurrently \"node esbuild.config.mjs\" \"npx tailwindcss -i src/styles.css -o styles.css --watch --config tailwind.config.cjs\"",
-    "build": "npx tailwindcss -i src/styles.css -o styles.css --config tailwind.config.cjs --minify && tsc -noEmit -skipLibCheck && node esbuild.config.mjs production",
+    "build": "npx tailwindcss -i src/styles.css -o styles.css --config tailwind.config.cjs --minify && tsc -p tsconfig.build.json -noEmit -skipLibCheck && node esbuild.config.mjs production",
     "version": "node version-bump.mjs && git add manifest.json versions.json",
     "deploy": "yarn build && cp -f main.js styles.css manifest.json \"/Users/marcopeg/Library/Mobile Documents/iCloud~md~obsidian/Documents/Marco/.obsidian/plugins/crm\"",
     "sync": "set -e; SRC=\"/Users/marcopeg/Library/Mobile Documents/iCloud~md~obsidian/Documents/Marco/\"; DEST=\"/Users/marcopeg/dv/MarcoDev\"; find \"$DEST\" -mindepth 1 -maxdepth 1 ! -name '.obsidian' -exec rm -rf {} +; rsync -a --exclude '.obsidian' --exclude '.obsidian/' \"$SRC\" \"$DEST/\"",
