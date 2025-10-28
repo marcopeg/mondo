@@ -2,7 +2,7 @@ import { useEffect, useRef } from "react";
 import { setIcon } from "obsidian";
 
 type IconProps = {
-  name: string;
+  name?: string;
   className?: string;
 };
 
@@ -10,8 +10,14 @@ export const Icon = ({ name, className }: IconProps) => {
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (ref.current) {
-      setIcon(ref.current, name); // e.g. "dice", "building", "star"
+    if (!ref.current) return;
+    // Guard against undefined/empty icon names to avoid runtime errors inside Obsidian's setIcon
+    const safe = typeof name === "string" && name.trim().length > 0;
+    if (safe) {
+      setIcon(ref.current, name!); // e.g. "dice", "building", "star"
+    } else {
+      // Clear any previous icon if name becomes empty/undefined
+      ref.current.innerHTML = "";
     }
   }, [name]);
 

@@ -175,7 +175,12 @@ export class SettingsView extends PluginSettingTab {
     const collectJsonFiles = () =>
       this.app.vault
         .getFiles()
-        .filter((file) => file.extension.toLowerCase() === "json")
+        .filter((file) => {
+          if (file.extension.toLowerCase() !== "json") {
+            return false;
+          }
+          return !file.path.split("/").includes(".obsidian");
+        })
         .sort((first, second) =>
           first.path.localeCompare(second.path, undefined, {
             sensitivity: "base",
@@ -498,137 +503,40 @@ export class SettingsView extends PluginSettingTab {
       };
     };
 
-    const getStoredConfigNotePath = () =>
-      ((this.plugin.settings?.crmConfigNotePath ?? "") as string).trim();
-
-    const updateConfigNotePath = async (path: string | null) => {
-      const normalized = typeof path === "string" ? path.trim() : "";
-      if (getStoredConfigNotePath() === normalized) {
-        return;
-      }
-      await this.plugin.setCRMConfigNotePath(
-        normalized.length > 0 ? normalized : null
-      );
-    };
-
-    const findJsonFileByInput = (input: string): TFile | null => {
-      const trimmed = input.trim();
-      if (!trimmed) {
-        return null;
-      }
-      const candidates = [
-        trimmed,
-        trimmed.endsWith(".json") ? trimmed : `${trimmed}.json`,
-      ].map((value) => value.toLowerCase());
-      const files = collectJsonFiles();
-      return (
-        files.find((file) => candidates.includes(file.path.toLowerCase())) ??
-        null
-      );
-    };
-
-    const configNoteSetting = new Setting(containerEl)
-      .setName("CRM configuration file")
+    // Custom configuration textarea (JSON)
+    const customConfigSetting = new Setting(containerEl)
+      .setName("Custom CRM configuration (JSON)")
       .setDesc(
-        "Pick a JSON file whose contents override the built-in CRM configuration."
+        "Paste JSON here to override the built-in CRM configuration. Leave empty to use defaults."
       );
 
-    configNoteSetting.addSearch((search) => {
-      let syncing = false;
-      const applyValue = (value: string) => {
-        if (syncing) {
-          return;
-        }
-        syncing = true;
-        try {
-          search.setValue(value);
-        } catch (error) {
-          const input = search.inputEl as HTMLInputElement;
-          input.value = value;
-          input.dispatchEvent(new Event("input", { bubbles: true }));
-          input.dispatchEvent(new Event("change", { bubbles: true }));
-        } finally {
-          syncing = false;
-        }
-      };
-
-      applyValue(getStoredConfigNotePath());
-
-      search
-        .setPlaceholder("Select a JSON configuration file…")
-        .onChange(async (value) => {
-          if (syncing) {
-            return;
-          }
-          const trimmed = value.trim();
-          if (!trimmed) {
-            await updateConfigNotePath(null);
-            return;
-          }
-          const file = findJsonFileByInput(trimmed);
-          if (file) {
-            await updateConfigNotePath(file.path);
-            applyValue(file.path);
-          }
-        });
-
-      const buttonEl = (search as any).buttonEl as
-        | HTMLButtonElement
-        | undefined;
-      if (buttonEl) {
-        buttonEl.setAttribute("aria-label", "Browse JSON files");
-        buttonEl.setAttribute("title", "Browse JSON files");
-      }
-
-      try {
-        const suggester = new JsonFileSuggest(
-          this.app,
-          search.inputEl as HTMLInputElement,
-          collectJsonFiles,
-          async (file) => {
-            await updateConfigNotePath(file.path);
-            applyValue(file.path);
-          }
-        );
-        (this as any)._suggesters = (this as any)._suggesters || [];
-        (this as any)._suggesters.push(suggester);
-      } catch (error) {
-        // Unable to attach suggester; ignore.
-      }
-
-      try {
-        const clearButton = (search as any).clearButtonEl as
-          | HTMLButtonElement
-          | undefined;
-        if (clearButton) {
-          clearButton.onclick = async (event) => {
-            event.preventDefault();
-            event.stopPropagation();
-            applyValue("");
-            await updateConfigNotePath(null);
-            return false;
-          };
-        }
-      } catch (error) {
-        // Ignore issues while wiring the clear button.
-      }
+    const textArea = document.createElement("textarea");
+    textArea.rows = 10;
+    textArea.style.width = "100%";
+    textArea.placeholder = '{\n  "entities": { ... }\n}';
+    textArea.value = (this.plugin as any).settings?.crmConfigJson ?? "";
+    textArea.addEventListener("change", async () => {
+      (this.plugin as any).settings.crmConfigJson = textArea.value;
+      await (this.plugin as any).saveSettings();
     });
+    customConfigSetting.controlEl.appendChild(textArea);
 
-    configNoteSetting.addExtraButton((button) => {
-      button.setIcon("file-text");
-      button.setTooltip("Open file");
+    // Buttons: Apply and Use Defaults
+    customConfigSetting.addExtraButton((button) => {
+      button.setIcon("check");
+      button.setTooltip("Validate & Apply");
       button.onClick(async () => {
-        const currentPath = getStoredConfigNotePath();
-        if (!currentPath) {
-          new Notice("Select a CRM configuration file first.");
-          return;
-        }
-        const file = this.app.vault.getAbstractFileByPath(currentPath);
-        if (!(file instanceof TFile)) {
-          new Notice("CRM configuration file could not be found.");
-          return;
-        }
-        await this.app.workspace.getLeaf(true).openFile(file);
+        await (this.plugin as any).applyCRMConfigFromSettings();
+      });
+    });
+    customConfigSetting.addExtraButton((button) => {
+      button.setIcon("rotate-ccw");
+      button.setTooltip("Use defaults");
+      button.onClick(async () => {
+        (this.plugin as any).settings.crmConfigJson = "";
+        await (this.plugin as any).saveSettings();
+        await (this.plugin as any).applyCRMConfigFromSettings();
+        textArea.value = "";
       });
     });
 

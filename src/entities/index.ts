@@ -1,9 +1,8 @@
-import crmConfig from "@/crm-config.json";
+import crmConfig from "@/crm-config.full.json";
 import type { CRMEntityConfig } from "@/types/CRMEntityConfig";
 import type { CRMEntityType, CRMConfig } from "@/types/CRMEntityTypes";
 
-const cloneConfig = <T>(value: T): T =>
-  JSON.parse(JSON.stringify(value)) as T;
+const cloneConfig = <T>(value: T): T => JSON.parse(JSON.stringify(value)) as T;
 
 type CRMConfigListener = (config: CRMConfig) => void;
 
@@ -32,7 +31,9 @@ const buildState = (config: CRMConfig): CRMEntityState => {
     list.map((entityConfig) => [entityConfig.type, entityConfig])
   ) as Record<CRMEntityType, CRMEntityConfig>;
 
-  const types = list.map((entityConfig) => entityConfig.type) as CRMEntityType[];
+  const types = list.map(
+    (entityConfig) => entityConfig.type
+  ) as CRMEntityType[];
   const typeSet = new Set(types);
 
   const titlesOrder = Array.isArray(config.titles?.order)
@@ -90,6 +91,10 @@ export const setCRMConfig = (nextConfig: CRMConfig) => {
   CRM_ENTITY_TYPE_SET = currentState.typeSet;
   CRM_UI_CONFIG = currentState.ui;
 
+  console.log(
+    `CRM: setCRMConfig applied with ${CRM_ENTITY_TYPES.length} entity types`
+  );
+
   listeners.forEach((listener) => {
     try {
       listener(currentConfig);
@@ -114,9 +119,7 @@ export const onCRMConfigChange = (listener: CRMConfigListener) => {
 export const isCRMEntityType = (value: string): value is CRMEntityType =>
   CRM_ENTITY_TYPE_SET.has(value as CRMEntityType);
 
-export const resolveCRMEntityType = (
-  value: string
-): CRMEntityType | null => {
+export const resolveCRMEntityType = (value: string): CRMEntityType | null => {
   if (!value) return null;
   const normalized = value.trim().toLowerCase();
   if (isCRMEntityType(normalized)) {

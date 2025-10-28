@@ -1,0 +1,8 @@
+{
+  "entities": {
+    "task": {
+      "name": "Tasks",
+      "icon": "check-square"
+    }
+  }
+}

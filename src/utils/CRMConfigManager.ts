@@ -1,23 +1,14 @@
-import {
-  App,
-  Notice,
-  TAbstractFile,
-  TFile,
-  type EventRef,
-} from "obsidian";
+import { App, Notice, TAbstractFile, TFile, type EventRef } from "obsidian";
 import defaultConfig from "@/crm-config.json";
 import { getCRMConfig, setCRMConfig } from "@/entities";
 import type { CRMConfig, CRMEntityConfigRecord } from "@/types/CRMEntityTypes";
 
 const BASE_CONFIG = defaultConfig as CRMConfig;
 
-const cloneConfig = <T>(value: T): T =>
-  JSON.parse(JSON.stringify(value)) as T;
+const cloneConfig = <T>(value: T): T => JSON.parse(JSON.stringify(value)) as T;
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   !!value && typeof value === "object" && !Array.isArray(value);
-
-const DEFAULT_ENTITY_KEYS = Object.keys(BASE_CONFIG.entities);
 
 const formatTimestampId = (date: Date) => {
   const pad = (value: number) => value.toString().padStart(2, "0");
@@ -64,7 +55,7 @@ type ValidationResult =
   | { ok: true; config: CRMConfig }
   | { ok: false; issues: ValidationIssue[] };
 
-const validateCRMConfig = (candidate: unknown): ValidationResult => {
+export const validateCRMConfig = (candidate: unknown): ValidationResult => {
   const issues: ValidationIssue[] = [];
 
   if (!isRecord(candidate)) {
@@ -91,20 +82,17 @@ const validateCRMConfig = (candidate: unknown): ValidationResult => {
   if (!isRecord(entities)) {
     issues.push({
       path: "entities",
-      message: "`entities` must be an object containing the known entity definitions.",
+      message:
+        "`entities` must be an object containing the known entity definitions.",
     });
     return { ok: false, issues };
   }
 
   const entityKeys = Object.keys(entities);
-  const missing = DEFAULT_ENTITY_KEYS.filter(
-    (key) => !entityKeys.includes(key)
-  );
-
-  if (missing.length > 0) {
+  if (entityKeys.length === 0) {
     issues.push({
       path: "entities",
-      message: `Missing entity definitions for: ${missing.join(", ")}.`,
+      message: "`entities` must include at least one definition.",
     });
   }
 
@@ -139,26 +127,39 @@ const validateCRMConfig = (candidate: unknown): ValidationResult => {
     return { ok: false, issues };
   }
 
-  const sanitized = cloneConfig(BASE_CONFIG) as CRMConfig;
-  sanitized.entities = cloneConfig(entities) as CRMEntityConfigRecord;
-
-  sanitized.titles = sanitized.titles ?? {};
-  sanitized.relevantNotes = sanitized.relevantNotes ?? {};
-  sanitized.relevantNotes.filter = sanitized.relevantNotes.filter ?? {};
-
-  const titles = resolved.titles;
-  const titlesOrder = isRecord(titles) ? (titles as Record<string, unknown>).order : undefined;
-  sanitized.titles.order = ensureOrder(titlesOrder, entityKeys);
-
-  const relevantNotes = resolved.relevantNotes;
-  const filter =
-    isRecord(relevantNotes) && isRecord(relevantNotes.filter)
-      ? relevantNotes.filter
-      : {};
-  sanitized.relevantNotes.filter.order = ensureOrder(
-    (filter as Record<string, unknown>).order,
-    entityKeys
-  );
+  const sanitizedEntities = cloneConfig(entities) as CRMEntityConfigRecord;
+  // Apply minimal defaults/normalizations per-entity to avoid runtime crashes in UI
+  for (const [ekey, evalue] of Object.entries(sanitizedEntities)) {
+    if (evalue && typeof evalue === "object") {
+      const rec = evalue as Record<string, unknown>;
+      // Ensure `name` is a trimmed string if present
+      if (typeof rec.name === "string") {
+        rec.name = rec.name.trim();
+      }
+      // Provide a safe default icon when missing/invalid to prevent setIcon errors
+      if (typeof rec.icon !== "string" || rec.icon.trim().length === 0) {
+        rec.icon = "tag"; // lucide icon available in Obsidian
+      }
+    }
+  }
+  const resolvedTitlesOrder = isRecord(resolved.titles)
+    ? (resolved.titles as Record<string, unknown>).order
+    : undefined;
+  const resolvedRelevantFilter =
+    isRecord(resolved.relevantNotes) && isRecord(resolved.relevantNotes.filter)
+      ? (resolved.relevantNotes.filter as Record<string, unknown>).order
+      : undefined;
+  const sanitized: CRMConfig = {
+    titles: {
+      order: ensureOrder(resolvedTitlesOrder, entityKeys),
+    },
+    relevantNotes: {
+      filter: {
+        order: ensureOrder(resolvedRelevantFilter, entityKeys),
+      },
+    },
+    entities: sanitizedEntities,
+  };
 
   return { ok: true, config: sanitized };
 };
@@ -189,6 +190,9 @@ export class CRMConfigManager {
   initialize = async (configFilePath: string | null) => {
     const resolvedPath = this.normalizePath(configFilePath);
     if (resolvedPath && !isJsonPath(resolvedPath)) {
+      console.log(
+        `CRMConfigManager: invalid initial config path "${resolvedPath}" (must be .json)`
+      );
       this.notifyInvalidExtension(resolvedPath);
       await this.callbacks.onConfigNotePathChange?.(null);
       this.applyDefaultConfig();
@@ -196,6 +200,11 @@ export class CRMConfigManager {
     }
 
     this.configFilePath = resolvedPath;
+    console.log(
+      `CRMConfigManager: initializing with ${
+        this.configFilePath ?? "built-in defaults"
+      }`
+    );
     if (this.configFilePath) {
       const file = this.resolveJsonFile(this.configFilePath);
       if (file) {
@@ -211,6 +220,9 @@ export class CRMConfigManager {
   setConfigFilePath = async (configFilePath: string | null) => {
     const resolvedPath = this.normalizePath(configFilePath);
     if (resolvedPath && !isJsonPath(resolvedPath)) {
+      console.log(
+        `CRMConfigManager: rejecting new config path "${resolvedPath}" (must be .json)`
+      );
       this.notifyInvalidExtension(resolvedPath);
       await this.callbacks.onConfigNotePathChange?.(null);
       this.detachFileWatchers();
@@ -220,6 +232,7 @@ export class CRMConfigManager {
     }
 
     if (resolvedPath === this.configFilePath) {
+      console.log("CRMConfigManager: config path unchanged, forcing reload");
       await this.reload();
       return;
     }
@@ -228,6 +241,9 @@ export class CRMConfigManager {
     this.configFilePath = resolvedPath;
 
     if (!this.configFilePath) {
+      console.log(
+        "CRMConfigManager: cleared config path, reverting to defaults"
+      );
       this.applyDefaultConfig();
       return;
     }
@@ -239,12 +255,14 @@ export class CRMConfigManager {
       return;
     }
 
+    console.log(`CRMConfigManager: applying config from ${file.path}`);
     this.attachFileWatchers(file);
     await this.applyConfigFromFile(file);
   };
 
   reload = async () => {
     if (!this.configFilePath) {
+      console.log("CRMConfigManager: reload requested without config path");
       this.applyDefaultConfig();
       return;
     }
@@ -256,6 +274,7 @@ export class CRMConfigManager {
       return;
     }
 
+    console.log(`CRMConfigManager: reloading config from ${file.path}`);
     await this.applyConfigFromFile(file);
   };
 
@@ -284,27 +303,35 @@ export class CRMConfigManager {
 
     const trackedFile: TFile = file;
 
-    const handleModify = this.app.vault.on("modify", (modified: TAbstractFile) => {
-      if (!isJsonFile(modified)) {
-        return;
+    const handleModify = this.app.vault.on(
+      "modify",
+      (modified: TAbstractFile) => {
+        if (!isJsonFile(modified)) {
+          return;
+        }
+        if (modified.path === trackedFile.path) {
+          void this.applyConfigFromFile(modified);
+        }
       }
-      if (modified.path === trackedFile.path) {
-        void this.applyConfigFromFile(modified);
-      }
-    });
+    );
 
-    const handleDelete = this.app.vault.on("delete", (deleted: TAbstractFile) => {
-      if (!isJsonFile(deleted)) {
-        return;
+    const handleDelete = this.app.vault.on(
+      "delete",
+      (deleted: TAbstractFile) => {
+        if (!isJsonFile(deleted)) {
+          return;
+        }
+        if (deleted.path === trackedFile.path) {
+          this.detachFileWatchers();
+          this.configFilePath = null;
+          void this.callbacks.onConfigNotePathChange?.(null);
+          new Notice(
+            "CRM configuration file deleted. Reverting to default configuration."
+          );
+          this.applyDefaultConfig();
+        }
       }
-      if (deleted.path === trackedFile.path) {
-        this.detachFileWatchers();
-        this.configFilePath = null;
-        void this.callbacks.onConfigNotePathChange?.(null);
-        new Notice("CRM configuration file deleted. Reverting to default configuration.");
-        this.applyDefaultConfig();
-      }
-    });
+    );
 
     const handleRename = this.app.vault.on(
       "rename",
@@ -345,7 +372,7 @@ export class CRMConfigManager {
 
   private applyDefaultConfig = () => {
     const current = getCRMConfig();
-    const fallback = cloneConfig(defaultConfig) as CRMConfig;
+    const fallback = cloneConfig(BASE_CONFIG) as CRMConfig;
 
     if (
       this.lastSource === "default" &&
@@ -356,6 +383,7 @@ export class CRMConfigManager {
 
     setCRMConfig(fallback);
     this.lastSource = "default";
+    console.log("CRMConfigManager: applied built-in default CRM configuration");
     this.app.workspace.trigger("crm:config-updated", {
       source: "default",
       notePath: null,
@@ -370,14 +398,18 @@ export class CRMConfigManager {
       try {
         parsed = JSON.parse(content);
       } catch (error) {
-        await this.handleInvalidConfig(file, [
-          {
-            path: "root",
-            message: `Failed to parse JSON: ${
-              error instanceof Error ? error.message : String(error)
-            }`,
-          },
-        ], content);
+        await this.handleInvalidConfig(
+          file,
+          [
+            {
+              path: "root",
+              message: `Failed to parse JSON: ${
+                error instanceof Error ? error.message : String(error)
+              }`,
+            },
+          ],
+          content
+        );
         return;
       }
 
@@ -389,6 +421,11 @@ export class CRMConfigManager {
 
       setCRMConfig(validation.config);
       this.lastSource = "custom";
+      console.log(
+        `CRMConfigManager: loaded custom config from ${file.path} with ${
+          Object.keys(validation.config.entities).length
+        } entities`
+      );
       this.app.workspace.trigger("crm:config-updated", {
         source: "custom",
         notePath: file.path,
@@ -415,6 +452,10 @@ export class CRMConfigManager {
             .map((issue) => `- \`${issue.path}\`: ${issue.message}`)
             .join("\n")
         : "- No validation details available.";
+
+    console.warn(
+      `CRMConfigManager: configuration at ${file.path} is invalid:\n${details}`
+    );
 
     new Notice(
       "CRM configuration file is invalid. See the generated error log for details."
@@ -468,16 +509,23 @@ export class CRMConfigManager {
         const fallbackPath = `${timestamp}-crm-config-error.md`;
         await this.app.vault.create(fallbackPath, entry);
       } catch (fallbackError) {
-        console.error("CRM: failed to create fallback config error log", fallbackError);
+        console.error(
+          "CRM: failed to create fallback config error log",
+          fallbackError
+        );
       }
     }
   };
 
   private notifyMissingFile = (path: string) => {
+    console.warn(`CRMConfigManager: configuration file not found: ${path}`);
     new Notice(`CRM configuration file not found: ${path}`);
   };
 
   private notifyInvalidExtension = (path: string) => {
+    console.warn(
+      `CRMConfigManager: configuration file must be JSON (got ${path})`
+    );
     new Notice(`CRM configuration must be a JSON file (received: ${path}).`);
   };
 }
