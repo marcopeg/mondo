@@ -2,6 +2,7 @@ import {
   PluginSettingTab,
   Setting,
   App,
+  Modal,
   TFolder,
   TFile,
   AbstractInputSuggest,
@@ -12,6 +13,7 @@ import {
   type FuzzyMatch,
 } from "obsidian";
 import type CRM from "@/main";
+import { validateCRMConfig } from "@/utils/CRMConfigManager";
 import {
   CRMFileType,
   CRM_FILE_TYPES,
@@ -503,41 +505,157 @@ export class SettingsView extends PluginSettingTab {
       };
     };
 
-    // Custom configuration textarea (JSON)
+    // Custom configuration header (title + description only)
     const customConfigSetting = new Setting(containerEl)
       .setName("Custom CRM configuration (JSON)")
       .setDesc(
         "Paste JSON here to override the built-in CRM configuration. Leave empty to use defaults."
       );
+    // Clear the control slot so our block can appear full-width below
+    try {
+      customConfigSetting.controlEl.empty?.();
+    } catch (_) {}
+
+    // Full-width block under the setting for textarea + actions
+    const configBlock = containerEl.createDiv();
+    configBlock.style.width = "100%";
+    configBlock.style.background = "var(--background-secondary)";
+    configBlock.style.border = "1px solid var(--background-modifier-border)";
+    configBlock.style.borderRadius = "8px";
+    configBlock.style.padding = "12px";
+    configBlock.style.marginTop = "8px";
 
     const textArea = document.createElement("textarea");
-    textArea.rows = 10;
+    textArea.rows = 14;
     textArea.style.width = "100%";
+    textArea.style.minHeight = "220px";
+    textArea.style.fontFamily = "var(--font-monospace)";
     textArea.placeholder = '{\n  "entities": { ... }\n}';
     textArea.value = (this.plugin as any).settings?.crmConfigJson ?? "";
     textArea.addEventListener("change", async () => {
       (this.plugin as any).settings.crmConfigJson = textArea.value;
       await (this.plugin as any).saveSettings();
     });
-    customConfigSetting.controlEl.appendChild(textArea);
+    configBlock.appendChild(textArea);
 
-    // Buttons: Apply and Use Defaults
-    customConfigSetting.addExtraButton((button) => {
-      button.setIcon("check");
-      button.setTooltip("Validate & Apply");
-      button.onClick(async () => {
-        await (this.plugin as any).applyCRMConfigFromSettings();
+    // Actions row aligned to the right
+    const actionsRow = document.createElement("div");
+    actionsRow.style.display = "flex";
+    actionsRow.style.justifyContent = "flex-end";
+    actionsRow.style.gap = "8px";
+    actionsRow.style.marginTop = "10px";
+    configBlock.appendChild(actionsRow);
+
+    // Modal helpers
+    class SimpleModal extends Modal {
+      private readonly title: string;
+      private readonly contentNodes: (HTMLElement | string)[];
+      constructor(app: App, title: string, contents: (HTMLElement | string)[]) {
+        super(app);
+        this.title = title;
+        this.contentNodes = contents;
+      }
+      onOpen() {
+        const { contentEl, titleEl } = this;
+        titleEl.setText(this.title);
+        contentEl.empty();
+        this.contentNodes.forEach((node) => {
+          if (typeof node === "string") {
+            const p = contentEl.createEl("p", { text: node });
+            p.style.whiteSpace = "pre-wrap";
+          } else {
+            contentEl.appendChild(node);
+          }
+        });
+        const footer = contentEl.createDiv({ cls: "modal-button-container" });
+        const closeBtn = footer.createEl("button", { text: "Close" });
+        closeBtn.addEventListener("click", () => this.close());
+      }
+    }
+
+    const showErrorModal = (title: string, issues: string[]) => {
+      const list = document.createElement("ul");
+      list.style.paddingLeft = "1.2em";
+      issues.forEach((msg) => {
+        const li = document.createElement("li");
+        li.textContent = msg;
+        list.appendChild(li);
       });
+      const modal = new SimpleModal(this.app, title, [list]);
+      modal.open();
+    };
+
+    const confirmReset = async (): Promise<boolean> => {
+      return await new Promise<boolean>((resolve) => {
+        class ConfirmModal extends Modal {
+          onOpen() {
+            const { contentEl, titleEl } = this;
+            titleEl.setText("Reset configuration?");
+            contentEl.empty();
+            contentEl.createEl("p", {
+              text: "This will clear the custom JSON and restore the built-in defaults.",
+            });
+            const footer = contentEl.createDiv({
+              cls: "modal-button-container",
+            });
+            const cancel = footer.createEl("button", { text: "Cancel" });
+            const ok = footer.createEl("button", { text: "Reset" });
+            ok.addClass("mod-warning");
+            cancel.addEventListener("click", () => {
+              this.close();
+              resolve(false);
+            });
+            ok.addEventListener("click", () => {
+              this.close();
+              resolve(true);
+            });
+          }
+        }
+        new ConfirmModal(this.app).open();
+      });
+    };
+
+    // Validate & Apply button
+    const applyBtn = actionsRow.createEl("button", {
+      text: "Validate & Apply",
     });
-    customConfigSetting.addExtraButton((button) => {
-      button.setIcon("rotate-ccw");
-      button.setTooltip("Use defaults");
-      button.onClick(async () => {
-        (this.plugin as any).settings.crmConfigJson = "";
-        await (this.plugin as any).saveSettings();
+    applyBtn.addClass("mod-cta");
+    applyBtn.addEventListener("click", async () => {
+      const raw = (textArea.value ?? "").trim();
+      if (!raw) {
+        // Nothing to validate; delegate to plugin (applies defaults)
         await (this.plugin as any).applyCRMConfigFromSettings();
-        textArea.value = "";
-      });
+        return;
+      }
+      // Try to parse and validate ourselves so we can show a detailed modal on errors
+      let parsed: unknown;
+      try {
+        parsed = JSON.parse(raw);
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        showErrorModal("Invalid JSON", [msg]);
+        return;
+      }
+
+      const result = validateCRMConfig(parsed);
+      if (!result.ok) {
+        const issues = result.issues.map((i) => `${i.path}: ${i.message}`);
+        showErrorModal("Configuration issues", issues);
+        return;
+      }
+
+      await (this.plugin as any).applyCRMConfigFromSettings();
+    });
+
+    // Reset button (Use defaults)
+    const resetBtn = actionsRow.createEl("button", { text: "Use defaults" });
+    resetBtn.addEventListener("click", async () => {
+      const confirmed = await confirmReset();
+      if (!confirmed) return;
+      (this.plugin as any).settings.crmConfigJson = "";
+      await (this.plugin as any).saveSettings();
+      await (this.plugin as any).applyCRMConfigFromSettings();
+      textArea.value = "";
     });
 
     const entityDefinitions = CRM_FILE_TYPES.map((type) => {
