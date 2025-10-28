@@ -14,11 +14,7 @@ import {
 } from "obsidian";
 import type CRM from "@/main";
 import { validateCRMConfig } from "@/utils/CRMConfigManager";
-import {
-  CRMFileType,
-  CRM_FILE_TYPES,
-  getCRMEntityConfig,
-} from "@/types/CRMFileType";
+import { CRM_ENTITY_CONFIG_LIST } from "@/entities";
 import {
   DEFAULT_TIMESTAMP_SETTINGS,
   buildTimestampFromMoment,
@@ -42,8 +38,9 @@ export class SettingsView extends PluginSettingTab {
 
     // Ensure settings object exists
     (this.plugin as any).settings = (this.plugin as any).settings ?? {
+      // Initialize only with entity types; special types (daily, journal, etc.) have dedicated sections below
       rootPaths: Object.fromEntries(
-        CRM_FILE_TYPES.map((t) => [String(t), "/"])
+        CRM_ENTITY_CONFIG_LIST.map((cfg) => [String(cfg.type), "/"])
       ),
     };
     // Ensure journal/daily settings exist with sensible defaults
@@ -55,7 +52,9 @@ export class SettingsView extends PluginSettingTab {
       .daily ?? { root: "Daily", entry: "YYYY-MM-DD", note: "HH:MM" };
     (this.plugin as any).settings.templates =
       (this.plugin as any).settings.templates ??
-      Object.fromEntries(CRM_FILE_TYPES.map((t) => [String(t), ""]));
+      Object.fromEntries(
+        CRM_ENTITY_CONFIG_LIST.map((cfg) => [String(cfg.type), ""])
+      );
     (this.plugin as any).settings.openAITranscriptionPolishEnabled =
       typeof (this.plugin as any).settings.openAITranscriptionPolishEnabled ===
       "boolean"
@@ -287,7 +286,7 @@ export class SettingsView extends PluginSettingTab {
             typeof frontmatter?.type === "string"
               ? frontmatter.type.trim().toLowerCase()
               : "";
-          if (type !== CRMFileType.PERSON) {
+          if (type !== "person") {
             return null;
           }
           const show =
@@ -718,13 +717,11 @@ export class SettingsView extends PluginSettingTab {
       }
     });
 
-    const entityDefinitions = CRM_FILE_TYPES.map((type) => {
-      const config = getCRMEntityConfig(type);
-      return {
-        type,
-        label: config?.name ?? type,
-      };
-    });
+    // Only include actual configured entities; exclude special types like daily/log/journal
+    const entityDefinitions = CRM_ENTITY_CONFIG_LIST.map((cfg) => ({
+      type: cfg.type,
+      label: cfg.name ?? cfg.type,
+    }));
 
     const addSelfPersonSetting = (container: HTMLElement) => {
       const storedSelfPath = (
@@ -845,159 +842,162 @@ export class SettingsView extends PluginSettingTab {
       });
     };
 
-    const entitiesToggleContainer = containerEl.createDiv(
-      "crm-settings-entities-toggle"
-    );
-    const entitiesToggleButton = entitiesToggleContainer.createEl("a", {
-      text: "Show entities options",
-    });
-    entitiesToggleButton.addClass("crm-settings-entities-toggle-link");
-    entitiesToggleButton.setAttribute("href", "#");
-
-    const entitiesContent = containerEl.createDiv("crm-settings-entities");
-    const entitiesContentId = "crm-settings-entities-content";
-    entitiesContent.setAttribute("id", entitiesContentId);
-    entitiesToggleButton.setAttribute("aria-controls", entitiesContentId);
-    entitiesToggleButton.setAttribute("aria-expanded", "false");
-
-    let entitiesVisible = false;
-    const applyEntitiesVisibility = (visible: boolean) => {
-      entitiesVisible = visible;
-      entitiesContent.toggleClass("is-hidden", !visible);
-      entitiesContent.setAttribute("aria-hidden", visible ? "false" : "true");
-      entitiesToggleButton.setText(
-        visible ? "Hide entities options" : "Show entities options"
+    // Render Entities section only if there are configured entities
+    if (entityDefinitions.length > 0) {
+      const entitiesToggleContainer = containerEl.createDiv(
+        "crm-settings-entities-toggle"
       );
-      entitiesToggleButton.setAttribute(
-        "aria-expanded",
-        visible ? "true" : "false"
-      );
-    };
+      const entitiesToggleButton = entitiesToggleContainer.createEl("a", {
+        text: "Show entities options",
+      });
+      entitiesToggleButton.addClass("crm-settings-entities-toggle-link");
+      entitiesToggleButton.setAttribute("href", "#");
 
-    applyEntitiesVisibility(false);
+      const entitiesContent = containerEl.createDiv("crm-settings-entities");
+      const entitiesContentId = "crm-settings-entities-content";
+      entitiesContent.setAttribute("id", entitiesContentId);
+      entitiesToggleButton.setAttribute("aria-controls", entitiesContentId);
+      entitiesToggleButton.setAttribute("aria-expanded", "false");
 
-    entitiesToggleButton.addEventListener("click", (event) => {
-      event.preventDefault();
-      applyEntitiesVisibility(!entitiesVisible);
-    });
+      let entitiesVisible = false;
+      const applyEntitiesVisibility = (visible: boolean) => {
+        entitiesVisible = visible;
+        entitiesContent.toggleClass("is-hidden", !visible);
+        entitiesContent.setAttribute("aria-hidden", visible ? "false" : "true");
+        entitiesToggleButton.setText(
+          visible ? "Hide entities options" : "Show entities options"
+        );
+        entitiesToggleButton.setAttribute(
+          "aria-expanded",
+          visible ? "true" : "false"
+        );
+      };
 
-    for (const { label, type } of entityDefinitions) {
-      const section = entitiesContent.createDiv("crm-settings-entity");
-      new Setting(section).setName(label).setHeading();
+      applyEntitiesVisibility(false);
 
-      addFolderSetting(
-        section,
-        "Documents Store",
-        "Pick a folder in which to store all the documents for this entity",
-        () => (this.plugin as any).settings.rootPaths[type],
-        async (v) => {
-          (this.plugin as any).settings.rootPaths[type] = v || "/";
+      entitiesToggleButton.addEventListener("click", (event) => {
+        event.preventDefault();
+        applyEntitiesVisibility(!entitiesVisible);
+      });
+
+      for (const { label, type } of entityDefinitions) {
+        const section = entitiesContent.createDiv("crm-settings-entity");
+        new Setting(section).setName(label).setHeading();
+
+        addFolderSetting(
+          section,
+          "Documents Store",
+          "Pick a folder in which to store all the documents for this entity",
+          () => (this.plugin as any).settings.rootPaths[type],
+          async (v) => {
+            (this.plugin as any).settings.rootPaths[type] = v || "/";
+            await (this.plugin as any).saveSettings();
+          }
+        );
+
+        const getStoredTemplatePath = (): string =>
+          ((this.plugin as any).settings.templates?.[type] ?? "") as string;
+
+        const persistTemplatePath = async (raw: string) => {
+          (this.plugin as any).settings.templates =
+            (this.plugin as any).settings.templates || {};
+
+          const normalized =
+            raw.includes("\n") || raw.includes("{{") || raw.includes("---")
+              ? raw
+              : raw.trim();
+          const current = ((this.plugin as any).settings.templates?.[type] ??
+            "") as string;
+
+          if (current === normalized) {
+            return;
+          }
+
+          (this.plugin as any).settings.templates[type] = normalized;
           await (this.plugin as any).saveSettings();
-        }
-      );
+        };
 
-      const getStoredTemplatePath = (): string =>
-        ((this.plugin as any).settings.templates?.[type] ?? "") as string;
+        let syncTemplateInput = false;
+        let applyTemplateInput: ((value: string) => void) | null = null;
 
-      const persistTemplatePath = async (raw: string) => {
-        (this.plugin as any).settings.templates =
-          (this.plugin as any).settings.templates || {};
-
-        const normalized =
-          raw.includes("\n") || raw.includes("{{") || raw.includes("---")
-            ? raw
-            : raw.trim();
-        const current = ((this.plugin as any).settings.templates?.[type] ??
-          "") as string;
-
-        if (current === normalized) {
-          return;
-        }
-
-        (this.plugin as any).settings.templates[type] = normalized;
-        await (this.plugin as any).saveSettings();
-      };
-
-      let syncTemplateInput = false;
-      let applyTemplateInput: ((value: string) => void) | null = null;
-
-      const updateTemplatePath = async (value: string) => {
-        await persistTemplatePath(value);
-        if (applyTemplateInput) {
-          applyTemplateInput(value);
-        }
-      };
-
-      new Setting(section)
-        .setName("Custom Template")
-        .setDesc("Pick a note to copy over whenever creating a new entity")
-        .addSearch((search) => {
-          const showPicker = () => {
-            const modal = new TemplatePickerModal(this.app, async (file) => {
-              await updateTemplatePath(file.path);
-            });
-
-            modal.open();
-          };
-
-          search
-            .setPlaceholder("Select a template note…")
-            .setValue(getStoredTemplatePath())
-            .onChange(async (value) => {
-              if (syncTemplateInput) {
-                return;
-              }
-
-              await persistTemplatePath(value);
-            });
-
-          applyTemplateInput = (value: string) => {
-            syncTemplateInput = true;
-            try {
-              search.setValue(value);
-            } catch (error) {
-              search.inputEl.value = value;
-              search.inputEl.dispatchEvent(
-                new Event("input", { bubbles: true })
-              );
-              search.inputEl.dispatchEvent(
-                new Event("change", { bubbles: true })
-              );
-            } finally {
-              syncTemplateInput = false;
-            }
-          };
-
-          const buttonEl = (search as any).buttonEl as
-            | HTMLButtonElement
-            | undefined;
-
-          if (buttonEl) {
-            buttonEl.setAttribute("aria-label", "Browse template notes");
-            buttonEl.addEventListener("click", (event) => {
-              event.preventDefault();
-              event.stopPropagation();
-              showPicker();
-            });
+        const updateTemplatePath = async (value: string) => {
+          await persistTemplatePath(value);
+          if (applyTemplateInput) {
+            applyTemplateInput(value);
           }
+        };
 
-          try {
-            const suggester = new MarkdownFileSuggest(
-              this.app,
-              search.inputEl as HTMLInputElement,
-              async (file) => {
+        new Setting(section)
+          .setName("Custom Template")
+          .setDesc("Pick a note to copy over whenever creating a new entity")
+          .addSearch((search) => {
+            const showPicker = () => {
+              const modal = new TemplatePickerModal(this.app, async (file) => {
                 await updateTemplatePath(file.path);
-              }
-            );
-            (this as any)._suggesters = (this as any)._suggesters || [];
-            (this as any)._suggesters.push(suggester);
-          } catch (error) {
-            // ignore suggest attachment issues
-          }
-        });
+              });
 
-      if (type === CRMFileType.PERSON) {
-        addSelfPersonSetting(section);
+              modal.open();
+            };
+
+            search
+              .setPlaceholder("Select a template note…")
+              .setValue(getStoredTemplatePath())
+              .onChange(async (value) => {
+                if (syncTemplateInput) {
+                  return;
+                }
+
+                await persistTemplatePath(value);
+              });
+
+            applyTemplateInput = (value: string) => {
+              syncTemplateInput = true;
+              try {
+                search.setValue(value);
+              } catch (error) {
+                search.inputEl.value = value;
+                search.inputEl.dispatchEvent(
+                  new Event("input", { bubbles: true })
+                );
+                search.inputEl.dispatchEvent(
+                  new Event("change", { bubbles: true })
+                );
+              } finally {
+                syncTemplateInput = false;
+              }
+            };
+
+            const buttonEl = (search as any).buttonEl as
+              | HTMLButtonElement
+              | undefined;
+
+            if (buttonEl) {
+              buttonEl.setAttribute("aria-label", "Browse template notes");
+              buttonEl.addEventListener("click", (event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                showPicker();
+              });
+            }
+
+            try {
+              const suggester = new MarkdownFileSuggest(
+                this.app,
+                search.inputEl as HTMLInputElement,
+                async (file) => {
+                  await updateTemplatePath(file.path);
+                }
+              );
+              (this as any)._suggesters = (this as any)._suggesters || [];
+              (this as any)._suggesters.push(suggester);
+            } catch (error) {
+              // ignore suggest attachment issues
+            }
+          });
+
+        if (type === "person") {
+          addSelfPersonSetting(section);
+        }
       }
     }
 
@@ -1115,274 +1115,6 @@ export class SettingsView extends PluginSettingTab {
         try {
           (text.inputEl as HTMLInputElement).type = "password";
         } catch (e) {}
-      });
-
-    audioSettingsSection
-      .createSetting()
-      .setName("OpenAI model")
-      .setDesc("Model used to polish dictated voice notes before insertion.")
-      .addDropdown((dropdown) => {
-        const models = ["gpt-5", "gpt-5-mini", "gpt-5-nano"];
-        models.forEach((model) => {
-          dropdown.addOption(model, model);
-        });
-
-        const current =
-          (this.plugin as any).settings.openAIModel?.toString?.() ??
-          "gpt-5-nano";
-
-        if (!models.includes(current)) {
-          dropdown.setValue("gpt-5-nano");
-          (this.plugin as any).settings.openAIModel = "gpt-5-nano";
-          void (this.plugin as any).saveSettings();
-        } else {
-          dropdown.setValue(current);
-        }
-
-        dropdown.onChange(async (value) => {
-          (this.plugin as any).settings.openAIModel = value;
-          await (this.plugin as any).saveSettings();
-        });
-      });
-
-    audioSettingsSection
-      .createSetting()
-      .setName("Polish transcriptions with AI")
-      .setDesc(
-        "When enabled, dictated notes are refined by the selected OpenAI model before insertion."
-      )
-      .addToggle((toggle) => {
-        const current =
-          (this.plugin as any).settings.openAITranscriptionPolishEnabled !==
-          false;
-        toggle.setValue(current).onChange(async (value) => {
-          (this.plugin as any).settings.openAITranscriptionPolishEnabled =
-            value;
-          await (this.plugin as any).saveSettings();
-        });
-      });
-
-    const voiceManager = this.plugin.getVoiceoverManager?.();
-    const voicePreviewTooltip = "Preview the selected voice";
-
-    const voiceoverSettingsSection = createSettingsSection(
-      containerEl,
-      "Voiceover",
-      "Configure AI-generated voiceovers."
-    );
-
-    voiceoverSettingsSection
-      .createSetting()
-      .setName("Voiceover media cache")
-      .setDesc(
-        "Vault-relative folder where generated voiceovers are stored. The folder will be created when needed."
-      )
-      .addSearch((search) => {
-        const fallback = "/voiceover";
-        const stored =
-          (this.plugin as any).settings.voiceoverCachePath?.toString?.() ??
-          fallback;
-
-        const applyValue = async (raw: string) => {
-          const trimmed = raw?.trim?.() ?? "";
-          const resolved = trimmed || fallback;
-          (this.plugin as any).settings.voiceoverCachePath = resolved;
-          await (this.plugin as any).saveSettings();
-          if (search.inputEl.value !== resolved) {
-            try {
-              search.setValue(resolved);
-            } catch (error) {
-              search.inputEl.value = resolved;
-              search.inputEl.dispatchEvent(
-                new Event("input", { bubbles: true })
-              );
-              search.inputEl.dispatchEvent(
-                new Event("change", { bubbles: true })
-              );
-            }
-          }
-        };
-
-        search
-          .setPlaceholder(fallback)
-          .setValue(stored || fallback)
-          .onChange(async (value) => {
-            await applyValue(value);
-          });
-
-        try {
-          const sugg = new FolderSuggest(
-            this.app,
-            search.inputEl as HTMLInputElement,
-            async (picked: string) => {
-              const resolved = picked || fallback;
-
-              try {
-                search.setValue(resolved);
-              } catch (error) {
-                search.inputEl.value = resolved;
-                search.inputEl.dispatchEvent(
-                  new Event("input", { bubbles: true })
-                );
-                search.inputEl.dispatchEvent(
-                  new Event("change", { bubbles: true })
-                );
-              }
-
-              await applyValue(resolved);
-            }
-          );
-
-          (this as any)._suggesters = (this as any)._suggesters || [];
-          (this as any)._suggesters.push(sugg);
-        } catch (error) {
-          // Suggest is unavailable (e.g. tests); ignore.
-        }
-      });
-
-    let previewState = { disabled: true, tooltip: voicePreviewTooltip };
-    let previewButton: ExtraButtonComponent | null = null;
-    const applyPreviewState = () => {
-      if (!previewButton) {
-        return;
-      }
-
-      previewButton.setDisabled(previewState.disabled);
-      previewButton.setTooltip(previewState.tooltip);
-      previewButton.setIcon("play");
-    };
-    const setPreviewState = (disabled: boolean, tooltip: string) => {
-      previewState = { disabled, tooltip };
-      applyPreviewState();
-    };
-    let voiceSelect: HTMLSelectElement | null = null;
-
-    voiceoverSettingsSection
-      .createSetting()
-      .setName("Voiceover voice")
-      .setDesc(
-        "Select the OpenAI voice used when generating audio from selected text."
-      )
-      .addDropdown((dropdown) => {
-        const apiKey = (
-          this.plugin as any
-        ).settings.openAIWhisperApiKey?.trim?.();
-        const currentVoice = (this.plugin as any).settings.openAIVoice ?? "";
-
-        voiceSelect = dropdown.selectEl;
-
-        dropdown.onChange(async (value) => {
-          (this.plugin as any).settings.openAIVoice = value;
-          await (this.plugin as any).saveSettings();
-        });
-
-        const setOptions = (
-          voices: string[],
-          disabled: boolean,
-          placeholder: string
-        ) => {
-          const select = dropdown.selectEl;
-          while (select.firstChild) {
-            select.removeChild(select.firstChild);
-          }
-
-          if (voices.length === 0) {
-            const option = document.createElement("option");
-            option.value = "";
-            option.textContent = placeholder;
-            select.appendChild(option);
-            dropdown.setValue("");
-            dropdown.setDisabled(true);
-            setPreviewState(true, placeholder);
-            return;
-          }
-
-          voices.forEach((voice) => {
-            const option = document.createElement("option");
-            option.value = voice;
-            option.textContent = voice;
-            select.appendChild(option);
-          });
-
-          const initial =
-            currentVoice && voices.includes(currentVoice)
-              ? currentVoice
-              : voices[0];
-          dropdown.setValue(initial);
-          dropdown.setDisabled(disabled);
-
-          setPreviewState(
-            disabled,
-            disabled ? placeholder : voicePreviewTooltip
-          );
-
-          if (!currentVoice || !voices.includes(currentVoice)) {
-            (this.plugin as any).settings.openAIVoice = initial;
-            void (this.plugin as any).saveSettings();
-          }
-        };
-
-        if (!apiKey || !voiceManager) {
-          setOptions([], true, "Set an OpenAI API key to load voices");
-          return;
-        }
-
-        dropdown.setDisabled(true);
-        const loadingOption = document.createElement("option");
-        loadingOption.value = "";
-        loadingOption.textContent = "Loading voices…";
-        dropdown.selectEl.appendChild(loadingOption);
-        dropdown.setValue("");
-
-        setPreviewState(true, "Loading voices…");
-
-        void voiceManager
-          .getAvailableVoices()
-          .then((voices) => {
-            setOptions(voices, false, "No voices available");
-          })
-          .catch((error) => {
-            console.error("CRM: unable to populate voice options", error);
-            setOptions([], true, "Failed to load voices");
-            setPreviewState(true, "Failed to load voices");
-          });
-      })
-      .addExtraButton((button) => {
-        previewButton = button;
-        applyPreviewState();
-
-        button.onClick(async () => {
-          const selected = voiceSelect?.value?.trim?.() ?? "";
-
-          if (!selected) {
-            new Notice("Select a voice before previewing.");
-            return;
-          }
-
-          if (!voiceManager) {
-            new Notice(
-              "Voice preview is unavailable because the voiceover manager is not initialized."
-            );
-            return;
-          }
-
-          previewButton?.setDisabled(true);
-          previewButton?.setIcon("loader-2");
-          previewButton?.setTooltip("Loading preview…");
-
-          try {
-            await voiceManager.previewVoice(selected);
-          } catch (error) {
-            const message =
-              error instanceof Error && error.message
-                ? error.message
-                : "Failed to preview voice.";
-            console.error("CRM: voice preview failed", error);
-            new Notice(`Voice preview failed: ${message}`);
-          } finally {
-            applyPreviewState();
-          }
-        });
       });
 
     const dailySettingsSection = createSettingsSection(
