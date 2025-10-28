@@ -633,11 +633,6 @@ export class SettingsView extends PluginSettingTab {
 
     addSelfPersonSetting(generalSection.element);
 
-    // Add visual separator between General and next section
-    containerEl.createEl("hr", {
-      cls: "crm-settings-section-separator",
-    });
-
     // Custom CRM Configuration section
     const customConfigContainer = containerEl.createDiv();
     const customConfigSection = createSettingsSection(
