@@ -9,6 +9,7 @@ import {
 import type CRM from "@/main";
 import { validateCRMConfig } from "@/utils/CRMConfigManager";
 import { CRM_ENTITY_CONFIG_LIST } from "@/entities";
+import { createSettingsSection } from "./SettingsView_utils";
 
 type SettingsFolderSetter = (v: string) => Promise<void>;
 type SettingsFolderGetter = () => string;
@@ -224,14 +225,14 @@ export const renderEntityConfigurationSection = async (
     "Paste JSON here to override the built-in CRM Entities configuration.\nLeave empty to use defaults."
   );
 
-  // Full-width block under the setting for textarea + actions
-  const configBlock = customConfigContainer.createDiv();
+  // Full-width block under the heading, rendered as a standard Setting row
+  const configSetting = new Setting(customConfigContainer);
+  try {
+    // Hide the left info column so the control spans the full row width
+    configSetting.infoEl.style.display = "none";
+  } catch (_) {}
+  const configBlock = configSetting.controlEl.createDiv();
   configBlock.style.width = "100%";
-  configBlock.style.background = "var(--background-secondary)";
-  configBlock.style.border = "1px solid var(--background-modifier-border)";
-  configBlock.style.borderRadius = "8px";
-  configBlock.style.padding = "12px";
-  configBlock.style.marginTop = "8px";
 
   const textArea = document.createElement("textarea");
   textArea.rows = 14;
@@ -330,7 +331,6 @@ export const renderEntityConfigurationSection = async (
     label: cfg.name ?? cfg.type,
   }));
 
-  // Render Entities section only if there are configured entities
   if (entityDefinitions.length > 0) {
     const entitiesToggleContainer = containerEl.createDiv(
       "crm-settings-entities-toggle"
@@ -489,24 +489,4 @@ export const renderEntityConfigurationSection = async (
     entitiesSeparator.style.margin = "24px 0";
     entitiesSeparator.style.opacity = "0.5";
   }
-};
-
-const createSettingsSection = (
-  parent: HTMLElement,
-  heading: string,
-  description?: string
-) => {
-  const createSetting = () => new Setting(parent);
-
-  const headingSetting = createSetting();
-  headingSetting.setName(heading);
-  if (description) {
-    headingSetting.setDesc(description);
-  }
-  headingSetting.setHeading();
-
-  return {
-    element: parent,
-    createSetting,
-  };
 };
