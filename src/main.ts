@@ -45,6 +45,7 @@ import { AudioTranscriptionManager } from "@/utils/AudioTranscriptionManager";
 import { VoiceoverManager } from "@/utils/VoiceoverManager";
 import { NoteDictationManager } from "@/utils/NoteDictationManager";
 import { validateCRMConfig } from "@/utils/CRMConfigManager";
+import { normalizeFolderPath } from "@/utils/normalizeFolderPath";
 import {
   CRM_DICTATION_ICON_ID,
   registerDictationIcon,
@@ -79,6 +80,8 @@ import {
   DEFAULT_TIMESTAMP_SETTINGS,
   normalizeTimestampSettings,
 } from "@/types/TimestampSettings";
+import { getTemplateForType, renderTemplate } from "@/utils/CRMTemplates";
+import { slugify, focusAndSelectTitle } from "@/utils/createLinkedNoteHelpers";
 
 // Dev purposes: set to true to always focus on dashboard on startup
 const focusOnDashboard = false;
@@ -530,6 +533,13 @@ export default class CRM extends Plugin {
           void this.openEntityPanel(fileType);
         },
       });
+      this.addCommand({
+        id: `new-${fileType}`,
+        name: `New ${label}`,
+        callback: () => {
+          void this.createEntityNote(fileType);
+        },
+      });
     });
 
     // Journal navigation (previous / next)
@@ -793,6 +803,100 @@ export default class CRM extends Plugin {
           );
         });
       });
+    }
+  }
+
+  private async createEntityNote(
+    entityType: CRMFileType
+  ): Promise<TFile | null> {
+    const config = getCRMEntityConfig(entityType);
+    const label = config?.name ?? entityType;
+
+    const sanitizeFileBase = (value: string): string =>
+      value
+        .replace(/[<>:"/\\|?*]/g, "-")
+        .replace(/\s+/g, " ")
+        .replace(/[\r\n]+/g, " ")
+        .trim();
+
+    try {
+      const now = new Date();
+      const settings = this.settings as {
+        rootPaths?: Partial<Record<CRMFileType, string>>;
+        templates?: Partial<Record<CRMFileType, string>>;
+      };
+
+      const folderSetting = settings.rootPaths?.[entityType] ?? "/";
+      const normalizedFolder = normalizeFolderPath(folderSetting);
+      if (normalizedFolder) {
+        const existingFolder = this.app.vault.getAbstractFileByPath(
+          normalizedFolder
+        );
+        if (!existingFolder) {
+          await this.app.vault.createFolder(normalizedFolder);
+        }
+      }
+
+      const displayBase = `Untitled ${label}`.replace(/\s+/g, " ").trim() ||
+        "Untitled";
+      const fileBaseRoot =
+        sanitizeFileBase(displayBase) || `untitled-${Date.now()}`;
+
+      let attempt = 0;
+      let filename = "";
+      let filePath = "";
+      let displayTitle = displayBase;
+
+      while (true) {
+        const suffix = attempt === 0 ? "" : `-${attempt}`;
+        const titleSuffix = attempt === 0 ? "" : ` ${attempt + 1}`;
+        filename = `${fileBaseRoot}${suffix}.md`;
+        filePath = normalizedFolder
+          ? `${normalizedFolder}/${filename}`
+          : filename;
+        displayTitle = `${displayBase}${titleSuffix}`.trim();
+        const existing = this.app.vault.getAbstractFileByPath(filePath);
+        if (!existing) {
+          break;
+        }
+        attempt += 1;
+      }
+
+      const isoTimestamp = now.toISOString();
+      const templateSource = await getTemplateForType(
+        this.app,
+        settings.templates ?? {},
+        entityType
+      );
+      const slugValue =
+        slugify(displayTitle) || slugify(fileBaseRoot) || `${Date.now()}`;
+
+      const content = renderTemplate(templateSource, {
+        title: displayTitle,
+        type: String(entityType),
+        filename,
+        slug: slugValue,
+        date: isoTimestamp,
+        datetime: isoTimestamp,
+      });
+
+      const created = (await this.app.vault.create(
+        filePath,
+        content
+      )) as TFile;
+
+      const leaf = this.app.workspace.getLeaf(true);
+      if (leaf) {
+        await (leaf as any).openFile(created);
+        focusAndSelectTitle(leaf);
+      }
+
+      new Notice(`Created new ${label} note.`);
+      return created;
+    } catch (error) {
+      console.error(`CRM: failed to create ${label} note`, error);
+      new Notice(`Failed to create ${label} note.`);
+      return null;
     }
   }
 
