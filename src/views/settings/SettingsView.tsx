@@ -18,6 +18,7 @@ import { renderTimestampsSection } from "./SettingsView_Timestamps";
 import { renderAudioSection } from "./SettingsView_Audio";
 import { renderDailySection } from "./SettingsView_Daily";
 import { renderJournalSection } from "./SettingsView_Journal";
+import { renderDashboardSection } from "./SettingsView_Dashboard";
 
 // Settings view for CRM plugin
 export class SettingsView extends PluginSettingTab {
@@ -59,6 +60,15 @@ export class SettingsView extends PluginSettingTab {
     (this.plugin as any).settings.timestamp = normalizeTimestampSettings(
       (this.plugin as any).settings.timestamp ?? DEFAULT_TIMESTAMP_SETTINGS
     );
+    const dashboardSettings = (this.plugin as any).settings.dashboard ?? {};
+    (this.plugin as any).settings.dashboard = {
+      openAtBoot: dashboardSettings.openAtBoot === true,
+      forceTab: dashboardSettings.forceTab === true,
+      enableQuickTasks: dashboardSettings.enableQuickTasks !== false,
+      enableRelevantNotes:
+        dashboardSettings.enableRelevantNotes !== false,
+      enableStats: dashboardSettings.enableStats !== false,
+    };
     // Helper: collect folder paths from the vault
     const collectFolderPaths = (
       root: TFolder,
@@ -252,6 +262,11 @@ export class SettingsView extends PluginSettingTab {
     // Render sections
     renderGeneralSection({
       app: this.app,
+      plugin: this.plugin,
+      containerEl,
+    });
+
+    renderDashboardSection({
       plugin: this.plugin,
       containerEl,
     });

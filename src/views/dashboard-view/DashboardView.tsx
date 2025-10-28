@@ -53,6 +53,15 @@ export const DashboardView = () => {
   const app = useApp();
   const [_, setTick] = useState(0);
   const selfPersonPath = useSetting<string>("selfPersonPath", "");
+  const quickTasksEnabled = useSetting<boolean>(
+    "dashboard.enableQuickTasks",
+    true
+  );
+  const relevantNotesEnabled = useSetting<boolean>(
+    "dashboard.enableRelevantNotes",
+    true
+  );
+  const statsEnabled = useSetting<boolean>("dashboard.enableStats", true);
   const selfPerson = useMemo(
     () => resolveSelfPerson(app, null, selfPersonPath),
     [app, selfPersonPath]
@@ -153,10 +162,19 @@ export const DashboardView = () => {
           ))}
         </div>
       </div>
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 lg:items-start">
-        <QuickTasks collapsed={quickTasksCollapsed} state={inboxTasksState} />
-        <RelevantNotes collapsed={relevantNotesCollapsed} />
-      </div>
+      {(quickTasksEnabled || relevantNotesEnabled) && (
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 lg:items-start">
+          {quickTasksEnabled && (
+            <QuickTasks
+              collapsed={quickTasksCollapsed}
+              state={inboxTasksState}
+            />
+          )}
+          {relevantNotesEnabled && (
+            <RelevantNotes collapsed={relevantNotesCollapsed} />
+          )}
+        </div>
+      )}
       {entityTiles.length > 0 && (
         <>
           <Typography variant="h1">CRM Entities</Typography>
@@ -165,9 +183,11 @@ export const DashboardView = () => {
           </div>
         </>
       )}
-      <div className="mt-6">
-        <VaultStatsCard />
-      </div>
+      {statsEnabled && (
+        <div className="mt-6">
+          <VaultStatsCard />
+        </div>
+      )}
     </div>
   );
 };
