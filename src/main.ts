@@ -65,6 +65,7 @@ import { openDailyNote } from "@/commands/daily.open";
 import { addDailyLog } from "@/commands/daily.addLog";
 import { journalMoveFactory } from "@/commands/journal.nav";
 import { insertTimestamp } from "@/commands/timestamp.insert";
+import { sendToChatGPT } from "@/commands/chatgpt.send";
 import { injectJournalNav } from "@/events/inject-journal-nav";
 import {
   injectCRMLinks,
@@ -366,6 +367,19 @@ export default class CRM extends Plugin {
       name: "Add Timestamp",
       editorCallback: () => {
         insertTimestamp(this.app, this);
+      },
+    });
+
+    this.addCommand({
+      id: "send-to-chatgpt",
+      name: "Send to ChatGPT",
+      editorCallback: (editor, context) => {
+        const markdownView =
+          context instanceof MarkdownView
+            ? context
+            : this.app.workspace.getActiveViewOfType(MarkdownView);
+
+        void sendToChatGPT(this.app, { editor, view: markdownView });
       },
     });
 
