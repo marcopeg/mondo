@@ -615,6 +615,39 @@ export class SettingsView extends PluginSettingTab {
       });
     };
 
+    // Modal helper for restart confirmation (reused across Apply and Reset flows)
+    const showRestartPrompt = async (): Promise<boolean> => {
+      return await new Promise<boolean>((resolve) => {
+        class RestartModal extends Modal {
+          onOpen() {
+            const { contentEl, titleEl } = this;
+            titleEl.setText("Restart required");
+            contentEl.empty();
+            contentEl.createEl("p", {
+              text: "Your vault needs to be restarted for these changes to take effect. Restart now?",
+            });
+            const footer = contentEl.createDiv({
+              cls: "modal-button-container",
+            });
+            const later = footer.createEl("button", {
+              text: "I'll do it later",
+            });
+            const yes = footer.createEl("button", { text: "Yes" });
+            yes.addClass("mod-cta");
+            later.addEventListener("click", () => {
+              this.close();
+              resolve(false);
+            });
+            yes.addEventListener("click", () => {
+              this.close();
+              resolve(true);
+            });
+          }
+        }
+        new RestartModal(this.app).open();
+      });
+    };
+
     // Validate & Apply button
     const applyBtn = actionsRow.createEl("button", {
       text: "Validate & Apply",
@@ -626,38 +659,7 @@ export class SettingsView extends PluginSettingTab {
         // Nothing to validate; delegate to plugin (applies defaults)
         await (this.plugin as any).applyCRMConfigFromSettings();
         await (this.plugin as any).saveSettings?.();
-        const confirmRestart = async (): Promise<boolean> => {
-          return await new Promise<boolean>((resolve) => {
-            class RestartModal extends Modal {
-              onOpen() {
-                const { contentEl, titleEl } = this;
-                titleEl.setText("Restart required");
-                contentEl.empty();
-                contentEl.createEl("p", {
-                  text: "Your vault needs to be restarted for these changes to take effect. Restart now?",
-                });
-                const footer = contentEl.createDiv({
-                  cls: "modal-button-container",
-                });
-                const later = footer.createEl("button", {
-                  text: "I'll do it later",
-                });
-                const yes = footer.createEl("button", { text: "Yes" });
-                yes.addClass("mod-cta");
-                later.addEventListener("click", () => {
-                  this.close();
-                  resolve(false);
-                });
-                yes.addEventListener("click", () => {
-                  this.close();
-                  resolve(true);
-                });
-              }
-            }
-            new RestartModal(this.app).open();
-          });
-        };
-        if (await confirmRestart()) {
+        if (await showRestartPrompt()) {
           try {
             (this.app as any)?.commands?.executeCommandById?.("app:reload");
           } catch (_) {}
@@ -687,39 +689,7 @@ export class SettingsView extends PluginSettingTab {
       await (this.plugin as any).applyCRMConfigFromSettings();
       await (this.plugin as any).saveSettings?.();
 
-      const confirmRestart = async (): Promise<boolean> => {
-        return await new Promise<boolean>((resolve) => {
-          class RestartModal extends Modal {
-            onOpen() {
-              const { contentEl, titleEl } = this;
-              titleEl.setText("Restart required");
-              contentEl.empty();
-              contentEl.createEl("p", {
-                text: "Your vault needs to be restarted for these changes to take effect. Restart now?",
-              });
-              const footer = contentEl.createDiv({
-                cls: "modal-button-container",
-              });
-              const later = footer.createEl("button", {
-                text: "I'll do it later",
-              });
-              const yes = footer.createEl("button", { text: "Yes" });
-              yes.addClass("mod-cta");
-              later.addEventListener("click", () => {
-                this.close();
-                resolve(false);
-              });
-              yes.addEventListener("click", () => {
-                this.close();
-                resolve(true);
-              });
-            }
-          }
-          new RestartModal(this.app).open();
-        });
-      };
-
-      if (await confirmRestart()) {
+      if (await showRestartPrompt()) {
         try {
           (this.app as any)?.commands?.executeCommandById?.("app:reload");
         } catch (_) {}
@@ -738,6 +708,14 @@ export class SettingsView extends PluginSettingTab {
       await (this.plugin as any).saveSettings();
       await (this.plugin as any).applyCRMConfigFromSettings();
       textArea.value = "";
+      if (await showRestartPrompt()) {
+        try {
+          (this.app as any)?.commands?.executeCommandById?.("app:reload");
+        } catch (_) {}
+        try {
+          window.location.reload();
+        } catch (_) {}
+      }
     });
 
     const entityDefinitions = CRM_FILE_TYPES.map((type) => {
