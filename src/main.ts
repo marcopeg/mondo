@@ -55,7 +55,7 @@ import {
   getCRMEntityConfig,
 } from "@/types/CRMFileType";
 import { CRM_ENTITY_TYPES, setCRMConfig } from "@/entities";
-import defaultCRMConfig from "@/crm-config.full.json";
+import defaultCRMConfig from "@/crm-config.json";
 import {
   DEFAULT_CRM_JOURNAL_SETTINGS,
   DEFAULT_CRM_DAILY_SETTINGS,

@@ -1,4 +1,4 @@
-import crmConfig from "@/crm-config.full.json";
+import crmConfig from "@/crm-config.json";
 import type { CRMEntityConfig } from "@/types/CRMEntityConfig";
 import type { CRMEntityType, CRMConfig } from "@/types/CRMEntityTypes";
 
