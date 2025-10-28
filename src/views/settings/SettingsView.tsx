@@ -871,18 +871,7 @@ export class SettingsView extends PluginSettingTab {
           "aria-expanded",
           visible ? "true" : "false"
         );
-
-        // Show/hide separator based on visibility
-        if (entitiesSeparator) {
-          entitiesSeparator.toggleClass("is-hidden", !visible);
-        }
       };
-
-      // Create separator element (hidden by default)
-      const entitiesSeparator = containerEl.createEl("hr");
-      entitiesSeparator.style.margin = "40px 0";
-      entitiesSeparator.style.opacity = "0.5";
-      entitiesSeparator.addClass("is-hidden");
 
       applyEntitiesVisibility(false);
 
@@ -1010,6 +999,11 @@ export class SettingsView extends PluginSettingTab {
           addSelfPersonSetting(section);
         }
       }
+
+      // Add separator inside the entities content div so it only shows when expanded
+      const entitiesSeparator = entitiesContent.createEl("hr");
+      entitiesSeparator.style.margin = "24px 0";
+      entitiesSeparator.style.opacity = "0.5";
     }
 
     const timestampSettingsSection = createSettingsSection(
