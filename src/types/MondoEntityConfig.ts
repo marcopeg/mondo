@@ -1,19 +1,19 @@
 // Settings wrapper has been removed from the config schema.
 // Template is now a top-level property on the entity config.
 
-export type CRMEntityListSortDirection = "asc" | "desc";
+export type MondoEntityListSortDirection = "asc" | "desc";
 
-export interface CRMEntityListSortConfig {
+export interface MondoEntityListSortConfig {
   column?: string;
-  direction?: CRMEntityListSortDirection;
+  direction?: MondoEntityListSortDirection;
 }
 
-export interface CRMEntityListConfig {
+export interface MondoEntityListConfig {
   columns?: string[];
-  sort?: CRMEntityListSortConfig;
+  sort?: MondoEntityListSortConfig;
 }
 
-export interface CRMEntityLinkConfig<TType extends string = string> {
+export interface MondoEntityLinkConfig<TType extends string = string> {
   type: TType;
   collapsed?: boolean;
   [key: string]: unknown;
@@ -23,7 +23,7 @@ export interface CRMEntityLinkConfig<TType extends string = string> {
  * Backlinks panel config — make this available as a built-in/default link shape
  * so individual entity declarations don't need to repeat the whole shape.
  */
-export interface CRMEntityBacklinksLinkConfig {
+export interface MondoEntityBacklinksLinkConfig {
   collapsed?: boolean;
   targetType?: string;
   targetKey?: string;
@@ -81,33 +81,33 @@ export interface CRMEntityBacklinksLinkConfig {
     | { all?: unknown[]; any?: unknown[]; not?: unknown };
 }
 
-export interface CRMEntityBacklinksLink
-  extends CRMEntityLinkConfig<"backlinks"> {
+export interface MondoEntityBacklinksLink
+  extends MondoEntityLinkConfig<"backlinks"> {
   key?: string;
   desc?: string;
-  config?: CRMEntityBacklinksLinkConfig;
+  config?: MondoEntityBacklinksLinkConfig;
 }
 
-export interface CRMEntityBacklinksLinkLegacy
-  extends CRMEntityLinkConfig<"backlinks">,
-    CRMEntityBacklinksLinkConfig {}
+export interface MondoEntityBacklinksLinkLegacy
+  extends MondoEntityLinkConfig<"backlinks">,
+    MondoEntityBacklinksLinkConfig {}
 
-export interface CRMEntityConfig<
+export interface MondoEntityConfig<
   TType extends string = string,
   /**
    * TLink is the link config shape for this entity. By default we include the
-   * generic CRMEntityLinkConfig plus the built-in CRMEntityBacklinksLink so
+   * generic MondoEntityLinkConfig plus the built-in MondoEntityBacklinksLink so
    * entities don't need to re-declare the backlinks shape every time.
    */
-  TLink extends CRMEntityLinkConfig =
-    | CRMEntityLinkConfig
-    | CRMEntityBacklinksLink
-    | CRMEntityBacklinksLinkLegacy
+  TLink extends MondoEntityLinkConfig =
+    | MondoEntityLinkConfig
+    | MondoEntityBacklinksLink
+    | MondoEntityBacklinksLinkLegacy
 > {
   type: TType;
   name: string;
   icon: string;
   template: string;
-  list?: CRMEntityListConfig;
+  list?: MondoEntityListConfig;
   links?: TLink[];
 }

@@ -2,7 +2,7 @@
 
 ## Problem Identified
 
-The CRM file manager had several race conditions causing inconsistent loading of files:
+The Mondo file manager had several race conditions causing inconsistent loading of files:
 
 1. **Metadata Cache Not Ready**: During plugin load, `app.metadataCache.getFileCache()` was returning `null` for files that had frontmatter but hadn't been processed yet.
 
@@ -24,7 +24,7 @@ await fileManager.initialize();
 
 // After (non-blocking)
 fileManager.initialize().catch((err) => {
-  console.error("CRM: Failed to initialize file manager:", err);
+  console.error("Mondo: Failed to initialize file manager:", err);
 });
 ```
 
@@ -35,11 +35,11 @@ fileManager.initialize().catch((err) => {
 **Fix**: Added auto-initialization trigger in `getFiles()`:
 
 ```typescript
-public getFiles(type: CRMFileType): TCachedFile[] {
+public getFiles(type: MondoFileType): TCachedFile[] {
   // Trigger initialization if not started yet
   if (!this.isInitialized && !this.pendingInitPromise) {
     this.initialize().catch(err => {
-      console.error("CRMFileManager: Failed to auto-initialize:", err);
+      console.error("MondoFileManager: Failed to auto-initialize:", err);
     });
   }
   return this.files.get(type) || [];

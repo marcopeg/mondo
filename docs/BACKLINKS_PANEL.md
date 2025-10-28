@@ -4,7 +4,7 @@ The Backlinks panel renders a table of notes that link back to the current note 
 
 You enable it by adding an entry to an entity's `links` array in `src/entities/`, using the new nested configuration structure.You enable it by adding an entry to an entity's `links` array in `src/entities/`, using the new nested configuration structure.
 
-## Quick startkey?: string; // unique panel key used for crmState persistence (required for stable state)
+## Quick startkey?: string; // unique panel key used for mondoState persistence (required for stable state)
 
 ### Basic backlinks (people report to this person)## Quick start
 
@@ -66,13 +66,13 @@ The new backlinks configuration uses a nested structure with optional developer 
 
 // Entity link configurationThe new backlinks configuration uses a nested structure with optional developer documentation:
 
-interface CRMEntityLink {
+interface MondoEntityLink {
 
   type: "backlinks";```ts
 
-  key?: string; // unique panel key for crmState persistence (recommended)// Entity link configuration
+  key?: string; // unique panel key for mondoState persistence (recommended)// Entity link configuration
 
-  desc?: string; // optional: developer-readable descriptioninterface CRMEntityLink {
+  desc?: string; // optional: developer-readable descriptioninterface MondoEntityLink {
 
   config: BacklinksPanelConfig;  type: "backlinks";
 
@@ -118,7 +118,7 @@ interface BacklinksPanelConfig {
 
     | {
 
-  // Sorting  - Legacy fallback: `crmState["backlinks:<type>"]` or `crmState["backlinks:<type>:<property>"]` when `key` is not provided
+  // Sorting  - Legacy fallback: `mondoState["backlinks:<type>"]` or `mondoState["backlinks:<type>:<property>"]` when `key` is not provided
 
   sort?:        direction?: "asc" | "desc";
 
@@ -274,7 +274,7 @@ The top-level `key` attribute identifies the panel for state persistence: - `lab
 
   - `key`: Property name (required)
 
-**State stored under `crmState["backlinks:{key}"]`:**  - `label`: Optional column header
+**State stored under `mondoState["backlinks:{key}"]`:**  - `label`: Optional column header
 
   - `align`: Text alignment
 
@@ -304,9 +304,9 @@ The top-level `key` attribute identifies the panel for state persistence: - `lab
 
 **Column types:**- Order persists per-panel in the note's frontmatter:
 
-  - `crmState["backlinks:<type>"].order` for simple backlinks
+  - `mondoState["backlinks:<type>"].order` for simple backlinks
 
-- **cover**: 64×64 image from `cover` frontmatter wikilink or path  - `crmState["backlinks:<type>:<property>"].order` for property-based backlinks
+- **cover**: 64×64 image from `cover` frontmatter wikilink or path  - `mondoState["backlinks:<type>:<property>"].order` for property-based backlinks
 
 
 
@@ -368,9 +368,9 @@ The top-level `key` attribute identifies the panel for state persistence: - `lab
 
 - `sort: { strategy: "manual" }` enables drag & drop
 
-- Order persists per-panel in the note's frontmatter under `crmState["backlinks:{key}"].order`**Example templates:**
+- Order persists per-panel in the note's frontmatter under `mondoState["backlinks:{key}"].order`**Example templates:**
 
-- If `key` is not provided, falls back to `crmState["backlinks:{type}"].order` or `crmState["backlinks:{type}:{property}"].order`
+- If `key` is not provided, falls back to `mondoState["backlinks:{type}"].order` or `mondoState["backlinks:{type}:{property}"].order`
 
 ```ts
 
@@ -446,9 +446,9 @@ createEntity: {
 
 createEntity: {- The panel's collapsed state persists in the note's frontmatter:
 
-  enabled: true,  - `crmState["backlinks:<type>"].collapsed` or
+  enabled: true,  - `mondoState["backlinks:<type>"].collapsed` or
 
-  title: "{YY}-{MM}-{DD} {hh}.{mm} with {@this.show}",  - `crmState["backlinks:<type>:<property>"].collapsed`
+  title: "{YY}-{MM}-{DD} {hh}.{mm} with {@this.show}",  - `mondoState["backlinks:<type>:<property>"].collapsed`
 
   // Result: "25-10-27 06.57 with Jane Smith"
 
@@ -536,9 +536,9 @@ The panel's collapsed state persists in the note's frontmatter:- Override with `
 
 - For `find` queries, add a `filter` to refine results
 
-- Preferred: `crmState["backlinks:{key}"].collapsed` (when top-level `key` is defined)
+- Preferred: `mondoState["backlinks:{key}"].collapsed` (when top-level `key` is defined)
 
-- Legacy fallback: `crmState["backlinks:{type}"].collapsed` or `crmState["backlinks:{type}:{property}"].collapsed` (when `key` is not provided)**Drag-and-drop order not persisting:**
+- Legacy fallback: `mondoState["backlinks:{type}"].collapsed` or `mondoState["backlinks:{type}:{property}"].collapsed` (when `key` is not provided)**Drag-and-drop order not persisting:**
 
 
 

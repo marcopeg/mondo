@@ -1,8 +1,8 @@
 import { TFile, type App } from "obsidian";
-import { getCRMPlugin } from "@/utils/getCRMPlugin";
+import { getMondoPlugin } from "@/utils/getMondoPlugin";
 import { normalizeFolderPath } from "@/utils/normalizeFolderPath";
-import { getTemplateForType, renderTemplate } from "@/utils/CRMTemplates";
-import { CRMFileType, isCRMEntityType } from "@/types/CRMFileType";
+import { getTemplateForType, renderTemplate } from "@/utils/MondoTemplates";
+import { MondoFileType, isMondoEntityType } from "@/types/MondoFileType";
 import type { TCachedFile } from "@/types/TCachedFile";
 import { getEntityDisplayName } from "@/utils/getEntityDisplayName";
 import {
@@ -18,7 +18,7 @@ export type CreateEntityAttributes = Record<
 
 export type CreateEntityForEntityParams = {
   app: App;
-  targetType: string; // CRM entity type (lowercase)
+  targetType: string; // Mondo entity type (lowercase)
   hostEntity: TCachedFile; // current focused entity
   titleTemplate?: string; // e.g., "{date} on {show}"
   attributeTemplates?: CreateEntityAttributes; // values with {date}|{datetime}|{show}
@@ -80,7 +80,7 @@ const applyInlineTemplate = (
 };
 
 /**
- * Create a new CRM entity note of the given target type, using the configured template and root path.
+ * Create a new Mondo entity note of the given target type, using the configured template and root path.
  * It links back to the host entity via the provided linkProperties (defaults to ["related", hostType])
  * and applies optional attribute overrides from attributeTemplates.
  */
@@ -93,9 +93,9 @@ export const createEntityForEntity = async ({
   linkProperties,
   openAfterCreate = true,
 }: CreateEntityForEntityParams): Promise<TFile | null> => {
-  const plugin = getCRMPlugin(app);
+  const plugin = getMondoPlugin(app);
   if (!plugin) {
-    console.error("createEntityForEntity: CRM plugin instance not available");
+    console.error("createEntityForEntity: Mondo plugin instance not available");
     return null;
   }
 
@@ -105,12 +105,12 @@ export const createEntityForEntity = async ({
   }
 
   const settings = plugin.settings as {
-    rootPaths?: Partial<Record<CRMFileType, string>>;
-    templates?: Partial<Record<CRMFileType, string>>;
+    rootPaths?: Partial<Record<MondoFileType, string>>;
+    templates?: Partial<Record<MondoFileType, string>>;
   };
 
   const normalizedTarget = String(targetType).trim().toLowerCase();
-  if (!isCRMEntityType(normalizedTarget)) {
+  if (!isMondoEntityType(normalizedTarget)) {
     console.error(`createEntityForEntity: invalid target type "${targetType}"`);
     return null;
   }
@@ -134,7 +134,7 @@ export const createEntityForEntity = async ({
     }).trim() || "Untitled";
 
   const folderSetting = (
-    settings.rootPaths?.[normalizedTarget as CRMFileType] ?? "/"
+    settings.rootPaths?.[normalizedTarget as MondoFileType] ?? "/"
   ).trim();
   const normalizedFolder = normalizeFolderPath(folderSetting);
 
@@ -157,7 +157,7 @@ export const createEntityForEntity = async ({
   const templateSource = await getTemplateForType(
     app,
     settings.templates,
-    normalizedTarget as CRMFileType
+    normalizedTarget as MondoFileType
   );
 
   const rendered = renderTemplate(templateSource, {

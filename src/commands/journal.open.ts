@@ -1,5 +1,5 @@
 import { App, TFile, TFolder, MarkdownView } from "obsidian";
-import type CRM from "@/main";
+import type Mondo from "@/main";
 
 type OpenJournalOptions = {
   modifyExisting?: boolean;
@@ -23,7 +23,7 @@ function formatTime(format: string, date: Date) {
 // Open (and create if needed) today's journal file inside the configured journal folder
 export async function openJournal(
   app: App,
-  plugin: CRM,
+  plugin: Mondo,
   options?: OpenJournalOptions
 ) {
   const { modifyExisting = true } = options ?? {};
@@ -85,12 +85,12 @@ export async function openJournal(
     // create with the required frontmatter at the top
     tfile = await app.vault.create(filePath, makeFrontmatter(isoDate));
   } else if (modifyExisting) {
-    // Ensure existing file has no crm fragment at top and has normalized frontmatter
+    // Ensure existing file has no mondo fragment at top and has normalized frontmatter
     try {
       const raw = await app.vault.read(tfile);
 
-      // Remove any leading crm fragment block if present
-      const fragmentRegex = /^\s*```crm\njournal-nav\n```\r?\n?/;
+      // Remove any leading mondo fragment block if present
+      const fragmentRegex = /^\s*```mondo\njournal-nav\n```\r?\n?/;
       let cleaned = raw.replace(fragmentRegex, "");
 
       // Detect YAML frontmatter at the top

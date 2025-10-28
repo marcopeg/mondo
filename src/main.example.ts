@@ -118,9 +118,9 @@ export default class MyPlugin extends Plugin {
           const container = view.containerEl;
 
           // Avoid duplicates
-          if (!container.querySelector(".crm-footer")) {
-            const footer = container.createDiv({ cls: "crm-footer" });
-            footer.setText("👋 CRM footer (always visible)");
+          if (!container.querySelector(".mondo-footer")) {
+            const footer = container.createDiv({ cls: "mondo-footer" });
+            footer.setText("👋 Mondo footer (always visible)");
             container.appendChild(footer);
           }
         }
@@ -140,9 +140,9 @@ export default class MyPlugin extends Plugin {
 
           // Check if there's a frontmatter block
           const fm = content.querySelector(".frontmatter-container");
-          if (fm && !content.querySelector(".crm-inline-nav")) {
-            const nav = createDiv({ cls: "crm-inline-nav" });
-            nav.setText("🔗 CRM navigation goes here");
+          if (fm && !content.querySelector(".mondo-inline-nav")) {
+            const nav = createDiv({ cls: "mondo-inline-nav" });
+            nav.setText("🔗 Mondo navigation goes here");
             fm.insertAdjacentElement("afterend", nav);
           }
         }

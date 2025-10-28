@@ -6,7 +6,7 @@ import { Stack } from "@/components/ui/Stack";
 import Typography from "@/components/ui/Typography";
 import Link from "@/components/ui/Link";
 import { Icon } from "@/components/ui/Icon";
-import { DAILY_NOTE_TYPE } from "@/types/CRMFileType";
+import { DAILY_NOTE_TYPE } from "@/types/MondoFileType";
 import {
   extractDailyLinkReferences,
   extractDailyOpenedReferences,

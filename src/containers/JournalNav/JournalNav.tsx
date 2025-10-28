@@ -42,7 +42,7 @@ export const JournalNav: React.FC = () => {
   };
 
   const onToday = async () => {
-    const pluginInstance = (app as any).plugins?.plugins?.["crm"] as any;
+    const pluginInstance = (app as any).plugins?.plugins?.["mondo"] as any;
     if (pluginInstance && typeof openJournal === "function") {
       try {
         await openJournal(app, pluginInstance);
@@ -53,7 +53,7 @@ export const JournalNav: React.FC = () => {
     }
 
     try {
-      (app as any).commands.executeCommandById("crm-open-journal");
+      (app as any).commands.executeCommandById("mondo-open-journal");
     } catch (e) {
       // ignore
     }

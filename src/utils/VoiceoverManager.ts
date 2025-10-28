@@ -1,4 +1,4 @@
-import type CRM from "@/main";
+import type Mondo from "@/main";
 import {
   Modal,
   Notice,
@@ -24,7 +24,7 @@ const DEFAULT_VOICEOVER_CACHE_PATH = "/voiceover";
 
 const AUDIO_MIME_TYPE = "audio/mpeg";
 const VOICE_PREVIEW_TEXT =
-  "Hello from Obsidian CRM. This is a quick voice preview.";
+  "Hello from Obsidian Mondo. This is a quick voice preview.";
 
 type VoicesResponse = {
   voices?: unknown;
@@ -71,7 +71,7 @@ const hashContent = async (content: string) => {
       );
       return toHex(digest);
     } catch (error) {
-      console.warn("CRM: failed to hash content via Web Crypto", error);
+      console.warn("Mondo: failed to hash content via Web Crypto", error);
     }
   }
 
@@ -116,19 +116,19 @@ class VoiceoverModal extends Modal {
   }
 
   onOpen() {
-    this.modalEl.addClass("crm-voiceover-modal");
+    this.modalEl.addClass("mondo-voiceover-modal");
     this.titleEl.setText("Voiceover");
 
     this.statusEl = this.contentEl.createEl("p", {
-      cls: "crm-voiceover-status",
+      cls: "mondo-voiceover-status",
     });
 
     this.audioContainerEl = this.contentEl.createDiv({
-      cls: "crm-voiceover-audio",
+      cls: "mondo-voiceover-audio",
     });
 
     this.buttonsEl = this.contentEl.createDiv({
-      cls: "crm-voiceover-buttons",
+      cls: "mondo-voiceover-buttons",
     });
 
     this.setStatus("Preparing voiceover…");
@@ -174,7 +174,7 @@ class VoiceoverModal extends Modal {
     });
     this.audioEl.src = audioPath;
     void this.audioEl.play().catch((error) => {
-      console.warn("CRM: unable to autoplay voiceover", error);
+      console.warn("Mondo: unable to autoplay voiceover", error);
     });
     this.renderButtons([
       {
@@ -215,14 +215,14 @@ class VoiceoverModal extends Modal {
     this.clearButtons();
     buttons.forEach((config) => {
       const button = this.buttonsEl.createEl("button", {
-        cls: "crm-voiceover-button",
+        cls: "mondo-voiceover-button",
         text: config.text,
       });
       if (config.variant === "accent") {
-        button.addClass("crm-voiceover-button--accent");
+        button.addClass("mondo-voiceover-button--accent");
       }
       if (config.variant === "neutral") {
-        button.addClass("crm-voiceover-button--neutral");
+        button.addClass("mondo-voiceover-button--neutral");
       }
       button.addEventListener("click", () => {
         config.action();
@@ -236,14 +236,14 @@ class VoiceoverModal extends Modal {
 }
 
 export class VoiceoverManager {
-  private readonly plugin: CRM;
+  private readonly plugin: Mondo;
   private cachedVoices: string[] | undefined;
   private readonly activeNotes = new Map<string, AbortController>();
   private previewAudio: HTMLAudioElement | null = null;
   private previewUrl: string | null = null;
   private previewController: AbortController | null = null;
 
-  constructor(plugin: CRM) {
+  constructor(plugin: Mondo) {
     this.plugin = plugin;
   }
 
@@ -300,7 +300,7 @@ export class VoiceoverManager {
           : [...FALLBACK_VOICES];
       }
     } catch (error) {
-      console.error("CRM: failed to load OpenAI voices", error);
+      console.error("Mondo: failed to load OpenAI voices", error);
       this.cachedVoices = [...FALLBACK_VOICES];
     }
 
@@ -324,7 +324,7 @@ export class VoiceoverManager {
     const apiKey = this.getApiKey();
     if (!apiKey) {
       new Notice(
-        "Set your OpenAI Whisper API key in the CRM settings before generating a voiceover."
+        "Set your OpenAI Whisper API key in the Mondo settings before generating a voiceover."
       );
       return;
     }
@@ -387,10 +387,10 @@ export class VoiceoverManager {
       const abortError =
         error instanceof Error && error.name === "AbortError";
       if (abortError) {
-        console.info("CRM: voiceover generation cancelled");
+        console.info("Mondo: voiceover generation cancelled");
         voiceoverModal.showError("Voiceover generation cancelled.");
       } else {
-        console.error("CRM: failed to generate voiceover", error);
+        console.error("Mondo: failed to generate voiceover", error);
         const message =
           error instanceof Error ? error.message : "Unknown voiceover error.";
         voiceoverModal.showError(`Voiceover failed: ${message}`);
@@ -435,7 +435,7 @@ export class VoiceoverManager {
     const apiKey = this.getApiKey();
     if (!apiKey) {
       throw new Error(
-        "Set your OpenAI Whisper API key in the CRM settings before previewing voices."
+        "Set your OpenAI Whisper API key in the Mondo settings before previewing voices."
       );
     }
 
@@ -476,7 +476,7 @@ export class VoiceoverManager {
         return;
       }
 
-      console.error("CRM: failed to preview voice", error);
+      console.error("Mondo: failed to preview voice", error);
 
       if (error instanceof Error) {
         throw error;
@@ -542,7 +542,7 @@ export class VoiceoverManager {
         payload?.error?.message ?? payload?.message ?? response.statusText;
       return new Error(message || "Request failed");
     } catch (error) {
-      console.warn("CRM: unable to parse OpenAI error response", error);
+      console.warn("Mondo: unable to parse OpenAI error response", error);
       return new Error(response.statusText || "Request failed");
     }
   };
@@ -617,7 +617,7 @@ export class VoiceoverManager {
       );
       return abstract instanceof TFile ? abstract : null;
     } catch (error) {
-      console.error("CRM: failed to list voiceover cache folder", error);
+      console.error("Mondo: failed to list voiceover cache folder", error);
       return null;
     }
   };

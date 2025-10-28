@@ -1,5 +1,5 @@
 import { App, TFile } from "obsidian";
-import type CRM from "@/main";
+import type Mondo from "@/main";
 
 type Dir = "prev" | "next";
 
@@ -58,7 +58,7 @@ async function openPath(app: App, path: string) {
   }
 }
 
-export async function journalMove(app: App, plugin: CRM, dir: Dir) {
+export async function journalMove(app: App, plugin: Mondo, dir: Dir) {
   const settings = (plugin as any).settings || {};
   const journalSettings = settings.journal || {
     root: "Journal",
@@ -70,7 +70,7 @@ export async function journalMove(app: App, plugin: CRM, dir: Dir) {
   const activeFile = app.workspace.getActiveFile();
   if (!activeFile) {
     // fallback
-    await (app as any).commands.executeCommandById("crm:crm-open-journal");
+    await (app as any).commands.executeCommandById("mondo:mondo-open-journal");
     return;
   }
 
@@ -83,14 +83,14 @@ export async function journalMove(app: App, plugin: CRM, dir: Dir) {
   }
 
   if (!currentDate) {
-    await (app as any).commands.executeCommandById("crm:crm-open-journal");
+    await (app as any).commands.executeCommandById("mondo:mondo-open-journal");
     return;
   }
 
   // Collect other journal files with dates
   const entries = await listJournalFilesWithDates(app, journalRoot);
   if (entries.length === 0) {
-    await (app as any).commands.executeCommandById("crm:crm-open-journal");
+    await (app as any).commands.executeCommandById("mondo:mondo-open-journal");
     return;
   }
 
@@ -127,18 +127,18 @@ export async function journalMove(app: App, plugin: CRM, dir: Dir) {
     }
 
     // For 'next' fallback behavior: trigger open-journal command
-    await (app as any).commands.executeCommandById("crm:crm-open-journal");
+    await (app as any).commands.executeCommandById("mondo:mondo-open-journal");
     return;
   }
 
   // Open the target file
   const opened = await openPath(app, target.path);
   if (!opened) {
-    await (app as any).commands.executeCommandById("crm:crm-open-journal");
+    await (app as any).commands.executeCommandById("mondo:mondo-open-journal");
   }
 }
 
 // Factory helper to create a bound mover: const mover = journalMoveFactory(app, plugin); mover('prev')
-export function journalMoveFactory(app: App, plugin: CRM) {
+export function journalMoveFactory(app: App, plugin: Mondo) {
   return async (dir: Dir) => journalMove(app, plugin, dir);
 }

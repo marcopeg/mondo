@@ -1,8 +1,8 @@
 import { useMemo } from "react";
 import { TFile } from "obsidian";
 import { useApp } from "@/hooks/use-app";
-import type { CRMEntityListRow } from "@/views/entity-panel-view/useEntityPanels";
-import { CRMFileLink } from "../../CRMFileLink";
+import type { MondoEntityListRow } from "@/views/entity-panel-view/useEntityPanels";
+import { MondoFileLink } from "../../MondoFileLink";
 
 const extractEntries = (value: unknown): string[] => {
   if (!value) return [];
@@ -25,7 +25,7 @@ type LinkEntry = {
 
 type EntityLinksCellProps = {
   value: unknown;
-  row: CRMEntityListRow;
+  row: MondoEntityListRow;
   column: string;
 };
 
@@ -85,7 +85,7 @@ export const EntityLinksCell = ({ value }: EntityLinksCellProps) => {
       {links.map((link, index) => {
         const key = `${link.path ?? link.label}-${index}`;
         const content = link.path ? (
-          <CRMFileLink path={link.path} label={link.label} />
+          <MondoFileLink path={link.path} label={link.label} />
         ) : (
           <span className="rounded bg-[var(--background-modifier-hover)] px-2 py-1 text-xs">
             {link.label}

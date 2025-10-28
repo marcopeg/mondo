@@ -3,15 +3,15 @@ import { useApp } from "@/hooks/use-app";
 import { AutoComplete } from "@/components/AutoComplete";
 import type { TFile } from "obsidian";
 import {
-  CRMFileType,
-  CRM_FILE_TYPES,
-  isCRMFileType,
-} from "@/types/CRMFileType";
-import { resolveCRMEntityType } from "@/entities";
+  MondoFileType,
+  MONDO_FILE_TYPES,
+  isMondoFileType,
+} from "@/types/MondoFileType";
+import { resolveMondoEntityType } from "@/entities";
 import {
   getTemplateForType,
   renderTemplate,
-} from "@/utils/CRMTemplates";
+} from "@/utils/MondoTemplates";
 import { addParticipantLink } from "@/utils/participants";
 import { resolveSelfPerson } from "@/utils/selfPerson";
 import { normalizeFolderPath } from "@/utils/normalizeFolderPath";
@@ -21,17 +21,17 @@ interface QuickEntityProps {
   placeholder?: string;
 }
 
-const normalizeType = (value: string): CRMFileType => {
-  const resolved = resolveCRMEntityType((value || "").toLowerCase());
+const normalizeType = (value: string): MondoFileType => {
+  const resolved = resolveMondoEntityType((value || "").toLowerCase());
   if (resolved) {
     return resolved;
   }
 
-  if (isCRMFileType(value)) {
+  if (isMondoFileType(value)) {
     return value;
   }
 
-  return CRM_FILE_TYPES[0];
+  return MONDO_FILE_TYPES[0];
 };
 
 const slugify = (value: string): string =>
@@ -47,7 +47,7 @@ export const QuickEntity = ({ type, placeholder }: QuickEntityProps) => {
   const entityType = normalizeType(type);
   const files = useFiles(entityType);
   const app = useApp();
-  const pluginInstance = (app as any).plugins?.plugins?.["crm"] as any;
+  const pluginInstance = (app as any).plugins?.plugins?.["mondo"] as any;
 
   const onSelect = (val: string) => {
     (async () => {
@@ -89,7 +89,7 @@ export const QuickEntity = ({ type, placeholder }: QuickEntityProps) => {
           const settings = (pluginInstance as any)?.settings || {};
           const templateSource = await getTemplateForType(
             app,
-            (settings.templates || {}) as Partial<Record<CRMFileType, string>>,
+            (settings.templates || {}) as Partial<Record<MondoFileType, string>>,
             entityType
           );
           const isoTimestamp = now.toISOString();
@@ -105,7 +105,7 @@ export const QuickEntity = ({ type, placeholder }: QuickEntityProps) => {
           createdFile = tfile;
         }
 
-        if (createdFile && entityType === CRMFileType.TASK) {
+        if (createdFile && entityType === MondoFileType.TASK) {
           try {
             const selfParticipant = resolveSelfPerson(app, createdFile.path);
             if (selfParticipant) {

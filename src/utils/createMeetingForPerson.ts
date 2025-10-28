@@ -1,8 +1,8 @@
-import { CRMFileType } from "@/types/CRMFileType";
+import { MondoFileType } from "@/types/MondoFileType";
 import type { TCachedFile } from "@/types/TCachedFile";
 import { getEntityDisplayName } from "@/utils/getEntityDisplayName";
-import { getTemplateForType, renderTemplate } from "@/utils/CRMTemplates";
-import { getCRMPlugin } from "@/utils/getCRMPlugin";
+import { getTemplateForType, renderTemplate } from "@/utils/MondoTemplates";
+import { getMondoPlugin } from "@/utils/getMondoPlugin";
 import { normalizeFolderPath } from "@/utils/normalizeFolderPath";
 import type { App, TFile } from "obsidian";
 
@@ -190,15 +190,15 @@ export const createMeetingForEntity = async ({
     return null;
   }
 
-  const plugin = getCRMPlugin(app);
+  const plugin = getMondoPlugin(app);
   if (!plugin) {
-    console.error("createMeetingForEntity: CRM plugin instance not available");
+    console.error("createMeetingForEntity: Mondo plugin instance not available");
     return null;
   }
 
   const settings = plugin.settings as {
-    rootPaths?: Partial<Record<CRMFileType, string>>;
-    templates?: Partial<Record<CRMFileType, string>>;
+    rootPaths?: Partial<Record<MondoFileType, string>>;
+    templates?: Partial<Record<MondoFileType, string>>;
   };
 
   const displayName = getEntityDisplayName(entityFile);
@@ -207,7 +207,7 @@ export const createMeetingForEntity = async ({
   const isProjectHost =
     (entityFile.cache?.frontmatter as any)?.type === "project";
   const isTeamHost = (entityFile.cache?.frontmatter as any)?.type === "team";
-  const rootPathSetting = settings.rootPaths?.[CRMFileType.MEETING] ?? "/";
+  const rootPathSetting = settings.rootPaths?.[MondoFileType.MEETING] ?? "/";
   const normalizedFolder = normalizeFolderPath(rootPathSetting);
 
   if (normalizedFolder) {
@@ -244,12 +244,12 @@ export const createMeetingForEntity = async ({
     const templateSource = await getTemplateForType(
       app,
       settings.templates,
-      CRMFileType.MEETING
+      MondoFileType.MEETING
     );
 
     const rendered = renderTemplate(templateSource, {
       title: safeTitle,
-      type: String(CRMFileType.MEETING),
+      type: String(MondoFileType.MEETING),
       filename: fileName,
       slug,
       date: isoTimestamp,

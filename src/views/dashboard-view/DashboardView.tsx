@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useApp } from "@/hooks/use-app";
 import { Typography } from "@/components/ui/Typography";
 import Button from "@/components/ui/Button";
-import { CRM_ENTITIES, CRM_UI_CONFIG } from "@/entities";
+import { MONDO_ENTITIES, MONDO_UI_CONFIG } from "@/entities";
 import EntityTilesGrid from "./components/EntityTilesGrid";
 import RelevantNotes from "./RelevantNotes";
 import QuickTasks from "./QuickTasks";
@@ -67,17 +67,17 @@ export const DashboardView = () => {
     [app, selfPersonPath]
   );
   const onOpenToday = async () => {
-    (app as any).commands.executeCommandById("crm:open-today");
+    (app as any).commands.executeCommandById("mondo:open-today");
   };
 
   const onOpenJournal = async () => {
-    (app as any).commands.executeCommandById("crm:open-journal");
+    (app as any).commands.executeCommandById("mondo:open-journal");
   };
 
   const onOpenEntityPanel = (entityType: string) => {
     const normalized = entityType?.trim();
     if (!normalized) return;
-    (app as any).commands.executeCommandById(`crm:open-${normalized}`);
+    (app as any).commands.executeCommandById(`mondo:open-${normalized}`);
   };
 
   const onOpenMe = useCallback(async () => {
@@ -91,14 +91,14 @@ export const DashboardView = () => {
         await (leaf as any).openFile(selfPerson.file);
       }
     } catch (error) {
-      console.error("CRM Dashboard: failed to open self person note", error);
+      console.error("Mondo Dashboard: failed to open self person note", error);
     }
   }, [app, selfPerson]);
 
   const entityTiles = useMemo(() => {
-    const order = CRM_UI_CONFIG?.tiles?.order ?? [];
+    const order = MONDO_UI_CONFIG?.tiles?.order ?? [];
     return order
-      .map((type) => CRM_ENTITIES[type])
+      .map((type) => MONDO_ENTITIES[type])
       .filter(Boolean)
       .map((config) => ({
         type: config.type,
@@ -146,7 +146,7 @@ export const DashboardView = () => {
 
   return (
     <div className="p-4 space-y-6">
-      <Typography variant="h1">CRM Dashboard</Typography>
+      <Typography variant="h1">Mondo Dashboard</Typography>
       <div className="flex flex-col gap-4">
         <div className="flex w-full flex-row flex-nowrap items-stretch gap-2 sm:flex-row sm:flex-wrap sm:gap-3">
           {quickActions.map((action) => (
@@ -177,7 +177,7 @@ export const DashboardView = () => {
       )}
       {entityTiles.length > 0 && (
         <>
-          <Typography variant="h1">CRM Entities</Typography>
+          <Typography variant="h1">Mondo Entities</Typography>
           <div className="mt-4">
             <EntityTilesGrid items={entityTiles} onOpen={onOpenEntityPanel} />
           </div>

@@ -1,8 +1,8 @@
-import { CRMFileType } from "@/types/CRMFileType";
+import { MondoFileType } from "@/types/MondoFileType";
 import type { TCachedFile } from "@/types/TCachedFile";
 import { getEntityDisplayName } from "@/utils/getEntityDisplayName";
-import { getTemplateForType, renderTemplate } from "@/utils/CRMTemplates";
-import { getCRMPlugin } from "@/utils/getCRMPlugin";
+import { getTemplateForType, renderTemplate } from "@/utils/MondoTemplates";
+import { getMondoPlugin } from "@/utils/getMondoPlugin";
 import type { App, TFile } from "obsidian";
 import { normalizeFolderPath } from "@/utils/normalizeFolderPath";
 import {
@@ -35,15 +35,15 @@ export const createLogForEntity = async ({
     return null;
   }
 
-  const plugin = getCRMPlugin(app);
+  const plugin = getMondoPlugin(app);
   if (!plugin) {
-    console.error("createLogForEntity: CRM plugin instance not available");
+    console.error("createLogForEntity: Mondo plugin instance not available");
     return null;
   }
 
   const settings = plugin.settings as {
-    rootPaths?: Partial<Record<CRMFileType, string>>;
-    templates?: Partial<Record<CRMFileType, string>>;
+    rootPaths?: Partial<Record<MondoFileType, string>>;
+    templates?: Partial<Record<MondoFileType, string>>;
   };
 
   const displayName = getEntityDisplayName(entityFile);
@@ -52,24 +52,24 @@ export const createLogForEntity = async ({
     | undefined;
 
   const isEditableHost =
-    hostType === CRMFileType.PERSON ||
+    hostType === MondoFileType.PERSON ||
     hostType === "person" ||
-    hostType === CRMFileType.MEETING ||
+    hostType === MondoFileType.MEETING ||
     hostType === "meeting" ||
-    hostType === CRMFileType.PROJECT ||
+    hostType === MondoFileType.PROJECT ||
     hostType === "project" ||
-    hostType === CRMFileType.TASK ||
+    hostType === MondoFileType.TASK ||
     hostType === "task" ||
-    hostType === CRMFileType.FACT ||
+    hostType === MondoFileType.FACT ||
     hostType === "fact" ||
-    hostType === CRMFileType.COMPANY ||
+    hostType === MondoFileType.COMPANY ||
     hostType === "company" ||
-    hostType === CRMFileType.TEAM ||
+    hostType === MondoFileType.TEAM ||
     hostType === "team" ||
-    hostType === CRMFileType.LOG ||
+    hostType === MondoFileType.LOG ||
     hostType === "log";
 
-  const rootPathSetting = settings.rootPaths?.[CRMFileType.LOG] ?? "/";
+  const rootPathSetting = settings.rootPaths?.[MondoFileType.LOG] ?? "/";
   const normalizedFolder = normalizeFolderPath(rootPathSetting);
 
   if (normalizedFolder) {
@@ -117,12 +117,12 @@ export const createLogForEntity = async ({
     const templateSource = await getTemplateForType(
       app,
       settings.templates,
-      CRMFileType.LOG
+      MondoFileType.LOG
     );
 
     const rendered = renderTemplate(templateSource, {
       title: safeTitle,
-      type: String(CRMFileType.LOG),
+      type: String(MondoFileType.LOG),
       filename: fileName,
       slug,
       date: isoTimestamp,

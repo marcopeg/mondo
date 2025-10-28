@@ -14,18 +14,18 @@ yarn build
 yarn dev
 ```
 
-# CRM Obsidian Plugin
+# Mondo Obsidian Plugin
 
-This codebase implements an Obsidian Plugin for CRM purposes.
+This codebase implements an Obsidian Plugin for Mondo purposes.
 The goal is to enrich Obsidian UI with lists of related notes by context (such as `People` associated with a `Company`).
 
 ## FrontMatter
 
-This plugin relies on the frontmatter's attribute `type` to identify CRM-specific files and activate the rich UI functionalities.
+This plugin relies on the frontmatter's attribute `type` to identify Mondo-specific files and activate the rich UI functionalities.
 
 ## Entities
 
-Supported values for the `type` frontmatter field are defined in [`src/crm-config.json`](./src/crm-config.json).  
+Supported values for the `type` frontmatter field are defined in [`src/mondo-config.json`](./src/mondo-config.json).  
 Current entity types:
 
 - person
@@ -47,7 +47,7 @@ Current entity types:
 - show
 - document
 
-The config also drives dashboard tile ordering, relevant-note filters, and per-entity templates. See [`CRM_CONFIG.md`](./docs/CRM_CONFIG.md) for details on maintaining the configuration, and [`ENTITY_LINKS.md`](./docs/ENTITY_LINKS.md) for link panel guidance.
+The config also drives dashboard tile ordering, relevant-note filters, and per-entity templates. See [`MONDO_CONFIG.md`](./docs/MONDO_CONFIG.md) for details on maintaining the configuration, and [`ENTITY_LINKS.md`](./docs/ENTITY_LINKS.md) for link panel guidance.
 
 # TypeScript
 
@@ -169,7 +169,7 @@ const foo = useSetting("foo", "bar");
 
 ## src/hooks/use-files.ts
 
-This hook returns a list of vault files filtered by a CRM-known entity type.
+This hook returns a list of vault files filtered by a Mondo-known entity type.
 
 The second argument, `options`, can be used to apply filters or other hook-specific logic.
 

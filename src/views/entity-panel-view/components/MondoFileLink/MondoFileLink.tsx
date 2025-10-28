@@ -3,18 +3,18 @@ import { TFile } from "obsidian";
 import { useApp } from "@/hooks/use-app";
 import Button from "@/components/ui/Button";
 
-interface CRMFileLinkProps {
+interface MondoFileLinkProps {
   path: string;
   label: string;
 }
 
-export const CRMFileLink = ({ path, label }: CRMFileLinkProps) => {
+export const MondoFileLink = ({ path, label }: MondoFileLinkProps) => {
   const app = useApp();
 
   const handleOpen = useCallback(async () => {
     const file = app.vault.getAbstractFileByPath(path);
     if (!file || !(file instanceof TFile)) {
-      console.warn(`CRMFileLink: Could not find file at path "${path}"`);
+      console.warn(`MondoFileLink: Could not find file at path "${path}"`);
       return;
     }
 

@@ -12,16 +12,16 @@ import { EntityLinksTable } from "@/components/EntityLinksTable";
 import { useFiles } from "@/hooks/use-files";
 import { useEntityLinkOrdering } from "@/hooks/use-entity-link-ordering";
 import { useApp } from "@/hooks/use-app";
-import { CRM_ENTITIES, type CRMEntityType } from "@/entities";
-import { isCRMEntityType } from "@/types/CRMFileType";
+import { MONDO_ENTITIES, type MondoEntityType } from "@/entities";
+import { isMondoEntityType } from "@/types/MondoFileType";
 import { matchesAnyPropertyLink } from "@/utils/matchesAnyPropertyLink";
 import { getEntityDisplayName } from "@/utils/getEntityDisplayName";
 import createEntityForEntity from "@/utils/createEntityForEntity";
 import type { TCachedFile } from "@/types/TCachedFile";
 import { TFile, type App } from "obsidian";
-import { CRMFileManager } from "@/utils/CRMFileManager";
-import { CRM_FILE_TYPES } from "@/types/CRMFileType";
-import type { CRMEntityBacklinksLinkConfig } from "@/types/CRMEntityConfig";
+import { MondoFileManager } from "@/utils/MondoFileManager";
+import { MONDO_FILE_TYPES } from "@/types/MondoFileType";
+import type { MondoEntityBacklinksLinkConfig } from "@/types/MondoEntityConfig";
 
 type Align = "left" | "right" | "center";
 type BacklinksColumn =
@@ -40,7 +40,7 @@ type BacklinksCreateEntityConfig = {
   attributes?: Record<string, string | number | boolean>;
 };
 
-type BacklinksPanelConfig = CRMEntityBacklinksLinkConfig;
+type BacklinksPanelConfig = MondoEntityBacklinksLinkConfig;
 
 type BacklinksLinksProps = {
   file: TCachedFile;
@@ -55,7 +55,7 @@ const DEFAULT_COLUMNS: BacklinksColumn[] = [
 const toTitleCase = (value: string): string =>
   value.length > 0 ? value.charAt(0).toUpperCase() + value.slice(1) : value;
 
-const buildMatchProperties = (hostType: CRMEntityType): string[] => {
+const buildMatchProperties = (hostType: MondoEntityType): string[] => {
   // Ignore generic "related" unless explicitly provided via panel.properties.
   // Default matching uses only host-type-specific keys.
   const base: string[] = [hostType];
@@ -68,7 +68,7 @@ const buildMatchProperties = (hostType: CRMEntityType): string[] => {
 };
 
 const buildLinkProperties = (
-  hostType: CRMEntityType,
+  hostType: MondoEntityType,
   override?: string | string[]
 ): string[] => {
   // For creating new backlinks, avoid generic "related" and avoid auto-adding
@@ -173,17 +173,17 @@ export const BacklinksLinks = ({ file, config }: BacklinksLinksProps) => {
     .toLowerCase();
 
   // Determine effective target type (entity type to list)
-  let effectiveTargetType: CRMEntityType | null = null;
+  let effectiveTargetType: MondoEntityType | null = null;
   const targetTypeLower = targetTypeRawOriginal.toLowerCase();
-  if (targetTypeRawOriginal && isCRMEntityType(targetTypeLower)) {
-    effectiveTargetType = targetTypeLower as CRMEntityType;
+  if (targetTypeRawOriginal && isMondoEntityType(targetTypeLower)) {
+    effectiveTargetType = targetTypeLower as MondoEntityType;
   } else if (
     legacyTargetOriginal &&
-    isCRMEntityType(legacyTargetOriginal.toLowerCase())
+    isMondoEntityType(legacyTargetOriginal.toLowerCase())
   ) {
-    effectiveTargetType = legacyTargetOriginal.toLowerCase() as CRMEntityType;
-  } else if (isCRMEntityType(hostTypeNormalized)) {
-    effectiveTargetType = hostTypeNormalized as CRMEntityType; // fallback to host type
+    effectiveTargetType = legacyTargetOriginal.toLowerCase() as MondoEntityType;
+  } else if (isMondoEntityType(hostTypeNormalized)) {
+    effectiveTargetType = hostTypeNormalized as MondoEntityType; // fallback to host type
   }
   if (!effectiveTargetType) {
     return null;
@@ -191,7 +191,7 @@ export const BacklinksLinks = ({ file, config }: BacklinksLinksProps) => {
 
   // Determine property to match (memoized for stable identity)
   const legacyTargetIsEntity =
-    legacyTargetOriginal && isCRMEntityType(legacyTargetOriginal.toLowerCase());
+    legacyTargetOriginal && isMondoEntityType(legacyTargetOriginal.toLowerCase());
   const propertyFromTarget = useMemo(() => {
     if (panel.properties || panel.prop) {
       // handled below in matchProperties
@@ -225,7 +225,7 @@ export const BacklinksLinks = ({ file, config }: BacklinksLinksProps) => {
     }`;
   }, [config, effectiveTargetType, propertyFromTarget]);
   const defaultTitle =
-    CRM_ENTITIES[effectiveTargetType]?.name ||
+    MONDO_ENTITIES[effectiveTargetType]?.name ||
     toTitleCase(effectiveTargetType) + "s";
   // Normalize columns: if none configured, use defaults. Also apply sensible
   // per-type default alignment (dates right, others left) when align omitted.
@@ -254,9 +254,9 @@ export const BacklinksLinks = ({ file, config }: BacklinksLinksProps) => {
   );
 
   const collapsed = useMemo(() => {
-    const crmState = (file.cache?.frontmatter as any)?.crmState;
-    if (crmState?.[panelKey]?.collapsed === true) return true;
-    if (crmState?.[panelKey]?.collapsed === false) return false;
+    const mondoState = (file.cache?.frontmatter as any)?.mondoState;
+    if (mondoState?.[panelKey]?.collapsed === true) return true;
+    if (mondoState?.[panelKey]?.collapsed === false) return false;
     return panel.collapsed !== false; // default to expanded unless explicitly false
   }, [file.cache?.frontmatter, panel.collapsed, panelKey]);
 
@@ -281,7 +281,7 @@ export const BacklinksLinks = ({ file, config }: BacklinksLinksProps) => {
     }
 
     // At this point effectiveTargetType is guaranteed non-null (early return above)
-    return buildMatchProperties(effectiveTargetType as CRMEntityType);
+    return buildMatchProperties(effectiveTargetType as MondoEntityType);
   }, [panel.properties, panel.prop, propertyFromTarget, effectiveTargetType]);
 
   const matchKey = useMemo(() => matchProperties.join("|"), [matchProperties]);
@@ -296,7 +296,7 @@ export const BacklinksLinks = ({ file, config }: BacklinksLinksProps) => {
     [hostFile, hostFile?.path, matchKey]
   );
   // --- Advanced FIND/Filter DSL evaluation ---------------------------------
-  const fileManager = useMemo(() => CRMFileManager.getInstance(app), [app]);
+  const fileManager = useMemo(() => MondoFileManager.getInstance(app), [app]);
   const [refreshTick, setRefreshTick] = useState(0);
 
   useEffect(() => {
@@ -388,7 +388,7 @@ export const BacklinksLinks = ({ file, config }: BacklinksLinksProps) => {
             const links = extractLinkedFiles(node, props);
             for (const tf of links) {
               const cached = fileManager.getFileByPath(tf.path);
-              if (!cached) continue; // only consider CRM-typed files
+              if (!cached) continue; // only consider Mondo-typed files
               if (
                 typeFilter.length > 0 &&
                 !typeFilter.includes(getType(cached))
@@ -409,7 +409,7 @@ export const BacklinksLinks = ({ file, config }: BacklinksLinksProps) => {
           const typeList = toArray(type);
           const sourceTargets = S.map((n) => n.file!).filter(Boolean);
           const scanTypes =
-            typeList.length > 0 ? typeList : (CRM_FILE_TYPES as string[]);
+            typeList.length > 0 ? typeList : (MONDO_FILE_TYPES as string[]);
           const acc: TCachedFile[] = [];
           for (const tt of scanTypes) {
             const files = fileManager.getFiles(tt as any);
@@ -780,7 +780,7 @@ export const BacklinksLinks = ({ file, config }: BacklinksLinksProps) => {
       // Some containers may call onCollapseChange on mount or every render.
       // Persist only when there's a real state transition to prevent re-renders loops.
       try {
-        const currentCollapsed = (file.cache?.frontmatter as any)?.crmState?.[
+        const currentCollapsed = (file.cache?.frontmatter as any)?.mondoState?.[
           panelKey
         ]?.collapsed;
         if (currentCollapsed === isCollapsed) {
@@ -792,16 +792,16 @@ export const BacklinksLinks = ({ file, config }: BacklinksLinksProps) => {
       try {
         await app.fileManager.processFrontMatter(hostFile, (frontmatter) => {
           if (
-            typeof (frontmatter as any).crmState !== "object" ||
-            (frontmatter as any).crmState === null
+            typeof (frontmatter as any).mondoState !== "object" ||
+            (frontmatter as any).mondoState === null
           ) {
-            (frontmatter as any).crmState = {};
+            (frontmatter as any).mondoState = {};
           }
-          const panelState = (frontmatter as any).crmState[panelKey];
+          const panelState = (frontmatter as any).mondoState[panelKey];
           if (typeof panelState !== "object" || panelState === null) {
-            (frontmatter as any).crmState[panelKey] = {};
+            (frontmatter as any).mondoState[panelKey] = {};
           }
-          (frontmatter as any).crmState[panelKey].collapsed = isCollapsed;
+          (frontmatter as any).mondoState[panelKey].collapsed = isCollapsed;
         });
       } catch (error) {
         console.error(
@@ -844,7 +844,7 @@ export const BacklinksLinks = ({ file, config }: BacklinksLinksProps) => {
                     attributeTemplates: createCfg.attributes as any,
                     // link back using only hostType-specific properties (no generic "related")
                     linkProperties: buildLinkProperties(
-                      hostType as CRMEntityType,
+                      hostType as MondoEntityType,
                       (panel.properties ?? panel.prop) as
                         | string
                         | string[]

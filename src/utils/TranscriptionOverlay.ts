@@ -53,23 +53,23 @@ export class TranscriptionOverlay {
     }
 
     const overlay = document.body.createDiv({
-      cls: "crm-transcription-overlay",
+      cls: "mondo-transcription-overlay",
     });
 
     const backdrop = overlay.createDiv({
-      cls: "crm-transcription-overlay__backdrop",
+      cls: "mondo-transcription-overlay__backdrop",
     });
     backdrop.setAttr("aria-hidden", "true");
     backdrop.addEventListener("click", this.handleBackdropClick);
 
     const content = overlay.createDiv({
-      cls: "crm-transcription-overlay__content",
+      cls: "mondo-transcription-overlay__content",
     });
     content.setAttr("role", "dialog");
     content.setAttr("aria-modal", "true");
 
     const closeButton = content.createEl("button", {
-      cls: "clickable-icon crm-transcription-overlay__close",
+      cls: "clickable-icon mondo-transcription-overlay__close",
     });
     closeButton.setAttr("type", "button");
     closeButton.setAttr("aria-label", "Dismiss");
@@ -78,7 +78,7 @@ export class TranscriptionOverlay {
     setIcon(closeButton, "x");
 
     const container = content.createDiv({
-      cls: options.className ?? "crm-transcription-overlay__container",
+      cls: options.className ?? "mondo-transcription-overlay__container",
     });
 
     this.overlayEl = overlay;
@@ -170,7 +170,7 @@ export class TranscriptionOverlay {
       this.wakeLock = sentinel;
       this.wakeLockReleaseHandler = releaseHandler;
     } catch (error) {
-      console.debug("CRM: unable to acquire wake lock", error);
+      console.debug("Mondo: unable to acquire wake lock", error);
     }
   };
 
@@ -184,7 +184,7 @@ export class TranscriptionOverlay {
     try {
       await sentinel.release();
     } catch (error) {
-      console.debug("CRM: unable to release wake lock", error);
+      console.debug("Mondo: unable to release wake lock", error);
     } finally {
       if (this.wakeLockReleaseHandler) {
         sentinel.removeEventListener?.("release", this.wakeLockReleaseHandler);

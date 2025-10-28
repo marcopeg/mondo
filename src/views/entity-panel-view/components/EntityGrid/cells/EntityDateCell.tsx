@@ -1,14 +1,14 @@
 import {
   getDateInfoForValue,
   getRowDateInfo,
-  type CRMEntityDateInfo,
-  type CRMEntityListRow,
+  type MondoEntityDateInfo,
+  type MondoEntityListRow,
 } from "@/views/entity-panel-view/useEntityPanels";
-import { CRMFileLink } from "../../CRMFileLink";
+import { MondoFileLink } from "../../MondoFileLink";
 
 type EntityDateCellProps = {
   value: unknown;
-  row: CRMEntityListRow;
+  row: MondoEntityListRow;
   column: string;
 };
 
@@ -20,7 +20,7 @@ type DateDisplayInfo = {
 
 const formatDateForDisplay = (
   info: DateDisplayInfo,
-  source?: CRMEntityDateInfo["source"]
+  source?: MondoEntityDateInfo["source"]
 ): string => {
   if (!info.date) {
     const fallback = info.raw?.trim();
@@ -54,7 +54,7 @@ export const EntityDateCell = ({ value, row, column }: EntityDateCellProps) => {
   const rawValue = Array.isArray(value) ? value[0] : value;
 
   let info: DateDisplayInfo;
-  let source: CRMEntityDateInfo["source"] | undefined;
+  let source: MondoEntityDateInfo["source"] | undefined;
 
   if (
     normalizedColumn === "date" ||
@@ -87,7 +87,7 @@ export const EntityDateCell = ({ value, row, column }: EntityDateCellProps) => {
   const shouldLink = normalizedColumn === "date_time";
 
   if (shouldLink) {
-    return <CRMFileLink path={row.path} label={display} />;
+    return <MondoFileLink path={row.path} label={display} />;
   }
 
   return <span>{display}</span>;

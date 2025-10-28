@@ -1,4 +1,4 @@
-.crm-loading-screen {
+.mondo-loading-screen {
   position: fixed;
   top: 0;
   left: 0;
@@ -11,7 +11,7 @@
   font-family: inherit;
 }
 
-.crm-loading-screen__overlay {
+.mondo-loading-screen__overlay {
   position: absolute;
   top: 0;
   left: 0;
@@ -22,7 +22,7 @@
   z-index: 1;
 }
 
-.crm-loading-screen__content {
+.mondo-loading-screen__content {
   position: relative;
   z-index: 2;
   display: flex;
@@ -32,19 +32,19 @@
   pointer-events: auto;
 }
 
-.crm-loading-screen__icon {
+.mondo-loading-screen__icon {
   display: flex;
   align-items: center;
   justify-content: center;
   transform: translateY(-33vh);
 }
 
-.crm-loading-screen__icon span {
+.mondo-loading-screen__icon span {
   width: 4rem !important;
   height: 4rem !important;
 }
 
-.crm-loading-screen__text {
+.mondo-loading-screen__text {
   margin: 0;
   font-size: 1rem;
   font-weight: 500;
@@ -52,7 +52,7 @@
   text-align: center;
 }
 
-.crm-loading-screen__cancel-button {
+.mondo-loading-screen__cancel-button {
   margin-top: 1rem;
   padding: 0.5rem 1rem;
   border: 1px solid var(--text-on-accent);
@@ -65,10 +65,10 @@
   transition: all 0.2s ease;
 }
 
-.crm-loading-screen__cancel-button:hover {
+.mondo-loading-screen__cancel-button:hover {
   background-color: rgba(255, 255, 255, 0.1);
 }
 
-.crm-loading-screen__cancel-button:active {
+.mondo-loading-screen__cancel-button:active {
   transform: scale(0.98);
 }

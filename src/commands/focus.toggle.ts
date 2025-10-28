@@ -35,7 +35,7 @@ export function enableJournalFocus(app: App) {
 
   try {
     // Add visual class so CSS can hide extra chrome
-    document.body.classList.add("crm-journal-fullscreen");
+    document.body.classList.add("mondo-journal-fullscreen");
   } catch (e) {
     // noop
   }

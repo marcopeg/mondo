@@ -5,7 +5,7 @@ import Button from "@/components/ui/Button";
 import { Icon } from "@/components/ui/Icon";
 import TextField from "@/components/ui/TextField";
 import Stack from "@/components/ui/Stack";
-import type CRM from "@/main";
+import type Mondo from "@/main";
 import { addDailyLog } from "@/commands/daily.addLog";
 
 type QuickTaskProps = {
@@ -32,9 +32,9 @@ const QuickTask = ({ iconOnly = false }: QuickTaskProps) => {
       return;
     }
 
-    const plugin = (app as any).plugins?.getPlugin?.("crm") as CRM | undefined;
+    const plugin = (app as any).plugins?.getPlugin?.("mondo") as Mondo | undefined;
     if (!plugin) {
-      new Notice("CRM plugin is not ready yet");
+      new Notice("Mondo plugin is not ready yet");
       focusInput();
       return;
     }

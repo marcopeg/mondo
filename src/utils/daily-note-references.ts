@@ -1,12 +1,12 @@
 import type { App, TFile } from "obsidian";
-import { getCRMEntityConfig, isCRMEntityType } from "@/types/CRMFileType";
-import type { CRMFileType } from "@/types/CRMFileType";
+import { getMondoEntityConfig, isMondoEntityType } from "@/types/MondoFileType";
+import type { MondoFileType } from "@/types/MondoFileType";
 
 export type DailyNoteReference = {
   path: string;
   label: string;
   icon: string;
-  type: CRMFileType | null;
+  type: MondoFileType | null;
   count: number;
 };
 
@@ -64,13 +64,13 @@ const resolveLinkTarget = (
 const resolveFileType = (
   file: TFile,
   app: App
-): { type: CRMFileType | null; icon: string } => {
+): { type: MondoFileType | null; icon: string } => {
   const cache = app.metadataCache.getFileCache(file);
   const rawType = cache?.frontmatter?.type;
   if (typeof rawType === "string") {
     const normalized = rawType.trim().toLowerCase();
-    if (isCRMEntityType(normalized)) {
-      const config = getCRMEntityConfig(normalized);
+    if (isMondoEntityType(normalized)) {
+      const config = getMondoEntityConfig(normalized);
       return {
         type: normalized,
         icon: config?.icon ?? DEFAULT_ICON,

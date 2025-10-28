@@ -1,6 +1,6 @@
 import type { App } from "obsidian";
 import { TFile } from "obsidian";
-import { CRMFileType } from "@/types/CRMFileType";
+import { MondoFileType } from "@/types/MondoFileType";
 import type { TCachedFile } from "@/types/TCachedFile";
 import { getEntityDisplayName } from "@/utils/getEntityDisplayName";
 
@@ -22,7 +22,7 @@ const normalizeSelfPath = (raw: string | null | undefined): string => {
 };
 
 const readSelfPathFromSettings = (app: App): string => {
-  const plugin = (app as any)?.plugins?.plugins?.crm as { settings?: Record<string, unknown> } | null;
+  const plugin = (app as any)?.plugins?.plugins?.mondo as { settings?: Record<string, unknown> } | null;
   const settings = plugin?.settings ?? {};
   return normalizeSelfPath((settings as Record<string, unknown>).selfPersonPath as string | undefined);
 };
@@ -30,7 +30,7 @@ const readSelfPathFromSettings = (app: App): string => {
 const isPersonType = (cache: any): boolean => {
   const frontmatter = cache?.frontmatter as Record<string, unknown> | undefined;
   const type = typeof frontmatter?.type === "string" ? frontmatter.type.trim().toLowerCase() : "";
-  return type === CRMFileType.PERSON;
+  return type === MondoFileType.PERSON;
 };
 
 export const resolveSelfPerson = (

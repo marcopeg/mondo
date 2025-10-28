@@ -1,8 +1,8 @@
 import { addIcon, getIcon } from "obsidian";
 
-export const CRM_DICTATION_ICON_ID = "crm-dictation-mic";
+export const MONDO_DICTATION_ICON_ID = "mondo-dictation-mic";
 
-const CRM_DICTATION_ICON_SVG = `
+const MONDO_DICTATION_ICON_SVG = `
 <svg
   xmlns="http://www.w3.org/2000/svg"
   viewBox="0 0 24 24"
@@ -25,11 +25,11 @@ export const registerDictationIcon = () => {
     return;
   }
 
-  if (getIcon(CRM_DICTATION_ICON_ID)) {
+  if (getIcon(MONDO_DICTATION_ICON_ID)) {
     dictationIconRegistered = true;
     return;
   }
 
-  addIcon(CRM_DICTATION_ICON_ID, CRM_DICTATION_ICON_SVG.trim());
+  addIcon(MONDO_DICTATION_ICON_ID, MONDO_DICTATION_ICON_SVG.trim());
   dictationIconRegistered = true;
 };

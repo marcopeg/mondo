@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { setIcon } from "obsidian";
 import {
-  CRM_DICTATION_ICON_ID,
+  MONDO_DICTATION_ICON_ID,
   registerDictationIcon,
 } from "@/utils/registerDictationIcon";
 import type NoteDictationController from "@/utils/NoteDictationController";
@@ -69,7 +69,7 @@ const resolveIcon = (state: DictationState) => {
   if (state.status === "error") {
     return "alert-circle";
   }
-  return CRM_DICTATION_ICON_ID;
+  return MONDO_DICTATION_ICON_ID;
 };
 
 export const VoiceFabButton: React.FC<VoiceFabButtonProps> = ({
@@ -106,9 +106,9 @@ export const VoiceFabButton: React.FC<VoiceFabButtonProps> = ({
     setIcon(iconEl, iconName);
 
     if (state.status === "processing") {
-      iconEl.classList.add("crm-voice-fab-icon--spin");
+      iconEl.classList.add("mondo-voice-fab-icon--spin");
     } else {
-      iconEl.classList.remove("crm-voice-fab-icon--spin");
+      iconEl.classList.remove("mondo-voice-fab-icon--spin");
     }
   }, [iconEl, state]);
 
@@ -143,9 +143,9 @@ export const VoiceFabButton: React.FC<VoiceFabButtonProps> = ({
   };
 
   return (
-    <div className={`crm-voice-fab ${visible ? "crm-voice-fab--visible" : ""}`.trim()}>
+    <div className={`mondo-voice-fab ${visible ? "mondo-voice-fab--visible" : ""}`.trim()}>
       <button
-        className={`crm-voice-fab__button crm-voice-fab__button--${state.status}`}
+        className={`mondo-voice-fab__button mondo-voice-fab__button--${state.status}`}
         type="button"
         aria-label={ariaLabel}
         aria-pressed={isRecording}
@@ -153,28 +153,28 @@ export const VoiceFabButton: React.FC<VoiceFabButtonProps> = ({
         onClick={handleClick}
         title={tooltip ?? "Record voice note"}
       >
-        <span className="crm-voice-fab__visualizer" aria-hidden>
+        <span className="mondo-voice-fab__visualizer" aria-hidden>
           {state.levels.map((level, index) => (
             <span
               key={index}
-              className="crm-voice-fab__bar"
+              className="mondo-voice-fab__bar"
               style={{ transform: `scaleY(${0.2 + level * 0.8})` }}
             />
           ))}
         </span>
         <span
-          className="crm-voice-fab__icon"
+          className="mondo-voice-fab__icon"
           aria-hidden
           ref={setIconEl}
         />
       </button>
       {visible ? (
-        <div className="crm-voice-fab__status" aria-live="polite">
+        <div className="mondo-voice-fab__status" aria-live="polite">
           {statusLabel}
         </div>
       ) : null}
       {message && visible ? (
-        <div className="crm-voice-fab__message" role="status">
+        <div className="mondo-voice-fab__message" role="status">
           {message}
         </div>
       ) : null}

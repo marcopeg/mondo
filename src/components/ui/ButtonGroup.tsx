@@ -14,7 +14,7 @@ export const ButtonGroup: React.FC<ButtonGroupProps> = ({
   className,
   ...rest
 }) => {
-  const baseClass = "crm-button-group";
+  const baseClass = "mondo-button-group";
   const classes = [baseClass, className].filter(Boolean).join(" ");
 
   const items = React.Children.toArray(children).filter(isElement);
@@ -26,10 +26,10 @@ export const ButtonGroup: React.FC<ButtonGroupProps> = ({
         const isLast = index === items.length - 1;
         const childClassName = [
           child.props.className,
-          "crm-button-group__button",
-          isFirst ? "crm-button-group__button--first" : null,
-          isLast ? "crm-button-group__button--last" : null,
-          !isFirst && !isLast ? "crm-button-group__button--middle" : null,
+          "mondo-button-group__button",
+          isFirst ? "mondo-button-group__button--first" : null,
+          isLast ? "mondo-button-group__button--last" : null,
+          !isFirst && !isLast ? "mondo-button-group__button--middle" : null,
         ]
           .filter(Boolean)
           .join(" ");

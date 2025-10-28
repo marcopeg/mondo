@@ -1,8 +1,8 @@
-import { CRMFileType } from "@/types/CRMFileType";
+import { MondoFileType } from "@/types/MondoFileType";
 import type { TCachedFile } from "@/types/TCachedFile";
 import { getEntityDisplayName } from "@/utils/getEntityDisplayName";
-import { getTemplateForType, renderTemplate } from "@/utils/CRMTemplates";
-import { getCRMPlugin } from "@/utils/getCRMPlugin";
+import { getTemplateForType, renderTemplate } from "@/utils/MondoTemplates";
+import { getMondoPlugin } from "@/utils/getMondoPlugin";
 import type { App, TFile } from "obsidian";
 import { normalizeFolderPath } from "@/utils/normalizeFolderPath";
 import {
@@ -79,18 +79,18 @@ export const createDocumentForEntity = async ({
     return null;
   }
 
-  const plugin = getCRMPlugin(app);
+  const plugin = getMondoPlugin(app);
   if (!plugin) {
-    console.error("createDocumentForEntity: CRM plugin instance not available");
+    console.error("createDocumentForEntity: Mondo plugin instance not available");
     return null;
   }
 
   const settings = plugin.settings as {
-    rootPaths?: Partial<Record<CRMFileType, string>>;
-    templates?: Partial<Record<CRMFileType, string>>;
+    rootPaths?: Partial<Record<MondoFileType, string>>;
+    templates?: Partial<Record<MondoFileType, string>>;
   };
 
-  const rootPathSetting = settings.rootPaths?.[CRMFileType.DOCUMENT] ?? "/";
+  const rootPathSetting = settings.rootPaths?.[MondoFileType.DOCUMENT] ?? "/";
   const normalizedFolder = normalizeFolderPath(rootPathSetting);
   await ensureFolder(app, normalizedFolder);
 
@@ -113,7 +113,7 @@ export const createDocumentForEntity = async ({
   const templateSource = await getTemplateForType(
     app,
     settings.templates,
-    CRMFileType.DOCUMENT
+    MondoFileType.DOCUMENT
   );
 
   const now = new Date();
@@ -124,7 +124,7 @@ export const createDocumentForEntity = async ({
 
   const rendered = renderTemplate(templateSource, {
     title: baseTitle,
-    type: String(CRMFileType.DOCUMENT),
+    type: String(MondoFileType.DOCUMENT),
     filename: fileName,
     slug,
     date: dateStamp,

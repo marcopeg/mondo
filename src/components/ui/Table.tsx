@@ -17,10 +17,10 @@ const TableRoot: React.FC<TableProps> = ({
 }) => (
   <div
     style={{ overflowX: "auto" }}
-    className={`crm-table-wrapper ${className}`}
+    className={`mondo-table-wrapper ${className}`}
   >
     <table
-      className={`crm-table ${className}`}
+      className={`mondo-table ${className}`}
       style={{
         width: "100%",
         borderCollapse: "collapse",

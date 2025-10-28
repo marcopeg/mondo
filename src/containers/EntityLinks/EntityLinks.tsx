@@ -1,8 +1,8 @@
 import { useEntityFile } from "@/context/EntityFileProvider";
 import { InlineError } from "@/components/InlineError";
-import { CRM_ENTITIES, isCRMEntityType } from "@/entities";
+import { MONDO_ENTITIES, isMondoEntityType } from "@/entities";
 import type { TCachedFile } from "@/types/TCachedFile";
-import type { CRMEntityLinkConfig } from "@/types/CRMEntityConfig";
+import type { MondoEntityLinkConfig } from "@/types/MondoEntityConfig";
 import { Stack } from "@/components/ui/Stack";
 import { BacklinksLinks } from "./panels/BacklinksLinks";
 
@@ -39,13 +39,13 @@ export const EntityLinks = () => {
 
   const entityType = String(rawEntityType).trim().toLowerCase();
 
-  if (!isCRMEntityType(entityType)) {
+  if (!isMondoEntityType(entityType)) {
     return renderMissingConfigError(`unknown entity type "${entityType}"`);
   }
 
-  const entityConfig = CRM_ENTITIES[entityType];
+  const entityConfig = MONDO_ENTITIES[entityType];
 
-  const linkConfigs = (entityConfig.links ?? []) as CRMEntityLinkConfig[];
+  const linkConfigs = (entityConfig.links ?? []) as MondoEntityLinkConfig[];
 
   if (linkConfigs.length === 0) {
     return null;

@@ -1,19 +1,19 @@
 import { createSettingsSection } from "./SettingsView_utils";
-import type CRM from "@/main";
+import type Mondo from "@/main";
 
 interface SettingsDashboardProps {
-  plugin: CRM;
+  plugin: Mondo;
   containerEl: HTMLElement;
 }
 
-const getDashboardSettings = (plugin: CRM) => {
+const getDashboardSettings = (plugin: Mondo) => {
   (plugin as any).settings = (plugin as any).settings ?? {};
   (plugin as any).settings.dashboard = (plugin as any).settings.dashboard ?? {};
   return (plugin as any).settings.dashboard as Record<string, unknown>;
 };
 
 const persistDashboardSetting = async (
-  plugin: CRM,
+  plugin: Mondo,
   key: string,
   value: boolean
 ) => {
@@ -38,7 +38,7 @@ export const renderDashboardSection = (
   dashboardSection
     .createSetting()
     .setName("Open dashboard at boot")
-    .setDesc("Automatically open the CRM dashboard when Obsidian starts.")
+    .setDesc("Automatically open the Mondo dashboard when Obsidian starts.")
     .addToggle((toggle) => {
       toggle
         .setValue(Boolean(dashboardSettings.openAtBoot))

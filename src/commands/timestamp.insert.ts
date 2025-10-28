@@ -6,7 +6,7 @@ import {
   moment,
 } from "obsidian";
 import type momentModule from "moment";
-import type CRM from "@/main";
+import type Mondo from "@/main";
 import {
   buildTimestampFromMoment,
   normalizeTimestampSettings,
@@ -14,7 +14,7 @@ import {
 
 export const insertTimestamp = (
   app: App,
-  plugin: CRM,
+  plugin: Mondo,
   options: { showFailureNotice?: boolean } = {}
 ) => {
   const showFailureNotice = options.showFailureNotice !== false;

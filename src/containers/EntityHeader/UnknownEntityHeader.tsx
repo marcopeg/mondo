@@ -3,17 +3,17 @@ import type { App } from "obsidian";
 import { Notice } from "obsidian";
 import { SplitButton } from "@/components/ui/SplitButton";
 import {
-  CRM_ENTITIES,
-  CRM_ENTITY_TYPES,
-  type CRMEntityType,
+  MONDO_ENTITIES,
+  MONDO_ENTITY_TYPES,
+  type MondoEntityType,
 } from "@/entities";
 import type { TCachedFile } from "@/types/TCachedFile";
 
 const buildEntityOptions = () =>
-  CRM_ENTITY_TYPES.map((type) => ({
+  MONDO_ENTITY_TYPES.map((type) => ({
     type,
-    label: CRM_ENTITIES[type]?.name ?? type,
-    icon: CRM_ENTITIES[type]?.icon,
+    label: MONDO_ENTITIES[type]?.name ?? type,
+    icon: MONDO_ENTITIES[type]?.icon,
   }))
     .sort((a, b) => a.label.localeCompare(b.label));
 
@@ -26,7 +26,7 @@ export const UnknownEntityHeader = ({ app, file }: UnknownEntityHeaderProps) => 
   const options = useMemo(buildEntityOptions, []);
 
   const handleSelect = useCallback(
-    async (nextType: CRMEntityType) => {
+    async (nextType: MondoEntityType) => {
       if (!file?.file) {
         new Notice("Unable to update note type. Please save the note and try again.");
         return;
@@ -37,7 +37,7 @@ export const UnknownEntityHeader = ({ app, file }: UnknownEntityHeaderProps) => 
           frontmatter.type = nextType;
         });
       } catch (error) {
-        console.error("UnknownEntityHeader: failed to assign CRM type", error);
+        console.error("UnknownEntityHeader: failed to assign Mondo type", error);
         new Notice("Failed to update the note type.");
       }
     },
@@ -60,12 +60,12 @@ export const UnknownEntityHeader = ({ app, file }: UnknownEntityHeaderProps) => 
     <SplitButton
       type="button"
       icon="plus"
-      menuAriaLabel="Select CRM note type"
+      menuAriaLabel="Select Mondo note type"
       secondaryActions={secondaryActions}
       primaryOpensMenu
       disabled={secondaryActions.length === 0}
     >
-      Create as CRM Note
+      Create as Mondo Note
     </SplitButton>
   );
 };

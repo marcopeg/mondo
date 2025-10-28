@@ -1,9 +1,9 @@
 import { Setting } from "obsidian";
-import type CRM from "@/main";
+import type Mondo from "@/main";
 import { createSettingsSection } from "./SettingsView_utils";
 
 interface SettingsJournalProps {
-  plugin: CRM;
+  plugin: Mondo;
   containerEl: HTMLElement;
   addFolderSetting: (
     container: HTMLElement | (() => Setting),

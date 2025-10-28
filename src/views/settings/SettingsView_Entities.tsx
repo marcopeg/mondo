@@ -6,9 +6,9 @@ import {
   FuzzySuggestModal,
   Setting,
 } from "obsidian";
-import type CRM from "@/main";
-import { validateCRMConfig } from "@/utils/CRMConfigManager";
-import { CRM_ENTITY_CONFIG_LIST } from "@/entities";
+import type Mondo from "@/main";
+import { validateMondoConfig } from "@/utils/MondoConfigManager";
+import { MONDO_ENTITY_CONFIG_LIST } from "@/entities";
 import { createSettingsSection } from "./SettingsView_utils";
 
 type SettingsFolderSetter = (v: string) => Promise<void>;
@@ -16,7 +16,7 @@ type SettingsFolderGetter = () => string;
 
 interface SettingsEntitiesProps {
   app: App;
-  plugin: CRM;
+  plugin: Mondo;
   containerEl: HTMLElement;
   folderPaths: string[];
   addFolderSetting: (
@@ -217,12 +217,12 @@ export const renderEntityConfigurationSection = async (
     showRestartPrompt: parentShowRestartPrompt,
   } = props;
 
-  // Custom CRM Configuration section
+  // Custom Mondo Configuration section
   const customConfigContainer = containerEl.createDiv();
   const customConfigSection = createSettingsSection(
     customConfigContainer,
-    "CRM Entities",
-    "Paste JSON here to override the built-in CRM Entities configuration.\nLeave empty to use defaults."
+    "Mondo Entities",
+    "Paste JSON here to override the built-in Mondo Entities configuration.\nLeave empty to use defaults."
   );
 
   // Full-width block under the heading, rendered as a standard Setting row
@@ -240,9 +240,9 @@ export const renderEntityConfigurationSection = async (
   textArea.style.minHeight = "220px";
   textArea.style.fontFamily = "var(--font-monospace)";
   textArea.placeholder = '{\n  "entities": { ... }\n}';
-  textArea.value = (plugin as any).settings?.crmConfigJson ?? "";
+  textArea.value = (plugin as any).settings?.mondoConfigJson ?? "";
   textArea.addEventListener("change", async () => {
-    (plugin as any).settings.crmConfigJson = textArea.value;
+    (plugin as any).settings.mondoConfigJson = textArea.value;
     await (plugin as any).saveSettings();
   });
   configBlock.appendChild(textArea);
@@ -264,7 +264,7 @@ export const renderEntityConfigurationSection = async (
     const raw = (textArea.value ?? "").trim();
     if (!raw) {
       // Nothing to validate; delegate to plugin (applies defaults)
-      await (plugin as any).applyCRMConfigFromSettings();
+      await (plugin as any).applyMondoConfigFromSettings();
       await (plugin as any).saveSettings?.();
       if (await parentShowRestartPrompt()) {
         try {
@@ -286,14 +286,14 @@ export const renderEntityConfigurationSection = async (
       return;
     }
 
-    const result = validateCRMConfig(parsed);
+    const result = validateMondoConfig(parsed);
     if (!result.ok) {
       const issues = result.issues.map((i) => `${i.path}: ${i.message}`);
       showErrorModal(app, "Configuration issues", issues);
       return;
     }
 
-    await (plugin as any).applyCRMConfigFromSettings();
+    await (plugin as any).applyMondoConfigFromSettings();
     await (plugin as any).saveSettings?.();
 
     if (await parentShowRestartPrompt()) {
@@ -311,9 +311,9 @@ export const renderEntityConfigurationSection = async (
   resetBtn.addEventListener("click", async () => {
     const confirmed = await confirmReset(app);
     if (!confirmed) return;
-    (plugin as any).settings.crmConfigJson = "";
+    (plugin as any).settings.mondoConfigJson = "";
     await (plugin as any).saveSettings();
-    await (plugin as any).applyCRMConfigFromSettings();
+    await (plugin as any).applyMondoConfigFromSettings();
     textArea.value = "";
     if (await parentShowRestartPrompt()) {
       try {
@@ -326,23 +326,23 @@ export const renderEntityConfigurationSection = async (
   });
 
   // Only include actual configured entities; exclude special types like daily/log/journal
-  const entityDefinitions = CRM_ENTITY_CONFIG_LIST.map((cfg) => ({
+  const entityDefinitions = MONDO_ENTITY_CONFIG_LIST.map((cfg) => ({
     type: cfg.type,
     label: cfg.name ?? cfg.type,
   }));
 
   if (entityDefinitions.length > 0) {
     const entitiesToggleContainer = containerEl.createDiv(
-      "crm-settings-entities-toggle"
+      "mondo-settings-entities-toggle"
     );
     const entitiesToggleButton = entitiesToggleContainer.createEl("a", {
       text: "Show entities options",
     });
-    entitiesToggleButton.addClass("crm-settings-entities-toggle-link");
+    entitiesToggleButton.addClass("mondo-settings-entities-toggle-link");
     entitiesToggleButton.setAttribute("href", "#");
 
-    const entitiesContent = containerEl.createDiv("crm-settings-entities");
-    const entitiesContentId = "crm-settings-entities-content";
+    const entitiesContent = containerEl.createDiv("mondo-settings-entities");
+    const entitiesContentId = "mondo-settings-entities-content";
     entitiesContent.setAttribute("id", entitiesContentId);
     entitiesToggleButton.setAttribute("aria-controls", entitiesContentId);
     entitiesToggleButton.setAttribute("aria-expanded", "false");
@@ -369,7 +369,7 @@ export const renderEntityConfigurationSection = async (
     });
 
     for (const { label, type } of entityDefinitions) {
-      const section = entitiesContent.createDiv("crm-settings-entity");
+      const section = entitiesContent.createDiv("mondo-settings-entity");
       new Setting(section).setName(label).setHeading();
 
       addFolderSetting(

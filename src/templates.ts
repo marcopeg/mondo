@@ -1,5 +1,5 @@
-import { CRM_ENTITIES, type CRMEntityType } from "@/entities";
-import type { CRMFileType } from "@/types/CRMFileType";
+import { MONDO_ENTITIES, type MondoEntityType } from "@/entities";
+import type { MondoFileType } from "@/types/MondoFileType";
 
 export const DEFAULT_TEMPLATE = `---
 type: {{type}}
@@ -7,20 +7,20 @@ date: {{date}}
 ---
 `;
 
-export const CRM_DEFAULT_TEMPLATES = Object.freeze(
+export const MONDO_DEFAULT_TEMPLATES = Object.freeze(
   Object.fromEntries(
-    Object.entries(CRM_ENTITIES).map(([type, config]) => [
+    Object.entries(MONDO_ENTITIES).map(([type, config]) => [
       type,
       config.template,
     ])
   )
-) as Readonly<Record<CRMEntityType, string>>;
+) as Readonly<Record<MondoEntityType, string>>;
 
-export const getDefaultTemplate = (type: CRMFileType): string => {
+export const getDefaultTemplate = (type: MondoFileType): string => {
   // Only entity types have default templates
   // Special types like daily notes and journals use the default
-  if (type in CRM_DEFAULT_TEMPLATES) {
-    return CRM_DEFAULT_TEMPLATES[type as CRMEntityType];
+  if (type in MONDO_DEFAULT_TEMPLATES) {
+    return MONDO_DEFAULT_TEMPLATES[type as MondoEntityType];
   }
   return DEFAULT_TEMPLATE;
 };

@@ -35,24 +35,24 @@ const TimerBlockContent: FC<TimerBlockContentProps> = ({
   } = controller;
 
   const buttonClassName = useMemo(() => {
-    const classes = ["crm-timer-block__button"];
+    const classes = ["mondo-timer-block__button"];
 
     classes.push(
       isResting
-        ? "crm-timer-block__button--rest"
-        : "crm-timer-block__button--go"
+        ? "mondo-timer-block__button--rest"
+        : "mondo-timer-block__button--go"
     );
 
     return classes.join(" ");
   }, [isResting]);
 
   const statusClassName = useMemo(() => {
-    const classes = ["crm-timer-block__status"];
+    const classes = ["mondo-timer-block__status"];
 
     classes.push(
       isResting
-        ? "crm-timer-block__status--rest"
-        : "crm-timer-block__status--work"
+        ? "mondo-timer-block__status--rest"
+        : "mondo-timer-block__status--work"
     );
 
     return classes.join(" ");
@@ -80,7 +80,7 @@ const TimerBlockContent: FC<TimerBlockContentProps> = ({
     if (isRunning) {
       return (
         <svg
-          className="crm-timer-block__button-icon"
+          className="mondo-timer-block__button-icon"
           viewBox="0 0 24 24"
           xmlns="http://www.w3.org/2000/svg"
           aria-hidden
@@ -93,7 +93,7 @@ const TimerBlockContent: FC<TimerBlockContentProps> = ({
 
     return (
       <svg
-        className="crm-timer-block__button-icon"
+        className="mondo-timer-block__button-icon"
         viewBox="0 0 24 24"
         xmlns="http://www.w3.org/2000/svg"
         aria-hidden
@@ -105,22 +105,22 @@ const TimerBlockContent: FC<TimerBlockContentProps> = ({
 
   return (
     <div
-      className={`crm-timer-block ${
-        isResting ? "crm-timer-block--resting" : ""
+      className={`mondo-timer-block ${
+        isResting ? "mondo-timer-block--resting" : ""
       }`.trim()}
       style={accentStyle}
     >
-      <div className="crm-timer-block__heading">
-        <div className="crm-timer-block__title">{displayTitle}</div>
-        <div className="crm-timer-block__status-container">
-          <div className="crm-timer-block__status-row">
+      <div className="mondo-timer-block__heading">
+        <div className="mondo-timer-block__title">{displayTitle}</div>
+        <div className="mondo-timer-block__status-container">
+          <div className="mondo-timer-block__status-row">
             <div className={statusClassName}>{currentLabel}</div>
             {nextLabel && (
-              <div className="crm-timer-block__status-next">
-                <span className="crm-timer-block__status-next-label">
+              <div className="mondo-timer-block__status-next">
+                <span className="mondo-timer-block__status-next-label">
                   next up
                 </span>
-                <span className="crm-timer-block__status-next-value">
+                <span className="mondo-timer-block__status-next-value">
                   {nextLabel}
                 </span>
               </div>
@@ -141,45 +141,45 @@ const TimerBlockContent: FC<TimerBlockContentProps> = ({
         }
       >
         <svg
-          className="crm-timer-block__progress"
+          className="mondo-timer-block__progress"
           viewBox="0 0 120 120"
           xmlns="http://www.w3.org/2000/svg"
           aria-hidden
         >
           <circle
-            className="crm-timer-block__progress-track"
+            className="mondo-timer-block__progress-track"
             cx="60"
             cy="60"
             r={PROGRESS_RADIUS}
           />
           <circle
-            className="crm-timer-block__progress-indicator"
+            className="mondo-timer-block__progress-indicator"
             cx="60"
             cy="60"
             r={PROGRESS_RADIUS}
             style={progressStrokeStyle}
           />
         </svg>
-        <span className="crm-timer-block__button-content">
+        <span className="mondo-timer-block__button-content">
           {buttonIcon}
-          <span className="crm-timer-block__countdown">
+          <span className="mondo-timer-block__countdown">
             {formattedRemaining}
           </span>
           {hasFiniteLoops ? (
-            <span className="crm-timer-block__loop">{`(${currentLoop}/${totalLoops})`}</span>
+            <span className="mondo-timer-block__loop">{`(${currentLoop}/${totalLoops})`}</span>
           ) : null}
         </span>
       </button>
-      <div className="crm-timer-block__meta">
+      <div className="mondo-timer-block__meta">
         {isRunning ? (
-          <span className="crm-timer-block__meta-value">
+          <span className="mondo-timer-block__meta-value">
             {formattedElapsed}
           </span>
         ) : (
           <>
-            <span className="crm-timer-block__meta-duration">{`${durationSeconds}s`}</span>
-            <span className="crm-timer-block__meta-separator">/</span>
-            <span className="crm-timer-block__meta-interval">{`${intervalSeconds}s`}</span>
+            <span className="mondo-timer-block__meta-duration">{`${durationSeconds}s`}</span>
+            <span className="mondo-timer-block__meta-separator">/</span>
+            <span className="mondo-timer-block__meta-interval">{`${intervalSeconds}s`}</span>
           </>
         )}
       </div>
@@ -199,7 +199,7 @@ export const TimerBlock: FC<TimerBlockProps> = (props) => {
     }
 
     return {
-      ["--crm-timer-accent" as const]: customColor,
+      ["--mondo-timer-accent" as const]: customColor,
     } as CSSProperties;
   }, [props.color]);
 

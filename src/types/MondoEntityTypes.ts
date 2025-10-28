@@ -1,4 +1,4 @@
-export interface CRMConfig {
+export interface MondoConfig {
   titles?: {
     order?: string[];
   };
@@ -10,5 +10,5 @@ export interface CRMConfig {
   entities: Record<string, Record<string, unknown>>;
 }
 
-export type CRMEntityConfigRecord = CRMConfig["entities"];
-export type CRMEntityType = string;
+export type MondoEntityConfigRecord = MondoConfig["entities"];
+export type MondoEntityType = string;

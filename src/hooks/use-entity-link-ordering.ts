@@ -32,8 +32,8 @@ export const useEntityLinkOrdering = <TItem>(
       | Record<string, unknown>
       | undefined;
 
-    // Read from crmState.{panel}.order
-    const rawOrder = (frontmatter as any)?.crmState?.[frontmatterKey]?.order;
+    // Read from mondoState.{panel}.order
+    const rawOrder = (frontmatter as any)?.mondoState?.[frontmatterKey]?.order;
 
     if (!rawOrder) {
       return [] as string[];
@@ -139,25 +139,25 @@ export const useEntityLinkOrdering = <TItem>(
       void (async () => {
         try {
           await app.fileManager.processFrontMatter(hostFile, (frontmatter) => {
-            // Ensure crmState structure exists
+            // Ensure mondoState structure exists
             if (
-              typeof (frontmatter as any).crmState !== "object" ||
-              (frontmatter as any).crmState === null
+              typeof (frontmatter as any).mondoState !== "object" ||
+              (frontmatter as any).mondoState === null
             ) {
-              (frontmatter as any).crmState = {};
+              (frontmatter as any).mondoState = {};
             }
 
-            const panelState = (frontmatter as any).crmState[frontmatterKey];
+            const panelState = (frontmatter as any).mondoState[frontmatterKey];
             if (typeof panelState !== "object" || panelState === null) {
-              (frontmatter as any).crmState[frontmatterKey] = {};
+              (frontmatter as any).mondoState[frontmatterKey] = {};
             }
 
             if (ids.length > 0) {
-              (frontmatter as any).crmState[frontmatterKey].order = ids;
+              (frontmatter as any).mondoState[frontmatterKey].order = ids;
             } else {
               // Remove empty order to keep frontmatter clean
-              if ((frontmatter as any).crmState[frontmatterKey]) {
-                delete (frontmatter as any).crmState[frontmatterKey].order;
+              if ((frontmatter as any).mondoState[frontmatterKey]) {
+                delete (frontmatter as any).mondoState[frontmatterKey].order;
               }
             }
           });

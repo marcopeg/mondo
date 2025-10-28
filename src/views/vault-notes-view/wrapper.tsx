@@ -4,7 +4,7 @@ import { AppProvider } from "@/context/AppProvider";
 import { VAULT_NOTES_ICON, VAULT_NOTES_VIEW } from "./constants";
 import { VaultNotesView } from "./VaultNotesView";
 
-export class CRMVaultNotesViewWrapper extends ItemView {
+export class MondoVaultNotesViewWrapper extends ItemView {
   private root: Root | null = null;
   private iconName: string;
 
