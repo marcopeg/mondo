@@ -41,10 +41,12 @@ type CardProps = {
   mt?: number;
   mb?: number;
   actions?: CardAction[];
+  actionsOnCollapsed?: CardAction[];
   collapsible?: boolean;
   collapsed?: boolean;
   collapseOnHeaderClick?: boolean;
   onCollapseChange?: (collapsed: boolean) => void;
+  minimizeOnCollapsed?: boolean;
 };
 
 /**
@@ -68,10 +70,12 @@ export const Card: React.FC<CardProps> = ({
   mt,
   mb,
   actions,
+  actionsOnCollapsed,
   collapsible = false,
   collapsed = false,
   collapseOnHeaderClick = false,
   onCollapseChange,
+  minimizeOnCollapsed = false,
 }) => {
   // Collect Box props to forward
   const boxProps: any = {};
@@ -126,15 +130,10 @@ export const Card: React.FC<CardProps> = ({
         : undefined,
   };
 
-  const resolvedActions: CardAction[] = actions ?? [];
-
   // Build header-specific padding that keeps horizontal padding the same as inner
   // padding, but significantly reduces vertical padding to tighten the title bar.
   // We scale vertical padding down to 25% of the base. Tailwind classes require
   // integers, so we floor the scaled value, while inline styles use the exact scale.
-  const VERTICAL_SCALE = 0.25;
-  const scaleY = (v: number) => v * VERTICAL_SCALE;
-
   const headerPaddingValues = (() => {
     // derive the base values used by innerPaddingStyle/classes
     const baseAll = p;
@@ -152,20 +151,53 @@ export const Card: React.FC<CardProps> = ({
     };
   })();
 
+  const [isCollapsed, setIsCollapsed] = React.useState(collapsed);
+
+  React.useEffect(() => {
+    setIsCollapsed(collapsed);
+  }, [collapsed]);
+
+  const isMinimizedAndCollapsed = minimizeOnCollapsed && isCollapsed;
+  const verticalScale = 0.25;
+  const scaledTopClass = Math.max(
+    0,
+    Math.floor(headerPaddingValues.top * verticalScale)
+  );
+  const scaledBottomClass = Math.max(
+    0,
+    Math.floor(headerPaddingValues.bottom * verticalScale)
+  );
+
   const headerPaddingClass = [
     `px-${headerPaddingValues.x}`,
-    `pt-${Math.max(0, Math.floor(scaleY(headerPaddingValues.top)))}`,
-    `pb-${Math.max(0, Math.floor(scaleY(headerPaddingValues.bottom)))}`,
+    isMinimizedAndCollapsed ? "pt-0" : `pt-${scaledTopClass}`,
+    isMinimizedAndCollapsed ? "pb-0" : `pb-${scaledBottomClass}`,
   ].join(" ");
 
+  const basePaddingXRem = headerPaddingValues.x * 0.25;
+  const basePaddingTopRem = headerPaddingValues.top * 0.25;
+  const basePaddingBottomRem = headerPaddingValues.bottom * 0.25;
+  const scaledTopRem = basePaddingTopRem * verticalScale;
+  const scaledBottomRem = basePaddingBottomRem * verticalScale;
+  const collapsedVerticalPaddingPx = 2;
+
   const headerPaddingStyle: React.CSSProperties = {
-    paddingLeft: `${headerPaddingValues.x * 0.25}rem`,
-    paddingRight: `${headerPaddingValues.x * 0.25}rem`,
-    paddingTop: `${scaleY(headerPaddingValues.top) * 0.25}rem`,
-    paddingBottom: `${scaleY(headerPaddingValues.bottom) * 0.25}rem`,
+    paddingLeft: `${basePaddingXRem}rem`,
+    paddingRight: `${basePaddingXRem}rem`,
+    paddingTop: isMinimizedAndCollapsed
+      ? `${collapsedVerticalPaddingPx}px`
+      : `${scaledTopRem}rem`,
+    paddingBottom: isMinimizedAndCollapsed
+      ? `${collapsedVerticalPaddingPx}px`
+      : `${scaledBottomRem}rem`,
   };
   const hasTextualHeaderContent = Boolean(title || subtitle);
   const hasIcon = Boolean(icon);
+  const resolvedActions = (
+    isMinimizedAndCollapsed && actionsOnCollapsed
+      ? actionsOnCollapsed
+      : actions
+  ) ?? [];
   const hasActions = resolvedActions.length > 0;
   const shouldRenderHeader = hasTextualHeaderContent || hasIcon || hasActions;
 
@@ -181,12 +213,6 @@ export const Card: React.FC<CardProps> = ({
     }
     return undefined;
   })();
-
-  const [isCollapsed, setIsCollapsed] = React.useState(collapsed);
-
-  React.useEffect(() => {
-    setIsCollapsed(collapsed);
-  }, [collapsed]);
 
   const toggleCollapse = React.useCallback(() => {
     if (!collapsible) return;
@@ -227,17 +253,22 @@ export const Card: React.FC<CardProps> = ({
   const headerFlexStyle: React.CSSProperties = {
     display: "flex",
     flexDirection: "row",
-    alignItems: hasTextualHeaderContent ? "flex-start" : "center",
+    alignItems:
+      isMinimizedAndCollapsed
+        ? "center"
+        : hasTextualHeaderContent
+        ? "flex-start"
+        : "center",
     justifyContent: hasTextualHeaderContent ? "space-between" : "flex-end",
     gap: "0.5rem",
-    width: "100%",
+    width: isMinimizedAndCollapsed ? undefined : "100%",
   };
 
   const actionsFlexStyle: React.CSSProperties = {
     display: "flex",
     flexDirection: "row",
     alignItems: "center",
-    gap: "0.5rem",
+    gap: isMinimizedAndCollapsed ? "0.25rem" : "0.5rem",
     flexShrink: 0,
     // When there is no textual header, let actions grow and occupy
     // the remaining space so that large controls (like a search/input)
@@ -248,11 +279,15 @@ export const Card: React.FC<CardProps> = ({
     alignSelf: hasTextualHeaderContent ? "center" : undefined,
   };
 
+  const headerGap = 2;
+  const actionsGap = isMinimizedAndCollapsed ? 1 : 2;
+
   const hasBodyContent = React.Children.count(children) > 0;
   const shouldShowHeaderDivider =
     shouldRenderHeader && !isCollapsed && hasBodyContent;
 
   const headerClassName = [
+    "mondo-card__header",
     headerPaddingClass,
     collapseOnHeaderClick && collapsible
       ? "cursor-pointer select-none"
@@ -278,7 +313,17 @@ export const Card: React.FC<CardProps> = ({
 
   return (
     // keep Paper unpadded by default; padding will be applied to the inner Boxes
-    <Paper p={0} {...boxProps} className={className}>
+    <Paper
+      p={0}
+      {...boxProps}
+      className={[
+        minimizeOnCollapsed ? "mondo-card--minimize-on-collapsed" : undefined,
+        className,
+      ]
+        .filter(Boolean)
+        .join(" ")}
+      data-collapsed={isCollapsed ? "true" : "false"}
+    >
       {shouldRenderHeader && (
         <Box
           className={headerClassName}
@@ -289,7 +334,7 @@ export const Card: React.FC<CardProps> = ({
           <Stack
             align={hasTextualHeaderContent ? "start" : "center"}
             justify={hasTextualHeaderContent ? "space-between" : "end"}
-            gap={2}
+            gap={headerGap}
             style={headerFlexStyle}
           >
             {(titleProps || hasIcon) && (
@@ -308,12 +353,12 @@ export const Card: React.FC<CardProps> = ({
             )}
             {hasActions && (
               <Stack
-                gap={2}
+                gap={actionsGap}
                 align="center"
                 className={
                   hasTextualHeaderContent
-                    ? "shrink-0 self-center"
-                    : "flex-1 min-w-0"
+                    ? "mondo-card__actions shrink-0 self-center"
+                    : "mondo-card__actions flex-1 min-w-0"
                 }
                 style={actionsFlexStyle}
                 onClick={

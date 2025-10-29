@@ -3,7 +3,6 @@ import { InlineError } from "@/components/InlineError";
 import { MONDO_ENTITIES, isMondoEntityType } from "@/entities";
 import type { TCachedFile } from "@/types/TCachedFile";
 import type { MondoEntityLinkConfig } from "@/types/MondoEntityConfig";
-import { Stack } from "@/components/ui/Stack";
 import { BacklinksLinks } from "./panels/BacklinksLinks";
 
 type LinkPanelProps = {
@@ -52,7 +51,7 @@ export const EntityLinks = () => {
   }
 
   return (
-    <Stack direction="column" gap={2}>
+    <div className="mondo-entity-links-panels">
       {linkConfigs.map((linkConfig, index) => {
         const Component = entityMap[linkConfig.type];
         if (!Component) {
@@ -67,12 +66,16 @@ export const EntityLinks = () => {
           <div
             key={`${type}-${index}`}
             data-entity-panel={type}
-            className="flex flex-col"
+            className="mondo-entity-links-panel"
           >
             <Component file={file} config={panelConfig} />
           </div>
         );
       })}
-    </Stack>
+      <div
+        className="mondo-entity-links-panels__clearfix"
+        aria-hidden="true"
+      />
+    </div>
   );
 };

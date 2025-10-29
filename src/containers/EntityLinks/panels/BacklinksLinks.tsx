@@ -863,21 +863,34 @@ export const BacklinksLinks = ({ file, config }: BacklinksLinksProps) => {
   );
 
   const [isCreating, setIsCreating] = useState(false);
+
+  const badgeAction = useMemo(() => {
+    if (!badgeText) {
+      return null;
+    }
+    return {
+      key: "badge",
+      content: (
+        <div className="flex min-w-0 flex-1 items-center justify-end">
+          <Badge>{badgeText}</Badge>
+        </div>
+      ),
+    };
+  }, [badgeText]);
+
+  const actionsOnCollapsed = useMemo(
+    () => (badgeAction ? [badgeAction] : []),
+    [badgeAction]
+  );
+
   const actions = useMemo(() => {
     // default createEntity.enabled should be true unless explicitly disabled
     const createCfg = panel.createEntity ?? { enabled: true };
     const createEnabled = createCfg.enabled !== false;
     const items: { key: string; content: ReactNode }[] = [];
 
-    if (badgeText) {
-      items.push({
-        key: "badge",
-        content: (
-          <div className="flex min-w-0 flex-1 items-center justify-end">
-            <Badge>{badgeText}</Badge>
-          </div>
-        ),
-      });
+    if (badgeAction) {
+      items.push(badgeAction);
     }
 
     if (!createEnabled) {
@@ -936,7 +949,7 @@ export const BacklinksLinks = ({ file, config }: BacklinksLinksProps) => {
     effectiveTargetType,
     hostType,
     defaultTitle,
-    badgeText,
+    badgeAction,
   ]);
 
   const panelTitle = panel.title || defaultTitle;
@@ -956,10 +969,12 @@ export const BacklinksLinks = ({ file, config }: BacklinksLinksProps) => {
       collapsible
       collapsed={collapsed}
       collapseOnHeaderClick
+      minimizeOnCollapsed
       icon={panelIcon}
       title={panelTitle}
       subtitle={panelSubtitle}
       actions={actions}
+      actionsOnCollapsed={actionsOnCollapsed}
       onCollapseChange={handleCollapseChange}
     >
       <EntityLinksTable
