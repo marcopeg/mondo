@@ -403,6 +403,144 @@
         },
         {
           "type": "backlinks",
+          "key": "reference-material",
+          "config": {
+            "title": "Reference material",
+            "icon": "layers",
+            "find": {
+              "query": [
+                {
+                  "description": "Facts referencing this person",
+                  "steps": [
+                    {
+                      "in": {
+                        "property": "participants",
+                        "type": "fact"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "description": "Projects referencing this person",
+                  "steps": [
+                    {
+                      "in": {
+                        "property": "participants",
+                        "type": "project"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "description": "Documents referencing this person",
+                  "steps": [
+                    {
+                      "in": {
+                        "property": "participants",
+                        "type": "document"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "description": "Ideas referencing this person",
+                  "steps": [
+                    {
+                      "in": {
+                        "property": "participants",
+                        "type": "idea"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "description": "Gears referencing this person",
+                  "steps": [
+                    {
+                      "in": {
+                        "property": "participants",
+                        "type": "gear"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "description": "Tools referencing this person",
+                  "steps": [
+                    {
+                      "in": {
+                        "property": "participants",
+                        "type": "tool"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "description": "Books referencing this person",
+                  "steps": [
+                    {
+                      "in": {
+                        "property": "participants",
+                        "type": "book"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "description": "Shows referencing this person",
+                  "steps": [
+                    {
+                      "in": {
+                        "property": "participants",
+                        "type": "show"
+                      }
+                    }
+                  ]
+                }
+              ],
+              "combine": "union"
+            },
+            "filter": {
+              "type": {
+                "in": [
+                  "fact",
+                  "project",
+                  "document",
+                  "idea",
+                  "gear",
+                  "tool",
+                  "book",
+                  "show"
+                ]
+              }
+            },
+            "columns": [
+              {
+                "type": "entityIcon"
+              },
+              {
+                "type": "show"
+              },
+              {
+                "type": "attribute",
+                "key": "category",
+                "label": "Category"
+              },
+              {
+                "type": "date",
+                "align": "right"
+              }
+            ],
+            "sort": {
+              "strategy": "manual"
+            },
+            "createEntity": {
+              "enabled": false
+            }
+          }
+        },
+        {
+          "type": "backlinks",
           "key": "tasks",
           "config": {
             "targetType": "task",
