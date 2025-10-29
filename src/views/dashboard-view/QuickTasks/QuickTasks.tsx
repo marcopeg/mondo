@@ -18,7 +18,13 @@ type QuickTasksCardProps = {
 };
 
 const QuickTasksCard = ({ collapsed, state }: QuickTasksCardProps) => {
-  const { tasks, isLoading, toggleTask, promoteTask } = state;
+  const {
+    tasks,
+    isLoading,
+    toggleTask,
+    promoteTask,
+    canAssignToSelf = false,
+  } = state;
   const [visible, setVisible] = useState(5);
   const [pending, setPending] = useState<Record<string, boolean>>({});
   const visibleTasks = tasks.slice(0, visible);
@@ -38,6 +44,9 @@ const QuickTasksCard = ({ collapsed, state }: QuickTasksCardProps) => {
 
   const handlePromote = useCallback(
     async (task: InboxTask, target: "task" | "project" | "log") => {
+      if (target === "task" && !canAssignToSelf) {
+        return;
+      }
       setPendingState(task.id, true);
       try {
         await promoteTask(task, target);
@@ -45,7 +54,7 @@ const QuickTasksCard = ({ collapsed, state }: QuickTasksCardProps) => {
         setPendingState(task.id, false);
       }
     },
-    [promoteTask, setPendingState]
+    [canAssignToSelf, promoteTask, setPendingState]
   );
 
   // header shows only the quick task input; no counter badge
@@ -88,6 +97,7 @@ const QuickTasksCard = ({ collapsed, state }: QuickTasksCardProps) => {
             const timestampTitle =
               fallbackHints.length > 0 ? fallbackHints.join(" • ") : null;
             const isBusy = Boolean(pending[task.id]);
+            const taskLabel = task.text || task.fileName;
             return (
               <div
                 key={task.id}
@@ -115,7 +125,7 @@ const QuickTasksCard = ({ collapsed, state }: QuickTasksCardProps) => {
                         if (isBusy) return;
                         void toggleTask(task);
                       }}
-                      aria-label={`Complete task "${task.text || task.raw}"`}
+                      aria-label={`Complete task "${taskLabel}"`}
                     />
                     <Stack
                       direction="column"
@@ -127,7 +137,7 @@ const QuickTasksCard = ({ collapsed, state }: QuickTasksCardProps) => {
                           to={task.filePath}
                           className="block w-full whitespace-nowrap text-sm font-medium text-[var(--text-accent)] hover:underline"
                         >
-                          {task.text || task.raw}
+                          {taskLabel}
                         </Link>
                       </div>
                       <Typography
@@ -148,12 +158,17 @@ const QuickTasksCard = ({ collapsed, state }: QuickTasksCardProps) => {
                       className="text-xs px-2 py-1"
                       toggleClassName="text-xs px-1 py-1"
                       disabled={isBusy}
-                      onClick={() => {
-                        if (isBusy) return;
-                        void handlePromote(task, "task");
-                      }}
+                      onClick={
+                        canAssignToSelf
+                          ? () => {
+                              if (isBusy) return;
+                              void handlePromote(task, "task");
+                            }
+                          : undefined
+                      }
                       icon="check-square"
                       menuAriaLabel="Promote inbox task"
+                      primaryOpensMenu={!canAssignToSelf}
                       secondaryActions={[
                         {
                           label: "project",
@@ -175,7 +190,7 @@ const QuickTasksCard = ({ collapsed, state }: QuickTasksCardProps) => {
                         },
                       ]}
                     >
-                      task
+                      {canAssignToSelf ? "task" : "convert"}
                     </SplitButton>
                   </Stack>
                 </Stack>

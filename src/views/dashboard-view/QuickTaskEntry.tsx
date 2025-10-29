@@ -6,7 +6,44 @@ import { Icon } from "@/components/ui/Icon";
 import TextField from "@/components/ui/TextField";
 import Stack from "@/components/ui/Stack";
 import type Mondo from "@/main";
-import { addDailyLog } from "@/commands/daily.addLog";
+import {
+  getTemplateForType,
+  renderTemplate,
+} from "@/utils/MondoTemplates";
+import { MondoFileType } from "@/types/MondoFileType";
+import { normalizeFolderPath } from "@/utils/normalizeFolderPath";
+
+const ensureFolder = async (app: any, folderPath: string) => {
+  if (!folderPath) return;
+  const existing = app.vault.getAbstractFileByPath(folderPath);
+  if (existing) return;
+  const segments = folderPath.split("/");
+  let current = "";
+  for (const segment of segments) {
+    current = current ? `${current}/${segment}` : segment;
+    const present = app.vault.getAbstractFileByPath(current);
+    if (!present) {
+      // eslint-disable-next-line no-await-in-loop
+      await app.vault.createFolder(current);
+    }
+  }
+};
+
+const slugify = (value: string): string =>
+  value
+    .trim()
+    .toLowerCase()
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+
+const sanitizeFileName = (value: string): string =>
+  value
+    .replace(/[\\/]+/g, " ")
+    .replace(/[:*?"<>|]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
 
 type QuickTaskProps = {
   iconOnly?: boolean;
@@ -41,17 +78,91 @@ const QuickTask = ({ iconOnly = false }: QuickTaskProps) => {
 
     setIsLogging(true);
     try {
-      await addDailyLog(app, plugin, { text: trimmedQuickLog, mode: "task" });
+      const settings = (plugin as any)?.settings || {};
+      const rootPaths = settings.rootPaths ?? {};
+      const templates = (settings.templates ?? {}) as Partial<
+        Record<MondoFileType, string>
+      >;
+
+      const folderSetting = rootPaths[MondoFileType.TASK] ?? "/";
+      const normalizedFolder = normalizeFolderPath(folderSetting);
+
+      if (normalizedFolder) {
+        await ensureFolder(app, normalizedFolder);
+      }
+
+      const baseTitle = trimmedQuickLog;
+      const safeBase = sanitizeFileName(baseTitle) || "Untitled Task";
+      const baseFileName = safeBase.endsWith(".md")
+        ? safeBase
+        : `${safeBase}.md`;
+
+      const buildFilePath = (name: string) =>
+        normalizedFolder ? `${normalizedFolder}/${name}` : name;
+
+      let fileName = baseFileName;
+      let filePath = buildFilePath(fileName);
+      let counter = 1;
+
+      while (app.vault.getAbstractFileByPath(filePath)) {
+        const suffix = `-${counter}`;
+        const nameWithoutExt = baseFileName.replace(/\.md$/i, "");
+        fileName = `${nameWithoutExt}${suffix}.md`;
+        filePath = buildFilePath(fileName);
+        counter += 1;
+      }
+
+      const now = new Date();
+      const iso = now.toISOString();
+      const slug =
+        slugify(baseTitle) || slugify(fileName.replace(/\.md$/i, "")) ||
+        `task-${Date.now()}`;
+
+      const templateSource = await getTemplateForType(
+        app,
+        templates,
+        MondoFileType.TASK
+      );
+
+      let content = renderTemplate(templateSource ?? "", {
+        title: baseTitle,
+        type: MondoFileType.TASK,
+        filename: fileName,
+        slug,
+        date: iso,
+      });
+
+      if (!content.trim()) {
+        content = "---\n---\n";
+      }
+
+      if (!content.trimStart().startsWith("---")) {
+        content = `---\n---\n${content.trimStart()}`;
+      }
+
+      const trimmedContent = content.trimEnd();
+      const bodySection = `${trimmedContent}\n\n${trimmedQuickLog}\n`;
+
+      const created = await app.vault.create(filePath, bodySection);
+
+      await app.fileManager.processFrontMatter(created, (frontmatter) => {
+        const fm = frontmatter as Record<string, unknown>;
+        fm.type = MondoFileType.TASK;
+        fm.status = "quick";
+        fm.participants = [];
+        fm.date = iso;
+      });
+
       setQuickLogText("");
       focusInput();
     } catch (error) {
-      console.error("QuickTask: failed to append daily task", error);
-      new Notice("Failed to append daily task entry");
+      console.error("QuickTask: failed to create quick task note", error);
+      new Notice("Failed to create quick task");
       focusInput();
     } finally {
       setIsLogging(false);
     }
-  }, [app, quickLogText, focusInput]);
+  }, [app, focusInput, quickLogText]);
 
   return (
     <form
