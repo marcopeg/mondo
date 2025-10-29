@@ -1,4 +1,4 @@
-export const ingredients = {
+export const ingredient = {
   name: "Ingredients",
   icon: "carrot",
   template: "\ncategory: []\nsupplier: []\n---\n",

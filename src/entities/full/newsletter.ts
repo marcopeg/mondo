@@ -1,4 +1,4 @@
-export const newsletters = {
+export const newsletter = {
   name: "Newsletters",
   icon: "send",
   template: "\ndate: {{date}}\nfrequency:\ncategory: []\nauthor: []\n---\n",
