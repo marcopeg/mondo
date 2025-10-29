@@ -65,6 +65,7 @@
               }
             },
             "columns": [
+              { "type": "entityIcon" },
               { "type": "show" },
               { "type": "attribute", "key": "type", "label": "Kind" },
               { "type": "date", "label": "Date", "align": "right" }

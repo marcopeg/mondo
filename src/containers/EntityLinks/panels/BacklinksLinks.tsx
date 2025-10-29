@@ -9,6 +9,7 @@ import { Card } from "@/components/ui/Card";
 import { Table } from "@/components/ui/Table";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
+import { Icon } from "@/components/ui/Icon";
 import { EntityLinksTable } from "@/components/EntityLinksTable";
 import { useFiles } from "@/hooks/use-files";
 import { useEntityLinkOrdering } from "@/hooks/use-entity-link-ordering";
@@ -27,6 +28,7 @@ import type { MondoEntityBacklinksLinkConfig } from "@/types/MondoEntityConfig";
 type Align = "left" | "right" | "center";
 type BacklinksColumn =
   | { type: "cover"; mode?: "cover" | "contain"; align?: Align }
+  | { type: "entityIcon"; align?: Align }
   | { type: "show"; label?: string; align?: Align }
   | { type: "date"; label?: string; align?: Align }
   | { type: "attribute"; key: string; label?: string; align?: Align };
@@ -234,7 +236,8 @@ export const BacklinksLinks = ({ file, config }: BacklinksLinksProps) => {
   const rawColumns =
     panel.columns && panel.columns.length > 0 ? panel.columns : DEFAULT_COLUMNS;
   const columns: BacklinksColumn[] = rawColumns.map((c) => {
-    const defaultAlign: Align = c.type === "date" ? "right" : "left";
+    const defaultAlign: Align =
+      c.type === "date" ? "right" : c.type === "entityIcon" ? "center" : "left";
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const col = c as any;
     return { ...col, align: col.align ?? defaultAlign } as BacklinksColumn;
@@ -973,6 +976,14 @@ export const BacklinksLinks = ({ file, config }: BacklinksLinksProps) => {
           const path = entry.file!.path;
           const show = getEntityDisplayName(entry);
           const date = getFrontmatterString(entry, "date");
+          const entryTypeRaw = String(
+            (entry.cache?.frontmatter as Record<string, unknown> | undefined)
+              ?.type ?? ""
+          ).trim();
+          const entryTypeLower = entryTypeRaw.toLowerCase();
+          const entryTypeIcon = isMondoEntityType(entryTypeLower)
+            ? MONDO_ENTITIES[entryTypeLower as MondoEntityType]?.icon
+            : undefined;
           return (
             <>
               {columns.map((col, idx) => {
@@ -982,6 +993,21 @@ export const BacklinksLinks = ({ file, config }: BacklinksLinksProps) => {
                     : col.align === "center"
                     ? "text-center"
                     : "text-left";
+                if (col.type === "entityIcon") {
+                  return (
+                    <Table.Cell
+                      key={`c-${idx}`}
+                      className={`px-1 py-2 align-middle w-8 ${alignClass}`}
+                      style={{ width: "2rem" }}
+                    >
+                      {entryTypeIcon ? (
+                        <Icon name={entryTypeIcon} className="mx-auto" />
+                      ) : (
+                        <span className="inline-block w-5 h-5" />
+                      )}
+                    </Table.Cell>
+                  );
+                }
                 if (col.type === "cover") {
                   const src = getCoverResource(app, entry);
                   return (
