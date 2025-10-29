@@ -8,7 +8,7 @@ import {
 } from "obsidian";
 import type Mondo from "@/main";
 import { validateMondoConfig } from "@/utils/MondoConfigManager";
-import { MONDO_ENTITY_CONFIG_LIST } from "@/entities";
+import { MONDO_CONFIG_PRESETS, MONDO_ENTITY_CONFIG_LIST } from "@/entities";
 import { createSettingsSection } from "./SettingsView_utils";
 
 type SettingsFolderSetter = (v: string) => Promise<void>;
@@ -217,6 +217,20 @@ export const renderEntityConfigurationSection = async (
     showRestartPrompt: parentShowRestartPrompt,
   } = props;
 
+  const requestReload = async () => {
+    if (!(await parentShowRestartPrompt())) {
+      return;
+    }
+
+    try {
+      (app as any)?.commands?.executeCommandById?.("app:reload");
+    } catch (_) {}
+
+    try {
+      window.location.reload();
+    } catch (_) {}
+  };
+
   // Custom Mondo Configuration section
   const customConfigContainer = containerEl.createDiv();
   const customConfigSection = createSettingsSection(
@@ -224,6 +238,56 @@ export const renderEntityConfigurationSection = async (
     "Mondo Entities",
     "Paste JSON here to override the built-in Mondo Entities configuration.\nLeave empty to use defaults."
   );
+
+  const presetLookup = new Map(
+    MONDO_CONFIG_PRESETS.map((preset) => [preset.key, preset])
+  );
+  const storedPresetKey =
+    typeof (plugin as any).settings?.mondoConfigPresetKey === "string"
+      ? (plugin as any).settings.mondoConfigPresetKey.trim()
+      : "";
+  const initialPresetKey = storedPresetKey && presetLookup.has(storedPresetKey)
+    ? storedPresetKey
+    : "";
+
+  if (storedPresetKey !== initialPresetKey) {
+    (plugin as any).settings.mondoConfigPresetKey = initialPresetKey;
+    void (plugin as any).saveSettings?.();
+  }
+
+  const presetSetting = new Setting(customConfigContainer)
+    .setName("Preset")
+    .setDesc(
+      "Select a built-in CRM configuration. Custom JSON overrides the selected preset."
+    );
+
+  presetSetting.addDropdown((dropdown) => {
+    dropdown.addOption("", "None (use built-in default)");
+    MONDO_CONFIG_PRESETS.forEach((preset) => {
+      dropdown.addOption(preset.key, preset.description);
+    });
+
+    dropdown.setValue(initialPresetKey);
+    let currentKey = initialPresetKey;
+
+    dropdown.onChange(async (value) => {
+      const nextKey = value && presetLookup.has(value) ? value : "";
+
+      if (nextKey !== value) {
+        dropdown.setValue(nextKey);
+      }
+
+      if (nextKey === currentKey) {
+        return;
+      }
+
+      currentKey = nextKey;
+      (plugin as any).settings.mondoConfigPresetKey = nextKey;
+      await (plugin as any).saveSettings();
+      await (plugin as any).applyMondoConfigFromSettings();
+      await requestReload();
+    });
+  });
 
   // Full-width block under the heading, rendered as a standard Setting row
   const configSetting = new Setting(customConfigContainer);
@@ -262,20 +326,13 @@ export const renderEntityConfigurationSection = async (
   applyBtn.addClass("mod-cta");
   applyBtn.addEventListener("click", async () => {
     const raw = (textArea.value ?? "").trim();
-    if (!raw) {
-      // Nothing to validate; delegate to plugin (applies defaults)
-      await (plugin as any).applyMondoConfigFromSettings();
-      await (plugin as any).saveSettings?.();
-      if (await parentShowRestartPrompt()) {
-        try {
-          (app as any)?.commands?.executeCommandById?.("app:reload");
-        } catch (_) {}
-        try {
-          window.location.reload();
-        } catch (_) {}
+      if (!raw) {
+        // Nothing to validate; delegate to plugin (applies defaults)
+        await (plugin as any).applyMondoConfigFromSettings();
+        await (plugin as any).saveSettings?.();
+        await requestReload();
+        return;
       }
-      return;
-    }
     // Try to parse and validate ourselves so we can show a detailed modal on errors
     let parsed: unknown;
     try {
@@ -296,14 +353,7 @@ export const renderEntityConfigurationSection = async (
     await (plugin as any).applyMondoConfigFromSettings();
     await (plugin as any).saveSettings?.();
 
-    if (await parentShowRestartPrompt()) {
-      try {
-        (app as any)?.commands?.executeCommandById?.("app:reload");
-      } catch (_) {}
-      try {
-        window.location.reload();
-      } catch (_) {}
-    }
+    await requestReload();
   });
 
   // Reset button (Use defaults)
@@ -315,14 +365,7 @@ export const renderEntityConfigurationSection = async (
     await (plugin as any).saveSettings();
     await (plugin as any).applyMondoConfigFromSettings();
     textArea.value = "";
-    if (await parentShowRestartPrompt()) {
-      try {
-        (app as any)?.commands?.executeCommandById?.("app:reload");
-      } catch (_) {}
-      try {
-        window.location.reload();
-      } catch (_) {}
-    }
+    await requestReload();
   });
 
   // Only include actual configured entities; exclude special types like daily/log/journal
