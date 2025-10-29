@@ -13,8 +13,10 @@ import { restaurant } from "./restaurant";
 import { gear } from "./gear";
 import { tool } from "./tool";
 import { recipe } from "./recipe";
+import { ingredients } from "./ingredients";
 import { book } from "./book";
 import { show } from "./show";
+import { newsletters } from "./newsletters";
 import { document } from "./document";
 
 export const mondoConfigFull = {
@@ -35,8 +37,10 @@ export const mondoConfigFull = {
       "gear",
       "tool",
       "recipe",
+      "ingredients",
       "book",
       "show",
+      "newsletters",
       "document",
     ],
   },
@@ -58,8 +62,10 @@ export const mondoConfigFull = {
         "gear",
         "tool",
         "recipe",
+        "ingredients",
         "book",
         "show",
+        "newsletters",
         "document",
       ],
     },
@@ -80,8 +86,10 @@ export const mondoConfigFull = {
     gear,
     tool,
     recipe,
+    ingredients,
     book,
     show,
+    newsletters,
     document,
   },
 };
