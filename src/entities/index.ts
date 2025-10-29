@@ -1,6 +1,6 @@
 import mondoConfig from "@/mondo-config.json";
-import mondoConfigFull from "@/mondo-config.full.json";
-import mondoConfigMini from "@/mondo-config.mini.json";
+import { mondoConfigFull } from "./full";
+import { mondoConfigMini } from "./mini";
 import type { MondoEntityConfig } from "@/types/MondoEntityConfig";
 import type { MondoEntityType, MondoConfig } from "@/types/MondoEntityTypes";
 
@@ -140,7 +140,9 @@ export const onMondoConfigChange = (listener: MondoConfigListener) => {
 export const isMondoEntityType = (value: string): value is MondoEntityType =>
   MONDO_ENTITY_TYPE_SET.has(value as MondoEntityType);
 
-export const resolveMondoEntityType = (value: string): MondoEntityType | null => {
+export const resolveMondoEntityType = (
+  value: string
+): MondoEntityType | null => {
   if (!value) return null;
   const normalized = value.trim().toLowerCase();
   if (isMondoEntityType(normalized)) {

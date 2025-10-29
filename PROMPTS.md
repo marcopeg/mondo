@@ -247,3 +247,10 @@ when this note is set, the frontmatter of such note takes over the hardcoded con
 the system must be able to validate it and prevent using it if it contains any error. every time the content of this file changes the system should re-validate and re-load the configuration.
 
 in case of a bad configuration, a detailed error log should be created in the same folder as the config file with the filename following the template "YYMMDDhhmmss-mondo-config-error.md" to help the use fix the configuration issue.
+
+---
+
+move the #file:mondo-config.full.json into src/entities/full
+create the src/entities/full/index.ts that exports the typescript version of the json file
+break each entity in its own typescript file for higher modularity
+do the same for the "mini" configuration
