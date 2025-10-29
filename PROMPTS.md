@@ -254,3 +254,55 @@ move the #file:mondo-config.full.json into src/entities/full
 create the src/entities/full/index.ts that exports the typescript version of the json file
 break each entity in its own typescript file for higher modularity
 do the same for the "mini" configuration
+
+---
+
+TODO:
+Focus on the EntityHeader and make the cover clickable to open the image in case there is one. If no cover is available, use a placeholder with the icon of the note type
+
+---
+
+TODO:
+In the entities/full add:
+
+- ingredients
+- newsletters
+
+Fix both the json and typescript definition
+
+---
+
+TODO:
+
+Focus on the entities/full definition. Add a NEW backlinks definition to the “person” entity.
+
+It should fetch multiple document types:
+
+- facts
+- projects
+- documents
+- ideas
+- gears
+- tools
+- books
+- shows
+
+That links back to the person on the “reference” field.
+
+This panel disables the create entity.
+
+The columns are:
+
+- icon
+- show
+- category
+- date
+- The order is manual
+
+Fix both the json and typescript definition
+
+---
+
+TODO:
+
+Refactor the Obsidian plugin so that the UICard component includes a new minimizeOnCollapsed boolean attribute. When true, a collapsed card only takes minimal width and lines up horizontally, wrapping to new lines naturally if needed. The EntityLinksPanel should apply this attribute so that all collapsed cards appear in a horizontal sequence. When a card is expanded, it takes the full width while the others remain collapsed. Add a clearfix at the end of the list to ensure layout stability.
