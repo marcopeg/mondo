@@ -39,8 +39,15 @@
   display: block;
 }
 
-.mondo-cover-thumbnail--inline-title,
+.mondo-cover-thumbnail--inline-title {
+  margin-right: 0.5rem;
+}
+
 .mondo-cover-thumbnail--metadata {
+  margin-right: 0.5rem;
+}
+
+.mondo-cover-thumbnail--view-header {
   margin-right: 0.5rem;
 }
 
@@ -51,12 +58,30 @@
 .mondo-inline-title-with-cover {
   display: flex;
   align-items: center;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  gap: 0;
 }
 
 .mondo-inline-title-with-cover .inline-title {
   display: inline-flex;
   align-items: center;
+  flex-shrink: 1;
+  min-width: 0;
+}
+
+/* View header placement (pane title bar) */
+.mondo-view-header-with-cover {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+}
+
+.mondo-view-header-with-cover .view-header-title,
+.mondo-view-header-with-cover .view-header-title-input {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 1;
+  min-width: 0;
 }
 
 .mondo-audio-actions {

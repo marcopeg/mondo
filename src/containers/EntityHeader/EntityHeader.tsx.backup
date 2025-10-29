@@ -82,10 +82,7 @@ export const EntityHeader = ({ containerRef, type }: EntityHeaderProps) => {
 
       {/* Block 3: Actions (right) */}
       {entityType ? (
-        <KnownEntityHeader
-          containerRef={containerRef}
-          entityType={entityType}
-        />
+        <KnownEntityHeader containerRef={containerRef} entityType={entityType} />
       ) : (
         <UnknownEntityHeader app={app} file={fileRef} />
       )}

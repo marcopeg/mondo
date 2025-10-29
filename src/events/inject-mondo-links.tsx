@@ -96,10 +96,9 @@ const createInjectionNode = (path: string) => {
 };
 
 const getLeafContainer = (record: InjectionRecord): HTMLElement | null => {
-  const leafContainer = (
+  const leafContainer =
     (record.leaf as unknown as { containerEl?: HTMLElement })?.containerEl ??
-    null
-  );
+    null;
 
   if (leafContainer && leafContainer.isConnected) {
     return leafContainer;
@@ -208,34 +207,23 @@ const findMetadataPlacement = (
     return null;
   }
 
-  for (const selector of METADATA_FILE_VALUE_SELECTORS) {
-    const value = metadata.querySelector<HTMLElement>(selector);
-    if (value) {
-      return {
-        kind: "metadata",
-        container: value,
-        anchor: value.firstChild,
-      };
-    }
-  }
-
-  return null;
+  // Strategy: place the cover thumbnail as the very first element
+  // inside the note's details panel (metadata container).
+  // We insert before the container's first child to ensure it appears on top.
+  return {
+    kind: "metadata",
+    container: metadata,
+    anchor: metadata.firstChild,
+  };
 };
 
 const resolveCoverPlacement = (
-  record: InjectionRecord
+  _record: InjectionRecord
 ): CoverPlacement | null => {
-  const inlineTitle = findInlineTitlePlacement(record);
-  if (inlineTitle) {
-    return inlineTitle;
-  }
-
-  const header = findViewHeaderPlacement(record);
-  if (header) {
-    return header;
-  }
-
-  return findMetadataPlacement(record);
+  // Cover thumbnail is now rendered inside the Mondo EntityHeader.
+  // Avoid injecting cover elements into Obsidian's native title/metadata
+  // to keep them in their original state.
+  return null;
 };
 
 const getPlacementAnchor = (placement: CoverPlacement): ChildNode | null =>
@@ -359,7 +347,9 @@ const renderReact = (
   );
 };
 
-const resolveMetadataContainer = (record: InjectionRecord): HTMLElement | null => {
+const resolveMetadataContainer = (
+  record: InjectionRecord
+): HTMLElement | null => {
   const current = record.metadataEl;
   if (current && current.isConnected) {
     return current;
@@ -446,10 +436,7 @@ const normalizeTypeValue = (value: unknown): string => {
   return "";
 };
 
-const scheduleCoverUpdate = (
-  record: InjectionRecord,
-  plugin: Plugin
-) => {
+const scheduleCoverUpdate = (record: InjectionRecord, plugin: Plugin) => {
   if (record.observerScheduled) {
     return;
   }
@@ -468,10 +455,7 @@ const scheduleCoverUpdate = (
   }
 };
 
-const ensureMetadataObserver = (
-  record: InjectionRecord,
-  plugin: Plugin
-) => {
+const ensureMetadataObserver = (record: InjectionRecord, plugin: Plugin) => {
   const metadata = resolveMetadataContainer(record);
   if (!metadata) {
     if (record.observer) {
@@ -527,14 +511,10 @@ const isRelevantStructureNode = (node: Node): boolean => {
   return false;
 };
 
-const ensureStructureObserver = (
-  record: InjectionRecord,
-  plugin: Plugin
-) => {
-  const container = (
+const ensureStructureObserver = (record: InjectionRecord, plugin: Plugin) => {
+  const container =
     (record.leaf as unknown as { containerEl?: HTMLElement })?.containerEl ??
-    null
-  );
+    null;
   if (!container || !container.isConnected) {
     record.structureObserver?.disconnect();
     record.structureObserver = null;
@@ -542,7 +522,10 @@ const ensureStructureObserver = (
     return;
   }
 
-  if (record.structureObserver && record.structureObserverTarget === container) {
+  if (
+    record.structureObserver &&
+    record.structureObserverTarget === container
+  ) {
     return;
   }
 
