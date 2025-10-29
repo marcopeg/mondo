@@ -62,6 +62,10 @@ export interface MondoEntityBacklinksLinkConfig {
     title?: string;
     attributes?: Record<string, string | number | boolean>;
   };
+  badge?: {
+    enabled?: boolean;
+    content?: string;
+  };
   find?: {
     query: Array<{
       description?: string;

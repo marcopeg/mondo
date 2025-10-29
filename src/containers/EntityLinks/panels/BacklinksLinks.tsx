@@ -8,6 +8,7 @@ import {
 import { Card } from "@/components/ui/Card";
 import { Table } from "@/components/ui/Table";
 import { Button } from "@/components/ui/Button";
+import { Badge } from "@/components/ui/Badge";
 import { EntityLinksTable } from "@/components/EntityLinksTable";
 import { useFiles } from "@/hooks/use-files";
 import { useEntityLinkOrdering } from "@/hooks/use-entity-link-ordering";
@@ -773,6 +774,41 @@ export const BacklinksLinks = ({ file, config }: BacklinksLinksProps) => {
     }, MIN_HOLD_MS - elapsed);
   }, [ordered, optimisticOrdered, keyOf, optimisticSetAtRef, clearTimerRef]);
 
+  const badgeConfig = panel.badge ?? {};
+  const badgeEnabled = badgeConfig.enabled ?? true;
+  const badgeTemplate = String(badgeConfig.content ?? "{count}");
+
+  const badgeText = useMemo(() => {
+    if (!badgeEnabled) return null;
+    if (!badgeTemplate) return null;
+
+    const items = (optimisticOrdered ?? ordered) ?? [];
+    const countValue = items.length;
+
+    let latestDateValue = "";
+    let latestTimestamp = Number.NEGATIVE_INFINITY;
+    for (const entry of items) {
+      const raw = getFrontmatterString(entry, "date");
+      if (!raw) continue;
+      const parsed = Date.parse(raw);
+      if (!Number.isNaN(parsed)) {
+        if (parsed > latestTimestamp) {
+          latestTimestamp = parsed;
+          latestDateValue = raw;
+        }
+        continue;
+      }
+      if (!latestDateValue) {
+        latestDateValue = raw;
+      }
+    }
+
+    let output = badgeTemplate.replace(/\{count\}/g, String(countValue));
+    output = output.replace(/\{date\}/g, latestDateValue);
+    if (!output.trim()) return null;
+    return output;
+  }, [badgeEnabled, badgeTemplate, optimisticOrdered, ordered]);
+
   const handleCollapseChange = useCallback(
     async (isCollapsed: boolean) => {
       if (!hostFile) return;
@@ -817,55 +853,69 @@ export const BacklinksLinks = ({ file, config }: BacklinksLinksProps) => {
   const actions = useMemo(() => {
     // default createEntity.enabled should be true unless explicitly disabled
     const createCfg = panel.createEntity ?? { enabled: true };
-    if (createCfg.enabled === false)
-      return [] as { key: string; content: ReactNode }[];
+    const createEnabled = createCfg.enabled !== false;
+    const items: { key: string; content: ReactNode }[] = [];
+
+    if (badgeText) {
+      items.push({
+        key: "badge",
+        content: (
+          <div className="flex min-w-0 flex-1 items-center justify-end">
+            <Badge>{badgeText}</Badge>
+          </div>
+        ),
+      });
+    }
+
+    if (!createEnabled) {
+      return items;
+    }
     // If user didn't specify a title template, provide a sensible default
     // like "Untitled Facts" (based on the target entity's configured name).
     const titleTemplate = createCfg.title ?? `Untitled ${defaultTitle}`;
-    return [
-      {
-        key: "create-entity",
-        content: (
-          <Button
-            variant="link"
-            icon="plus"
-            aria-label={`Create ${effectiveTargetType}`}
-            disabled={isCreating}
-            onClick={() => {
-              if (isCreating) return;
-              setIsCreating(true);
-              (async () => {
-                try {
-                  await createEntityForEntity({
-                    app,
-                    targetType: effectiveTargetType as string,
-                    hostEntity: file,
-                    titleTemplate,
-                    attributeTemplates: createCfg.attributes as any,
-                    // link back using only hostType-specific properties (no generic "related")
-                    linkProperties: buildLinkProperties(
-                      hostType as MondoEntityType,
-                      (panel.properties ?? panel.prop) as
-                        | string
-                        | string[]
-                        | undefined
-                    ),
-                    openAfterCreate: true,
-                  });
-                } catch (error) {
-                  console.error(
-                    "BacklinksLinks: failed to create entity",
-                    error
-                  );
-                } finally {
-                  setIsCreating(false);
-                }
-              })();
-            }}
-          />
-        ),
-      },
-    ];
+    items.push({
+      key: "create-entity",
+      content: (
+        <Button
+          variant="link"
+          icon="plus"
+          aria-label={`Create ${effectiveTargetType}`}
+          disabled={isCreating}
+          onClick={() => {
+            if (isCreating) return;
+            setIsCreating(true);
+            (async () => {
+              try {
+                await createEntityForEntity({
+                  app,
+                  targetType: effectiveTargetType as string,
+                  hostEntity: file,
+                  titleTemplate,
+                  attributeTemplates: createCfg.attributes as any,
+                  // link back using only hostType-specific properties (no generic "related")
+                  linkProperties: buildLinkProperties(
+                    hostType as MondoEntityType,
+                    (panel.properties ?? panel.prop) as
+                      | string
+                      | string[]
+                      | undefined
+                  ),
+                  openAfterCreate: true,
+                });
+              } catch (error) {
+                console.error(
+                  "BacklinksLinks: failed to create entity",
+                  error
+                );
+              } finally {
+                setIsCreating(false);
+              }
+            })();
+          }}
+        />
+      ),
+    });
+    return items;
   }, [
     panel.createEntity,
     panel.properties,
@@ -876,6 +926,7 @@ export const BacklinksLinks = ({ file, config }: BacklinksLinksProps) => {
     effectiveTargetType,
     hostType,
     defaultTitle,
+    badgeText,
   ]);
 
   const panelTitle = panel.title || defaultTitle;
