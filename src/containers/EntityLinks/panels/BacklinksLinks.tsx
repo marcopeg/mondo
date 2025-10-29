@@ -192,7 +192,8 @@ export const BacklinksLinks = ({ file, config }: BacklinksLinksProps) => {
 
   // Determine property to match (memoized for stable identity)
   const legacyTargetIsEntity =
-    legacyTargetOriginal && isMondoEntityType(legacyTargetOriginal.toLowerCase());
+    legacyTargetOriginal &&
+    isMondoEntityType(legacyTargetOriginal.toLowerCase());
   const propertyFromTarget = useMemo(() => {
     if (panel.properties || panel.prop) {
       // handled below in matchProperties
@@ -648,7 +649,7 @@ export const BacklinksLinks = ({ file, config }: BacklinksLinksProps) => {
       });
       combinedPaths = out;
     }
-    // Convert to TCachedFile, apply top-level filter and targetType
+    // Convert to TCachedFile, apply top-level filter and optional targetType
     const allCandidates: TCachedFile[] = [];
     combinedPaths.forEach((p) => {
       const c = fileManager.getFileByPath(p);
@@ -657,6 +658,15 @@ export const BacklinksLinks = ({ file, config }: BacklinksLinksProps) => {
     const filtered = allCandidates.filter((c) =>
       evalFilterExpr(c, panel.filter)
     );
+    // When using advanced find DSL, respect the configured filters exactly and
+    // do NOT force-narrow to targetType. This allows panels to union multiple
+    // entity types (e.g., facts + ideas) for a single host.
+    const hasAdvancedFind = !!panel.find && panel.find.query?.length > 0;
+    if (hasAdvancedFind) {
+      return uniqByPath(filtered);
+    }
+    // Legacy behavior: if no advanced find is provided, restrict to targetType
+    // to mirror the old single-entity panel semantics.
     const onlyTarget = filtered.filter(
       (c) => getType(c) === (effectiveTargetType as string)
     );
@@ -782,7 +792,7 @@ export const BacklinksLinks = ({ file, config }: BacklinksLinksProps) => {
     if (!badgeEnabled) return null;
     if (!badgeTemplate) return null;
 
-    const items = (optimisticOrdered ?? ordered) ?? [];
+    const items = optimisticOrdered ?? ordered ?? [];
     const countValue = items.length;
 
     let latestDateValue = "";
@@ -903,10 +913,7 @@ export const BacklinksLinks = ({ file, config }: BacklinksLinksProps) => {
                   openAfterCreate: true,
                 });
               } catch (error) {
-                console.error(
-                  "BacklinksLinks: failed to create entity",
-                  error
-                );
+                console.error("BacklinksLinks: failed to create entity", error);
               } finally {
                 setIsCreating(false);
               }

@@ -1,0 +1,102 @@
+{
+  "titles": {
+    "order": ["person", "fact", "document", "idea"]
+  },
+  "relevantNotes": {
+    "filter": {
+      "order": ["person", "fact", "document", "idea"]
+    }
+  },
+  "entities": {
+    "person": {
+      "type": "person",
+      "name": "People",
+      "icon": "user",
+      "template": "---\ntype: person\nshow: {{title}}\nrole: []\ncompany: []\n---\n",
+      "links": [
+        {
+          "type": "backlinks",
+          "key": "reference-notes",
+          "config": {
+            "title": "Reference material",
+            "icon": "layers",
+            "targetType": "fact",
+            "find": {
+              "query": [
+                {
+                  "description": "Facts referencing this person",
+                  "steps": [
+                    {
+                      "in": {
+                        "property": "reference",
+                        "type": "fact"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "description": "Documents referencing this person",
+                  "steps": [
+                    {
+                      "in": {
+                        "property": "reference",
+                        "type": "document"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "description": "Ideas referencing this person",
+                  "steps": [
+                    {
+                      "in": {
+                        "property": "reference",
+                        "type": "idea"
+                      }
+                    }
+                  ]
+                }
+              ],
+              "combine": "union"
+            },
+            "filter": {
+              "type": {
+                "in": ["fact", "document", "idea"]
+              }
+            },
+            "columns": [
+              { "type": "show" },
+              { "type": "attribute", "key": "type", "label": "Kind" },
+              { "type": "date", "label": "Date", "align": "right" }
+            ],
+            "sort": { "strategy": "manual" },
+            "createEntity": {
+              "title": "Untitled reference note",
+              "attributes": {
+                "reference": "{@this}"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "fact": {
+      "type": "fact",
+      "name": "Facts",
+      "icon": "info",
+      "template": "---\ntype: fact\nshow: {{title}}\ndate: {{date}}\nreference: []\n---\n"
+    },
+    "document": {
+      "type": "document",
+      "name": "Documents",
+      "icon": "file-text",
+      "template": "---\ntype: document\nshow: {{title}}\ndate: {{date}}\nreference: []\n---\n"
+    },
+    "idea": {
+      "type": "idea",
+      "name": "Ideas",
+      "icon": "sparkles",
+      "template": "---\ntype: idea\nshow: {{title}}\nstatus: draft\nreference: []\n---\n"
+    }
+  }
+}
