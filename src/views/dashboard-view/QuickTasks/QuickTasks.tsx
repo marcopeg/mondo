@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useState } from "react";
 import { Card } from "@/components/ui/Card";
 import { Stack } from "@/components/ui/Stack";
 import { Typography } from "@/components/ui/Typography";
@@ -8,6 +8,7 @@ import Button from "@/components/ui/Button";
 import SplitButton from "@/components/ui/SplitButton";
 import { Separator } from "@/components/ui/Separator";
 import QuickTask from "../QuickTaskEntry";
+import { ReadableDate } from "@/components/ui/ReadableDate";
 
 type UseInboxTasksState = ReturnType<typeof useInboxTasks>;
 
@@ -20,23 +21,6 @@ const QuickTasksCard = ({ collapsed, state }: QuickTasksCardProps) => {
   const { tasks, isLoading, toggleTask, promoteTask } = state;
   const [visible, setVisible] = useState(5);
   const [pending, setPending] = useState<Record<string, boolean>>({});
-  const dateFormatter = useMemo(
-    () =>
-      new Intl.DateTimeFormat(undefined, {
-        year: "numeric",
-        month: "short",
-        day: "numeric",
-      }),
-    []
-  );
-  const timeFormatter = useMemo(
-    () =>
-      new Intl.DateTimeFormat(undefined, {
-        hour: "2-digit",
-        minute: "2-digit",
-      }),
-    []
-  );
   const visibleTasks = tasks.slice(0, visible);
   const showLoadMore = tasks.length > visible;
   const setPendingState = useCallback((taskId: string, active: boolean) => {
@@ -94,8 +78,6 @@ const QuickTasksCard = ({ collapsed, state }: QuickTasksCardProps) => {
       ) : (
         <Stack direction="column" gap={2} className="w-full">
           {visibleTasks.map((task) => {
-            const displayDate = dateFormatter.format(task.occurredAt);
-            const displayTime = timeFormatter.format(task.occurredAt);
             const fallbackHints: string[] = [];
             if (!task.hasExplicitDate) {
               fallbackHints.push("Date inferred from note creation");
@@ -104,7 +86,7 @@ const QuickTasksCard = ({ collapsed, state }: QuickTasksCardProps) => {
               fallbackHints.push("Time inferred from note creation");
             }
             const timestampTitle =
-              fallbackHints.length > 0 ? fallbackHints.join(" • ") : undefined;
+              fallbackHints.length > 0 ? fallbackHints.join(" • ") : null;
             const isBusy = Boolean(pending[task.id]);
             return (
               <div
@@ -151,9 +133,12 @@ const QuickTasksCard = ({ collapsed, state }: QuickTasksCardProps) => {
                       <Typography
                         variant="body"
                         className="text-xs text-[var(--text-muted)]"
-                        {...(timestampTitle ? { title: timestampTitle } : {})}
                       >
-                        {displayDate} • {displayTime}
+                        <ReadableDate
+                          value={task.occurredAt}
+                          fallback="—"
+                          extraHint={timestampTitle}
+                        />
                       </Typography>
                     </Stack>
                   </Stack>

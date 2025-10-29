@@ -1,11 +1,12 @@
 import { useCallback } from "react";
+import type { ReactNode } from "react";
 import { TFile } from "obsidian";
 import { useApp } from "@/hooks/use-app";
 import Button from "@/components/ui/Button";
 
 interface MondoFileLinkProps {
   path: string;
-  label: string;
+  label: ReactNode;
 }
 
 export const MondoFileLink = ({ path, label }: MondoFileLinkProps) => {

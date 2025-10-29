@@ -4,6 +4,7 @@ import {
   type MondoEntityDateInfo,
   type MondoEntityListRow,
 } from "@/views/entity-panel-view/useEntityPanels";
+import { ReadableDate } from "@/components/ui/ReadableDate";
 import { MondoFileLink } from "../../MondoFileLink";
 
 type EntityDateCellProps = {
@@ -16,37 +17,6 @@ type DateDisplayInfo = {
   date: Date | null;
   raw: string | null;
   hasTime: boolean;
-};
-
-const formatDateForDisplay = (
-  info: DateDisplayInfo,
-  source?: MondoEntityDateInfo["source"]
-): string => {
-  if (!info.date) {
-    const fallback = info.raw?.trim();
-    return fallback && fallback.length > 0 ? fallback : "—";
-  }
-
-  const options: Intl.DateTimeFormatOptions = info.hasTime
-    ? {
-        year: "numeric",
-        month: "short",
-        day: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-      }
-    : {
-        year: "numeric",
-        month: "short",
-        day: "numeric",
-      };
-
-  const formatted = info.date.toLocaleString(undefined, options);
-  if (source === "created") {
-    return `${formatted} • created`;
-  }
-
-  return formatted;
 };
 
 export const EntityDateCell = ({ value, row, column }: EntityDateCellProps) => {
@@ -83,12 +53,25 @@ export const EntityDateCell = ({ value, row, column }: EntityDateCellProps) => {
     }
   }
 
-  const display = formatDateForDisplay(info, source);
+  const valueForDisplay = info.date ?? info.raw ?? null;
+  const fallback = info.raw ?? "—";
+  const extraHint =
+    source === "created" ? "Created from file metadata" : null;
+  const content = (
+    <span className="inline-flex items-center gap-1">
+      <ReadableDate
+        value={valueForDisplay}
+        fallback={fallback}
+        extraHint={extraHint}
+      />
+      {source === "created" ? <span>• created</span> : null}
+    </span>
+  );
   const shouldLink = normalizedColumn === "date_time";
 
   if (shouldLink) {
-    return <MondoFileLink path={row.path} label={display} />;
+    return <MondoFileLink path={row.path} label={content} />;
   }
 
-  return <span>{display}</span>;
+  return content;
 };

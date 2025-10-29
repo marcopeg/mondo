@@ -54,6 +54,10 @@ You can add a block as many `habits` blocks you want:
 
 # ⏱️ Training Timers
 
+![Timer - single](./images/timer-single.png)
+
+![Timer - single](./images/timer-source.png)
+
 # 📆 Daily Notes
 
 Daily notes help jotting down quick information.

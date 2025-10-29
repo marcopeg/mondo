@@ -6,13 +6,14 @@ import Table from "@/components/ui/Table";
 import { useApp } from "@/hooks/use-app";
 import { formatBytes } from "@/utils/formatBytes";
 import { isOtherVaultFile } from "@/utils/fileTypeFilters";
+import { ReadableDate } from "@/components/ui/ReadableDate";
 
 type FileRow = {
   file: TFile;
   typeLabel: string;
   icon: string;
   sizeLabel: string;
-  createdLabel: string;
+  createdValue: number;
   pathLabel: string;
 };
 
@@ -36,11 +37,6 @@ const ICON_MAP: Record<string, string> = {
 };
 
 const normalizeExtension = (file: TFile) => file.extension.toLowerCase();
-
-const dateFormatter = new Intl.DateTimeFormat(undefined, {
-  dateStyle: "medium",
-  timeStyle: "short",
-});
 
 export const VaultFilesView = () => {
   const app = useApp();
@@ -83,14 +79,14 @@ export const VaultFilesView = () => {
     files.map((file) => {
       const extension = normalizeExtension(file);
       const icon = ICON_MAP[extension] ?? "file";
-      const createdLabel = dateFormatter.format(file.stat.ctime);
+      const createdValue = file.stat.ctime;
 
       return {
         file,
         typeLabel: extension.toUpperCase(),
         icon,
         sizeLabel: formatBytes(file.stat.size ?? 0),
-        createdLabel,
+        createdValue,
         pathLabel: file.path,
       };
     }),
@@ -173,7 +169,7 @@ export const VaultFilesView = () => {
                     {row.sizeLabel}
                   </Table.Cell>
                   <Table.Cell className="p-3 align-middle text-[var(--text-muted)]">
-                    {row.createdLabel}
+                    <ReadableDate value={row.createdValue} fallback="—" />
                   </Table.Cell>
                 </Table.Row>
               ))

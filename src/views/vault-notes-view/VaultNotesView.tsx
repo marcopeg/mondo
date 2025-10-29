@@ -4,13 +4,14 @@ import { Typography } from "@/components/ui/Typography";
 import Badge from "@/components/ui/Badge";
 import { useApp } from "@/hooks/use-app";
 import { isMarkdownFile } from "@/utils/fileTypeFilters";
+import { ReadableDate } from "@/components/ui/ReadableDate";
 
 type NoteRow = {
   file: TFile;
   typeLabel: string;
   displayName: string;
   snippet: string;
-  updatedLabel: string;
+  updatedValue: number;
 };
 
 const MAX_SNIPPET_WORDS = 20;
@@ -34,11 +35,6 @@ const buildSnippet = (content: string): string => {
   const snippet = snippetWords.join(" ");
   return words.length > snippetWords.length ? `${snippet}…` : snippet;
 };
-
-const dateFormatter = new Intl.DateTimeFormat(undefined, {
-  dateStyle: "medium",
-  timeStyle: "short",
-});
 
 export const VaultNotesView = () => {
   const app = useApp();
@@ -73,7 +69,7 @@ export const VaultNotesView = () => {
         typeLabel: type,
         displayName,
         snippet,
-        updatedLabel: dateFormatter.format(file.stat.mtime),
+        updatedValue: file.stat.mtime,
       });
     }
 
@@ -151,7 +147,7 @@ export const VaultNotesView = () => {
             <div className="flex items-center justify-between gap-3">
               <Badge>{row.typeLabel}</Badge>
               <span className="text-xs text-[var(--text-muted)]">
-                {row.updatedLabel}
+                <ReadableDate value={row.updatedValue} fallback="—" />
               </span>
             </div>
             <div className="mt-2 text-lg font-semibold text-[var(--text-normal)]">
