@@ -262,7 +262,6 @@ Focus on the EntityHeader and make the cover clickable to open the image in case
 
 ---
 
-TODO:
 In the entities/full add:
 
 - ingredients
@@ -271,8 +270,6 @@ In the entities/full add:
 Fix both the json and typescript definition
 
 ---
-
-TODO:
 
 Focus on the entities/full definition. Add a NEW backlinks definition to the “person” entity.
 
@@ -302,7 +299,5 @@ The columns are:
 Fix both the json and typescript definition
 
 ---
-
-TODO:
 
 Refactor the Obsidian plugin so that the UICard component includes a new `minimizeOnCollapsed` boolean attribute. When true, a collapsed card only takes minimal width instead of the fullWidth and lines up horizontally one after the other, wrapping to new lines naturally if needed. With this option, multiple cards can be placed one after another on the same line. The EntityLinksPanel should apply this attribute so that all collapsed cards appear in a horizontal sequence. When a card is expanded, it takes the full width while the others remain collapsed. Add a clearfix at the end of the list to ensure layout stability.
