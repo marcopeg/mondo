@@ -1,4 +1,6 @@
 import mondoConfig from "@/mondo-config.json";
+import { mondoConfigFull } from "./full";
+import { mondoConfigMini } from "./mini";
 import type { MondoEntityConfig } from "@/types/MondoEntityConfig";
 import type { MondoEntityType, MondoConfig } from "@/types/MondoEntityTypes";
 
@@ -77,6 +79,25 @@ export let MONDO_ENTITY_TYPE_SET = currentState.typeSet;
 // UI configuration: controls ordering for tiles and relevant notes filters
 export let MONDO_UI_CONFIG = currentState.ui;
 
+export type MondoConfigPreset = {
+  key: string;
+  description: string;
+  config: MondoConfig;
+};
+
+export const MONDO_CONFIG_PRESETS: MondoConfigPreset[] = [
+  {
+    key: "full",
+    description: "Full CRM",
+    config: cloneConfig(mondoConfigFull) as MondoConfig,
+  },
+  {
+    key: "mini",
+    description: "Mini CRM",
+    config: cloneConfig(mondoConfigMini) as MondoConfig,
+  },
+];
+
 const listeners = new Set<MondoConfigListener>();
 
 export const getMondoConfig = (): MondoConfig => currentConfig;
@@ -119,7 +140,9 @@ export const onMondoConfigChange = (listener: MondoConfigListener) => {
 export const isMondoEntityType = (value: string): value is MondoEntityType =>
   MONDO_ENTITY_TYPE_SET.has(value as MondoEntityType);
 
-export const resolveMondoEntityType = (value: string): MondoEntityType | null => {
+export const resolveMondoEntityType = (
+  value: string
+): MondoEntityType | null => {
   if (!value) return null;
   const normalized = value.trim().toLowerCase();
   if (isMondoEntityType(normalized)) {

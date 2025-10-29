@@ -8,6 +8,8 @@ import {
 import { Card } from "@/components/ui/Card";
 import { Table } from "@/components/ui/Table";
 import { Button } from "@/components/ui/Button";
+import { Badge } from "@/components/ui/Badge";
+import { Icon } from "@/components/ui/Icon";
 import { EntityLinksTable } from "@/components/EntityLinksTable";
 import { useFiles } from "@/hooks/use-files";
 import { useEntityLinkOrdering } from "@/hooks/use-entity-link-ordering";
@@ -26,6 +28,7 @@ import type { MondoEntityBacklinksLinkConfig } from "@/types/MondoEntityConfig";
 type Align = "left" | "right" | "center";
 type BacklinksColumn =
   | { type: "cover"; mode?: "cover" | "contain"; align?: Align }
+  | { type: "entityIcon"; align?: Align }
   | { type: "show"; label?: string; align?: Align }
   | { type: "date"; label?: string; align?: Align }
   | { type: "attribute"; key: string; label?: string; align?: Align };
@@ -191,7 +194,8 @@ export const BacklinksLinks = ({ file, config }: BacklinksLinksProps) => {
 
   // Determine property to match (memoized for stable identity)
   const legacyTargetIsEntity =
-    legacyTargetOriginal && isMondoEntityType(legacyTargetOriginal.toLowerCase());
+    legacyTargetOriginal &&
+    isMondoEntityType(legacyTargetOriginal.toLowerCase());
   const propertyFromTarget = useMemo(() => {
     if (panel.properties || panel.prop) {
       // handled below in matchProperties
@@ -232,7 +236,8 @@ export const BacklinksLinks = ({ file, config }: BacklinksLinksProps) => {
   const rawColumns =
     panel.columns && panel.columns.length > 0 ? panel.columns : DEFAULT_COLUMNS;
   const columns: BacklinksColumn[] = rawColumns.map((c) => {
-    const defaultAlign: Align = c.type === "date" ? "right" : "left";
+    const defaultAlign: Align =
+      c.type === "date" ? "right" : c.type === "entityIcon" ? "center" : "left";
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const col = c as any;
     return { ...col, align: col.align ?? defaultAlign } as BacklinksColumn;
@@ -647,7 +652,7 @@ export const BacklinksLinks = ({ file, config }: BacklinksLinksProps) => {
       });
       combinedPaths = out;
     }
-    // Convert to TCachedFile, apply top-level filter and targetType
+    // Convert to TCachedFile, apply top-level filter and optional targetType
     const allCandidates: TCachedFile[] = [];
     combinedPaths.forEach((p) => {
       const c = fileManager.getFileByPath(p);
@@ -656,6 +661,15 @@ export const BacklinksLinks = ({ file, config }: BacklinksLinksProps) => {
     const filtered = allCandidates.filter((c) =>
       evalFilterExpr(c, panel.filter)
     );
+    // When using advanced find DSL, respect the configured filters exactly and
+    // do NOT force-narrow to targetType. This allows panels to union multiple
+    // entity types (e.g., facts + ideas) for a single host.
+    const hasAdvancedFind = !!panel.find && panel.find.query?.length > 0;
+    if (hasAdvancedFind) {
+      return uniqByPath(filtered);
+    }
+    // Legacy behavior: if no advanced find is provided, restrict to targetType
+    // to mirror the old single-entity panel semantics.
     const onlyTarget = filtered.filter(
       (c) => getType(c) === (effectiveTargetType as string)
     );
@@ -773,6 +787,41 @@ export const BacklinksLinks = ({ file, config }: BacklinksLinksProps) => {
     }, MIN_HOLD_MS - elapsed);
   }, [ordered, optimisticOrdered, keyOf, optimisticSetAtRef, clearTimerRef]);
 
+  const badgeConfig = panel.badge ?? {};
+  const badgeEnabled = badgeConfig.enabled ?? true;
+  const badgeTemplate = String(badgeConfig.content ?? "{count}");
+
+  const badgeText = useMemo(() => {
+    if (!badgeEnabled) return null;
+    if (!badgeTemplate) return null;
+
+    const items = optimisticOrdered ?? ordered ?? [];
+    const countValue = items.length;
+
+    let latestDateValue = "";
+    let latestTimestamp = Number.NEGATIVE_INFINITY;
+    for (const entry of items) {
+      const raw = getFrontmatterString(entry, "date");
+      if (!raw) continue;
+      const parsed = Date.parse(raw);
+      if (!Number.isNaN(parsed)) {
+        if (parsed > latestTimestamp) {
+          latestTimestamp = parsed;
+          latestDateValue = raw;
+        }
+        continue;
+      }
+      if (!latestDateValue) {
+        latestDateValue = raw;
+      }
+    }
+
+    let output = badgeTemplate.replace(/\{count\}/g, String(countValue));
+    output = output.replace(/\{date\}/g, latestDateValue);
+    if (!output.trim()) return null;
+    return output;
+  }, [badgeEnabled, badgeTemplate, optimisticOrdered, ordered]);
+
   const handleCollapseChange = useCallback(
     async (isCollapsed: boolean) => {
       if (!hostFile) return;
@@ -817,55 +866,66 @@ export const BacklinksLinks = ({ file, config }: BacklinksLinksProps) => {
   const actions = useMemo(() => {
     // default createEntity.enabled should be true unless explicitly disabled
     const createCfg = panel.createEntity ?? { enabled: true };
-    if (createCfg.enabled === false)
-      return [] as { key: string; content: ReactNode }[];
+    const createEnabled = createCfg.enabled !== false;
+    const items: { key: string; content: ReactNode }[] = [];
+
+    if (badgeText) {
+      items.push({
+        key: "badge",
+        content: (
+          <div className="flex min-w-0 flex-1 items-center justify-end">
+            <Badge>{badgeText}</Badge>
+          </div>
+        ),
+      });
+    }
+
+    if (!createEnabled) {
+      return items;
+    }
     // If user didn't specify a title template, provide a sensible default
     // like "Untitled Facts" (based on the target entity's configured name).
     const titleTemplate = createCfg.title ?? `Untitled ${defaultTitle}`;
-    return [
-      {
-        key: "create-entity",
-        content: (
-          <Button
-            variant="link"
-            icon="plus"
-            aria-label={`Create ${effectiveTargetType}`}
-            disabled={isCreating}
-            onClick={() => {
-              if (isCreating) return;
-              setIsCreating(true);
-              (async () => {
-                try {
-                  await createEntityForEntity({
-                    app,
-                    targetType: effectiveTargetType as string,
-                    hostEntity: file,
-                    titleTemplate,
-                    attributeTemplates: createCfg.attributes as any,
-                    // link back using only hostType-specific properties (no generic "related")
-                    linkProperties: buildLinkProperties(
-                      hostType as MondoEntityType,
-                      (panel.properties ?? panel.prop) as
-                        | string
-                        | string[]
-                        | undefined
-                    ),
-                    openAfterCreate: true,
-                  });
-                } catch (error) {
-                  console.error(
-                    "BacklinksLinks: failed to create entity",
-                    error
-                  );
-                } finally {
-                  setIsCreating(false);
-                }
-              })();
-            }}
-          />
-        ),
-      },
-    ];
+    items.push({
+      key: "create-entity",
+      content: (
+        <Button
+          variant="link"
+          icon="plus"
+          aria-label={`Create ${effectiveTargetType}`}
+          disabled={isCreating}
+          onClick={() => {
+            if (isCreating) return;
+            setIsCreating(true);
+            (async () => {
+              try {
+                await createEntityForEntity({
+                  app,
+                  targetType: effectiveTargetType as string,
+                  hostEntity: file,
+                  titleTemplate,
+                  attributeTemplates: createCfg.attributes as any,
+                  // link back using only hostType-specific properties (no generic "related")
+                  linkProperties: buildLinkProperties(
+                    hostType as MondoEntityType,
+                    (panel.properties ?? panel.prop) as
+                      | string
+                      | string[]
+                      | undefined
+                  ),
+                  openAfterCreate: true,
+                });
+              } catch (error) {
+                console.error("BacklinksLinks: failed to create entity", error);
+              } finally {
+                setIsCreating(false);
+              }
+            })();
+          }}
+        />
+      ),
+    });
+    return items;
   }, [
     panel.createEntity,
     panel.properties,
@@ -876,6 +936,7 @@ export const BacklinksLinks = ({ file, config }: BacklinksLinksProps) => {
     effectiveTargetType,
     hostType,
     defaultTitle,
+    badgeText,
   ]);
 
   const panelTitle = panel.title || defaultTitle;
@@ -915,6 +976,14 @@ export const BacklinksLinks = ({ file, config }: BacklinksLinksProps) => {
           const path = entry.file!.path;
           const show = getEntityDisplayName(entry);
           const date = getFrontmatterString(entry, "date");
+          const entryTypeRaw = String(
+            (entry.cache?.frontmatter as Record<string, unknown> | undefined)
+              ?.type ?? ""
+          ).trim();
+          const entryTypeLower = entryTypeRaw.toLowerCase();
+          const entryTypeIcon = isMondoEntityType(entryTypeLower)
+            ? MONDO_ENTITIES[entryTypeLower as MondoEntityType]?.icon
+            : undefined;
           return (
             <>
               {columns.map((col, idx) => {
@@ -924,6 +993,21 @@ export const BacklinksLinks = ({ file, config }: BacklinksLinksProps) => {
                     : col.align === "center"
                     ? "text-center"
                     : "text-left";
+                if (col.type === "entityIcon") {
+                  return (
+                    <Table.Cell
+                      key={`c-${idx}`}
+                      className={`px-1 py-2 align-middle w-8 ${alignClass}`}
+                      style={{ width: "2rem" }}
+                    >
+                      {entryTypeIcon ? (
+                        <Icon name={entryTypeIcon} className="mx-auto" />
+                      ) : (
+                        <span className="inline-block w-5 h-5" />
+                      )}
+                    </Table.Cell>
+                  );
+                }
                 if (col.type === "cover") {
                   const src = getCoverResource(app, entry);
                   return (

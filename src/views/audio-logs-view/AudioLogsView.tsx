@@ -5,6 +5,7 @@ import Table from "@/components/ui/Table";
 import Button from "@/components/ui/Button";
 import { Typography } from "@/components/ui/Typography";
 import { Icon } from "@/components/ui/Icon";
+import { ReadableDate } from "@/components/ui/ReadableDate";
 import { AUDIO_FILE_EXTENSIONS } from "@/utils/AudioTranscriptionManager";
 import {
   AUDIO_LOGS_ICON,
@@ -31,20 +32,6 @@ const hasAudioExtension = (value: string) => {
     : value.toLowerCase();
 
   return AUDIO_FILE_EXTENSIONS.has(normalized);
-};
-
-const formatDate = (value: number) => {
-  if (!Number.isFinite(value) || value <= 0) {
-    return "--";
-  }
-
-  return new Intl.DateTimeFormat(undefined, {
-    year: "numeric",
-    month: "short",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(value);
 };
 
 const formatDuration = (seconds: number | null | undefined) => {
@@ -745,7 +732,7 @@ export const AudioLogsView = ({ plugin }: AudioLogsViewProps) => {
         const status = matchingState[file.path] ?? null;
         const durationLabel = formatDuration(meta?.durationSeconds);
         const sizeLabel = formatFileSize(file.stat.size);
-        const dateLabel = formatDate(file.stat.mtime);
+        const dateValue = file.stat.mtime;
         const snippet = meta?.snippet ?? null;
         const transcriptionFile = meta?.transcriptionFile ?? null;
         const title = meta?.title ?? null;
@@ -759,7 +746,7 @@ export const AudioLogsView = ({ plugin }: AudioLogsViewProps) => {
           file,
           durationLabel,
           sizeLabel,
-          dateLabel,
+          dateValue,
           snippet,
           transcriptionFile,
           title,
@@ -896,7 +883,7 @@ export const AudioLogsView = ({ plugin }: AudioLogsViewProps) => {
                       </a>
                     </Table.Cell>
                     <Table.Cell className="p-3 align-middle text-[var(--text-muted)]">
-                      {row.dateLabel}
+                      <ReadableDate value={row.dateValue} fallback="--" />
                     </Table.Cell>
                     <Table.Cell className="p-3 align-middle text-[var(--text-normal)]">
                       {row.durationLabel}

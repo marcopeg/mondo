@@ -6,6 +6,84 @@
   aspect-ratio: 1 / 1;
 }
 
+.mondo-cover-thumbnail {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  margin-right: 0.4rem;
+  border: none;
+  padding: 0;
+  border-radius: 0.5rem;
+  overflow: hidden;
+  background: var(--background-secondary, transparent);
+  box-shadow: inset 0 0 0 1px var(--background-modifier-border);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.mondo-cover-thumbnail:hover {
+  box-shadow: inset 0 0 0 1px var(--interactive-accent);
+}
+
+.mondo-cover-thumbnail:focus-visible {
+  outline: 2px solid var(--interactive-accent);
+  outline-offset: 2px;
+}
+
+.mondo-cover-thumbnail img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.mondo-cover-thumbnail--inline-title {
+  margin-right: 0.5rem;
+}
+
+.mondo-cover-thumbnail--metadata {
+  margin-right: 0.5rem;
+}
+
+.mondo-cover-thumbnail--view-header {
+  margin-right: 0.5rem;
+}
+
+.mondo-cover-thumbnail--inline-title {
+  vertical-align: middle;
+}
+
+.mondo-inline-title-with-cover {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 0;
+}
+
+.mondo-inline-title-with-cover .inline-title {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 1;
+  min-width: 0;
+}
+
+/* View header placement (pane title bar) */
+.mondo-view-header-with-cover {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+}
+
+.mondo-view-header-with-cover .view-header-title,
+.mondo-view-header-with-cover .view-header-title-input {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 1;
+  min-width: 0;
+}
+
 .mondo-audio-actions {
   display: flex;
   align-items: center;

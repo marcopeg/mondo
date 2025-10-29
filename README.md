@@ -32,6 +32,32 @@ https://github.com/marcopeg/obsidian-mondo
 
 > I suggest you keep it updated to the latest version, but at this point feel free to install whatever available release.
 
+# 📈 Habits Tracker
+
+Tracking my daily habits is an important part of my self development plan, and i wantet it to be fully included into my Obsidian workflow.
+
+I heep a "Habits.md" note where I put all my tracking blocks.
+
+The default visualization is the **last 21-days streak**:
+
+![source](./images/habit-tracker-streak.png)
+
+but you can switch to the **calendar view** to have a bird-eye view of your entire calendar year:
+
+![source](./images/habit-tracker-calendar.png)
+
+You can add a block as many `habits` blocks you want:
+
+![source](./images/habit-tracker-source.png)
+
+👉 Be careful configuring a unique `key` for each block because the data is stored in the note's _frontmatter_ under that key.
+
+# ⏱️ Training Timers
+
+![Timer - single](./images/timer-single.png)
+
+![Timer - single](./images/timer-source.png)
+
 # 📆 Daily Notes
 
 Daily notes help jotting down quick information.

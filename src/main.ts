@@ -55,7 +55,11 @@ import {
   MONDO_FILE_TYPES,
   getMondoEntityConfig,
 } from "@/types/MondoFileType";
-import { MONDO_ENTITY_TYPES, setMondoConfig } from "@/entities";
+import {
+  MONDO_CONFIG_PRESETS,
+  MONDO_ENTITY_TYPES,
+  setMondoConfig,
+} from "@/entities";
 import defaultMondoConfig from "@/mondo-config.json";
 import {
   DEFAULT_MONDO_JOURNAL_SETTINGS,
@@ -105,6 +109,7 @@ export default class Mondo extends Plugin {
     voiceoverCachePath: "/voiceover",
     selfPersonPath: "",
     includeFrontmatterInChatGPT: false,
+    mondoConfigPresetKey: "",
     mondoConfigJson: "",
     mondoConfigNotePath: "", // deprecated; no longer used
     timestamp: DEFAULT_TIMESTAMP_SETTINGS,
@@ -220,6 +225,10 @@ export default class Mondo extends Plugin {
     this.settings.mondoConfigJson =
       typeof customJson === "string" ? customJson : "";
 
+    const presetKey = this.settings.mondoConfigPresetKey;
+    this.settings.mondoConfigPresetKey =
+      typeof presetKey === "string" ? presetKey.trim() : "";
+
     // Deprecated: file-based config path is ignored, keep only as stored string
     const configNotePath = this.settings.mondoConfigNotePath;
     if (typeof configNotePath !== "string") {
@@ -249,6 +258,30 @@ export default class Mondo extends Plugin {
   async applyMondoConfigFromSettings() {
     const raw = (this.settings.mondoConfigJson ?? "").trim();
     if (!raw) {
+      const presetKey = (this.settings.mondoConfigPresetKey ?? "").trim();
+      if (presetKey) {
+        const preset = MONDO_CONFIG_PRESETS.find(
+          (entry) => entry.key === presetKey
+        );
+
+        if (preset) {
+          setMondoConfig(preset.config as any);
+          const entityCount = Object.keys(preset.config.entities ?? {}).length;
+          console.log(
+            `Mondo: applied preset Mondo config "${presetKey}" with ${entityCount} entities`
+          );
+          this.app.workspace.trigger("mondo:config-updated", {
+            source: `preset:${presetKey}`,
+            notePath: null,
+          });
+          return;
+        }
+
+        console.warn(
+          `Mondo: unable to find preset configuration for key "${presetKey}"`
+        );
+      }
+
       setMondoConfig(defaultMondoConfig as any);
       console.log("Mondo: applied built-in Mondo config (no custom JSON)");
       this.app.workspace.trigger("mondo:config-updated", {

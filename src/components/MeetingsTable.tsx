@@ -4,6 +4,7 @@ import { Table } from "@/components/ui/Table";
 import { useApp } from "@/hooks/use-app";
 import type { TCachedFile } from "@/types/TCachedFile";
 import { EntityLinksTable } from "@/components/EntityLinksTable";
+import { ReadableDate } from "@/components/ui/ReadableDate";
 
 type MeetingsTableProps = {
   items: TCachedFile[];
@@ -93,28 +94,24 @@ const parseMeetingDateValue = (
   return { date: null, raw: null };
 };
 
-const formatMeetingDate = (entry: TCachedFile): string | null => {
+type MeetingDateInfo = {
+  value: Date | string | number;
+  fallback?: string | null;
+  suffix?: "created";
+};
+
+const getMeetingDateInfo = (entry: TCachedFile): MeetingDateInfo | null => {
   const frontmatter = entry.cache?.frontmatter as
     | Record<string, unknown>
     | undefined;
 
   const candidate = parseMeetingDateValue(frontmatter?.date);
   if (candidate.date) {
-    const includeTime =
-      candidate.date.getHours() !== 0 || candidate.date.getMinutes() !== 0;
-    const formatted = candidate.date.toLocaleString(undefined, {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-      ...(includeTime
-        ? { hour: "2-digit", minute: "2-digit" }
-        : undefined),
-    });
-    return formatted;
+    return { value: candidate.date, fallback: candidate.raw };
   }
 
   if (candidate.raw) {
-    return candidate.raw;
+    return { value: candidate.raw, fallback: candidate.raw };
   }
 
   const createdAt =
@@ -122,14 +119,7 @@ const formatMeetingDate = (entry: TCachedFile): string | null => {
       ? new Date(entry.file.stat.ctime)
       : null;
   if (createdAt && !Number.isNaN(createdAt.getTime())) {
-    const formatted = createdAt.toLocaleString(undefined, {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-    return `${formatted} • created`;
+    return { value: createdAt, suffix: "created" };
   }
 
   return null;
@@ -155,7 +145,7 @@ export const MeetingsTable: React.FC<MeetingsTableProps> = ({
           entry.cache?.frontmatter?.name ??
           entry.file.basename ??
           entry.file.path;
-        const displayDate = formatMeetingDate(entry);
+        const meetingDate = getMeetingDateInfo(entry);
 
         const participants = resolveParticipants(entry, app);
 
@@ -165,8 +155,21 @@ export const MeetingsTable: React.FC<MeetingsTableProps> = ({
               <Button to={entry.file.path} variant="link">
                 {label}
               </Button>
-              {displayDate ? (
-                <div className="text-xs text-[var(--text-muted)]">{displayDate}</div>
+              {meetingDate ? (
+                <div className="text-xs text-[var(--text-muted)]">
+                  <ReadableDate
+                    value={meetingDate.value}
+                    fallback={meetingDate.fallback ?? "—"}
+                    extraHint={
+                      meetingDate.suffix === "created"
+                        ? "Created from file metadata"
+                        : null
+                    }
+                  />
+                  {meetingDate.suffix === "created" ? (
+                    <span className="ml-1">• created</span>
+                  ) : null}
+                </div>
               ) : null}
             </Table.Cell>
             <Table.Cell className="px-2 py-2 align-top text-xs text-[var(--text-muted)]">

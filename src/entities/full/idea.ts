@@ -1,0 +1,72 @@
+export const idea = {
+  name: "Ideas",
+  icon: "lightbulb",
+  template: "\ndate: {{date}}\nstatus: draft\n---\n",
+  list: {
+    columns: ["show", "status"],
+  },
+  links: [
+    {
+      type: "backlinks",
+      key: "facts",
+      config: {
+        targetType: "fact",
+        properties: ["idea"],
+        title: "Facts",
+        icon: "file-text",
+        sort: {
+          strategy: "manual",
+        },
+      },
+    },
+    {
+      type: "backlinks",
+      key: "logs",
+      config: {
+        targetType: "log",
+        properties: ["idea"],
+        title: "Logs",
+        icon: "clipboard-list",
+      },
+    },
+    {
+      type: "backlinks",
+      key: "documents",
+      config: {
+        targetType: "document",
+        properties: ["idea"],
+        title: "Documents",
+        icon: "paperclip",
+        sort: {
+          strategy: "manual",
+        },
+      },
+    },
+    {
+      type: "backlinks",
+      key: "tasks",
+      config: {
+        targetType: "task",
+        properties: ["idea"],
+        title: "Tasks",
+        icon: "check-square",
+        columns: [
+          {
+            type: "show",
+          },
+          {
+            type: "attribute",
+            key: "status",
+          },
+          {
+            type: "date",
+            align: "right",
+          },
+        ],
+        sort: {
+          strategy: "manual",
+        },
+      },
+    },
+  ],
+} as const;

@@ -623,4 +623,16 @@ See `src/entities/person.ts` for production examples:
 - **Reports**: Simple find DSL backlinks using `in` step
 
 See `src/entities/company.ts` and `src/entities/default-backlinks.ts` for additional examples.
+
+## Header badge
+
+When the panel renders the create (`+`) action, you can surface summary context
+with a badge placed immediately to the left of the button:
+
+- `badge.enabled` (`true` by default) toggles the badge on or off.
+- `badge.content` (`"{count}"` by default) controls the badge text. Use
+  placeholders to inject dynamic values:
+  - `{count}` → number of rows currently shown in the table
+  - `{date}` → most recent `date` value found in the listed entries (falls back
+    to the raw string when it cannot be parsed)
 `````

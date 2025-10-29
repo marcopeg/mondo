@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import type { ReactNode } from "react";
 import { Card } from "@/components/ui/Card";
 import { Stack } from "@/components/ui/Stack";
 import { Typography } from "@/components/ui/Typography";
@@ -8,6 +9,7 @@ import Button from "@/components/ui/Button";
 import ButtonGroup from "@/components/ui/ButtonGroup";
 import Switch from "@/components/ui/Switch";
 import { Separator } from "@/components/ui/Separator";
+import { ReadableDate } from "@/components/ui/ReadableDate";
 import {
   MONDO_ENTITIES,
   MONDO_UI_CONFIG,
@@ -56,14 +58,6 @@ type RelevantNotesProps = {
 const getTotalHits = (note: ReturnType<typeof useRelevantNotes>[number]) =>
   note.counts.created + note.counts.modified + note.counts.opened;
 
-const DATE_FORMAT_OPTIONS: Intl.DateTimeFormatOptions = {
-  year: "numeric",
-  month: "short",
-  day: "numeric",
-  hour: "2-digit",
-  minute: "2-digit",
-};
-
 export const RelevantNotes = ({ collapsed = false }: RelevantNotesProps) => {
   const [selectedType, setSelectedType] = useState<MondoFileType | null>(null);
   const [mode, setMode] = useState<NotesMode>("hits");
@@ -74,11 +68,6 @@ export const RelevantNotes = ({ collapsed = false }: RelevantNotesProps) => {
     historyLimit,
     selectedType
   );
-  const dateFormatter = useMemo(
-    () => new Intl.DateTimeFormat(undefined, DATE_FORMAT_OPTIONS),
-    []
-  );
-
   const filteredHits = useMemo(() => {
     const scoped = selectedType
       ? hitsNotes.filter((note) => note.type === selectedType)
@@ -242,7 +231,8 @@ export const RelevantNotes = ({ collapsed = false }: RelevantNotesProps) => {
                     </span>
                   </Stack>
                   <span className="text-xs text-[var(--text-muted)]">
-                    Last updated {dateFormatter.format(note.modified)}
+                    Last updated {" "}
+                    <ReadableDate value={note.modified} fallback="—" />
                   </span>
                 </div>
               );
@@ -275,22 +265,46 @@ export const RelevantNotes = ({ collapsed = false }: RelevantNotesProps) => {
                 note.lastModified ?? note.lastCreated
               );
 
-              const metadataParts: string[] = [
-                formatReferenceCount(totalReferences),
+              const metadataItems: ReactNode[] = [
+                <span key="references">{formatReferenceCount(totalReferences)}</span>,
               ];
 
               if (lastOpened && lastModified && lastOpened === lastModified) {
-                metadataParts.push(`last opened ${lastOpened}`);
-              } else {
-                metadataParts.push(
-                  lastOpened ? `last opened ${lastOpened}` : "last opened —"
+                metadataItems.push(
+                  <span key="opened">
+                    last opened {" "}
+                    <ReadableDate
+                      value={note.lastOpened ?? note.lastModified ?? note.lastCreated}
+                      fallback="—"
+                    />
+                  </span>
                 );
-                metadataParts.push(
-                  lastModified
-                    ? `last modified ${lastModified}`
-                    : "last modified —"
+              } else {
+                metadataItems.push(
+                  <span key="opened">
+                    last opened {" "}
+                    <ReadableDate value={note.lastOpened} fallback="—" />
+                  </span>
+                );
+                metadataItems.push(
+                  <span key="modified">
+                    last modified {" "}
+                    <ReadableDate
+                      value={note.lastModified ?? note.lastCreated}
+                      fallback="—"
+                    />
+                  </span>
                 );
               }
+
+              const metadataContent = metadataItems.flatMap((item, index) =>
+                index === 0
+                  ? [item]
+                  : [
+                      <span key={`sep-${index}`}>, </span>,
+                      item,
+                    ]
+              );
 
               return (
                 <div
@@ -312,7 +326,7 @@ export const RelevantNotes = ({ collapsed = false }: RelevantNotesProps) => {
                     </span>
                   </Stack>
                   <span className="text-xs text-[var(--text-muted)]">
-                    {metadataParts.join(", ")}
+                    {metadataContent}
                   </span>
                 </div>
               );

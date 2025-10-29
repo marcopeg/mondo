@@ -41,6 +41,7 @@ export interface MondoEntityBacklinksLinkConfig {
         mode?: "cover" | "contain";
         align?: "left" | "right" | "center";
       }
+    | { type: "entityIcon"; align?: "left" | "right" | "center" }
     | { type: "show"; label?: string; align?: "left" | "right" | "center" }
     | { type: "date"; label?: string; align?: "left" | "right" | "center" }
     | {
@@ -61,6 +62,10 @@ export interface MondoEntityBacklinksLinkConfig {
     enabled?: boolean;
     title?: string;
     attributes?: Record<string, string | number | boolean>;
+  };
+  badge?: {
+    enabled?: boolean;
+    content?: string;
   };
   find?: {
     query: Array<{
