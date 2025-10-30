@@ -14,17 +14,6 @@ export const person = {
   },
   createRelated: [
     {
-      key: "1o1s",
-      label: "1:1 Meeting",
-      icon: "calendar-plus",
-    },
-    {
-      key: "project",
-      label: "Project",
-      icon: "folder-plus",
-      panelKey: "projects",
-    },
-    {
       key: "fact",
       label: "Fact",
       icon: "bookmark-plus",
@@ -33,23 +22,31 @@ export const person = {
     {
       key: "log",
       label: "Log",
-      icon: "file-plus",
+      icon: "file-clock",
       panelKey: "logs",
+    },
+    {
+      key: "document",
+      label: "Document",
+      icon: "file-text",
+      panelKey: "documents",
+    },
+    {
+      key: "1o1s",
+      label: "1:1 Meeting",
+      icon: "calendar",
+    },
+    {
+      key: "project",
+      label: "Project",
+      icon: "folder-git-2",
+      panelKey: "projects",
     },
     {
       key: "report",
       label: "Report",
       icon: "file-plus",
-      // Keep in dropdown grouping with the Reports panel
       panelKey: "reports",
-      // create: {
-      //   title: "Untitled Report to {@this.show}",
-      //   attributes: {
-      //     type: "person",
-      //     reportsTo: "{@this}",
-      //     team: ["{@this.team}"],
-      //   },
-      // },
     },
   ],
   links: [
@@ -172,7 +169,7 @@ export const person = {
       config: {
         targetType: "meeting",
         title: "1:1s",
-        icon: "users",
+        icon: "calendar",
         find: {
           query: [
             {
