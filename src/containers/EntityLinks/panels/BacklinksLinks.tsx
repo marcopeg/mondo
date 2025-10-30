@@ -15,6 +15,7 @@ import { useFiles } from "@/hooks/use-files";
 import { useEntityLinkOrdering } from "@/hooks/use-entity-link-ordering";
 import { useApp } from "@/hooks/use-app";
 import { MONDO_ENTITIES, type MondoEntityType } from "@/entities";
+import { useEntityLinksLayout } from "@/context/EntityLinksLayoutContext";
 import { isMondoEntityType } from "@/types/MondoFileType";
 import { matchesAnyPropertyLink } from "@/utils/matchesAnyPropertyLink";
 import { getEntityDisplayName } from "@/utils/getEntityDisplayName";
@@ -48,6 +49,8 @@ type BacklinksPanelConfig = MondoEntityBacklinksLinkConfig;
 type BacklinksLinksProps = {
   file: TCachedFile;
   config: Record<string, unknown>;
+  order: number;
+  panelType: string;
 };
 
 const DEFAULT_COLUMNS: BacklinksColumn[] = [
@@ -141,7 +144,12 @@ const getFrontmatterRaw = (entry: TCachedFile, key: string): string => {
   }
 };
 
-export const BacklinksLinks = ({ file, config }: BacklinksLinksProps) => {
+export const BacklinksLinks = ({
+  file,
+  config,
+  order,
+  panelType,
+}: BacklinksLinksProps) => {
   const app = useApp();
   const hostFile = file.file;
   const hostType = (file.cache?.frontmatter?.type || "") as string;
@@ -228,6 +236,7 @@ export const BacklinksLinks = ({ file, config }: BacklinksLinksProps) => {
       propertyFromTarget.length ? `:${propertyFromTarget[0]}` : ""
     }`;
   }, [config, effectiveTargetType, propertyFromTarget]);
+  const { setCollapsedPanel } = useEntityLinksLayout();
   const defaultTitle =
     MONDO_ENTITIES[effectiveTargetType]?.name ||
     toTitleCase(effectiveTargetType) + "s";
@@ -258,12 +267,18 @@ export const BacklinksLinks = ({ file, config }: BacklinksLinksProps) => {
     [panel.sort]
   );
 
-  const collapsed = useMemo(() => {
+  const initialCollapsed = useMemo(() => {
     const mondoState = (file.cache?.frontmatter as any)?.mondoState;
     if (mondoState?.[panelKey]?.collapsed === true) return true;
     if (mondoState?.[panelKey]?.collapsed === false) return false;
     return panel.collapsed !== false; // default to expanded unless explicitly false
   }, [file.cache?.frontmatter, panel.collapsed, panelKey]);
+
+  const [isCollapsed, setIsCollapsed] = useState(initialCollapsed);
+
+  useEffect(() => {
+    setIsCollapsed(initialCollapsed);
+  }, [initialCollapsed]);
 
   const matchProperties = useMemo(() => {
     // explicit overrides via properties/prop
@@ -852,7 +867,8 @@ export const BacklinksLinks = ({ file, config }: BacklinksLinksProps) => {
   }, [badgeEnabled, badgeTemplate, optimisticOrdered, ordered]);
 
   const handleCollapseChange = useCallback(
-    async (isCollapsed: boolean) => {
+    async (nextCollapsed: boolean) => {
+      setIsCollapsed(nextCollapsed);
       if (!hostFile) return;
       // Guard: avoid writing frontmatter if the value hasn't actually changed.
       // Some containers may call onCollapseChange on mount or every render.
@@ -861,7 +877,7 @@ export const BacklinksLinks = ({ file, config }: BacklinksLinksProps) => {
         const currentCollapsed = (file.cache?.frontmatter as any)?.mondoState?.[
           panelKey
         ]?.collapsed;
-        if (currentCollapsed === isCollapsed) {
+        if (currentCollapsed === nextCollapsed) {
           return;
         }
       } catch (_) {
@@ -879,7 +895,7 @@ export const BacklinksLinks = ({ file, config }: BacklinksLinksProps) => {
           if (typeof panelState !== "object" || panelState === null) {
             (frontmatter as any).mondoState[panelKey] = {};
           }
-          (frontmatter as any).mondoState[panelKey].collapsed = isCollapsed;
+          (frontmatter as any).mondoState[panelKey].collapsed = nextCollapsed;
         });
       } catch (error) {
         console.error(
@@ -986,27 +1002,69 @@ export const BacklinksLinks = ({ file, config }: BacklinksLinksProps) => {
   const panelSubtitle = panel.subtitle ?? undefined;
   // Icon is optional: if not provided, skip rendering
   const panelIcon = panel.icon ?? undefined;
+  const badgeLabel = badgeText ?? undefined;
+  const shouldRender = ordered.length > 0 || visibility !== "notEmpty";
+
+  const handleExpandFromSummary = useCallback(() => {
+    void handleCollapseChange(false);
+  }, [handleCollapseChange]);
+
+  useEffect(() => {
+    if (!shouldRender) {
+      setCollapsedPanel(panelKey, null);
+      return;
+    }
+
+    if (isCollapsed) {
+      setCollapsedPanel(panelKey, {
+        id: panelKey,
+        label: panelTitle,
+        icon: panelIcon,
+        badgeLabel,
+        onExpand: handleExpandFromSummary,
+        order,
+        panelType,
+      });
+    } else {
+      setCollapsedPanel(panelKey, null);
+    }
+
+    return () => {
+      setCollapsedPanel(panelKey, null);
+    };
+  }, [
+    badgeLabel,
+    handleExpandFromSummary,
+    isCollapsed,
+    order,
+    panelIcon,
+    panelKey,
+    panelTitle,
+    panelType,
+    setCollapsedPanel,
+    shouldRender,
+  ]);
 
   // After all hooks have executed, check visibility
-  const hasEntries = ordered.length > 0;
-  if (!hasEntries && visibility === "notEmpty") {
+  if (!shouldRender) {
     return null;
   }
 
   return (
-    <Card
-      collapsible
-      collapsed={collapsed}
-      collapseOnHeaderClick
-      minimizeOnCollapsed
-      icon={panelIcon}
-      title={panelTitle}
-      subtitle={panelSubtitle}
-      actions={actions}
-      actionsOnCollapsed={actionsOnCollapsed}
-      onCollapseChange={handleCollapseChange}
-    >
-      <EntityLinksTable
+    <div className={isCollapsed ? "hidden" : undefined}>
+      <Card
+        collapsible
+        collapsed={isCollapsed}
+        collapseOnHeaderClick
+        minimizeOnCollapsed
+        icon={panelIcon}
+        title={panelTitle}
+        subtitle={panelSubtitle}
+        actions={actions}
+        actionsOnCollapsed={actionsOnCollapsed}
+        onCollapseChange={handleCollapseChange}
+      >
+        <EntityLinksTable
         items={optimisticOrdered ?? ordered}
         getKey={(e) => e.file!.path}
         pageSize={pageSize}
@@ -1214,6 +1272,7 @@ export const BacklinksLinks = ({ file, config }: BacklinksLinksProps) => {
         }}
       />
     </Card>
+  </div>
   );
 };
 

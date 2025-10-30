@@ -8,6 +8,8 @@ import { BacklinksLinks } from "./panels/BacklinksLinks";
 type LinkPanelProps = {
   file: TCachedFile;
   config: Record<string, unknown>;
+  order: number;
+  panelType: string;
 };
 
 const entityMap: Record<string, React.ComponentType<LinkPanelProps>> = {
@@ -62,13 +64,20 @@ export const EntityLinks = () => {
         }
 
         const { type, ...panelConfig } = linkConfig;
+        const rawKey = (linkConfig as Record<string, unknown>).key;
+        const panelType = rawKey ? String(rawKey) : type;
         return (
           <div
             key={`${type}-${index}`}
-            data-entity-panel={type}
+            data-entity-panel={panelType}
             className="mondo-entity-links-panel"
           >
-            <Component file={file} config={panelConfig} />
+            <Component
+              file={file}
+              config={panelConfig}
+              order={index}
+              panelType={panelType}
+            />
           </div>
         );
       })}

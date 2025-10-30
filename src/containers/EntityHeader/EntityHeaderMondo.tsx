@@ -3,12 +3,17 @@ import type { RefObject } from "react";
 import { Notice } from "obsidian";
 import { SplitButton } from "@/components/ui/SplitButton";
 import { Icon } from "@/components/ui/Icon";
+import { Badge } from "@/components/ui/Badge";
 import { useEntityFile } from "@/context/EntityFileProvider";
 import { useApp } from "@/hooks/use-app";
 import { MONDO_ENTITIES, type MondoEntityType } from "@/entities";
 import type { TCachedFile } from "@/types/TCachedFile";
 import { resolveCoverImage } from "@/utils/resolveCoverImage";
 import { getEntityDisplayName } from "@/utils/getEntityDisplayName";
+import {
+  useEntityLinksLayout,
+  type CollapsedPanelSummary,
+} from "@/context/EntityLinksLayoutContext";
 
 type EntityHeaderMondoProps = {
   containerRef: RefObject<HTMLDivElement | null>;
@@ -246,7 +251,7 @@ const buildHeaderLabel = (entityType: MondoEntityType) => {
 };
 
 const headerClasses = [
-  "flex min-h-[5rem] items-center justify-between gap-3",
+  "flex min-h-[5rem] items-start gap-3",
   "rounded-md border border-[var(--background-modifier-border)]",
   "bg-[var(--background-secondary)] px-3 py-2",
 ].join(" ");
@@ -263,6 +268,38 @@ const findPanelButton = (
   const root = container.closest(".mondo-injected-hello-root") ?? container;
   const selector = `[data-entity-panel="${panel}"] button[aria-label="${ariaLabel}"]`;
   return root.querySelector<HTMLButtonElement>(selector);
+};
+
+const CollapsedPanelButton = ({
+  panel,
+}: {
+  panel: CollapsedPanelSummary;
+}) => {
+  return (
+    <button
+      type="button"
+      onClick={panel.onExpand}
+      className="group inline-flex max-w-full items-center gap-2 rounded-full border border-[var(--background-modifier-border)] bg-[var(--background-primary)] px-3 py-1 text-xs font-medium text-[var(--text-normal)] transition-colors hover:border-[var(--background-modifier-border-hover)] hover:bg-[var(--background-modifier-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--interactive-accent)] focus-visible:ring-offset-0"
+      aria-label={`Expand ${panel.label} panel`}
+      title={panel.label}
+      data-entity-panel={panel.panelType}
+    >
+      {panel.icon ? (
+        <Icon
+          name={panel.icon}
+          className="h-3.5 w-3.5 flex-shrink-0 text-[var(--text-muted)] transition-colors group-hover:text-[var(--text-normal)]"
+        />
+      ) : null}
+      <span className="min-w-0 truncate text-[var(--text-normal)]">
+        {panel.label}
+      </span>
+      {panel.badgeLabel ? (
+        <Badge className="flex-shrink-0">
+          {panel.badgeLabel}
+        </Badge>
+      ) : null}
+    </button>
+  );
 };
 
 export const EntityHeaderMondo = ({
@@ -314,6 +351,7 @@ export const EntityHeaderMondo = ({
   }, [entityType]);
 
   const actions = PANEL_ACTIONS[entityType] ?? [];
+  const { collapsedPanels } = useEntityLinksLayout();
 
   const handleTrigger = useCallback(
     (panel: string, ariaLabel: string) => {
@@ -331,6 +369,7 @@ export const EntityHeaderMondo = ({
   );
 
   const primary = actions[0];
+  const hasCollapsedPanels = collapsedPanels.length > 0;
 
   const secondary = useMemo(
     () =>
@@ -372,25 +411,41 @@ export const EntityHeaderMondo = ({
         </div>
       )}
 
-      <div className="min-w-0 flex-1">
-        <div className="truncate text-sm font-semibold text-[var(--text-normal)]">
-          {displayName}
+      <div className="flex min-w-0 flex-1 flex-col gap-2">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            <div className="truncate text-sm font-semibold text-[var(--text-normal)]">
+              {displayName}
+            </div>
+            <div className="text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">
+              Mondo Note • {label}
+            </div>
+          </div>
+          {primary ? (
+            <div className="flex-shrink-0">
+              <SplitButton
+                icon="plus"
+                onClick={handlePrimaryClick}
+                secondaryActions={secondary}
+                menuAriaLabel="Select related entity to create"
+              >
+                Add Related
+              </SplitButton>
+            </div>
+          ) : null}
         </div>
-        <div className="text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">
-          Mondo Note • {label}
-        </div>
-      </div>
 
-      {primary ? (
-        <SplitButton
-          icon="plus"
-          onClick={handlePrimaryClick}
-          secondaryActions={secondary}
-          menuAriaLabel="Select related entity to create"
-        >
-          Add Related
-        </SplitButton>
-      ) : null}
+        {hasCollapsedPanels ? (
+          <div
+            className="flex flex-wrap gap-2"
+            aria-label="Collapsed entity link panels"
+          >
+            {collapsedPanels.map((panel) => (
+              <CollapsedPanelButton key={panel.id} panel={panel} />
+            ))}
+          </div>
+        ) : null}
+      </div>
     </div>
   );
 };

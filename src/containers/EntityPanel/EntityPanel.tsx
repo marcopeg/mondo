@@ -3,6 +3,7 @@ import { useEntityFile } from "@/context/EntityFileProvider";
 import { EntityHeader } from "@/containers/EntityHeader";
 import { EntityLinks } from "@/containers/EntityLinks";
 import DailyNoteLinks from "@/containers/DailyNoteLinks";
+import { EntityLinksLayoutProvider } from "@/context/EntityLinksLayoutContext";
 import {
   isMondoEntityType,
   isMondoFileType,
@@ -59,15 +60,17 @@ export const EntityPanel = () => {
   }
 
   return (
-    <div
-      ref={containerRef}
-      className="flex flex-col gap-2"
-      data-mondo-entity-panel-root
-    >
-      {showHeader && <EntityHeader containerRef={containerRef} type={type} />}
-      {showEntityLinks && <EntityLinks />}
-      {showDailyLinks && <DailyNoteLinks />}
-    </div>
+    <EntityLinksLayoutProvider>
+      <div
+        ref={containerRef}
+        className="flex flex-col gap-2"
+        data-mondo-entity-panel-root
+      >
+        {showHeader && <EntityHeader containerRef={containerRef} type={type} />}
+        {showEntityLinks && <EntityLinks />}
+        {showDailyLinks && <DailyNoteLinks />}
+      </div>
+    </EntityLinksLayoutProvider>
   );
 };
 
