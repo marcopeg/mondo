@@ -3,6 +3,10 @@ import { log } from "./log";
 import { fact } from "./fact";
 import { document } from "./document";
 import { idea } from "./idea";
+import { restaurant } from "./restaurant";
+import { team } from "./team";
+import { company } from "./company";
+import { gear } from "./gear";
 
 export const location = {
   name: "Locations",
@@ -12,6 +16,54 @@ export const location = {
     columns: ["cover", "show", "country", "region"],
   },
   createRelated: [
+    {
+      key: "restaurant",
+      label: "Restaurant",
+      icon: restaurant.icon,
+      create: {
+        title: "New Restaurant for {@this.show}",
+        attributes: {
+          type: "restaurant",
+          location: ["{@this}"],
+        },
+      },
+    },
+    {
+      key: "company",
+      label: "Company",
+      icon: company.icon,
+      create: {
+        title: "New Company for {@this.show}",
+        attributes: {
+          type: "company",
+          location: ["{@this}"],
+        },
+      },
+    },
+    {
+      key: "team",
+      label: "Team",
+      icon: team.icon,
+      create: {
+        title: "New Team for {@this.show}",
+        attributes: {
+          type: "team",
+          location: ["{@this}"],
+        },
+      },
+    },
+    {
+      key: "gear",
+      label: "Gear",
+      icon: gear.icon,
+      create: {
+        title: "New Gear for {@this.show}",
+        attributes: {
+          type: "gear",
+          location: ["{@this}"],
+        },
+      },
+    },
     {
       key: "task",
       label: "Task",
@@ -108,6 +160,34 @@ export const location = {
     },
     {
       type: "backlinks",
+      key: "restaurants",
+      desc: "Restaurants linked to this location",
+      config: {
+        targetType: "restaurant",
+        properties: ["location"],
+        title: "Restaurants",
+        icon: restaurant.icon,
+        columns: [
+          {
+            type: "show",
+          },
+          {
+            type: "date",
+            align: "right",
+          },
+        ],
+        sort: {
+          strategy: "column",
+          column: "show",
+          direction: "asc",
+        },
+        createEntity: {
+          referenceCreate: "restaurant",
+        },
+      },
+    },
+    {
+      type: "backlinks",
       key: "companies",
       desc: "Companies linked to this location",
       config: {
@@ -124,6 +204,9 @@ export const location = {
           strategy: "column",
           column: "show",
           direction: "asc",
+        },
+        createEntity: {
+          referenceCreate: "company",
         },
       },
     },
@@ -145,6 +228,9 @@ export const location = {
           strategy: "column",
           column: "show",
           direction: "asc",
+        },
+        createEntity: {
+          referenceCreate: "team",
         },
       },
     },
@@ -171,30 +257,8 @@ export const location = {
           column: "show",
           direction: "asc",
         },
-      },
-    },
-    {
-      type: "backlinks",
-      key: "restaurants",
-      desc: "Restaurants linked to this location",
-      config: {
-        targetType: "restaurant",
-        properties: ["location"],
-        title: "Restaurants",
-        icon: "utensils",
-        columns: [
-          {
-            type: "show",
-          },
-          {
-            type: "date",
-            align: "right",
-          },
-        ],
-        sort: {
-          strategy: "column",
-          column: "show",
-          direction: "asc",
+        createEntity: {
+          referenceCreate: "gear",
         },
       },
     },
