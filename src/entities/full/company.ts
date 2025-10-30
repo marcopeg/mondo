@@ -7,7 +7,6 @@ import { log } from "./log";
 import { gear } from "./gear";
 import { idea } from "./idea";
 import { document } from "./document";
-import { create } from "domain";
 
 export const company = {
   name: "Companies",
