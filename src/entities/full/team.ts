@@ -1,70 +1,71 @@
+import { task } from "./task";
+import { log } from "./log";
+import { fact } from "./fact";
+import { document } from "./document";
+import { idea } from "./idea";
+
 export const team = {
   name: "Teams",
   icon: "users",
   template: "\ndate: {{date}}\ncompany: []\nlocation: []\n---\n",
   createRelated: [
     {
-      key: "person",
-      label: "Person",
-      icon: "user-plus",
-      panelKey: "people",
-      create: {
-        attributes: {
-          type: "person",
-        },
-      },
-    },
-    {
-      key: "project",
-      label: "Project",
-      icon: "folder-plus",
-      panelKey: "projects",
-      create: {
-        attributes: {
-          type: "project",
-        },
-      },
-    },
-    {
-      key: "meeting",
-      label: "Meeting",
-      icon: "calendar-plus",
-      create: {
-        attributes: {
-          type: "meeting",
-        },
-      },
-    },
-    {
       key: "task",
       label: "Task",
-      icon: "check-square",
-      panelKey: "tasks",
+      icon: task.icon,
       create: {
+        title: "New Task for {@this.show}",
         attributes: {
           type: "task",
-        },
-      },
-    },
-    {
-      key: "fact",
-      label: "Fact",
-      icon: "bookmark-plus",
-      panelKey: "facts",
-      create: {
-        attributes: {
-          type: "fact",
+          linksTo: ["{@this}"],
         },
       },
     },
     {
       key: "log",
       label: "Log",
-      icon: "file-plus",
-      panelKey: "logs",
+      icon: log.icon,
       create: {
+        title: "{YY}-{MM}-{DD} {hh}.{mm} Log for {@this.show}",
         attributes: {
           type: "log",
+          linksTo: ["{@this}"],
+        },
+      },
+    },
+    {
+      key: "fact",
+      label: "Fact",
+      icon: fact.icon,
+      create: {
+        title: "New Fact for {@this.show}",
+        attributes: {
+          type: "fact",
+          linksTo: ["{@this}"],
+        },
+      },
+    },
+    {
+      key: "document",
+      label: "Document",
+      icon: document.icon,
+      create: {
+        title: "Untitled Document for {@this.show}",
+        attributes: {
+          type: "document",
+          linksTo: ["{@this}"],
+        },
+      },
+    },
+    {
+      key: "idea",
+      label: "Idea",
+      icon: idea.icon,
+      create: {
+        title: "New Idea for {@this.show}",
+        attributes: {
+          type: "idea",
+          linksTo: ["{@this}"],
         },
       },
     },
@@ -133,48 +134,12 @@ export const team = {
     },
     {
       type: "backlinks",
-      key: "facts",
-      config: {
-        targetType: "fact",
-        properties: ["team"],
-        title: "Facts",
-        icon: "file-text",
-        sort: {
-          strategy: "manual",
-        },
-      },
-    },
-    {
-      type: "backlinks",
-      key: "logs",
-      config: {
-        targetType: "log",
-        properties: ["team"],
-        title: "Logs",
-        icon: "clipboard-list",
-      },
-    },
-    {
-      type: "backlinks",
-      key: "documents",
-      config: {
-        targetType: "document",
-        properties: ["team"],
-        title: "Documents",
-        icon: "paperclip",
-        sort: {
-          strategy: "manual",
-        },
-      },
-    },
-    {
-      type: "backlinks",
       key: "tasks",
       config: {
         targetType: "task",
-        properties: ["team"],
-        title: "Tasks",
-        icon: "check-square",
+        properties: ["linksTo"],
+        title: task.name,
+        icon: task.icon,
         columns: [
           {
             type: "show",
@@ -190,6 +155,57 @@ export const team = {
         ],
         sort: {
           strategy: "manual",
+        },
+        createEntity: {
+          referenceCreate: "task",
+        },
+      },
+    },
+    {
+      type: "backlinks",
+      key: "logs",
+      config: {
+        targetType: "log",
+        properties: ["linksTo"],
+        title: log.name,
+        icon: log.icon,
+        createEntity: {
+          referenceCreate: "log",
+        },
+      },
+    },
+    {
+      type: "backlinks",
+      key: "links",
+      config: {
+        title: "Links",
+        icon: "layers",
+        find: {
+          query: [
+            {
+              description: "Notes referencing this team",
+              steps: [
+                {
+                  notIn: {
+                    property: "linksTo",
+                    type: ["log", "task"],
+                  },
+                },
+              ],
+            },
+          ],
+        },
+        columns: [
+          { type: "entityIcon" },
+          { type: "show" },
+          { type: "attribute", key: "type", label: "Type" },
+          { type: "date", align: "right" },
+        ],
+        sort: {
+          strategy: "manual",
+        },
+        createEntity: {
+          enabled: false,
         },
       },
     },
