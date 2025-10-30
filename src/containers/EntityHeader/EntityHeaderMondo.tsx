@@ -2,20 +2,30 @@ import { useCallback, useMemo } from "react";
 import type { RefObject } from "react";
 import { Notice } from "obsidian";
 import { SplitButton } from "@/components/ui/SplitButton";
-import type { MondoEntityType } from "@/entities";
+import { Icon } from "@/components/ui/Icon";
+import { useEntityFile } from "@/context/EntityFileProvider";
+import { useApp } from "@/hooks/use-app";
+import { MONDO_ENTITIES, type MondoEntityType } from "@/entities";
+import type { TCachedFile } from "@/types/TCachedFile";
+import { resolveCoverImage } from "@/utils/resolveCoverImage";
+import { getEntityDisplayName } from "@/utils/getEntityDisplayName";
 
-const PANEL_ACTIONS: Partial<
-  Record<
-    MondoEntityType,
-    {
-      key: string;
-      label: string;
-      icon?: string;
-      panel: string;
-      ariaLabel: string;
-    }[]
-  >
-> = {
+type EntityHeaderMondoProps = {
+  containerRef: RefObject<HTMLDivElement | null>;
+  entityType: MondoEntityType;
+};
+
+type PanelAction = {
+  key: string;
+  label: string;
+  icon?: string;
+  panel: string;
+  ariaLabel: string;
+};
+
+type PanelActionMap = Partial<Record<MondoEntityType, PanelAction[]>>;
+
+const PANEL_ACTIONS: PanelActionMap = {
   person: [
     {
       key: "meeting",
@@ -230,10 +240,16 @@ const PANEL_ACTIONS: Partial<
   ],
 };
 
-type KnownEntityHeaderProps = {
-  containerRef: RefObject<HTMLDivElement | null>;
-  entityType: MondoEntityType;
+const buildHeaderLabel = (entityType: MondoEntityType) => {
+  const config = MONDO_ENTITIES[entityType];
+  return config?.name ?? entityType;
 };
+
+const headerClasses = [
+  "flex min-h-[5rem] items-center justify-between gap-3",
+  "rounded-md border border-[var(--background-modifier-border)]",
+  "bg-[var(--background-secondary)] px-3 py-2",
+].join(" ");
 
 const findPanelButton = (
   container: HTMLElement | null,
@@ -249,10 +265,54 @@ const findPanelButton = (
   return root.querySelector<HTMLButtonElement>(selector);
 };
 
-export const KnownEntityHeader = ({
+export const EntityHeaderMondo = ({
   containerRef,
   entityType,
-}: KnownEntityHeaderProps) => {
+}: EntityHeaderMondoProps) => {
+  const { file } = useEntityFile();
+  const app = useApp();
+
+  const cachedFile = file as TCachedFile | undefined;
+
+  const displayName = useMemo(
+    () => (cachedFile ? getEntityDisplayName(cachedFile) : "Untitled"),
+    [cachedFile]
+  );
+
+  const label = useMemo(() => buildHeaderLabel(entityType), [entityType]);
+
+  const cover = useMemo(() => {
+    if (!cachedFile) return null;
+    return resolveCoverImage(app, cachedFile);
+  }, [app, cachedFile]);
+
+  const coverSrc = useMemo(() => {
+    if (!cover) return null;
+    return cover.kind === "vault" ? cover.resourcePath : cover.url;
+  }, [cover]);
+
+  const handleCoverClick = useCallback(() => {
+    if (!cover) {
+      return;
+    }
+
+    try {
+      if (cover.kind === "vault") {
+        const leaf = app.workspace.getLeaf(false) ?? app.workspace.getLeaf(true);
+        void leaf?.openFile(cover.file);
+      } else if (typeof window !== "undefined") {
+        window.open(cover.url, "_blank", "noopener,noreferrer");
+      }
+    } catch (error) {
+      console.error("EntityHeaderMondo: failed to open cover image", error);
+    }
+  }, [app, cover]);
+
+  const placeholderIcon = useMemo(() => {
+    const config = MONDO_ENTITIES[entityType];
+    return config?.icon ?? "file-text";
+  }, [entityType]);
+
   const actions = PANEL_ACTIONS[entityType] ?? [];
 
   const handleTrigger = useCallback(
@@ -271,6 +331,7 @@ export const KnownEntityHeader = ({
   );
 
   const primary = actions[0];
+
   const secondary = useMemo(
     () =>
       actions.slice(1).map((action) => ({
@@ -281,28 +342,57 @@ export const KnownEntityHeader = ({
     [actions, handleTrigger]
   );
 
-  // Keep hook calls stable across renders: define the primary click handler
-  // unconditionally even if `primary` is undefined on some renders. The
-  // handler itself guards against missing `primary` at call time.
   const handlePrimaryClick = useCallback(() => {
     if (!primary) return;
     handleTrigger(primary.panel, primary.ariaLabel);
   }, [handleTrigger, primary]);
 
-  if (!primary) {
-    return null;
-  }
-
   return (
-    <SplitButton
-      icon="plus"
-      onClick={handlePrimaryClick}
-      secondaryActions={secondary}
-      menuAriaLabel="Select related entity to create"
-    >
-      Add Related
-    </SplitButton>
+    <div className={headerClasses}>
+      {coverSrc ? (
+        <button
+          type="button"
+          onClick={handleCoverClick}
+          className="group h-20 w-20 flex-shrink-0 overflow-hidden rounded-md border border-transparent focus:outline-none focus-visible:border-[var(--interactive-accent)]"
+          aria-label="Open cover image"
+        >
+          <img
+            src={coverSrc}
+            alt="Cover thumbnail"
+            className="h-full w-full transition-transform group-hover:scale-[1.02]"
+            style={{ objectFit: "cover" }}
+          />
+        </button>
+      ) : (
+        <div className="flex h-20 w-20 flex-shrink-0 items-center justify-center rounded-md bg-[var(--background-modifier-border)]">
+          <Icon
+            name={placeholderIcon}
+            className="h-8 w-8 text-[var(--text-muted)]"
+          />
+        </div>
+      )}
+
+      <div className="min-w-0 flex-1">
+        <div className="truncate text-sm font-semibold text-[var(--text-normal)]">
+          {displayName}
+        </div>
+        <div className="text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">
+          Mondo Note • {label}
+        </div>
+      </div>
+
+      {primary ? (
+        <SplitButton
+          icon="plus"
+          onClick={handlePrimaryClick}
+          secondaryActions={secondary}
+          menuAriaLabel="Select related entity to create"
+        >
+          Add Related
+        </SplitButton>
+      ) : null}
+    </div>
   );
 };
 
-export default KnownEntityHeader;
+export default EntityHeaderMondo;
