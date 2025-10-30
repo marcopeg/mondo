@@ -1,47 +1,67 @@
+import { fact } from "./fact";
+import { log } from "./log";
+import { document } from "./document";
+
 export const task = {
   name: "Tasks",
   icon: "check-square",
-  template: "\ndate: {{date}}\nstatus: open\n---\n",
+  template: "\ndate: {{date}}\nstatus: todo\n---\n",
   list: {
     columns: ["show", "participants", "status"],
   },
+  createRelated: [
+    {
+      key: "subtask",
+      label: "Sub-Task",
+      icon: "check-square",
+      create: {
+        title: "Untitled Sub-Task for {@this.show}",
+        attributes: {
+          type: "task",
+          task: ["{@this}"],
+        },
+      },
+    },
+    {
+      key: "fact",
+      label: "Fact",
+      icon: fact.icon,
+      panelKey: "facts",
+      create: {
+        title: "Untitled Fact for {@this.show}",
+        attributes: {
+          type: "fact",
+          linksTo: ["{@this}"],
+        },
+      },
+    },
+    {
+      key: "log",
+      label: "Log",
+      icon: log.icon,
+      panelKey: "logs",
+      create: {
+        title: "{YY}-{MM}-{DD} {hh}.{mm} Log for {@this.show}",
+        attributes: {
+          type: "log",
+          linksTo: ["{@this}"],
+        },
+      },
+    },
+    {
+      key: "document",
+      label: "Document",
+      icon: document.icon,
+      create: {
+        title: "Untitled Document for {@this.show}",
+        attributes: {
+          type: "document",
+          linksTo: ["{@this}"],
+        },
+      },
+    },
+  ],
   links: [
-    {
-      type: "backlinks",
-      key: "facts",
-      config: {
-        targetType: "fact",
-        properties: ["task"],
-        title: "Facts",
-        icon: "file-text",
-        sort: {
-          strategy: "manual",
-        },
-      },
-    },
-    {
-      type: "backlinks",
-      key: "logs",
-      config: {
-        targetType: "log",
-        properties: ["task"],
-        title: "Logs",
-        icon: "clipboard-list",
-      },
-    },
-    {
-      type: "backlinks",
-      key: "documents",
-      config: {
-        targetType: "document",
-        properties: ["task"],
-        title: "Documents",
-        icon: "paperclip",
-        sort: {
-          strategy: "manual",
-        },
-      },
-    },
     {
       type: "backlinks",
       key: "tasks",
@@ -65,6 +85,82 @@ export const task = {
         ],
         sort: {
           strategy: "manual",
+        },
+        createEntity: {
+          referenceCreate: "subtask",
+        },
+      },
+    },
+    {
+      type: "backlinks",
+      key: "facts",
+      config: {
+        targetType: "fact",
+        properties: ["linksTo"],
+        title: fact.name,
+        icon: fact.icon,
+        sort: {
+          strategy: "manual",
+        },
+        createEntity: {
+          referenceCreate: "fact",
+        },
+      },
+    },
+    {
+      type: "backlinks",
+      key: "logs",
+      config: {
+        targetType: "log",
+        properties: ["linksTo"],
+        title: log.name,
+        icon: log.icon,
+        createEntity: {
+          referenceCreate: "log",
+        },
+      },
+    },
+    {
+      type: "backlinks",
+      key: "link",
+      config: {
+        title: "Links",
+        icon: "layers",
+        find: {
+          query: [
+            {
+              steps: [
+                {
+                  notIn: {
+                    property: "linksTo",
+                    type: ["task", "log", "fact"],
+                  },
+                },
+              ],
+            },
+          ],
+        },
+        sort: {
+          strategy: "manual",
+        },
+        columns: [
+          {
+            type: "entityIcon",
+          },
+          {
+            type: "show",
+          },
+          {
+            type: "cover",
+            align: "right",
+          },
+          {
+            type: "date",
+            align: "right",
+          },
+        ],
+        createEntity: {
+          enabled: false,
         },
       },
     },

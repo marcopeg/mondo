@@ -301,3 +301,59 @@ Fix both the json and typescript definition
 ---
 
 Refactor the Obsidian plugin so that the UICard component includes a new `minimizeOnCollapsed` boolean attribute. When true, a collapsed card only takes minimal width instead of the fullWidth and lines up horizontally one after the other, wrapping to new lines naturally if needed. With this option, multiple cards can be placed one after another on the same line. The EntityLinksPanel should apply this attribute so that all collapsed cards appear in a horizontal sequence. When a card is expanded, it takes the full width while the others remain collapsed. Add a clearfix at the end of the list to ensure layout stability.
+
+---
+
+use the #file:gear.ts configuration as inspiration and configure appropriately the following other entities:
+
+- book
+- document
+- fact
+- idea
+- ingredient
+- location
+- log
+- meeting
+- newsletter
+- recipe
+- restaurant
+- role
+- show
+- task
+- tool
+
+All those should let create:
+
+- task
+- log
+- fact
+- document
+- idea
+
+All those should have links panels to:
+
+- tasks
+- logs
+- links (eterogeneous)
+
+Careful not to create circular dependencies with the import of the files.
+
+---
+
+use the #file:gear.ts configuration as inspiration and configure appropriately the entity "book".
+
+This entity let creating there other entities:
+
+- task
+- log
+- fact
+- document
+- idea
+
+And should have those backlings panels:
+
+- tasks
+- logs
+- links (eterogeneous)
+
+Careful not to create circular dependencies with the import of the files.

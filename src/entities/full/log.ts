@@ -12,63 +12,45 @@ export const log = {
   links: [
     {
       type: "backlinks",
-      key: "facts",
+      key: "link",
       config: {
-        targetType: "fact",
-        properties: ["log"],
-        title: "Facts",
-        icon: "file-text",
+        title: "Links",
+        icon: "layers",
+        find: {
+          query: [
+            {
+              steps: [
+                {
+                  notIn: {
+                    property: "linksTo",
+                    type: [],
+                  },
+                },
+              ],
+            },
+          ],
+        },
         sort: {
           strategy: "manual",
         },
-      },
-    },
-    {
-      type: "backlinks",
-      key: "logs",
-      config: {
-        targetType: "log",
-        properties: ["log"],
-        title: "Logs",
-        icon: "clipboard-list",
-      },
-    },
-    {
-      type: "backlinks",
-      key: "documents",
-      config: {
-        targetType: "document",
-        properties: ["log"],
-        title: "Documents",
-        icon: "paperclip",
-        sort: {
-          strategy: "manual",
-        },
-      },
-    },
-    {
-      type: "backlinks",
-      key: "tasks",
-      config: {
-        targetType: "task",
-        properties: ["log"],
-        title: "Tasks",
-        icon: "check-square",
         columns: [
+          {
+            type: "entityIcon",
+          },
           {
             type: "show",
           },
           {
-            type: "attribute",
-            key: "status",
+            type: "cover",
+            align: "right",
           },
           {
             type: "date",
             align: "right",
           },
         ],
-        sort: {
-          strategy: "manual",
+        createEntity: {
+          enabled: false,
         },
       },
     },

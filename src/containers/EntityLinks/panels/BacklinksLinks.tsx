@@ -426,7 +426,9 @@ export const BacklinksLinks = ({
             type?: string | string[];
           };
           const props = toArray(property);
-          const typeList = toArray(type).map((t) => String(t).trim()).filter(Boolean);
+          const typeList = toArray(type)
+            .map((t) => String(t).trim())
+            .filter(Boolean);
           const sourceTargets = S.map((n) => n.file!).filter(Boolean);
           const scanTypes =
             typeList.length > 0 ? typeList : (MONDO_FILE_TYPES as string[]);
@@ -941,9 +943,38 @@ export const BacklinksLinks = ({
     if (!createEnabled) {
       return items;
     }
-    // If user didn't specify a title template, provide a sensible default
-    // like "Untitled Facts" (based on the target entity's configured name).
-    const titleTemplate = createCfg.title ?? `Untitled ${defaultTitle}`;
+    // Resolve referenced create definition from entity.createRelated if requested
+    const hostTypeLower = hostTypeNormalized;
+    const hostEntityCfg = isMondoEntityType(hostTypeLower)
+      ? (MONDO_ENTITIES[hostTypeLower] as any)
+      : undefined;
+    const refKey = (createCfg as any)?.referenceCreate as string | undefined;
+    const referencedCreate = (() => {
+      if (!refKey || !hostEntityCfg?.createRelated) return undefined;
+      const list = hostEntityCfg.createRelated as Array<any>;
+      const match = list.find((c) => String(c?.key || "").trim() === refKey);
+      if (!match) return undefined;
+      return (match.create ?? {}) as {
+        title?: string;
+        attributes?: Record<string, unknown>;
+        linkProperties?: string | string[];
+        openAfterCreate?: boolean;
+      };
+    })();
+
+    // Merge referenced create settings with panel overrides
+    const titleTemplate =
+      createCfg.title ?? referencedCreate?.title ?? `Untitled ${defaultTitle}`;
+    const mergedAttributes = (() => {
+      const base = (referencedCreate?.attributes ?? {}) as Record<
+        string,
+        unknown
+      >;
+      const override = (createCfg.attributes ?? {}) as Record<string, unknown>;
+      return Object.keys({ ...base, ...override }).length > 0
+        ? ({ ...base, ...override } as Record<string, unknown>)
+        : undefined;
+    })();
     items.push({
       key: "create-entity",
       content: (
@@ -962,7 +993,7 @@ export const BacklinksLinks = ({
                   targetType: effectiveTargetType as string,
                   hostEntity: file,
                   titleTemplate,
-                  attributeTemplates: createCfg.attributes as any,
+                  attributeTemplates: mergedAttributes as any,
                   // link back using only hostType-specific properties (no generic "related")
                   linkProperties: buildLinkProperties(
                     hostType as MondoEntityType,
@@ -971,7 +1002,10 @@ export const BacklinksLinks = ({
                       | string[]
                       | undefined
                   ),
-                  openAfterCreate: true,
+                  openAfterCreate:
+                    (createCfg as any)?.openAfterCreate ??
+                    referencedCreate?.openAfterCreate ??
+                    true,
                 });
               } catch (error) {
                 console.error("BacklinksLinks: failed to create entity", error);
@@ -995,6 +1029,7 @@ export const BacklinksLinks = ({
     hostType,
     defaultTitle,
     badgeAction,
+    hostTypeNormalized,
   ]);
 
   const panelTitle = panel.title || defaultTitle;
@@ -1065,214 +1100,220 @@ export const BacklinksLinks = ({
         onCollapseChange={handleCollapseChange}
       >
         <EntityLinksTable
-        items={optimisticOrdered ?? ordered}
-        getKey={(e) => e.file!.path}
-        pageSize={pageSize}
-        sortable={sortConfig.strategy === "manual" && sortable}
-        onReorder={
-          sortConfig.strategy === "manual" ? handleReorderImmediate : undefined
-        }
-        getSortableId={(e) => e.file!.path}
-        emptyLabel={`No ${panelTitle.toLowerCase()} yet`}
-        renderRow={(entry) => {
-          const path = entry.file!.path;
-          const show = getEntityDisplayName(entry);
-          const date = getFrontmatterString(entry, "date");
-          const entryTypeRaw = String(
-            (entry.cache?.frontmatter as Record<string, unknown> | undefined)
-              ?.type ?? ""
-          ).trim();
-          const entryTypeLower = entryTypeRaw.toLowerCase();
-          const entryTypeIcon = isMondoEntityType(entryTypeLower)
-            ? MONDO_ENTITIES[entryTypeLower as MondoEntityType]?.icon
-            : undefined;
-          return (
-            <>
-              {columns.map((col, idx) => {
-                const alignClass =
-                  col.align === "right"
-                    ? "text-right"
-                    : col.align === "center"
-                    ? "text-center"
-                    : "text-left";
-                if (col.type === "entityIcon") {
-                  return (
-                    <Table.Cell
-                      key={`c-${idx}`}
-                      className={`px-1 py-2 align-middle w-8 ${alignClass}`}
-                      style={{ width: "2rem" }}
-                    >
-                      {entryTypeIcon ? (
-                        <Icon name={entryTypeIcon} className="mx-auto" />
-                      ) : (
-                        <span className="inline-block w-5 h-5" />
-                      )}
-                    </Table.Cell>
-                  );
-                }
-                if (col.type === "cover") {
-                  const src = getCoverResource(app, entry);
-                  return (
-                    <Table.Cell
-                      key={`c-${idx}`}
-                      className={`px-0 py-2 align-middle w-16 ${alignClass}`}
-                      style={{ width: "4rem" }}
-                    >
-                      {src ? (
-                        <img
-                          src={src}
-                          alt={show}
-                          className="h-16 w-16 mx-auto block"
-                          style={{
-                            objectFit:
-                              col.mode === "contain" ? "contain" : "cover",
-                          }}
-                        />
-                      ) : null}
-                    </Table.Cell>
-                  );
-                }
-                if (col.type === "show") {
-                  return (
-                    <Table.Cell
-                      key={`c-${idx}`}
-                      className={`px-2 py-2 align-middle break-words overflow-hidden ${alignClass}`}
-                    >
-                      <Button
-                        to={path}
-                        variant="link"
-                        className="break-words whitespace-normal"
+          items={optimisticOrdered ?? ordered}
+          getKey={(e) => e.file!.path}
+          pageSize={pageSize}
+          sortable={sortConfig.strategy === "manual" && sortable}
+          onReorder={
+            sortConfig.strategy === "manual"
+              ? handleReorderImmediate
+              : undefined
+          }
+          getSortableId={(e) => e.file!.path}
+          emptyLabel={`No ${panelTitle.toLowerCase()} yet`}
+          renderRow={(entry) => {
+            const path = entry.file!.path;
+            const show = getEntityDisplayName(entry);
+            const date = getFrontmatterString(entry, "date");
+            const entryTypeRaw = String(
+              (entry.cache?.frontmatter as Record<string, unknown> | undefined)
+                ?.type ?? ""
+            ).trim();
+            const entryTypeLower = entryTypeRaw.toLowerCase();
+            const entryTypeIcon = isMondoEntityType(entryTypeLower)
+              ? MONDO_ENTITIES[entryTypeLower as MondoEntityType]?.icon
+              : undefined;
+            return (
+              <>
+                {columns.map((col, idx) => {
+                  const alignClass =
+                    col.align === "right"
+                      ? "text-right"
+                      : col.align === "center"
+                      ? "text-center"
+                      : "text-left";
+                  if (col.type === "entityIcon") {
+                    return (
+                      <Table.Cell
+                        key={`c-${idx}`}
+                        className={`px-1 py-2 align-middle w-8 ${alignClass}`}
+                        style={{ width: "2rem" }}
                       >
-                        {show}
-                      </Button>
-                    </Table.Cell>
-                  );
-                }
-                if (col.type === "date") {
-                  const label = col.label ? `${col.label} ` : "";
-                  return (
-                    <Table.Cell
-                      key={`c-${idx}`}
-                      className={`px-2 py-2 align-middle ${alignClass}`}
-                    >
-                      {date ? (
-                        <span className="text-xs text-[var(--text-muted)]">
-                          {label}
-                          {date}
-                        </span>
-                      ) : (
-                        <span className="text-xs text-[var(--text-muted)]">
-                          —
-                        </span>
-                      )}
-                    </Table.Cell>
-                  );
-                }
-                if (col.type === "attribute") {
-                  // Read raw frontmatter so we can handle arrays and wiki links [[...]] properly
-                  const fm =
-                    (entry.cache?.frontmatter as
-                      | Record<string, unknown>
-                      | undefined) ?? {};
-                  const raw = fm[col.key];
-                  const label = col.label ? `${col.label}: ` : "";
-
-                  const isWikiLink = (s: string): boolean =>
-                    /\[\[[^\]]+\]\]/.test(s.trim());
-                  const parseWikiLink = (
-                    s: string
-                  ): { target: string; alias?: string } => {
-                    const inner = s.trim().slice(2, -2);
-                    const [t, a] = inner.split("|");
-                    return { target: (t || "").trim(), alias: a?.trim() };
-                  };
-                  const resolveWikiToPath = (
-                    app: App,
-                    sourcePath: string | undefined,
-                    target: string
-                  ): string | null => {
-                    const normalized = target.replace(/\.md$/i, "");
-                    const dest = app.metadataCache.getFirstLinkpathDest(
-                      normalized,
-                      sourcePath ?? ""
+                        {entryTypeIcon ? (
+                          <Icon name={entryTypeIcon} className="mx-auto" />
+                        ) : (
+                          <span className="inline-block w-5 h-5" />
+                        )}
+                      </Table.Cell>
                     );
-                    return dest instanceof TFile ? dest.path : null;
-                  };
-
-                  const renderItem = (item: unknown, i: number) => {
-                    if (typeof item === "string" && isWikiLink(item)) {
-                      const { target, alias } = parseWikiLink(item);
-                      const destPath = resolveWikiToPath(
-                        app,
-                        entry.file?.path,
-                        target
-                      );
-                      const text = alias || target;
-                      return destPath ? (
-                        <Button key={`a-${i}`} to={destPath} variant="link">
-                          {text}
-                        </Button>
-                      ) : (
-                        <span key={`a-${i}`}>{text}</span>
-                      );
-                    }
-                    if (
-                      typeof item === "string" ||
-                      typeof item === "number" ||
-                      typeof item === "boolean"
-                    ) {
-                      return <span key={`a-${i}`}>{String(item)}</span>;
-                    }
-                    try {
-                      return <span key={`a-${i}`}>{JSON.stringify(item)}</span>;
-                    } catch (_) {
-                      return <span key={`a-${i}`}>{String(item)}</span>;
-                    }
-                  };
-
-                  const nodes: ReactNode[] = [];
-                  if (Array.isArray(raw)) {
-                    raw.forEach((it, i) => {
-                      if (i > 0) nodes.push(<span key={`s-${i}`}>, </span>);
-                      nodes.push(renderItem(it, i));
-                    });
-                  } else if (raw !== undefined && raw !== null) {
-                    nodes.push(renderItem(raw, 0));
                   }
+                  if (col.type === "cover") {
+                    const src = getCoverResource(app, entry);
+                    return (
+                      <Table.Cell
+                        key={`c-${idx}`}
+                        className={`px-0 py-2 align-middle w-16 ${alignClass}`}
+                        style={{ width: "4rem" }}
+                      >
+                        {src ? (
+                          <img
+                            src={src}
+                            alt={show}
+                            className="h-16 w-16 mx-auto block"
+                            style={{
+                              objectFit:
+                                col.mode === "contain" ? "contain" : "cover",
+                            }}
+                          />
+                        ) : null}
+                      </Table.Cell>
+                    );
+                  }
+                  if (col.type === "show") {
+                    return (
+                      <Table.Cell
+                        key={`c-${idx}`}
+                        className={`px-2 py-2 align-middle break-words overflow-hidden ${alignClass}`}
+                      >
+                        <Button
+                          to={path}
+                          variant="link"
+                          className="break-words whitespace-normal"
+                        >
+                          {show}
+                        </Button>
+                      </Table.Cell>
+                    );
+                  }
+                  if (col.type === "date") {
+                    const label = col.label ? `${col.label} ` : "";
+                    return (
+                      <Table.Cell
+                        key={`c-${idx}`}
+                        className={`px-2 py-2 align-middle ${alignClass}`}
+                      >
+                        {date ? (
+                          <span className="text-xs text-[var(--text-muted)]">
+                            {label}
+                            {date}
+                          </span>
+                        ) : (
+                          <span className="text-xs text-[var(--text-muted)]">
+                            —
+                          </span>
+                        )}
+                      </Table.Cell>
+                    );
+                  }
+                  if (col.type === "attribute") {
+                    // Read raw frontmatter so we can handle arrays and wiki links [[...]] properly
+                    const fm =
+                      (entry.cache?.frontmatter as
+                        | Record<string, unknown>
+                        | undefined) ?? {};
+                    const raw = fm[col.key];
+                    const label = col.label ? `${col.label}: ` : "";
 
+                    const isWikiLink = (s: string): boolean =>
+                      /\[\[[^\]]+\]\]/.test(s.trim());
+                    const parseWikiLink = (
+                      s: string
+                    ): { target: string; alias?: string } => {
+                      const inner = s.trim().slice(2, -2);
+                      const [t, a] = inner.split("|");
+                      return { target: (t || "").trim(), alias: a?.trim() };
+                    };
+                    const resolveWikiToPath = (
+                      app: App,
+                      sourcePath: string | undefined,
+                      target: string
+                    ): string | null => {
+                      const normalized = target.replace(/\.md$/i, "");
+                      const dest = app.metadataCache.getFirstLinkpathDest(
+                        normalized,
+                        sourcePath ?? ""
+                      );
+                      return dest instanceof TFile ? dest.path : null;
+                    };
+
+                    const renderItem = (item: unknown, i: number) => {
+                      if (typeof item === "string" && isWikiLink(item)) {
+                        const { target, alias } = parseWikiLink(item);
+                        const destPath = resolveWikiToPath(
+                          app,
+                          entry.file?.path,
+                          target
+                        );
+                        const text = alias || target;
+                        return destPath ? (
+                          <Button key={`a-${i}`} to={destPath} variant="link">
+                            {text}
+                          </Button>
+                        ) : (
+                          <span key={`a-${i}`}>{text}</span>
+                        );
+                      }
+                      if (
+                        typeof item === "string" ||
+                        typeof item === "number" ||
+                        typeof item === "boolean"
+                      ) {
+                        return <span key={`a-${i}`}>{String(item)}</span>;
+                      }
+                      try {
+                        return (
+                          <span key={`a-${i}`}>{JSON.stringify(item)}</span>
+                        );
+                      } catch (_) {
+                        return <span key={`a-${i}`}>{String(item)}</span>;
+                      }
+                    };
+
+                    const nodes: ReactNode[] = [];
+                    if (Array.isArray(raw)) {
+                      raw.forEach((it, i) => {
+                        if (i > 0) nodes.push(<span key={`s-${i}`}>, </span>);
+                        nodes.push(renderItem(it, i));
+                      });
+                    } else if (raw !== undefined && raw !== null) {
+                      nodes.push(renderItem(raw, 0));
+                    }
+
+                    return (
+                      <Table.Cell
+                        key={`c-${idx}`}
+                        className={`px-2 py-2 align-middle ${alignClass}`}
+                      >
+                        {nodes.length > 0 ? (
+                          <span className="text-xs text-[var(--text-muted)]">
+                            {label}
+                            {nodes}
+                          </span>
+                        ) : (
+                          <span className="text-xs text-[var(--text-muted)]">
+                            —
+                          </span>
+                        )}
+                      </Table.Cell>
+                    );
+                  }
                   return (
                     <Table.Cell
                       key={`c-${idx}`}
                       className={`px-2 py-2 align-middle ${alignClass}`}
                     >
-                      {nodes.length > 0 ? (
-                        <span className="text-xs text-[var(--text-muted)]">
-                          {label}
-                          {nodes}
-                        </span>
-                      ) : (
-                        <span className="text-xs text-[var(--text-muted)]">
-                          —
-                        </span>
-                      )}
+                      <span className="text-xs text-[var(--text-muted)]">
+                        —
+                      </span>
                     </Table.Cell>
                   );
-                }
-                return (
-                  <Table.Cell
-                    key={`c-${idx}`}
-                    className={`px-2 py-2 align-middle ${alignClass}`}
-                  >
-                    <span className="text-xs text-[var(--text-muted)]">—</span>
-                  </Table.Cell>
-                );
-              })}
-            </>
-          );
-        }}
-      />
-    </Card>
-  </div>
+                })}
+              </>
+            );
+          }}
+        />
+      </Card>
+    </div>
   );
 };
 

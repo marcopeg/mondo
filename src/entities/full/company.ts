@@ -1,20 +1,141 @@
+import { person } from "./person";
+import { team } from "./team";
+import { project } from "./project";
+import { task } from "./task";
+import { fact } from "./fact";
+import { log } from "./log";
+import { gear } from "./gear";
+import { idea } from "./idea";
+import { document } from "./document";
+
 export const company = {
   name: "Companies",
   icon: "building-2",
   template: "\ndate: {{date}}\nlocation: []\n---\n",
   list: {
-    columns: ["show", "location"],
+    columns: ["cover", "show", "location"],
   },
+  createRelated: [
+    {
+      key: "employee",
+      label: "Person",
+      icon: person.icon,
+      create: {
+        title: "New Employee for {@this.show}",
+        attributes: {
+          type: "person",
+          company: ["{@this}"],
+        },
+      },
+    },
+    {
+      key: "team",
+      label: "Team",
+      icon: team.icon,
+      create: {
+        title: "New Team for {@this.show}",
+        attributes: {
+          type: "team",
+          company: ["{@this}"],
+        },
+      },
+    },
+    {
+      key: "project",
+      label: "Project",
+      icon: project.icon,
+      create: {
+        title: "New Project for {@this.show}",
+        attributes: {
+          type: "project",
+          company: ["{@this}"],
+          team: [],
+          status: "draft",
+        },
+      },
+    },
+    {
+      key: "task",
+      label: "Task",
+      icon: task.icon,
+      create: {
+        title: "New Task for {@this.show}",
+        attributes: {
+          type: "task",
+          company: ["{@this}"],
+        },
+      },
+    },
+    {
+      key: "fact",
+      label: "Fact",
+      icon: fact.icon,
+      create: {
+        title: "New Fact for {@this.show}",
+        attributes: {
+          type: "fact",
+          company: ["{@this}"],
+        },
+      },
+    },
+    {
+      key: "log",
+      label: "Log",
+      icon: log.icon,
+      create: {
+        title: "{YY}-{MM}-{DD} {hh}.{mm} Log for {@this.show}",
+        attributes: {
+          type: "log",
+          company: ["{@this}"],
+        },
+      },
+    },
+    {
+      key: "gear",
+      label: "Gear",
+      icon: gear.icon,
+      create: {
+        title: "Untitled Gear for {@this.show}",
+        attributes: {
+          type: "gear",
+          company: ["{@this}"],
+        },
+      },
+    },
+    {
+      key: "idea",
+      label: "Idea",
+      icon: idea.icon,
+      create: {
+        title: "Untitled Idea for {@this.show}",
+        attributes: {
+          type: "idea",
+          company: ["{@this}"],
+        },
+      },
+    },
+    {
+      key: "document",
+      label: "Document",
+      icon: document.icon,
+      create: {
+        title: "Untitled Document for {@this.show}",
+        attributes: {
+          type: "document",
+          company: ["{@this}"],
+        },
+      },
+    },
+  ],
   links: [
     {
       type: "backlinks",
       key: "employees",
-      desc: "Employees working at this company",
       config: {
         targetType: "person",
         properties: ["company"],
         title: "Employees",
-        icon: "users",
+        icon: person.icon,
         sort: {
           strategy: "column",
           column: "show",
@@ -36,17 +157,19 @@ export const company = {
             key: "role",
           },
         ],
+        createEntity: {
+          referenceCreate: "employee",
+        },
       },
     },
     {
       type: "backlinks",
       key: "teams",
-      desc: "Teams within this company",
       config: {
         targetType: "team",
         properties: ["company"],
         title: "Teams",
-        icon: "layers",
+        icon: team.icon,
         columns: [
           {
             type: "show",
@@ -57,16 +180,18 @@ export const company = {
           column: "show",
           direction: "asc",
         },
+        createEntity: {
+          referenceCreate: "team",
+        },
       },
     },
     {
       type: "backlinks",
       key: "projects",
-      desc: "Projects associated with this company",
       config: {
         targetType: "project",
         title: "Projects",
-        icon: "folder-git-2",
+        icon: project.icon,
         find: {
           query: [
             {
@@ -127,6 +252,9 @@ export const company = {
             align: "right",
           },
         ],
+        createEntity: {
+          referenceCreate: "project",
+        },
       },
     },
     {
@@ -136,9 +264,12 @@ export const company = {
         targetType: "fact",
         properties: ["company"],
         title: "Facts",
-        icon: "file-text",
+        icon: fact.icon,
         sort: {
           strategy: "manual",
+        },
+        createEntity: {
+          referenceCreate: "fact",
         },
       },
     },
@@ -149,7 +280,10 @@ export const company = {
         targetType: "log",
         properties: ["company"],
         title: "Logs",
-        icon: "clipboard-list",
+        icon: log.icon,
+        createEntity: {
+          referenceCreate: "log",
+        },
       },
     },
     {
@@ -159,9 +293,12 @@ export const company = {
         targetType: "document",
         properties: ["company"],
         title: "Documents",
-        icon: "paperclip",
+        icon: document.icon,
         sort: {
           strategy: "manual",
+        },
+        createEntity: {
+          referenceCreate: "document",
         },
       },
     },
@@ -172,7 +309,7 @@ export const company = {
         targetType: "task",
         properties: ["company"],
         title: "Tasks",
-        icon: "check-square",
+        icon: task.icon,
         columns: [
           {
             type: "show",
@@ -188,6 +325,9 @@ export const company = {
         ],
         sort: {
           strategy: "manual",
+        },
+        createEntity: {
+          referenceCreate: "task",
         },
       },
     },

@@ -32,6 +32,15 @@ https://github.com/marcopeg/obsidian-mondo
 
 > I suggest you keep it updated to the latest version, but at this point feel free to install whatever available release.
 
+# 🏚️ Dashboard
+
+Run the command `Open Mondo dashboard` to open your vault's control center:
+
+- **Quick Tasks** let you create new task-notes on the fly by typing or dictating your thoughs.
+- **Relevant Notes** let you find your notes by frequency of utilization or history. And you can filter by _Entity Type (see the CRM feature)_-
+- **CRM Entities Wall** wall let you jump to the various entities lists. Think \_"Obsidian bases on steroid".
+- **Stats** show some numbers about your valut and offer some file based views of your stuff. Not only notes, but also images, audio and generic attachments across the whole vault.
+
 # 📈 Habits Tracker
 
 Tracking my daily habits is an important part of my self development plan, and i wantet it to be fully included into my Obsidian workflow.
@@ -58,7 +67,7 @@ You can add a block as many `habits` blocks you want:
 
 ![Timer - single](./images/timer-source.png)
 
-# 📆 Daily Notes
+# 📆 Daily Notes (to refine)
 
 Daily notes help jotting down quick information.
 
@@ -66,7 +75,49 @@ Daily notes help jotting down quick information.
 
 Notes in your daily are automatically organized by day/time blocks and default to bullet lists so to facilitate note refactoring later on.
 
-# 📝 Journal
+# 🎤 Dictation
+
+> This feature requires an [OpenAI API Key](https://help.openai.com/en/articles/4936850-where-do-i-find-my-openai-api-key)
+
+Dictation lets you write your note's content with your voice, by sending a recording to OpenAI Whisper for transcription.
+
+Use the command `Start dictation`, or press the microphone button to initiate a dictation session. The resulting transcription is inserted at your cursor's position.
+
+# 📝 Transcription
+
+> This feature requires an [OpenAI API Key](https://help.openai.com/en/articles/4936850-where-do-i-find-my-openai-api-key)
+
+Use the command `Start transcription` when over an _audio note_ to start the transcription process.
+
+Once done, a new note with the full transcription and a reference to the original audio will be created and opened for you.
+
+# 🔈 Voiceover
+
+> This feature requires an [OpenAI API Key](https://help.openai.com/en/articles/4936850-where-do-i-find-my-openai-api-key)
+
+Use the command `Start voiceover` on a text note to produce the relative audio file and reproduce it.
+
+The file will be automatically referenced into the note's _frontmatter_.
+
+> You can use the _Voiceover_ also on a text-selection!
+
+# 🤖 Open in ChatGPT
+
+Take any note or text selection and use the command `Send to ChatGPT` to open the famous AI tool with a pre-compiled prompt.
+
+# 🕰️ Timestamps
+
+Run the command `Insert timestamp` to inject a pre-configured date-time text in your note, where your cursor is.
+
+You can configure the template in the Mondo's settings.
+
+Here is an example of a Heading level 2 timestamp template:
+
+```Markdown
+## YY/MM/DD hh:mm
+```
+
+# 📝 Journal (to refine)
 
 Dealing with the modern world and its crazy pace can crash your soul. **Journaling** is a simple yet effective way to keep your thoughts, emotions, and hidden convinctions under control.
 

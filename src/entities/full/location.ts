@@ -1,3 +1,13 @@
+import { task } from "./task";
+import { log } from "./log";
+import { fact } from "./fact";
+import { document } from "./document";
+import { idea } from "./idea";
+import { restaurant } from "./restaurant";
+import { team } from "./team";
+import { company } from "./company";
+import { gear } from "./gear";
+
 export const location = {
   name: "Locations",
   icon: "map-pin",
@@ -5,6 +15,116 @@ export const location = {
   list: {
     columns: ["cover", "show", "country", "region"],
   },
+  createRelated: [
+    {
+      key: "restaurant",
+      label: "Restaurant",
+      icon: restaurant.icon,
+      create: {
+        title: "New Restaurant for {@this.show}",
+        attributes: {
+          type: "restaurant",
+          location: ["{@this}"],
+        },
+      },
+    },
+    {
+      key: "company",
+      label: "Company",
+      icon: company.icon,
+      create: {
+        title: "New Company for {@this.show}",
+        attributes: {
+          type: "company",
+          location: ["{@this}"],
+        },
+      },
+    },
+    {
+      key: "team",
+      label: "Team",
+      icon: team.icon,
+      create: {
+        title: "New Team for {@this.show}",
+        attributes: {
+          type: "team",
+          location: ["{@this}"],
+        },
+      },
+    },
+    {
+      key: "gear",
+      label: "Gear",
+      icon: gear.icon,
+      create: {
+        title: "New Gear for {@this.show}",
+        attributes: {
+          type: "gear",
+          location: ["{@this}"],
+        },
+      },
+    },
+    {
+      key: "task",
+      label: "Task",
+      icon: task.icon,
+      create: {
+        title: "New Task for {@this.show}",
+        attributes: {
+          type: "task",
+          linksTo: ["{@this}"],
+        },
+      },
+    },
+    {
+      key: "log",
+      label: "Log",
+      icon: log.icon,
+      create: {
+        title: "{YY}-{MM}-{DD} {hh}.{mm} Log for {@this.show}",
+        attributes: {
+          type: "log",
+          linksTo: ["{@this}"],
+        },
+      },
+    },
+    {
+      key: "fact",
+      label: "Fact",
+      icon: fact.icon,
+      create: {
+        title: "New Fact for {@this.show}",
+        attributes: {
+          type: "fact",
+          linksTo: ["{@this}"],
+        },
+      },
+    },
+    {
+      key: "document",
+      label: "Document",
+      icon: document.icon,
+      create: {
+        title: "Untitled Document for {@this.show}",
+        attributes: {
+          type: "document",
+          linksTo: ["{@this}"],
+        },
+      },
+    },
+    {
+      key: "idea",
+      label: "Idea",
+      icon: idea.icon,
+      create: {
+        title: "New Idea for {@this.show}",
+        attributes: {
+          type: "idea",
+          linksTo: ["{@this}"],
+        },
+      },
+    },
+  ],
   links: [
     {
       type: "backlinks",
@@ -40,6 +160,34 @@ export const location = {
     },
     {
       type: "backlinks",
+      key: "restaurants",
+      desc: "Restaurants linked to this location",
+      config: {
+        targetType: "restaurant",
+        properties: ["location"],
+        title: "Restaurants",
+        icon: restaurant.icon,
+        columns: [
+          {
+            type: "show",
+          },
+          {
+            type: "date",
+            align: "right",
+          },
+        ],
+        sort: {
+          strategy: "column",
+          column: "show",
+          direction: "asc",
+        },
+        createEntity: {
+          referenceCreate: "restaurant",
+        },
+      },
+    },
+    {
+      type: "backlinks",
       key: "companies",
       desc: "Companies linked to this location",
       config: {
@@ -56,6 +204,9 @@ export const location = {
           strategy: "column",
           column: "show",
           direction: "asc",
+        },
+        createEntity: {
+          referenceCreate: "company",
         },
       },
     },
@@ -77,6 +228,9 @@ export const location = {
           strategy: "column",
           column: "show",
           direction: "asc",
+        },
+        createEntity: {
+          referenceCreate: "team",
         },
       },
     },
@@ -103,30 +257,8 @@ export const location = {
           column: "show",
           direction: "asc",
         },
-      },
-    },
-    {
-      type: "backlinks",
-      key: "restaurants",
-      desc: "Restaurants linked to this location",
-      config: {
-        targetType: "restaurant",
-        properties: ["location"],
-        title: "Restaurants",
-        icon: "utensils",
-        columns: [
-          {
-            type: "show",
-          },
-          {
-            type: "date",
-            align: "right",
-          },
-        ],
-        sort: {
-          strategy: "column",
-          column: "show",
-          direction: "asc",
+        createEntity: {
+          referenceCreate: "gear",
         },
       },
     },
@@ -159,48 +291,12 @@ export const location = {
     },
     {
       type: "backlinks",
-      key: "facts",
-      config: {
-        targetType: "fact",
-        properties: ["location"],
-        title: "Facts",
-        icon: "file-text",
-        sort: {
-          strategy: "manual",
-        },
-      },
-    },
-    {
-      type: "backlinks",
-      key: "logs",
-      config: {
-        targetType: "log",
-        properties: ["location"],
-        title: "Logs",
-        icon: "clipboard-list",
-      },
-    },
-    {
-      type: "backlinks",
-      key: "documents",
-      config: {
-        targetType: "document",
-        properties: ["location"],
-        title: "Documents",
-        icon: "paperclip",
-        sort: {
-          strategy: "manual",
-        },
-      },
-    },
-    {
-      type: "backlinks",
       key: "tasks",
       config: {
         targetType: "task",
-        properties: ["location"],
-        title: "Tasks",
-        icon: "check-square",
+        properties: ["linksTo"],
+        title: task.name,
+        icon: task.icon,
         columns: [
           {
             type: "show",
@@ -216,6 +312,57 @@ export const location = {
         ],
         sort: {
           strategy: "manual",
+        },
+        createEntity: {
+          referenceCreate: "task",
+        },
+      },
+    },
+    {
+      type: "backlinks",
+      key: "logs",
+      config: {
+        targetType: "log",
+        properties: ["linksTo"],
+        title: log.name,
+        icon: log.icon,
+        createEntity: {
+          referenceCreate: "log",
+        },
+      },
+    },
+    {
+      type: "backlinks",
+      key: "links",
+      config: {
+        title: "Links",
+        icon: "layers",
+        find: {
+          query: [
+            {
+              description: "Notes referencing this location",
+              steps: [
+                {
+                  notIn: {
+                    property: "linksTo",
+                    type: ["log", "task"],
+                  },
+                },
+              ],
+            },
+          ],
+        },
+        columns: [
+          { type: "entityIcon" },
+          { type: "show" },
+          { type: "attribute", key: "type", label: "Type" },
+          { type: "date", align: "right" },
+        ],
+        sort: {
+          strategy: "manual",
+        },
+        createEntity: {
+          enabled: false,
         },
       },
     },

@@ -2,6 +2,41 @@ export const meeting = {
   name: "Meetings",
   icon: "calendar-clock",
   template: "\ndate: {{date}}\nparticipants: []\nlocation: []\n---\n",
+  createRelated: [
+    {
+      key: "task",
+      label: "Task",
+      icon: "check-square",
+      panelKey: "tasks",
+      create: {
+        attributes: {
+          type: "task",
+        },
+      },
+    },
+    {
+      key: "fact",
+      label: "Fact",
+      icon: "bookmark-plus",
+      panelKey: "facts",
+      create: {
+        attributes: {
+          type: "fact",
+        },
+      },
+    },
+    {
+      key: "log",
+      label: "Log",
+      icon: "file-plus",
+      panelKey: "logs",
+      create: {
+        attributes: {
+          type: "log",
+        },
+      },
+    },
+  ],
   list: {
     columns: ["date_time", "participants"],
     sort: {
