@@ -201,7 +201,9 @@ export const EntityHeaderMondo = ({ entityType }: EntityHeaderMondoProps) => {
     return specs
       .map((spec) => {
         const panelKey =
-          toOptionalString(spec.panelKey) ?? toOptionalString(spec.key);
+          toOptionalString((spec as any).referenceLink) ??
+          toOptionalString(spec.panelKey) ??
+          toOptionalString(spec.key);
         const panel = panelKey ? panelMap.get(panelKey) : undefined;
         const panelAny = panel as any;
         const panelConfig = toRecord(panelAny?.config);

@@ -17,36 +17,44 @@ export const person = {
       key: "fact",
       label: "Fact",
       icon: "bookmark-plus",
-      panelKey: "facts",
+      create: {
+        title: "Untitled Fact **",
+        attributes: {
+          type: "fact",
+          participants: ["{@this}"],
+          foobar: 123,
+        },
+      },
     },
     {
       key: "log",
       label: "Log",
       icon: "file-clock",
-      panelKey: "logs",
+      referenceLink: "logs",
     },
     {
       key: "document",
       label: "Document",
       icon: "file-text",
-      panelKey: "documents",
+      referenceLink: "documents",
     },
     {
       key: "1o1s",
       label: "1:1 Meeting",
       icon: "calendar",
+      referenceLink: "1o1s",
     },
     {
       key: "project",
       label: "Project",
       icon: "folder-git-2",
-      panelKey: "projects",
+      referenceLink: "projects",
     },
     {
       key: "report",
       label: "Report",
       icon: "file-plus",
-      panelKey: "reports",
+      referenceLink: "reports",
     },
   ],
   links: [
@@ -90,6 +98,8 @@ export const person = {
           },
         ],
         createEntity: {
+          // inherit creation defaults from createRelated: "report"
+          referenceCreate: "report",
           title: "Untitled Report to {@this.show}",
           attributes: {
             type: "person",
@@ -366,6 +376,9 @@ export const person = {
         icon: "file-text",
         sort: {
           strategy: "manual",
+        },
+        createEntity: {
+          referenceCreate: "fact",
         },
       },
     },

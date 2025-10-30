@@ -61,6 +61,26 @@
           "direction": "asc"
         }
       },
+      "createRelated": [
+        {
+          "key": "report",
+          "label": "Report",
+          "referenceLink": "reports",
+          "create": {
+            "title": "Untitled Report to {@this.show}",
+            "attributes": { "reportsTo": "{@this}" }
+          }
+        },
+        {
+          "key": "1o1s",
+          "label": "1:1 Meeting",
+          "referenceLink": "1o1s",
+          "create": {
+            "title": "{YY}-{MM}-{DD} {hh}.{mm} with {@this.show}",
+            "attributes": { "participants": ["{@this}"] }
+          }
+        }
+      ],
       "links": [
         {
           "type": "backlinks",
@@ -101,6 +121,7 @@
             ],
             "createEntity": {
               "enabled": true,
+              "referenceCreate": "report",
               "title": "Untitled Report",
               "attributes": {
                 "reportsTo": "{@this}"

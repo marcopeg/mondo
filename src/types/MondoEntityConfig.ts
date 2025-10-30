@@ -35,6 +35,11 @@ export interface MondoEntityRelatedCreateConfig {
 export interface MondoEntityRelatedConfig {
   key?: string;
   panelKey?: string;
+  /**
+   * Optional: reference a backlinks panel by its key to inherit defaults
+   * (alias of panelKey). Useful in JSON configs for clarity.
+   */
+  referenceLink?: string;
   targetType?: string;
   label?: string;
   icon?: string;
@@ -90,6 +95,12 @@ export interface MondoEntityBacklinksLinkConfig {
     enabled?: boolean;
     title?: string;
     attributes?: MondoEntityCreateAttributes;
+    /**
+     * Optional: reference a createRelated entry by key to inherit its
+     * creation settings (title/attributes/openAfterCreate/linkProperties).
+     * Panel-level values override referenced ones.
+     */
+    referenceCreate?: string;
   };
   badge?: {
     enabled?: boolean;
@@ -146,4 +157,3 @@ export interface MondoEntityConfig<
   links?: TLink[];
   createRelated?: MondoEntityRelatedConfig[];
 }
-

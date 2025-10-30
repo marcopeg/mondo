@@ -32,6 +32,10 @@ https://github.com/marcopeg/obsidian-mondo
 
 > I suggest you keep it updated to the latest version, but at this point feel free to install whatever available release.
 
+# 🏚️ Dashboard
+
+Run the command `Open Mondo dashboard` to open your vault's control center.
+
 # 📈 Habits Tracker
 
 Tracking my daily habits is an important part of my self development plan, and i wantet it to be fully included into my Obsidian workflow.
@@ -90,11 +94,23 @@ Use the command `Start voiceover` on a text note to produce the relative audio f
 
 The file will be automatically referenced into the note's _frontmatter_.
 
+> You can use the _Voiceover_ also on a text-selection!
+
+# 🤖 Open in ChatGPT
+
+Take any note or text selection and use the command `Send to ChatGPT` to open the famous AI tool with a pre-compiled prompt.
+
 # 🕰️ Timestamps
 
 Run the command `Insert timestamp` to inject a pre-configured date-time text in your note, where your cursor is.
 
 You can configure the template in the Mondo's settings.
+
+Here is an example of a Heading level 2 timestamp template:
+
+```Markdown
+## YY/MM/DD hh:mm
+```
 
 # 📝 Journal (to refine)
 
