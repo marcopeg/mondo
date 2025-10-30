@@ -1,5 +1,4 @@
-import { useCallback, useMemo } from "react";
-import type { RefObject } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { Notice } from "obsidian";
 import { SplitButton } from "@/components/ui/SplitButton";
 import { Icon } from "@/components/ui/Icon";
@@ -8,6 +7,12 @@ import { useEntityFile } from "@/context/EntityFileProvider";
 import { useApp } from "@/hooks/use-app";
 import { MONDO_ENTITIES, type MondoEntityType } from "@/entities";
 import type { TCachedFile } from "@/types/TCachedFile";
+import type {
+  MondoEntityCreateAttributes,
+  MondoEntityLinkConfig,
+} from "@/types/MondoEntityConfig";
+import { isMondoEntityType } from "@/types/MondoFileType";
+import createEntityForEntity from "@/utils/createEntityForEntity";
 import { resolveCoverImage } from "@/utils/resolveCoverImage";
 import { getEntityDisplayName } from "@/utils/getEntityDisplayName";
 import {
@@ -16,233 +21,18 @@ import {
 } from "@/context/EntityLinksLayoutContext";
 
 type EntityHeaderMondoProps = {
-  containerRef: RefObject<HTMLDivElement | null>;
   entityType: MondoEntityType;
 };
 
-type PanelAction = {
+type RelatedAction = {
   key: string;
   label: string;
   icon?: string;
-  panel: string;
-  ariaLabel: string;
-};
-
-type PanelActionMap = Partial<Record<MondoEntityType, PanelAction[]>>;
-
-const PANEL_ACTIONS: PanelActionMap = {
-  person: [
-    {
-      key: "meeting",
-      label: "Meeting",
-      icon: "calendar-plus",
-      panel: "meetings",
-      ariaLabel: "Create meeting",
-    },
-    {
-      key: "project",
-      label: "Project",
-      icon: "folder-plus",
-      panel: "projects",
-      ariaLabel: "Create project",
-    },
-    {
-      key: "fact",
-      label: "Fact",
-      icon: "bookmark-plus",
-      panel: "facts",
-      ariaLabel: "Create fact",
-    },
-    {
-      key: "log",
-      label: "Log",
-      icon: "file-plus",
-      panel: "logs",
-      ariaLabel: "Create log",
-    },
-  ],
-  company: [
-    {
-      key: "person",
-      label: "Person",
-      icon: "user-plus",
-      panel: "employees",
-      ariaLabel: "Create person",
-    },
-    {
-      key: "team",
-      label: "Team",
-      icon: "users",
-      panel: "teams",
-      ariaLabel: "Create team",
-    },
-    {
-      key: "project",
-      label: "Project",
-      icon: "folder-plus",
-      panel: "projects",
-      ariaLabel: "Create project",
-    },
-    {
-      key: "task",
-      label: "Task",
-      icon: "check-square",
-      panel: "company-tasks",
-      ariaLabel: "Create task",
-    },
-    {
-      key: "fact",
-      label: "Fact",
-      icon: "bookmark-plus",
-      panel: "facts",
-      ariaLabel: "Create fact",
-    },
-    {
-      key: "log",
-      label: "Log",
-      icon: "file-plus",
-      panel: "logs",
-      ariaLabel: "Create log",
-    },
-  ],
-  team: [
-    {
-      key: "person",
-      label: "Person",
-      icon: "user-plus",
-      panel: "team-members",
-      ariaLabel: "Create person",
-    },
-    {
-      key: "project",
-      label: "Project",
-      icon: "folder-plus",
-      panel: "projects",
-      ariaLabel: "Create project",
-    },
-    {
-      key: "meeting",
-      label: "Meeting",
-      icon: "calendar-plus",
-      panel: "meetings",
-      ariaLabel: "Create meeting",
-    },
-    {
-      key: "task",
-      label: "Task",
-      icon: "check-square",
-      panel: "team-tasks",
-      ariaLabel: "Create task",
-    },
-    {
-      key: "fact",
-      label: "Fact",
-      icon: "bookmark-plus",
-      panel: "facts",
-      ariaLabel: "Create fact",
-    },
-    {
-      key: "log",
-      label: "Log",
-      icon: "file-plus",
-      panel: "logs",
-      ariaLabel: "Create log",
-    },
-  ],
-  project: [
-    {
-      key: "meeting",
-      label: "Meeting",
-      icon: "calendar-plus",
-      panel: "meetings",
-      ariaLabel: "Create meeting",
-    },
-    {
-      key: "task",
-      label: "Task",
-      icon: "check-square",
-      panel: "project-tasks",
-      ariaLabel: "Create task",
-    },
-    {
-      key: "fact",
-      label: "Fact",
-      icon: "bookmark-plus",
-      panel: "facts",
-      ariaLabel: "Create fact",
-    },
-    {
-      key: "log",
-      label: "Log",
-      icon: "file-plus",
-      panel: "logs",
-      ariaLabel: "Create log",
-    },
-  ],
-  meeting: [
-    {
-      key: "task",
-      label: "Task",
-      icon: "check-square",
-      panel: "meeting-tasks",
-      ariaLabel: "Create task",
-    },
-    {
-      key: "fact",
-      label: "Fact",
-      icon: "bookmark-plus",
-      panel: "facts",
-      ariaLabel: "Create fact",
-    },
-    {
-      key: "log",
-      label: "Log",
-      icon: "file-plus",
-      panel: "logs",
-      ariaLabel: "Create log",
-    },
-  ],
-  task: [
-    {
-      key: "subtask",
-      label: "Sub-task",
-      icon: "list-plus",
-      panel: "task-subtasks",
-      ariaLabel: "Create sub-task",
-    },
-    {
-      key: "fact",
-      label: "Fact",
-      icon: "bookmark-plus",
-      panel: "facts",
-      ariaLabel: "Create fact",
-    },
-    {
-      key: "log",
-      label: "Log",
-      icon: "file-plus",
-      panel: "logs",
-      ariaLabel: "Create log",
-    },
-  ],
-  fact: [
-    {
-      key: "log",
-      label: "Log",
-      icon: "file-plus",
-      panel: "logs",
-      ariaLabel: "Create log",
-    },
-  ],
-  log: [
-    {
-      key: "fact",
-      label: "Fact",
-      icon: "bookmark-plus",
-      panel: "facts",
-      ariaLabel: "Create fact",
-    },
-  ],
+  targetType: string;
+  titleTemplate?: string;
+  attributes?: MondoEntityCreateAttributes;
+  linkProperties?: string | string[];
+  openAfterCreate: boolean;
 };
 
 const buildHeaderLabel = (entityType: MondoEntityType) => {
@@ -256,18 +46,66 @@ const headerClasses = [
   "bg-[var(--background-secondary)] px-3 py-2",
 ].join(" ");
 
-const findPanelButton = (
-  container: HTMLElement | null,
-  panel: string,
-  ariaLabel: string
-): HTMLButtonElement | null => {
-  if (!container) {
-    return null;
+const toOptionalString = (value: unknown): string | undefined => {
+  if (typeof value !== "string") {
+    return undefined;
+  }
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : undefined;
+};
+
+const toRecord = (
+  value: unknown
+): Record<string, unknown> | undefined => {
+  if (typeof value !== "object" || value === null) {
+    return undefined;
+  }
+  return value as Record<string, unknown>;
+};
+
+const toAttributes = (
+  value: unknown
+): MondoEntityCreateAttributes | undefined => {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    return undefined;
+  }
+  return value as MondoEntityCreateAttributes;
+};
+
+const extractTargetTypeFromAttributes = (
+  attrs: MondoEntityCreateAttributes | undefined
+): string | undefined => {
+  if (!attrs) {
+    return undefined;
+  }
+  const raw = attrs.type;
+  if (typeof raw !== "string") {
+    return undefined;
+  }
+  const trimmed = raw.trim();
+  if (!trimmed || /^\{.+\}$/.test(trimmed)) {
+    return undefined;
+  }
+  return trimmed.toLowerCase();
+};
+
+const normalizeLinkProperties = (
+  value: string | string[] | undefined
+): string[] | undefined => {
+  if (!value) {
+    return undefined;
   }
 
-  const root = container.closest(".mondo-injected-hello-root") ?? container;
-  const selector = `[data-entity-panel="${panel}"] button[aria-label="${ariaLabel}"]`;
-  return root.querySelector<HTMLButtonElement>(selector);
+  const list = Array.isArray(value) ? value : [value];
+  const normalized = list
+    .map((entry) => String(entry).trim())
+    .filter((entry) => entry.length > 0);
+
+  if (normalized.length === 0) {
+    return undefined;
+  }
+
+  return Array.from(new Set(normalized));
 };
 
 const CollapsedPanelButton = ({
@@ -302,10 +140,7 @@ const CollapsedPanelButton = ({
   );
 };
 
-export const EntityHeaderMondo = ({
-  containerRef,
-  entityType,
-}: EntityHeaderMondoProps) => {
+export const EntityHeaderMondo = ({ entityType }: EntityHeaderMondoProps) => {
   const { file } = useEntityFile();
   const app = useApp();
 
@@ -350,22 +185,146 @@ export const EntityHeaderMondo = ({
     return config?.icon ?? "file-text";
   }, [entityType]);
 
-  const actions = PANEL_ACTIONS[entityType] ?? [];
+  const entityConfig = MONDO_ENTITIES[entityType];
+
+  const panelMap = useMemo(() => {
+    const map = new Map<string, MondoEntityLinkConfig>();
+    const links = (entityConfig?.links ?? []) as MondoEntityLinkConfig[];
+    links.forEach((link) => {
+      const key = toOptionalString((link as any)?.key);
+      if (key) {
+        map.set(key, link);
+      }
+    });
+    return map;
+  }, [entityConfig?.links]);
+
+  const actions = useMemo(() => {
+    const specs = entityConfig?.createRelated ?? [];
+    if (specs.length === 0) {
+      return [] as RelatedAction[];
+    }
+
+    return specs
+      .map((spec) => {
+        const panelKey =
+          toOptionalString(spec.panelKey) ?? toOptionalString(spec.key);
+        const panel = panelKey ? panelMap.get(panelKey) : undefined;
+        const panelAny = panel as any;
+        const panelConfig = toRecord(panelAny?.config);
+
+        const specCreate = spec.create ?? {};
+        const panelCreate = toRecord(panelConfig?.createEntity);
+        const specAttributes = toAttributes(specCreate.attributes);
+        const panelAttributes = toAttributes(panelCreate?.attributes);
+
+        const targetTypeRaw =
+          extractTargetTypeFromAttributes(specAttributes) ??
+          extractTargetTypeFromAttributes(panelAttributes) ??
+          toOptionalString(spec.targetType) ??
+          toOptionalString(panelConfig?.targetType ?? panelAny?.targetType);
+
+        if (!targetTypeRaw) {
+          return null;
+        }
+
+        const targetType = targetTypeRaw.toLowerCase();
+        if (!isMondoEntityType(targetType)) {
+          return null;
+        }
+        const key =
+          toOptionalString(spec.key) ?? panelKey ?? targetType;
+        const targetEntity = MONDO_ENTITIES[targetType as MondoEntityType];
+
+        const panelTitle = toOptionalString(panelConfig?.title);
+        const label =
+          toOptionalString(spec.label) ??
+          panelTitle ??
+          targetEntity?.name ??
+          targetType;
+
+        const icon =
+          toOptionalString(spec.icon) ??
+          toOptionalString(panelConfig?.icon) ??
+          targetEntity?.icon;
+
+        const rawTitle =
+          toOptionalString(specCreate.title) ??
+          toOptionalString(panelCreate?.title);
+        const fallbackTitle = targetEntity?.name ?? label;
+        const titleTemplate = rawTitle
+          ? rawTitle
+          : fallbackTitle
+          ? `Untitled ${fallbackTitle}`
+          : undefined;
+
+        const attributes = specAttributes ?? panelAttributes;
+
+        const linkProperties =
+          (specCreate.linkProperties ??
+            panelCreate?.linkProperties ??
+            panelConfig?.properties ??
+            panelConfig?.prop) as string | string[] | undefined;
+
+        const openAfterCreate =
+          typeof specCreate.openAfterCreate === "boolean"
+            ? specCreate.openAfterCreate
+            : typeof panelCreate?.openAfterCreate === "boolean"
+            ? (panelCreate.openAfterCreate as boolean)
+            : true;
+
+        return {
+          key,
+          label,
+          icon,
+          targetType,
+          titleTemplate,
+          attributes,
+          linkProperties,
+          openAfterCreate,
+        } as RelatedAction;
+      })
+      .filter((action): action is RelatedAction => action !== null);
+  }, [entityConfig?.createRelated, panelMap, entityType]);
+
   const { collapsedPanels } = useEntityLinksLayout();
+  const [pendingAction, setPendingAction] = useState<string | null>(null);
+  const isPending = pendingAction !== null;
 
-  const handleTrigger = useCallback(
-    (panel: string, ariaLabel: string) => {
-      const host = containerRef.current ?? null;
-      const button = findPanelButton(host, panel, ariaLabel);
-
-      if (!button) {
-        new Notice("No matching panel is available to add that relation.");
+  const handleCreateAction = useCallback(
+    async (action: RelatedAction) => {
+      if (!cachedFile) {
+        new Notice("Unable to determine the current entity.");
         return;
       }
 
-      button.click();
+      setPendingAction(action.key);
+      const failureLabel = (action.label || action.targetType).toLowerCase();
+      try {
+        const result = await createEntityForEntity({
+          app,
+          targetType: action.targetType,
+          hostEntity: cachedFile,
+          titleTemplate: action.titleTemplate,
+          attributeTemplates: action.attributes,
+          linkProperties: normalizeLinkProperties(action.linkProperties),
+          openAfterCreate: action.openAfterCreate,
+        });
+
+        if (!result) {
+          new Notice(`Failed to create ${failureLabel} note.`);
+        }
+      } catch (error) {
+        console.error(
+          "EntityHeaderMondo: failed to create related entity",
+          error
+        );
+        new Notice(`Failed to create ${failureLabel} note.`);
+      } finally {
+        setPendingAction(null);
+      }
     },
-    [containerRef]
+    [app, cachedFile]
   );
 
   const primary = actions[0];
@@ -376,15 +335,23 @@ export const EntityHeaderMondo = ({
       actions.slice(1).map((action) => ({
         label: action.label,
         icon: action.icon,
-        onSelect: () => handleTrigger(action.panel, action.ariaLabel),
+        disabled: isPending,
+        onSelect: () => {
+          if (isPending) {
+            return;
+          }
+          void handleCreateAction(action);
+        },
       })),
-    [actions, handleTrigger]
+    [actions, handleCreateAction, isPending]
   );
 
   const handlePrimaryClick = useCallback(() => {
-    if (!primary) return;
-    handleTrigger(primary.panel, primary.ariaLabel);
-  }, [handleTrigger, primary]);
+    if (!primary || isPending) {
+      return;
+    }
+    void handleCreateAction(primary);
+  }, [handleCreateAction, isPending, primary]);
 
   return (
     <div className={headerClasses}>
@@ -428,6 +395,7 @@ export const EntityHeaderMondo = ({
                 onClick={handlePrimaryClick}
                 secondaryActions={secondary}
                 menuAriaLabel="Select related entity to create"
+                disabled={isPending}
               >
                 Add Related
               </SplitButton>

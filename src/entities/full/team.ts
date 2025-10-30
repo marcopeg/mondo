@@ -2,6 +2,73 @@ export const team = {
   name: "Teams",
   icon: "users",
   template: "\ndate: {{date}}\ncompany: []\nlocation: []\n---\n",
+  createRelated: [
+    {
+      key: "person",
+      label: "Person",
+      icon: "user-plus",
+      panelKey: "people",
+      create: {
+        attributes: {
+          type: "person",
+        },
+      },
+    },
+    {
+      key: "project",
+      label: "Project",
+      icon: "folder-plus",
+      panelKey: "projects",
+      create: {
+        attributes: {
+          type: "project",
+        },
+      },
+    },
+    {
+      key: "meeting",
+      label: "Meeting",
+      icon: "calendar-plus",
+      create: {
+        attributes: {
+          type: "meeting",
+        },
+      },
+    },
+    {
+      key: "task",
+      label: "Task",
+      icon: "check-square",
+      panelKey: "tasks",
+      create: {
+        attributes: {
+          type: "task",
+        },
+      },
+    },
+    {
+      key: "fact",
+      label: "Fact",
+      icon: "bookmark-plus",
+      panelKey: "facts",
+      create: {
+        attributes: {
+          type: "fact",
+        },
+      },
+    },
+    {
+      key: "log",
+      label: "Log",
+      icon: "file-plus",
+      panelKey: "logs",
+      create: {
+        attributes: {
+          type: "log",
+        },
+      },
+    },
+  ],
   list: {
     columns: ["show", "company", "area"],
   },

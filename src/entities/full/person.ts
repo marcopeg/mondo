@@ -3,6 +3,56 @@ export const person = {
   icon: "user",
   template:
     "\ndate: {{date}}\nlocation: []\ncompany: []\nrole: []\nteam: []\n---\n",
+  createRelated: [
+    {
+      key: "meeting",
+      label: "Meeting",
+      icon: "calendar-plus",
+      panelKey: "meetings",
+      create: {
+        title: "{YY}-{MM}-{DD} {hh}.{mm} with {@this.show}",
+        attributes: {
+          type: "meeting",
+          participants: ["{@this}"],
+        },
+      },
+    },
+    {
+      key: "project",
+      label: "Project",
+      icon: "folder-plus",
+      panelKey: "projects",
+      create: {
+        title: "Untitled Project with {@this.show}",
+        attributes: {
+          type: "project",
+          participants: ["{@this}"],
+        },
+      },
+    },
+    {
+      key: "fact",
+      label: "Fact",
+      icon: "bookmark-plus",
+      panelKey: "facts",
+      create: {
+        attributes: {
+          type: "fact",
+        },
+      },
+    },
+    {
+      key: "log",
+      label: "Log",
+      icon: "file-plus",
+      panelKey: "logs",
+      create: {
+        attributes: {
+          type: "log",
+        },
+      },
+    },
+  ],
   list: {
     columns: ["cover", "show", "company", "role", "team", "location"],
     sort: {

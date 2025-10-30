@@ -10,18 +10,14 @@ import {
   focusAndSelectTitle,
   slugify,
 } from "@/utils/createLinkedNoteHelpers";
-
-export type CreateEntityAttributes = Record<
-  string,
-  string | number | boolean | Array<string | number | boolean>
->;
+import type { MondoEntityCreateAttributes } from "@/types/MondoEntityConfig";
 
 export type CreateEntityForEntityParams = {
   app: App;
   targetType: string; // Mondo entity type (lowercase)
   hostEntity: TCachedFile; // current focused entity
   titleTemplate?: string; // e.g., "{date} on {show}"
-  attributeTemplates?: CreateEntityAttributes; // values with {date}|{datetime}|{show}
+  attributeTemplates?: MondoEntityCreateAttributes; // values with {date}|{datetime}|{show}
   linkProperties?: string[]; // which fm props to set with link to host (defaults to ["related", hostType])
   openAfterCreate?: boolean;
 };

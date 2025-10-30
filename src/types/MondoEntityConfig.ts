@@ -13,6 +13,34 @@ export interface MondoEntityListConfig {
   sort?: MondoEntityListSortConfig;
 }
 
+export type MondoEntityCreateAttributeValue =
+  | string
+  | number
+  | boolean
+  | MondoEntityCreateAttributeValue[]
+  | Record<string, unknown>;
+
+export type MondoEntityCreateAttributes = Record<
+  string,
+  MondoEntityCreateAttributeValue
+>;
+
+export interface MondoEntityRelatedCreateConfig {
+  title?: string;
+  attributes?: MondoEntityCreateAttributes;
+  linkProperties?: string | string[];
+  openAfterCreate?: boolean;
+}
+
+export interface MondoEntityRelatedConfig {
+  key?: string;
+  panelKey?: string;
+  targetType?: string;
+  label?: string;
+  icon?: string;
+  create?: MondoEntityRelatedCreateConfig;
+}
+
 export interface MondoEntityLinkConfig<TType extends string = string> {
   type: TType;
   collapsed?: boolean;
@@ -61,7 +89,7 @@ export interface MondoEntityBacklinksLinkConfig {
   createEntity?: {
     enabled?: boolean;
     title?: string;
-    attributes?: Record<string, string | number | boolean>;
+    attributes?: MondoEntityCreateAttributes;
   };
   badge?: {
     enabled?: boolean;
@@ -116,4 +144,6 @@ export interface MondoEntityConfig<
   template: string;
   list?: MondoEntityListConfig;
   links?: TLink[];
+  createRelated?: MondoEntityRelatedConfig[];
 }
+

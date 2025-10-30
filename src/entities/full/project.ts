@@ -3,6 +3,54 @@ export const project = {
   icon: "folder-git-2",
   template:
     "\ndate: {{date}}\ncompany: []\nteam: []\nparticipants: []\nstatus: draft\n---\n",
+  createRelated: [
+    {
+      key: "meeting",
+      label: "Meeting",
+      icon: "calendar-plus",
+      panelKey: "meetings",
+      create: {
+        title: "{YY}-{MM}-{DD} {hh}.{mm} with {@this.show}",
+        attributes: {
+          type: "meeting",
+          participants: ["{@this}"],
+        },
+      },
+    },
+    {
+      key: "task",
+      label: "Task",
+      icon: "check-square",
+      panelKey: "tasks",
+      create: {
+        attributes: {
+          type: "task",
+        },
+      },
+    },
+    {
+      key: "fact",
+      label: "Fact",
+      icon: "bookmark-plus",
+      panelKey: "facts",
+      create: {
+        attributes: {
+          type: "fact",
+        },
+      },
+    },
+    {
+      key: "log",
+      label: "Log",
+      icon: "file-plus",
+      panelKey: "logs",
+      create: {
+        attributes: {
+          type: "log",
+        },
+      },
+    },
+  ],
   list: {
     columns: ["show"],
   },

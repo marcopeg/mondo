@@ -2,6 +2,42 @@ export const task = {
   name: "Tasks",
   icon: "check-square",
   template: "\ndate: {{date}}\nstatus: open\n---\n",
+  createRelated: [
+    {
+      key: "subtask",
+      label: "Sub-task",
+      icon: "list-plus",
+      panelKey: "tasks",
+      create: {
+        title: "Untitled Sub-task",
+        attributes: {
+          type: "task",
+        },
+      },
+    },
+    {
+      key: "fact",
+      label: "Fact",
+      icon: "bookmark-plus",
+      panelKey: "facts",
+      create: {
+        attributes: {
+          type: "fact",
+        },
+      },
+    },
+    {
+      key: "log",
+      label: "Log",
+      icon: "file-plus",
+      panelKey: "logs",
+      create: {
+        attributes: {
+          type: "log",
+        },
+      },
+    },
+  ],
   list: {
     columns: ["show", "participants", "status"],
   },

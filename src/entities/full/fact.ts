@@ -2,6 +2,19 @@ export const fact = {
   name: "Facts",
   icon: "bookmark",
   template: "\ndate: {{date}}\n---\n",
+  createRelated: [
+    {
+      key: "log",
+      label: "Log",
+      icon: "file-plus",
+      panelKey: "logs",
+      create: {
+        attributes: {
+          type: "log",
+        },
+      },
+    },
+  ],
   list: {
     columns: ["date", "show"],
     sort: {

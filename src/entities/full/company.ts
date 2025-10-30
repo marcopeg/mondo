@@ -2,6 +2,74 @@ export const company = {
   name: "Companies",
   icon: "building-2",
   template: "\ndate: {{date}}\nlocation: []\n---\n",
+  createRelated: [
+    {
+      key: "person",
+      label: "Person",
+      icon: "user-plus",
+      panelKey: "employees",
+      create: {
+        attributes: {
+          type: "person",
+        },
+      },
+    },
+    {
+      key: "team",
+      label: "Team",
+      icon: "users",
+      panelKey: "teams",
+      create: {
+        attributes: {
+          type: "team",
+        },
+      },
+    },
+    {
+      key: "project",
+      label: "Project",
+      icon: "folder-plus",
+      panelKey: "projects",
+      create: {
+        attributes: {
+          type: "project",
+        },
+      },
+    },
+    {
+      key: "task",
+      label: "Task",
+      icon: "check-square",
+      panelKey: "tasks",
+      create: {
+        attributes: {
+          type: "task",
+        },
+      },
+    },
+    {
+      key: "fact",
+      label: "Fact",
+      icon: "bookmark-plus",
+      panelKey: "facts",
+      create: {
+        attributes: {
+          type: "fact",
+        },
+      },
+    },
+    {
+      key: "log",
+      label: "Log",
+      icon: "file-plus",
+      panelKey: "logs",
+      create: {
+        attributes: {
+          type: "log",
+        },
+      },
+    },
+  ],
   list: {
     columns: ["show", "location"],
   },

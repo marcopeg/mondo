@@ -66,7 +66,7 @@ export const EntityPanel = () => {
         className="flex flex-col gap-2"
         data-mondo-entity-panel-root
       >
-        {showHeader && <EntityHeader containerRef={containerRef} type={type} />}
+        {showHeader && <EntityHeader type={type} />}
         {showEntityLinks && <EntityLinks />}
         {showDailyLinks && <DailyNoteLinks />}
       </div>
