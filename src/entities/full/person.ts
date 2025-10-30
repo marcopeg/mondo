@@ -60,7 +60,7 @@ export const person = {
       config: {
         title: "Reports",
         icon: "arrow-up-circle",
-        // visibility: "notEmpty",
+        visibility: "notEmpty",
         find: {
           query: [
             {
@@ -95,7 +95,10 @@ export const person = {
         createEntity: {
           title: "Untitled Report to {@this.show}",
           attributes: {
-            reportsTo: "{@this}",
+            type: "person",
+            reportsTo: ["{@this}"],
+            company: ["{@this.company}"],
+            area: ["{@this.area}"],
           },
         },
       },
