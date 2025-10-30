@@ -54,9 +54,7 @@ const toOptionalString = (value: unknown): string | undefined => {
   return trimmed.length > 0 ? trimmed : undefined;
 };
 
-const toRecord = (
-  value: unknown
-): Record<string, unknown> | undefined => {
+const toRecord = (value: unknown): Record<string, unknown> | undefined => {
   if (typeof value !== "object" || value === null) {
     return undefined;
   }
@@ -108,11 +106,7 @@ const normalizeLinkProperties = (
   return Array.from(new Set(normalized));
 };
 
-const CollapsedPanelButton = ({
-  panel,
-}: {
-  panel: CollapsedPanelSummary;
-}) => {
+const CollapsedPanelButton = ({ panel }: { panel: CollapsedPanelSummary }) => {
   return (
     <button
       type="button"
@@ -132,9 +126,7 @@ const CollapsedPanelButton = ({
         {panel.label}
       </span>
       {panel.badgeLabel ? (
-        <Badge className="flex-shrink-0">
-          {panel.badgeLabel}
-        </Badge>
+        <Badge className="flex-shrink-0">{panel.badgeLabel}</Badge>
       ) : null}
     </button>
   );
@@ -170,7 +162,8 @@ export const EntityHeaderMondo = ({ entityType }: EntityHeaderMondoProps) => {
 
     try {
       if (cover.kind === "vault") {
-        const leaf = app.workspace.getLeaf(false) ?? app.workspace.getLeaf(true);
+        const leaf =
+          app.workspace.getLeaf(false) ?? app.workspace.getLeaf(true);
         void leaf?.openFile(cover.file);
       } else if (typeof window !== "undefined") {
         window.open(cover.url, "_blank", "noopener,noreferrer");
@@ -232,8 +225,7 @@ export const EntityHeaderMondo = ({ entityType }: EntityHeaderMondoProps) => {
         if (!isMondoEntityType(targetType)) {
           return null;
         }
-        const key =
-          toOptionalString(spec.key) ?? panelKey ?? targetType;
+        const key = toOptionalString(spec.key) ?? panelKey ?? targetType;
         const targetEntity = MONDO_ENTITIES[targetType as MondoEntityType];
 
         const panelTitle = toOptionalString(panelConfig?.title);
@@ -260,11 +252,10 @@ export const EntityHeaderMondo = ({ entityType }: EntityHeaderMondoProps) => {
 
         const attributes = specAttributes ?? panelAttributes;
 
-        const linkProperties =
-          (specCreate.linkProperties ??
-            panelCreate?.linkProperties ??
-            panelConfig?.properties ??
-            panelConfig?.prop) as string | string[] | undefined;
+        const linkProperties = (specCreate.linkProperties ??
+          panelCreate?.linkProperties ??
+          panelConfig?.properties ??
+          panelConfig?.prop) as string | string[] | undefined;
 
         const openAfterCreate =
           typeof specCreate.openAfterCreate === "boolean"
@@ -332,7 +323,7 @@ export const EntityHeaderMondo = ({ entityType }: EntityHeaderMondoProps) => {
 
   const secondary = useMemo(
     () =>
-      actions.slice(1).map((action) => ({
+      actions.map((action) => ({
         label: action.label,
         icon: action.icon,
         disabled: isPending,
@@ -391,13 +382,12 @@ export const EntityHeaderMondo = ({ entityType }: EntityHeaderMondoProps) => {
           {primary ? (
             <div className="flex-shrink-0">
               <SplitButton
-                icon="plus"
                 onClick={handlePrimaryClick}
                 secondaryActions={secondary}
                 menuAriaLabel="Select related entity to create"
                 disabled={isPending}
               >
-                Add Related
+                {`+ ${primary.label}`}
               </SplitButton>
             </div>
           ) : null}

@@ -3,56 +3,6 @@ export const person = {
   icon: "user",
   template:
     "\ndate: {{date}}\nlocation: []\ncompany: []\nrole: []\nteam: []\n---\n",
-  createRelated: [
-    {
-      key: "meeting",
-      label: "Meeting",
-      icon: "calendar-plus",
-      panelKey: "meetings",
-      create: {
-        title: "{YY}-{MM}-{DD} {hh}.{mm} with {@this.show}",
-        attributes: {
-          type: "meeting",
-          participants: ["{@this}"],
-        },
-      },
-    },
-    {
-      key: "project",
-      label: "Project",
-      icon: "folder-plus",
-      panelKey: "projects",
-      create: {
-        title: "Untitled Project with {@this.show}",
-        attributes: {
-          type: "project",
-          participants: ["{@this}"],
-        },
-      },
-    },
-    {
-      key: "fact",
-      label: "Fact",
-      icon: "bookmark-plus",
-      panelKey: "facts",
-      create: {
-        attributes: {
-          type: "fact",
-        },
-      },
-    },
-    {
-      key: "log",
-      label: "Log",
-      icon: "file-plus",
-      panelKey: "logs",
-      create: {
-        attributes: {
-          type: "log",
-        },
-      },
-    },
-  ],
   list: {
     columns: ["cover", "show", "company", "role", "team", "location"],
     sort: {
@@ -60,13 +10,54 @@ export const person = {
       direction: "asc",
     },
   },
+  createRelated: [
+    {
+      key: "1o1s",
+      label: "1:1 Meeting",
+      icon: "calendar-plus",
+    },
+    {
+      key: "project",
+      label: "Project",
+      icon: "folder-plus",
+      panelKey: "projects",
+    },
+    {
+      key: "fact",
+      label: "Fact",
+      icon: "bookmark-plus",
+      panelKey: "facts",
+    },
+    {
+      key: "log",
+      label: "Log",
+      icon: "file-plus",
+      panelKey: "logs",
+    },
+    {
+      key: "report",
+      label: "Report",
+      icon: "file-plus",
+      // Keep in dropdown grouping with the Reports panel
+      // panelKey: "reports",
+      create: {
+        title: "Untitled Report to {@this.show}",
+        attributes: {
+          type: "person",
+          reportsTo: "{@this}",
+        },
+      },
+    },
+  ],
   links: [
     {
       type: "backlinks",
       key: "reports",
+      description: "People who report to this person",
       config: {
         title: "Reports",
         icon: "arrow-up-circle",
+        // visibility: "notEmpty",
         find: {
           query: [
             {
@@ -99,8 +90,7 @@ export const person = {
           },
         ],
         createEntity: {
-          enabled: true,
-          title: "Untitled Report",
+          title: "Untitled Report to {@this.show}",
           attributes: {
             reportsTo: "{@this}",
           },
@@ -110,7 +100,6 @@ export const person = {
     {
       type: "backlinks",
       key: "teammates",
-      desc: "People who share at least one team with the host",
       config: {
         targetType: "person",
         title: "Teammates",
@@ -402,76 +391,6 @@ export const person = {
     },
     {
       type: "backlinks",
-      key: "reference-material",
-      config: {
-        title: "Reference material",
-        icon: "layers",
-        find: {
-          query: [
-            {
-              description: "Reference materials referencing this person",
-              steps: [
-                {
-                  in: {
-                    property: "participants",
-                    type: [
-                      "fact",
-                      "project",
-                      "document",
-                      "idea",
-                      "gear",
-                      "tool",
-                      "book",
-                      "show",
-                    ],
-                  },
-                },
-              ],
-            },
-          ],
-          combine: "union",
-        },
-        filter: {
-          type: {
-            in: [
-              "fact",
-              "project",
-              "document",
-              "idea",
-              "gear",
-              "tool",
-              "book",
-              "show",
-            ],
-          },
-        },
-        columns: [
-          {
-            type: "entityIcon",
-          },
-          {
-            type: "show",
-          },
-          {
-            type: "attribute",
-            key: "category",
-            label: "Category",
-          },
-          {
-            type: "date",
-            align: "right",
-          },
-        ],
-        sort: {
-          strategy: "manual",
-        },
-        createEntity: {
-          enabled: false,
-        },
-      },
-    },
-    {
-      type: "backlinks",
       key: "tasks",
       config: {
         targetType: "task",
@@ -493,6 +412,50 @@ export const person = {
         ],
         sort: {
           strategy: "manual",
+        },
+      },
+    },
+    {
+      type: "backlinks",
+      key: "link",
+      config: {
+        title: "Links",
+        icon: "layers",
+        find: {
+          query: [
+            {
+              steps: [
+                {
+                  notIn: {
+                    property: "links",
+                    type: ["meeting", "log", "project", "person"],
+                  },
+                },
+              ],
+            },
+          ],
+        },
+        sort: {
+          strategy: "manual",
+        },
+        columns: [
+          {
+            type: "entityIcon",
+          },
+          {
+            type: "show",
+          },
+          {
+            type: "cover",
+            align: "right",
+          },
+          {
+            type: "date",
+            align: "right",
+          },
+        ],
+        createEntity: {
+          enabled: false,
         },
       },
     },
