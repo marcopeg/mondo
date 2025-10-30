@@ -2,19 +2,6 @@ export const fact = {
   name: "Facts",
   icon: "bookmark",
   template: "\ndate: {{date}}\n---\n",
-  createRelated: [
-    {
-      key: "log",
-      label: "Log",
-      icon: "file-plus",
-      panelKey: "logs",
-      create: {
-        attributes: {
-          type: "log",
-        },
-      },
-    },
-  ],
   list: {
     columns: ["date", "show"],
     sort: {
@@ -25,63 +12,45 @@ export const fact = {
   links: [
     {
       type: "backlinks",
-      key: "facts",
+      key: "link",
       config: {
-        targetType: "fact",
-        properties: ["fact"],
-        title: "Facts",
-        icon: "file-text",
+        title: "Links",
+        icon: "layers",
+        find: {
+          query: [
+            {
+              steps: [
+                {
+                  notIn: {
+                    property: "linksTo",
+                    type: [],
+                  },
+                },
+              ],
+            },
+          ],
+        },
         sort: {
           strategy: "manual",
         },
-      },
-    },
-    {
-      type: "backlinks",
-      key: "logs",
-      config: {
-        targetType: "log",
-        properties: ["fact"],
-        title: "Logs",
-        icon: "clipboard-list",
-      },
-    },
-    {
-      type: "backlinks",
-      key: "documents",
-      config: {
-        targetType: "document",
-        properties: ["fact"],
-        title: "Documents",
-        icon: "paperclip",
-        sort: {
-          strategy: "manual",
-        },
-      },
-    },
-    {
-      type: "backlinks",
-      key: "tasks",
-      config: {
-        targetType: "task",
-        properties: ["fact"],
-        title: "Tasks",
-        icon: "check-square",
         columns: [
+          {
+            type: "entityIcon",
+          },
           {
             type: "show",
           },
           {
-            type: "attribute",
-            key: "status",
+            type: "cover",
+            align: "right",
           },
           {
             type: "date",
             align: "right",
           },
         ],
-        sort: {
-          strategy: "manual",
+        createEntity: {
+          enabled: false,
         },
       },
     },
