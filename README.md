@@ -6,13 +6,13 @@ _Mondo_ is a general purpose plugin that adds plentiful of utilities to a standa
 - **🎤 Dictation:** talk to your note to write its content
 - **📝 Transcription:** generate a transcription file out of any Obsidian recording
 - **🔈 Voiceover:** transform your note into an audio file
-- **📆 Daily Notes:** quick and timestamped annotations
 - **🕰️ Timestamps:** quickly add timestamps into your notes
 - **🤖 Open in ChatGPT:** use your notes as templates for ChatGPT prompts
-- **👫 Mondo:** typed entities with strong relations
-- **🖌️ Journaling:** distraction-free journaling experience
+- **👫 Mondo IMS:** typed entities with strong relations
 - **📈 Habits Tracker:** embed a streak tracking app in any note
 - **⏱️ Training Timers:** embed a training trimer app in any note
+- **📆 Daily Notes:** quick and timestamped annotations
+- **🖌️ Journaling:** distraction-free journaling experience
 
 > I'm developing this plugin to facilitate my life 🤘
 
@@ -116,6 +116,14 @@ Here is an example of a Heading level 2 timestamp template:
 ```Markdown
 ## YY/MM/DD hh:mm
 ```
+
+# 👫 Mondo IMS
+
+Mondo ships a powerful _Information Management System_ in which you can define your own entities and their relations to bring to life your tailored ERP/CRM/CMS of sort.
+
+![Mondo IMS](./images/ims.png)
+
+👉 Use the **IMS Presets** to experiment with common and community-curated systems!
 
 # 📝 Journal (to refine)
 
