@@ -3,7 +3,7 @@ export const ingredient = {
   icon: "carrot",
   template: "\ncategory: []\nsupplier: []\n---\n",
   list: {
-    columns: ["show", "category", "supplier"],
+    columns: ["cover", "show", "category", "supplier"],
   },
   links: [
     {
