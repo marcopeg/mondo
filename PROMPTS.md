@@ -265,8 +265,8 @@ Focus on the EntityHeader and make the cover clickable to open the image in case
 TODO:
 In the entities/full add:
 
-- ingredients
-- newsletters
+- ingredient
+- newsletter
 
 Fix both the json and typescript definition
 
