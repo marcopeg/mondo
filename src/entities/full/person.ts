@@ -1,3 +1,5 @@
+import { team } from "./team";
+
 export const person = {
   name: "People",
   icon: "user",
@@ -39,14 +41,15 @@ export const person = {
       label: "Report",
       icon: "file-plus",
       // Keep in dropdown grouping with the Reports panel
-      // panelKey: "reports",
-      create: {
-        title: "Untitled Report to {@this.show}",
-        attributes: {
-          type: "person",
-          reportsTo: "{@this}",
-        },
-      },
+      panelKey: "reports",
+      // create: {
+      //   title: "Untitled Report to {@this.show}",
+      //   attributes: {
+      //     type: "person",
+      //     reportsTo: "{@this}",
+      //     team: ["{@this.team}"],
+      //   },
+      // },
     },
   ],
   links: [
