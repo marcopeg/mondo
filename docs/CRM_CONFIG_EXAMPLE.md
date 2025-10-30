@@ -33,34 +33,12 @@ This guide shows a minimal `mondo-config.json` setup for a CRM-style workspace. 
             "find": {
               "query": [
                 {
-                  "description": "Facts referencing this person",
+                  "description": "Reference materials referencing this person",
                   "steps": [
                     {
                       "in": {
                         "property": "reference",
-                        "type": "fact"
-                      }
-                    }
-                  ]
-                },
-                {
-                  "description": "Documents referencing this person",
-                  "steps": [
-                    {
-                      "in": {
-                        "property": "reference",
-                        "type": "document"
-                      }
-                    }
-                  ]
-                },
-                {
-                  "description": "Ideas referencing this person",
-                  "steps": [
-                    {
-                      "in": {
-                        "property": "reference",
-                        "type": "idea"
+                        "type": ["fact", "document", "idea"]
                       }
                     }
                   ]
@@ -115,6 +93,7 @@ Key points:
 
 - `reference` is the single link property that every supporting note type uses to point back to a person (`[[Ada Lovelace]]`, for example).
 - The backlinks panel on the person entity uses a `find` query with `combine: "union"` so that facts, documents, and ideas all appear in one list.
+- Using a single `in` step with `type: ["fact", "document", "idea"]` keeps the DSL concise while covering every note that should surface here.
 - `sort.strategy` is set to `"manual"`, enabling drag-and-drop reordering directly inside Obsidian. The persisted order is stored per person note.
 - A `type` column is added so you can quickly tell which kind of note each entry represents.
 

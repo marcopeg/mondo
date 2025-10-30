@@ -359,89 +359,21 @@ export const person = {
         find: {
           query: [
             {
-              description: "Facts referencing this person",
+              description: "Reference materials referencing this person",
               steps: [
                 {
                   in: {
                     property: "participants",
-                    type: "fact",
-                  },
-                },
-              ],
-            },
-            {
-              description: "Projects referencing this person",
-              steps: [
-                {
-                  in: {
-                    property: "participants",
-                    type: "project",
-                  },
-                },
-              ],
-            },
-            {
-              description: "Documents referencing this person",
-              steps: [
-                {
-                  in: {
-                    property: "participants",
-                    type: "document",
-                  },
-                },
-              ],
-            },
-            {
-              description: "Ideas referencing this person",
-              steps: [
-                {
-                  in: {
-                    property: "participants",
-                    type: "idea",
-                  },
-                },
-              ],
-            },
-            {
-              description: "Gears referencing this person",
-              steps: [
-                {
-                  in: {
-                    property: "participants",
-                    type: "gear",
-                  },
-                },
-              ],
-            },
-            {
-              description: "Tools referencing this person",
-              steps: [
-                {
-                  in: {
-                    property: "participants",
-                    type: "tool",
-                  },
-                },
-              ],
-            },
-            {
-              description: "Books referencing this person",
-              steps: [
-                {
-                  in: {
-                    property: "participants",
-                    type: "book",
-                  },
-                },
-              ],
-            },
-            {
-              description: "Shows referencing this person",
-              steps: [
-                {
-                  in: {
-                    property: "participants",
-                    type: "show",
+                    type: [
+                      "fact",
+                      "project",
+                      "document",
+                      "idea",
+                      "gear",
+                      "tool",
+                      "book",
+                      "show",
+                    ],
                   },
                 },
               ],

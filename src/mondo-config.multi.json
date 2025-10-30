@@ -24,34 +24,12 @@
             "find": {
               "query": [
                 {
-                  "description": "Facts referencing this person",
+                  "description": "Reference materials referencing this person",
                   "steps": [
                     {
                       "in": {
                         "property": "reference",
-                        "type": "fact"
-                      }
-                    }
-                  ]
-                },
-                {
-                  "description": "Documents referencing this person",
-                  "steps": [
-                    {
-                      "in": {
-                        "property": "reference",
-                        "type": "document"
-                      }
-                    }
-                  ]
-                },
-                {
-                  "description": "Ideas referencing this person",
-                  "steps": [
-                    {
-                      "in": {
-                        "property": "reference",
-                        "type": "idea"
+                        "type": ["fact", "document", "idea"]
                       }
                     }
                   ]

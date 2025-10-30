@@ -44,6 +44,47 @@ export const gear = {
     },
     {
       type: "backlinks",
+      key: "reference-material",
+      config: {
+        title: "Reference material",
+        icon: "layers",
+        find: {
+          query: [
+            {
+              description: "Notes referencing this gear",
+              steps: [
+                {
+                  notIn: {
+                    property: "reference",
+                    type: ["meeting", "log"],
+                  },
+                },
+              ],
+            },
+          ],
+          combine: "union",
+        },
+        filter: {
+          type: {
+            nin: ["meeting", "log"],
+          },
+        },
+        columns: [
+          { type: "entityIcon" },
+          { type: "show" },
+          { type: "attribute", key: "type", label: "Type" },
+          { type: "date", align: "right" },
+        ],
+        sort: {
+          strategy: "manual",
+        },
+        createEntity: {
+          enabled: false,
+        },
+      },
+    },
+    {
+      type: "backlinks",
       key: "tasks",
       config: {
         targetType: "task",

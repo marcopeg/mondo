@@ -410,89 +410,21 @@
             "find": {
               "query": [
                 {
-                  "description": "Facts referencing this person",
+                  "description": "Reference materials referencing this person",
                   "steps": [
                     {
                       "in": {
                         "property": "participants",
-                        "type": "fact"
-                      }
-                    }
-                  ]
-                },
-                {
-                  "description": "Projects referencing this person",
-                  "steps": [
-                    {
-                      "in": {
-                        "property": "participants",
-                        "type": "project"
-                      }
-                    }
-                  ]
-                },
-                {
-                  "description": "Documents referencing this person",
-                  "steps": [
-                    {
-                      "in": {
-                        "property": "participants",
-                        "type": "document"
-                      }
-                    }
-                  ]
-                },
-                {
-                  "description": "Ideas referencing this person",
-                  "steps": [
-                    {
-                      "in": {
-                        "property": "participants",
-                        "type": "idea"
-                      }
-                    }
-                  ]
-                },
-                {
-                  "description": "Gears referencing this person",
-                  "steps": [
-                    {
-                      "in": {
-                        "property": "participants",
-                        "type": "gear"
-                      }
-                    }
-                  ]
-                },
-                {
-                  "description": "Tools referencing this person",
-                  "steps": [
-                    {
-                      "in": {
-                        "property": "participants",
-                        "type": "tool"
-                      }
-                    }
-                  ]
-                },
-                {
-                  "description": "Books referencing this person",
-                  "steps": [
-                    {
-                      "in": {
-                        "property": "participants",
-                        "type": "book"
-                      }
-                    }
-                  ]
-                },
-                {
-                  "description": "Shows referencing this person",
-                  "steps": [
-                    {
-                      "in": {
-                        "property": "participants",
-                        "type": "show"
+                        "type": [
+                          "fact",
+                          "project",
+                          "document",
+                          "idea",
+                          "gear",
+                          "tool",
+                          "book",
+                          "show"
+                        ]
                       }
                     }
                   ]
@@ -1852,6 +1784,43 @@
             "sort": {
               "strategy": "manual"
             }
+          }
+        },
+        {
+          "type": "backlinks",
+          "key": "reference-material",
+          "config": {
+            "title": "Reference material",
+            "icon": "layers",
+            "find": {
+              "query": [
+                {
+                  "description": "Notes referencing this gear",
+                  "steps": [
+                    {
+                      "notIn": {
+                        "property": "gear",
+                        "type": ["meeting", "log"]
+                      }
+                    }
+                  ]
+                }
+              ],
+              "combine": "union"
+            },
+            "filter": {
+              "type": {
+                "nin": ["meeting", "log"]
+              }
+            },
+            "columns": [
+              { "type": "entityIcon" },
+              { "type": "show" },
+              { "type": "attribute", "key": "type", "label": "Type" },
+              { "type": "date", "align": "right" }
+            ],
+            "sort": { "strategy": "manual" },
+            "createEntity": { "enabled": false }
           }
         },
         {

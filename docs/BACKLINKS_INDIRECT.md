@@ -80,6 +80,7 @@ Steps operate on a current set S of notes (starting with S = {host}):
 type QueryStep =
   | { out: { property: string | string[]; type?: string | string[] } }
   | { in: { property: string | string[]; type?: string | string[] } }
+  | { notIn: { property: string | string[]; type?: string | string[] } }
   | { filter: { type?: string | string[] } }
   | { dedupe?: true }
   | { unique?: true }
@@ -90,9 +91,44 @@ type QueryStep =
 
 - `out`: Follow outbound property links from each note in S, resolve wiki-links/paths, move S to the linked notes. Optionally filter by type.
 - `in`: Find notes that backlink to any in S through a property. Optionally scope by type.
+- `notIn`: Same as `in`, but scans every entity type **except** those listed in `type`. Useful for broad queries that only exclude a handful of types.
 - `filter.type`: Limit S to notes of the provided type(s).
 - `dedupe` / `unique`: Ensure S contains no duplicate notes (usually implicit).
 - `{ not: "host" }`: Remove the host note from S.
+
+`type` accepts either a single entity type or an array (e.g., `type: ["fact", "idea"]`). Arrays are supported for every step that takes a `type` field (`out`, `in`, `notIn`, and `filter`).
+
+### Type include/exclude recipes
+
+- **Only specific entity types**
+
+  ```ts
+  {
+    steps: [
+      {
+        in: {
+          property: "participants",
+          type: ["fact", "idea", "gear"],
+        },
+      },
+    ],
+  }
+  ```
+
+- **All entity types except a few**
+
+  ```ts
+  {
+    steps: [
+      {
+        notIn: {
+          property: "participants",
+          type: ["meeting", "log", "idea"],
+        },
+      },
+    ],
+  }
+  ```
 
 ## Combine semantics (find.combine)
 

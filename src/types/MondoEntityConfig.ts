@@ -73,6 +73,7 @@ export interface MondoEntityBacklinksLinkConfig {
       steps: Array<
         | { out: { property: string | string[]; type?: string | string[] } }
         | { in: { property: string | string[]; type?: string | string[] } }
+        | { notIn: { property: string | string[]; type?: string | string[] } }
         | { filter: { type?: string | string[] } }
         | { dedupe?: true }
         | { unique?: true }

@@ -411,7 +411,7 @@ export const BacklinksLinks = ({ file, config }: BacklinksLinksProps) => {
             type?: string | string[];
           };
           const props = toArray(property);
-          const typeList = toArray(type);
+          const typeList = toArray(type).map((t) => String(t).trim()).filter(Boolean);
           const sourceTargets = S.map((n) => n.file!).filter(Boolean);
           const scanTypes =
             typeList.length > 0 ? typeList : (MONDO_FILE_TYPES as string[]);
@@ -420,6 +420,35 @@ export const BacklinksLinks = ({ file, config }: BacklinksLinksProps) => {
             const files = fileManager.getFiles(tt as any);
             for (const cand of files) {
               // exclude self unless rule explicitly wants it later
+              if (cand.file?.path === hostFile.path) continue;
+              const match = sourceTargets.some((t) =>
+                matchesAnyPropertyLink(cand, props, t)
+              );
+              if (match) acc.push(cand);
+            }
+          }
+          S = uniqByPath(acc);
+          continue;
+        }
+        if ((step as any).notIn) {
+          const { property, type } = (step as any).notIn as {
+            property: string | string[];
+            type?: string | string[];
+          };
+          const props = toArray(property);
+          const excluded = new Set(
+            toArray(type)
+              .map((t) => String(t).trim())
+              .filter(Boolean)
+          );
+          const sourceTargets = S.map((n) => n.file!).filter(Boolean);
+          const scanTypes = (MONDO_FILE_TYPES as string[]).filter(
+            (tt) => !excluded.has(String(tt))
+          );
+          const acc: TCachedFile[] = [];
+          for (const tt of scanTypes) {
+            const files = fileManager.getFiles(tt as any);
+            for (const cand of files) {
               if (cand.file?.path === hostFile.path) continue;
               const match = sourceTargets.some((t) =>
                 matchesAnyPropertyLink(cand, props, t)

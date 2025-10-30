@@ -546,7 +546,7 @@ The panel's collapsed state persists in the note's frontmatter:- Override with `
 
 - Check that frontmatter is writable
 
-For indirect relationships (e.g., teammates, multi-hop projects, filtered meetings), use the `find` and `filter` fields. See [BACKLINKS_INDIRECT.md](./BACKLINKS_INDIRECT.md) for complete examples and DSL documentation.
+For indirect relationships (e.g., teammates, multi-hop projects, filtered meetings), use the `find` and `filter` fields. See [BACKLINKS_INDIRECT.md](./BACKLINKS_INDIRECT.md) for complete examples and DSL documentation, including new helpers like `notIn` for excluding specific entity types and support for providing `type` as an array.
 
 ## Examples in the codebase
 
