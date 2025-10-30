@@ -1,4 +1,10 @@
+import { fact } from "./fact";
+import { log } from "./log";
+import { document } from "./document";
+import { meeting } from "./meeting";
+import { project } from "./project";
 import { team } from "./team";
+import { task } from "./task";
 
 export const person = {
   name: "People",
@@ -16,45 +22,102 @@ export const person = {
     {
       key: "fact",
       label: "Fact",
-      icon: "bookmark-plus",
+      icon: fact.icon,
       create: {
-        title: "Untitled Fact **",
+        title: "Untitled Fact for {@this.show}",
         attributes: {
           type: "fact",
-          participants: ["{@this}"],
-          foobar: 123,
+          linksTo: ["{@this}"],
         },
       },
     },
     {
       key: "log",
       label: "Log",
-      icon: "file-clock",
-      referenceLink: "logs",
+      icon: log.icon,
+      create: {
+        title: "{YY}-{MM}-{DD} {hh}.{mm} Log for {@this.show}",
+        attributes: {
+          type: "log",
+          linksTo: ["{@this}"],
+        },
+      },
     },
     {
       key: "document",
       label: "Document",
-      icon: "file-text",
-      referenceLink: "documents",
-    },
-    {
-      key: "1o1s",
-      label: "1:1 Meeting",
-      icon: "calendar",
-      referenceLink: "1o1s",
+      icon: document.icon,
+      create: {
+        title: "Untitled Document for {@this.show}",
+        attributes: {
+          type: "document",
+          linksTo: ["{@this}"],
+        },
+      },
     },
     {
       key: "project",
       label: "Project",
-      icon: "folder-git-2",
-      referenceLink: "projects",
+      icon: project.icon,
+      create: {
+        title: "Untitled Project for {@this.show}",
+        attributes: {
+          type: "project",
+          linksTo: ["{@this}"],
+        },
+      },
     },
     {
       key: "report",
       label: "Report",
-      icon: "file-plus",
-      referenceLink: "reports",
+      icon: "user",
+      create: {
+        title: "New Report for {@this.show}",
+        attributes: {
+          type: "person",
+          reportsTo: ["{@this}"],
+          company: ["{@this.company}"],
+          area: ["{@this.area}"],
+        },
+      },
+    },
+    {
+      key: "teammate",
+      label: "Teammate",
+      icon: team.icon,
+      create: {
+        title: "New Teammate for {@this.show}",
+        attributes: {
+          type: "person",
+          company: ["{@this.company}"],
+          area: ["{@this.area}"],
+          team: ["{@this.team}"],
+        },
+      },
+    },
+    {
+      key: "1o1s",
+      label: "1:1 Meeting",
+      icon: meeting.icon,
+      create: {
+        title: "{YY}-{MM}-{DD} {hh}.{mm} 1-1 with {@this.show}",
+        attributes: {
+          type: "meeting",
+          participants: ["{@this}"],
+        },
+      },
+    },
+    {
+      key: "task",
+      label: "Task",
+      icon: task.icon,
+      create: {
+        title: "Untitled Task for {@this.show}",
+        attributes: {
+          type: "task",
+          linksTo: ["{@this}"],
+        },
+      },
     },
   ],
   links: [
@@ -98,15 +161,7 @@ export const person = {
           },
         ],
         createEntity: {
-          // inherit creation defaults from createRelated: "report"
           referenceCreate: "report",
-          title: "Untitled Report to {@this.show}",
-          attributes: {
-            type: "person",
-            reportsTo: ["{@this}"],
-            company: ["{@this.company}"],
-            area: ["{@this.area}"],
-          },
         },
       },
     },
@@ -166,10 +221,7 @@ export const person = {
           },
         ],
         createEntity: {
-          title: "Untitled Teammate",
-          attributes: {
-            team: "{@this.team}",
-          },
+          referenceCreate: "teammate",
         },
       },
     },
@@ -179,14 +231,14 @@ export const person = {
       config: {
         targetType: "meeting",
         title: "1:1s",
-        icon: "calendar",
+        icon: meeting.icon,
         find: {
           query: [
             {
               steps: [
                 {
                   in: {
-                    property: ["participants", "people"],
+                    property: ["participants"],
                     type: "meeting",
                   },
                 },
@@ -215,11 +267,7 @@ export const person = {
           },
         ],
         createEntity: {
-          enabled: true,
-          title: "{YY}-{MM}-{DD} {hh}.{mm} with {@this.show}",
-          attributes: {
-            participants: ["{@this}"],
-          },
+          referenceCreate: "1o1s",
         },
       },
     },
@@ -227,9 +275,8 @@ export const person = {
       type: "backlinks",
       key: "meetings",
       config: {
-        targetType: "meeting",
         title: "Meetings",
-        icon: "calendar",
+        icon: meeting.icon,
         find: {
           query: [
             {
@@ -237,7 +284,7 @@ export const person = {
               steps: [
                 {
                   in: {
-                    property: ["participants", "people"],
+                    property: ["participants"],
                     type: "meeting",
                   },
                 },
@@ -248,13 +295,13 @@ export const person = {
               steps: [
                 {
                   out: {
-                    property: ["team", "teams"],
+                    property: ["team"],
                     type: "team",
                   },
                 },
                 {
                   in: {
-                    property: ["team", "teams"],
+                    property: ["team"],
                     type: "meeting",
                   },
                 },
@@ -296,7 +343,7 @@ export const person = {
         ],
         createEntity: {
           enabled: true,
-          title: "{YY}-{MM}-{DD} {hh}.{mm} with {@this.show}",
+          title: "{YY}-{MM}-{DD} {hh}.{mm} Untitled Meeting",
           attributes: {
             participants: ["{@this}"],
           },
@@ -307,9 +354,8 @@ export const person = {
       type: "backlinks",
       key: "projects",
       config: {
-        targetType: "project",
-        title: "Projects",
-        icon: "folder-git-2",
+        title: project.name,
+        icon: project.icon,
         find: {
           query: [
             {
@@ -317,7 +363,7 @@ export const person = {
               steps: [
                 {
                   in: {
-                    property: ["participants", "people"],
+                    property: ["linksTo", "participants"],
                     type: "project",
                   },
                 },
@@ -328,13 +374,13 @@ export const person = {
               steps: [
                 {
                   out: {
-                    property: ["team", "teams"],
+                    property: ["team"],
                     type: "team",
                   },
                 },
                 {
                   in: {
-                    property: ["team", "teams"],
+                    property: ["team"],
                     type: "project",
                   },
                 },
@@ -359,10 +405,7 @@ export const person = {
           },
         ],
         createEntity: {
-          title: "Untitled Project with {@this.show}",
-          attributes: {
-            participants: ["{@this}"],
-          },
+          referenceCreate: "project",
         },
       },
     },
@@ -371,9 +414,9 @@ export const person = {
       key: "facts",
       config: {
         targetType: "fact",
-        properties: ["participants"],
-        title: "Facts",
-        icon: "file-text",
+        properties: ["linksTo", "participants"],
+        title: fact.name,
+        icon: fact.icon,
         sort: {
           strategy: "manual",
         },
@@ -387,9 +430,12 @@ export const person = {
       key: "logs",
       config: {
         targetType: "log",
-        properties: ["participants"],
-        title: "Logs",
-        icon: "clipboard-list",
+        properties: ["linksTo", "participants"],
+        title: log.name,
+        icon: log.icon,
+        createEntity: {
+          referenceCreate: "log",
+        },
       },
     },
     {
@@ -397,11 +443,14 @@ export const person = {
       key: "documents",
       config: {
         targetType: "document",
-        properties: ["participants"],
-        title: "Documents",
-        icon: "paperclip",
+        properties: ["linksTo", "participants"],
+        title: document.name,
+        icon: document.icon,
         sort: {
           strategy: "manual",
+        },
+        createEntity: {
+          referenceCreate: "document",
         },
       },
     },
@@ -410,9 +459,9 @@ export const person = {
       key: "tasks",
       config: {
         targetType: "task",
-        properties: ["participants"],
-        title: "Tasks",
-        icon: "check-square",
+        properties: ["linksTo", "participants"],
+        title: task.name,
+        icon: task.icon,
         columns: [
           {
             type: "show",
@@ -429,6 +478,9 @@ export const person = {
         sort: {
           strategy: "manual",
         },
+        createEntity: {
+          referenceCreate: "task",
+        },
       },
     },
     {
@@ -443,7 +495,7 @@ export const person = {
               steps: [
                 {
                   notIn: {
-                    property: "links",
+                    property: "linksTo",
                     type: ["meeting", "log", "project", "person"],
                   },
                 },

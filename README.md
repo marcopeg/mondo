@@ -34,7 +34,12 @@ https://github.com/marcopeg/obsidian-mondo
 
 # 🏚️ Dashboard
 
-Run the command `Open Mondo dashboard` to open your vault's control center.
+Run the command `Open Mondo dashboard` to open your vault's control center:
+
+- **Quick Tasks** let you create new task-notes on the fly by typing or dictating your thoughs.
+- **Relevant Notes** let you find your notes by frequency of utilization or history. And you can filter by _Entity Type (see the CRM feature)_-
+- **CRM Entities Wall** wall let you jump to the various entities lists. Think \_"Obsidian bases on steroid".
+- **Stats** show some numbers about your valut and offer some file based views of your stuff. Not only notes, but also images, audio and generic attachments across the whole vault.
 
 # 📈 Habits Tracker
 
