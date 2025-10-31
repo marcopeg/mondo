@@ -28,14 +28,14 @@ ObsidianMondo is under active development so you would install it as a _Beta Tes
 3. Paste the following url:
 
 ```bash
-https://github.com/marcopeg/obsidian-mondo
+https://github.com/marcopeg/mondo
 ```
 
 > I suggest you keep it updated to the latest version, but at this point feel free to install whatever available release.
 
 # 🏚️ Dashboard
 
-Run the command `Open Mondo dashboard` to open your vault's control center:
+Run the command `Open Mondo Dashboard` to open your vault's control center:
 
 - **Quick Tasks** let you create new task-notes on the fly by typing or dictating your thoughs.
 - **Relevant Notes** let you find your notes by frequency of utilization or history. And you can filter by _Entity Type (see the CRM feature)_-
