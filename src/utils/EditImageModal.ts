@@ -54,27 +54,6 @@ const STATIC_CONSTRAINTS: CropConstraint[] = [
   { id: "9x16", label: "9:16", ratio: 9 / 16 },
 ];
 
-const gcd = (a: number, b: number): number => {
-  let valueA = Math.abs(a);
-  let valueB = Math.abs(b);
-
-  while (valueB !== 0) {
-    const temp = valueB;
-    valueB = valueA % valueB;
-    valueA = temp;
-  }
-
-  return valueA || 1;
-};
-
-const formatCurrentConstraintLabel = (width: number, height: number): string => {
-  const divisor = gcd(width, height);
-  const simplifiedWidth = Math.round(width / divisor);
-  const simplifiedHeight = Math.round(height / divisor);
-
-  return `Current (${simplifiedWidth}:${simplifiedHeight})`;
-};
-
 const clamp = (value: number, min: number, max: number): number => {
   if (value < min) {
     return min;
@@ -85,21 +64,34 @@ const clamp = (value: number, min: number, max: number): number => {
   return value;
 };
 
-export const isCropSupported = (file: TFile): boolean =>
+const formatBytes = (bytes: number): string => {
+  if (bytes <= 0) {
+    return "0 B";
+  }
+
+  const units = ["B", "KB", "MB", "GB"];
+  const index = Math.min(
+    Math.floor(Math.log(bytes) / Math.log(1024)),
+    units.length - 1
+  );
+  const value = bytes / 1024 ** index;
+
+  return `${value.toFixed(value >= 100 ? 0 : value >= 10 ? 1 : 2)} ${units[index]}`;
+};
+
+export const isImageEditSupported = (file: TFile): boolean =>
   isImageFile(file) && SUPPORTED_EXTENSIONS.has(file.extension.toLowerCase());
 
-export const openCropImageModal = (app: App, file: TFile): void => {
-  if (!isCropSupported(file)) {
-    new Notice(
-      "Cropping is supported for PNG, JPG, and WEBP images."
-    );
+export const openEditImageModal = (app: App, file: TFile): void => {
+  if (!isImageEditSupported(file)) {
+    new Notice("Editing is supported for PNG, JPG, and WEBP images.");
     return;
   }
 
-  new CropImageModal(app, file).open();
+  new ImageEditModal(app, file).open();
 };
 
-class CropImageModal extends Modal {
+class ImageEditModal extends Modal {
   private file: TFile;
   private imageEl: HTMLImageElement | null = null;
   private selectionEl: HTMLDivElement | null = null;
@@ -109,9 +101,8 @@ class CropImageModal extends Modal {
     label: "Current",
     ratio: null,
   };
-  private dimensionLabelEl: HTMLDivElement | null = null;
   private newFileCheckbox: HTMLInputElement | null = null;
-  private cropButtonEl: HTMLButtonElement | null = null;
+  private saveButtonEl: HTMLButtonElement | null = null;
   private pointerOperation: PointerOperation | null = null;
   private pointerTarget: HTMLElement | null = null;
   private activePointerId: number | null = null;
@@ -122,6 +113,16 @@ class CropImageModal extends Modal {
   private constraintRatio: number | null = null;
   private activeConstraintId: string | null = null;
   private isProcessing = false;
+  private scaleValue = 100;
+  private scaleInputEl: HTMLInputElement | null = null;
+  private scaleValueEl: HTMLSpanElement | null = null;
+  private currentInfoEl: HTMLSpanElement | null = null;
+  private finalDimensionsEl: HTMLSpanElement | null = null;
+  private finalSizeEl: HTMLSpanElement | null = null;
+  private previewUpdateTimer: number | null = null;
+  private previewToken = 0;
+  private originalSize = 0;
+  private imageResizeObserver: ResizeObserver | null = null;
 
   constructor(app: App, file: TFile) {
     super(app);
@@ -130,16 +131,14 @@ class CropImageModal extends Modal {
 
   onOpen() {
     this.modalEl.addClass("mondo-crop-modal");
-    this.titleEl.setText(`Crop ${this.file.name}`);
+    this.contentEl.addClass("mondo-crop-modal__content");
+    this.titleEl.setText(`Edit ${this.file.name}`);
 
-    const description = this.contentEl.createDiv({
-      cls: "mondo-crop-modal__description",
+    const body = this.contentEl.createDiv({
+      cls: "mondo-crop-modal__body",
     });
-    description.setText(
-      "Adjust the crop area, choose an aspect ratio, then apply your changes."
-    );
 
-    const previewWrapper = this.contentEl.createDiv({
+    const previewWrapper = body.createDiv({
       cls: "mondo-crop-modal__preview",
     });
 
@@ -155,6 +154,13 @@ class CropImageModal extends Modal {
     image.addEventListener("error", this.handleImageError);
     image.src = this.app.vault.getResourcePath(this.file);
     this.imageEl = image;
+
+    if (typeof ResizeObserver !== "undefined") {
+      this.imageResizeObserver = new ResizeObserver(() => {
+        this.updateSelectionUI();
+      });
+      this.imageResizeObserver.observe(image);
+    }
 
     const selection = imageContainer.createDiv({
       cls: "mondo-crop-modal__selection",
@@ -202,7 +208,7 @@ class CropImageModal extends Modal {
       });
     });
 
-    const controls = this.contentEl.createDiv({
+    const controls = body.createDiv({
       cls: "mondo-crop-modal__controls",
     });
 
@@ -238,32 +244,99 @@ class CropImageModal extends Modal {
 
     this.setConstraint(this.currentConstraint);
 
-    this.dimensionLabelEl = controls.createDiv({
-      cls: "mondo-crop-modal__dimensions",
+    const scaleContainer = controls.createDiv({
+      cls: "mondo-crop-modal__scale",
     });
 
-    const newFileOption = controls.createDiv({
-      cls: "mondo-crop-modal__option",
+    const scaleHeader = scaleContainer.createDiv({
+      cls: "mondo-crop-modal__scale-header",
+    });
+    scaleHeader.createSpan({ text: "Scale" });
+    this.scaleValueEl = scaleHeader.createSpan({
+      cls: "mondo-crop-modal__scale-value",
+      text: "100%",
     });
 
-    const checkboxId = `mondo-crop-new-image-${Date.now()}`;
-    const checkbox = newFileOption.createEl("input", {
+    this.scaleInputEl = scaleContainer.createEl("input", {
+      type: "range",
+      cls: "mondo-crop-modal__scale-input",
+      attr: {
+        min: "10",
+        max: "500",
+        step: "1",
+        value: String(this.scaleValue),
+      },
+    });
+
+    this.scaleInputEl.addEventListener("input", () => {
+      this.scaleValue = Number.parseInt(this.scaleInputEl?.value ?? "100", 10);
+      this.scaleValueEl?.setText(`${this.scaleValue}%`);
+      this.schedulePreviewUpdate();
+    });
+
+    const summaryContainer = controls.createDiv({
+      cls: "mondo-crop-modal__summary",
+    });
+
+    const currentRow = summaryContainer.createDiv({
+      cls: "mondo-crop-modal__summary-item",
+    });
+    currentRow.createSpan({
+      cls: "mondo-crop-modal__summary-label",
+      text: "Current",
+    });
+    this.currentInfoEl = currentRow.createSpan({
+      cls: "mondo-crop-modal__summary-data",
+      text: "Loading…",
+    });
+
+    const finalRow = summaryContainer.createDiv({
+      cls: "mondo-crop-modal__summary-item",
+    });
+    finalRow.createSpan({
+      cls: "mondo-crop-modal__summary-label",
+      text: "Estimated",
+    });
+    const finalValue = finalRow.createSpan({
+      cls: "mondo-crop-modal__summary-data",
+    });
+    this.finalDimensionsEl = finalValue.createSpan({ text: "—" });
+    finalValue.createSpan({
+      cls: "mondo-crop-modal__summary-separator",
+      text: "•",
+    });
+    this.finalSizeEl = finalValue.createSpan({ text: "—" });
+
+    const footer = this.contentEl.createDiv({
+      cls: "modal-button-container mondo-crop-modal__footer",
+    });
+
+    const footerInner = footer.createDiv({
+      cls: "mondo-crop-modal__footer-inner",
+    });
+
+    const footerOption = footerInner.createDiv({
+      cls: "mondo-crop-modal__footer-option",
+    });
+
+    const checkboxId = `mondo-edit-new-image-${Date.now()}`;
+    const checkbox = footerOption.createEl("input", {
       type: "checkbox",
       cls: "mondo-crop-modal__checkbox",
     });
     checkbox.id = checkboxId;
     this.newFileCheckbox = checkbox;
 
-    const checkboxLabel = newFileOption.createEl("label", {
+    const checkboxLabel = footerOption.createEl("label", {
       attr: { for: checkboxId },
     });
-    checkboxLabel.setText("Crop as a new image");
+    checkboxLabel.setText("Save as new image");
 
-    const footer = this.contentEl.createDiv({
-      cls: "modal-button-container",
+    const footerActions = footerInner.createDiv({
+      cls: "mondo-crop-modal__footer-actions",
     });
 
-    const cancelButton = footer.createEl("button", { text: "Cancel" });
+    const cancelButton = footerActions.createEl("button", { text: "Cancel" });
     cancelButton.addEventListener("click", () => {
       if (this.isProcessing) {
         return;
@@ -271,15 +344,15 @@ class CropImageModal extends Modal {
       this.close();
     });
 
-    const cropButton = footer.createEl("button", {
-      text: "Crop",
+    const saveButton = footerActions.createEl("button", {
+      text: "Save",
     });
-    cropButton.addClass("mod-cta");
-    cropButton.disabled = true;
-    cropButton.addEventListener("click", () => {
-      void this.handleCrop();
+    saveButton.addClass("mod-cta");
+    saveButton.disabled = true;
+    saveButton.addEventListener("click", () => {
+      void this.handleSave();
     });
-    this.cropButtonEl = cropButton;
+    this.saveButtonEl = saveButton;
   }
 
   onClose() {
@@ -287,10 +360,18 @@ class CropImageModal extends Modal {
       this.imageEl.removeEventListener("load", this.handleImageLoaded);
       this.imageEl.removeEventListener("error", this.handleImageError);
     }
+    if (this.imageResizeObserver) {
+      this.imageResizeObserver.disconnect();
+      this.imageResizeObserver = null;
+    }
     this.detachPointerListeners();
     this.pointerOperation = null;
     this.pointerTarget = null;
     this.activePointerId = null;
+    if (this.previewUpdateTimer !== null) {
+      window.clearTimeout(this.previewUpdateTimer);
+      this.previewUpdateTimer = null;
+    }
   }
 
   private handleImageLoaded = () => {
@@ -300,11 +381,12 @@ class CropImageModal extends Modal {
 
     this.naturalWidth = this.imageEl.naturalWidth;
     this.naturalHeight = this.imageEl.naturalHeight;
+    this.originalSize = this.file.stat.size;
 
     this.updateCurrentConstraintState();
 
     if (!this.naturalWidth || !this.naturalHeight) {
-      new Notice("Unable to load image dimensions for cropping.");
+      new Notice("Unable to load image dimensions for editing.");
       this.close();
       return;
     }
@@ -321,13 +403,15 @@ class CropImageModal extends Modal {
 
     this.selectionEl.style.display = "block";
     this.updateSelectionUI();
-    if (this.cropButtonEl) {
-      this.cropButtonEl.disabled = false;
+    this.updateOriginalInfo();
+    this.schedulePreviewUpdate();
+    if (this.saveButtonEl) {
+      this.saveButtonEl.disabled = false;
     }
   };
 
   private handleImageError = () => {
-    new Notice("Failed to load the image for cropping.");
+    new Notice("Failed to load the image for editing.");
     this.close();
   };
 
@@ -346,10 +430,6 @@ class CropImageModal extends Modal {
       return;
     }
 
-    this.currentConstraint.label = formatCurrentConstraintLabel(
-      this.naturalWidth,
-      this.naturalHeight
-    );
     this.currentConstraint.ratio = this.naturalWidth / this.naturalHeight;
     button.setText(this.currentConstraint.label);
     button.disabled = false;
@@ -890,7 +970,13 @@ class CropImageModal extends Modal {
   };
 
   private updateSelectionUI = () => {
-    if (!this.selectionEl || !this.selection || !this.naturalWidth || !this.naturalHeight) {
+    if (
+      !this.selectionEl ||
+      !this.selection ||
+      !this.naturalWidth ||
+      !this.naturalHeight ||
+      !this.imageEl
+    ) {
       return;
     }
 
@@ -902,27 +988,98 @@ class CropImageModal extends Modal {
       return;
     }
 
-    const leftPercent = (left / this.naturalWidth) * 100;
-    const topPercent = (top / this.naturalHeight) * 100;
-    const widthPercent = (width / this.naturalWidth) * 100;
-    const heightPercent = (height / this.naturalHeight) * 100;
+    const containerRect = this.imageEl.parentElement?.getBoundingClientRect();
+    const imageRect = this.imageEl.getBoundingClientRect();
 
-    this.selectionEl.style.left = `${leftPercent}%`;
-    this.selectionEl.style.top = `${topPercent}%`;
-    this.selectionEl.style.width = `${widthPercent}%`;
-    this.selectionEl.style.height = `${heightPercent}%`;
-
-    this.updateDimensionsLabel(width, height);
-  };
-
-  private updateDimensionsLabel = (width: number, height: number) => {
-    if (!this.dimensionLabelEl) {
+    if (!containerRect || imageRect.width <= 0 || imageRect.height <= 0) {
       return;
     }
 
-    this.dimensionLabelEl.setText(
-      `Crop area: ${Math.round(width)} × ${Math.round(height)} px`
+    const offsetX = imageRect.left - containerRect.left;
+    const offsetY = imageRect.top - containerRect.top;
+
+    const scaleX = imageRect.width / this.naturalWidth;
+    const scaleY = imageRect.height / this.naturalHeight;
+
+    this.selectionEl.style.left = `${offsetX + left * scaleX}px`;
+    this.selectionEl.style.top = `${offsetY + top * scaleY}px`;
+    this.selectionEl.style.width = `${width * scaleX}px`;
+    this.selectionEl.style.height = `${height * scaleY}px`;
+
+    this.schedulePreviewUpdate();
+  };
+
+  private updateOriginalInfo = () => {
+    if (!this.currentInfoEl) {
+      return;
+    }
+
+    if (!this.naturalWidth || !this.naturalHeight) {
+      this.currentInfoEl.setText("—");
+      return;
+    }
+
+    const sizeText = formatBytes(this.originalSize);
+    this.currentInfoEl.setText(
+      `${Math.round(this.naturalWidth)} × ${Math.round(this.naturalHeight)} px • ${sizeText}`
     );
+  };
+
+  private schedulePreviewUpdate = () => {
+    if (this.previewUpdateTimer !== null) {
+      window.clearTimeout(this.previewUpdateTimer);
+    }
+
+    this.previewUpdateTimer = window.setTimeout(() => {
+      void this.updatePreview();
+    }, 120);
+  };
+
+  private updatePreview = async () => {
+    if (!this.selection || !this.imageEl) {
+      this.finalDimensionsEl?.setText("—");
+      this.finalSizeEl?.setText("—");
+      return;
+    }
+
+    const selection = { ...this.selection };
+    const selectionWidth = Math.max(
+      1,
+      Math.round(selection.right - selection.left)
+    );
+    const selectionHeight = Math.max(
+      1,
+      Math.round(selection.bottom - selection.top)
+    );
+    const scale = Math.max(this.scaleValue, 1) / 100;
+    const targetWidth = Math.max(1, Math.round(selectionWidth * scale));
+    const targetHeight = Math.max(1, Math.round(selectionHeight * scale));
+
+    this.finalDimensionsEl?.setText(`${targetWidth} × ${targetHeight} px`);
+    this.finalSizeEl?.setText("Calculating…");
+
+    const token = ++this.previewToken;
+
+    try {
+      const blob = await this.generateEditedBlob(
+        selection,
+        targetWidth,
+        targetHeight
+      );
+
+      if (token !== this.previewToken) {
+        return;
+      }
+
+      this.finalDimensionsEl?.setText(`${targetWidth} × ${targetHeight} px`);
+      this.finalSizeEl?.setText(formatBytes(blob.size));
+    } catch (error) {
+      console.error("Mondo: failed to prepare image preview", error);
+      if (token !== this.previewToken) {
+        return;
+      }
+      this.finalSizeEl?.setText("—");
+    }
   };
 
   private setConstraint = (constraint: CropConstraint) => {
@@ -958,53 +1115,67 @@ class CropImageModal extends Modal {
     return "image/png";
   };
 
-  private handleCrop = async () => {
+  private handleSave = async () => {
     if (!this.selection || !this.imageEl || this.isProcessing) {
       return;
     }
 
-    const width = Math.round(this.selection.right - this.selection.left);
-    const height = Math.round(this.selection.bottom - this.selection.top);
+    const selection = { ...this.selection };
+    const selectionWidth = Math.round(selection.right - selection.left);
+    const selectionHeight = Math.round(selection.bottom - selection.top);
 
-    if (width <= 0 || height <= 0) {
-      new Notice("Select an area to crop.");
+    if (selectionWidth <= 0 || selectionHeight <= 0) {
+      new Notice("Select an area to edit.");
       return;
     }
 
+    const scale = Math.max(this.scaleValue, 1) / 100;
+    const targetWidth = Math.max(1, Math.round(selectionWidth * scale));
+    const targetHeight = Math.max(1, Math.round(selectionHeight * scale));
+
     this.isProcessing = true;
-    if (this.cropButtonEl) {
-      this.cropButtonEl.disabled = true;
+    if (this.saveButtonEl) {
+      this.saveButtonEl.disabled = true;
     }
 
     try {
-      const blob = await this.generateCroppedBlob(width, height);
+      const blob = await this.generateEditedBlob(
+        selection,
+        targetWidth,
+        targetHeight
+      );
       const arrayBuffer = await blob.arrayBuffer();
 
       if (this.newFileCheckbox?.checked) {
-        const newPath = await this.createCroppedFile(arrayBuffer, width, height);
+        const newPath = await this.createEditedFile(
+          arrayBuffer,
+          targetWidth,
+          targetHeight
+        );
         new Notice(`Created ${newPath}`);
       } else {
         await this.app.vault.modifyBinary(this.file, arrayBuffer);
-        new Notice(`Cropped ${this.file.name} to ${width}×${height}.`);
+        new Notice(`Saved ${this.file.name} at ${targetWidth}×${targetHeight}.`);
       }
 
       this.close();
     } catch (error) {
-      console.error("Mondo: Failed to crop image", error);
-      new Notice("Cropping image failed. Check the console for details.");
+      console.error("Mondo: Failed to edit image", error);
+      new Notice("Editing image failed. Check the console for details.");
     } finally {
       this.isProcessing = false;
-      if (this.cropButtonEl) {
-        this.cropButtonEl.disabled = false;
+      if (this.saveButtonEl) {
+        this.saveButtonEl.disabled = false;
       }
     }
   };
 
-  private generateCroppedBlob = async (
+  private generateEditedBlob = async (
+    selection: Rect,
     width: number,
     height: number
   ): Promise<Blob> => {
-    if (!this.imageEl || !this.selection) {
+    if (!this.imageEl) {
       throw new Error("Image not ready");
     }
 
@@ -1019,10 +1190,10 @@ class CropImageModal extends Modal {
 
     context.drawImage(
       this.imageEl,
-      this.selection.left,
-      this.selection.top,
-      this.selection.right - this.selection.left,
-      this.selection.bottom - this.selection.top,
+      selection.left,
+      selection.top,
+      selection.right - selection.left,
+      selection.bottom - selection.top,
       0,
       0,
       width,
@@ -1037,13 +1208,13 @@ class CropImageModal extends Modal {
         if (blob) {
           resolve(blob);
         } else {
-          reject(new Error("Unable to encode cropped image"));
+          reject(new Error("Unable to encode edited image"));
         }
       }, mimeType, quality);
     });
   };
 
-  private createCroppedFile = async (
+  private createEditedFile = async (
     arrayBuffer: ArrayBuffer,
     width: number,
     height: number
