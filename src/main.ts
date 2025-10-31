@@ -106,7 +106,9 @@ export default class Mondo extends Plugin {
   // Settings shape and defaults
   settings: any = {
     // default rootPaths: map every known Mondo type to '/'
-    rootPaths: Object.fromEntries(MONDO_FILE_TYPES.map((t) => [String(t), "/"])),
+    rootPaths: Object.fromEntries(
+      MONDO_FILE_TYPES.map((t) => [String(t), "/"])
+    ),
     journal: DEFAULT_MONDO_JOURNAL_SETTINGS,
     daily: DEFAULT_MONDO_DAILY_SETTINGS,
     templates: Object.fromEntries(MONDO_FILE_TYPES.map((t) => [String(t), ""])),
@@ -252,8 +254,7 @@ export default class Mondo extends Plugin {
       openAtBoot: dashboardSettings.openAtBoot === true,
       forceTab: dashboardSettings.forceTab === true,
       enableQuickTasks: dashboardSettings.enableQuickTasks !== false,
-      enableRelevantNotes:
-        dashboardSettings.enableRelevantNotes !== false,
+      enableRelevantNotes: dashboardSettings.enableRelevantNotes !== false,
       enableStats: dashboardSettings.enableStats !== false,
     };
   }
@@ -529,7 +530,7 @@ export default class Mondo extends Plugin {
 
     this.addCommand({
       id: "add-log",
-      name: "Add to Daily note",
+      name: "Append to Daily note",
       hotkeys: [{ modifiers: ["Mod", "Shift"], key: "l" }],
       callback: async () => addDailyLog(this.app, this),
     });
@@ -965,16 +966,15 @@ export default class Mondo extends Plugin {
       const folderSetting = settings.rootPaths?.[entityType] ?? "/";
       const normalizedFolder = normalizeFolderPath(folderSetting);
       if (normalizedFolder) {
-        const existingFolder = this.app.vault.getAbstractFileByPath(
-          normalizedFolder
-        );
+        const existingFolder =
+          this.app.vault.getAbstractFileByPath(normalizedFolder);
         if (!existingFolder) {
           await this.app.vault.createFolder(normalizedFolder);
         }
       }
 
-      const displayBase = `Untitled ${label}`.replace(/\s+/g, " ").trim() ||
-        "Untitled";
+      const displayBase =
+        `Untitled ${label}`.replace(/\s+/g, " ").trim() || "Untitled";
       const fileBaseRoot =
         sanitizeFileBase(displayBase) || `untitled-${Date.now()}`;
 
@@ -1016,10 +1016,7 @@ export default class Mondo extends Plugin {
         datetime: isoTimestamp,
       });
 
-      const created = (await this.app.vault.create(
-        filePath,
-        content
-      )) as TFile;
+      const created = (await this.app.vault.create(filePath, content)) as TFile;
 
       const leaf = this.app.workspace.getLeaf(true);
       if (leaf) {
@@ -1039,7 +1036,10 @@ export default class Mondo extends Plugin {
   private async openEntityPanel(entityType: MondoFileType) {
     const state: MondoEntityPanelViewState = { entityType };
     if (!getMondoEntityConfig(entityType)) {
-      console.warn("Mondo: attempted to open panel for unknown type", entityType);
+      console.warn(
+        "Mondo: attempted to open panel for unknown type",
+        entityType
+      );
       return;
     }
     await this.showPanel(ENTITY_PANEL_VIEW, "main", {

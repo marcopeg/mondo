@@ -130,7 +130,7 @@ You can add a block as many `habits` blocks you want:
 
 Daily notes help jotting down quick information.
 
-Run the command `Open Daily note` to open the **Daily Note**; or run `Add to Daily note` to open it an generate a time-based section where you can quickly annotate a new thought.
+Run the command `Open Daily note` to open the **Daily Note**; or run `Append to Daily note` to open it an generate a time-based section where you can quickly annotate a new thought.
 
 Notes in your daily are automatically organized by day/time blocks and default to bullet lists so to facilitate note refactoring later on.
 
