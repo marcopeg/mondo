@@ -71,6 +71,7 @@ import { openDailyNote } from "@/commands/daily.open";
 import { addDailyLog } from "@/commands/daily.addLog";
 import { journalMoveFactory } from "@/commands/journal.nav";
 import { insertTimestamp } from "@/commands/timestamp.insert";
+import { copyNoteText } from "@/commands/note.copyText";
 import { sendToChatGPT } from "@/commands/chatgpt.send";
 import { openSelfPersonNote } from "@/commands/self.open";
 import {
@@ -92,6 +93,7 @@ import {
 } from "@/utils/focusMode";
 import DailyNoteTracker from "@/utils/DailyNoteTracker";
 import { TimestampToolbarManager } from "@/utils/TimestampToolbarManager";
+import { CopyNoteToolbarManager } from "@/utils/CopyNoteToolbarManager";
 import {
   DEFAULT_TIMESTAMP_SETTINGS,
   normalizeTimestampSettings,
@@ -142,6 +144,7 @@ export default class Mondo extends Plugin {
   private voiceoverManager: VoiceoverManager | null = null;
   private noteDictationManager: NoteDictationManager | null = null;
   private timestampToolbarManager: TimestampToolbarManager | null = null;
+  private copyNoteToolbarManager: CopyNoteToolbarManager | null = null;
   private dailyNoteTracker: DailyNoteTracker | null = null;
   private geolocationAbortController: AbortController | null = null;
   private mondoConfigManager: null = null;
@@ -365,11 +368,16 @@ export default class Mondo extends Plugin {
     this.timestampToolbarManager.initialize();
     this.timestampToolbarManager.activateMobileToolbar();
 
+    this.copyNoteToolbarManager = new CopyNoteToolbarManager(this);
+    this.copyNoteToolbarManager.initialize();
+    this.copyNoteToolbarManager.activateMobileToolbar();
+
     this.dailyNoteTracker = new DailyNoteTracker(this);
 
     this.app.workspace.onLayoutReady(() => {
       this.noteDictationManager?.activateMobileToolbar();
       this.timestampToolbarManager?.activateMobileToolbar();
+      this.copyNoteToolbarManager?.activateMobileToolbar();
     });
 
     // Initialize the Mondo file manager in the background (non-blocking)
@@ -562,6 +570,20 @@ export default class Mondo extends Plugin {
       name: "Insert timestamp",
       editorCallback: () => {
         insertTimestamp(this.app, this);
+      },
+    });
+
+    this.addCommand({
+      id: "copy-note-text",
+      name: "Copy note text",
+      icon: "copy",
+      editorCallback: (editor, context) => {
+        const markdownView =
+          context instanceof MarkdownView
+            ? context
+            : this.app.workspace.getActiveViewOfType(MarkdownView);
+
+        void copyNoteText(this.app, { editor, view: markdownView });
       },
     });
 
@@ -870,6 +892,9 @@ export default class Mondo extends Plugin {
 
     this.timestampToolbarManager?.dispose();
     this.timestampToolbarManager = null;
+
+    this.copyNoteToolbarManager?.dispose();
+    this.copyNoteToolbarManager = null;
   }
 
   getAudioTranscriptionManager(): AudioTranscriptionManager | null {
