@@ -101,6 +101,10 @@ import {
 } from "@/types/TimestampSettings";
 import { getTemplateForType, renderTemplate } from "@/utils/MondoTemplates";
 import { slugify, focusAndSelectTitle } from "@/utils/createLinkedNoteHelpers";
+import {
+  isCropSupported,
+  openCropImageModal,
+} from "@/utils/CropImageModal";
 
 const MONDO_ICON = "anchor";
 
@@ -475,6 +479,24 @@ export default class Mondo extends Plugin {
             file,
             file.path
           );
+        }
+
+        return true;
+      },
+    });
+
+    this.addCommand({
+      id: "crop-image",
+      name: "Crop Image",
+      checkCallback: (checking) => {
+        const file = this.app.workspace.getActiveFile();
+
+        if (!file || !isCropSupported(file)) {
+          return false;
+        }
+
+        if (!checking) {
+          openCropImageModal(this.app, file);
         }
 
         return true;
