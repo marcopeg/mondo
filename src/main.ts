@@ -73,6 +73,10 @@ import { journalMoveFactory } from "@/commands/journal.nav";
 import { insertTimestamp } from "@/commands/timestamp.insert";
 import { sendToChatGPT } from "@/commands/chatgpt.send";
 import { openSelfPersonNote } from "@/commands/self.open";
+import {
+  findActiveOrSelectedImageFile,
+  openResizeImageModal,
+} from "@/commands/image.resize";
 import { injectJournalNav } from "@/events/inject-journal-nav";
 import {
   injectMondoLinks,
@@ -423,6 +427,24 @@ export default class Mondo extends Plugin {
       id: "open-vault-notes",
       name: "Open Vault Notes",
       callback: () => this.showPanel(VAULT_NOTES_VIEW, "main"),
+    });
+
+    this.addCommand({
+      id: "resize-image",
+      name: "Resize Image",
+      checkCallback: (checking) => {
+        const file = findActiveOrSelectedImageFile(this.app);
+
+        if (!file) {
+          return false;
+        }
+
+        if (!checking) {
+          openResizeImageModal(this.app, file);
+        }
+
+        return true;
+      },
     });
 
     this.addCommand({
