@@ -456,7 +456,6 @@ export default class Mondo extends Plugin {
     this.addCommand({
       id: "open-journal",
       name: "Open Journal",
-      hotkeys: [{ modifiers: ["Mod", "Shift"], key: "j" }],
       callback: async () => {
         try {
           console.log("Opening journal...");
