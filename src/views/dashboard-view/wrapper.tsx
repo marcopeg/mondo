@@ -4,6 +4,7 @@ import { AppProvider } from "@/context/AppProvider";
 import { DashboardView } from "./DashboardView";
 
 export const DASHBOARD_VIEW = "dashboard-view";
+export const DASHBOARD_ICON = "globe";
 
 export class MondoDashboardViewWrapper extends ItemView {
   private root: Root | null = null;

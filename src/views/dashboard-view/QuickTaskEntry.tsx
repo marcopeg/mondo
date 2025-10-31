@@ -91,7 +91,9 @@ const QuickTask = ({ iconOnly = false }: QuickTaskProps) => {
         await ensureFolder(app, normalizedFolder);
       }
 
-      const baseTitle = trimmedQuickLog;
+      const words = trimmedQuickLog.split(/\s+/).filter(Boolean);
+      const truncatedTitle = words.slice(0, 10).join(" ");
+      const baseTitle = truncatedTitle || trimmedQuickLog;
       const safeBase = sanitizeFileName(baseTitle) || "Untitled Task";
       const baseFileName = safeBase.endsWith(".md")
         ? safeBase

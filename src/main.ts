@@ -9,9 +9,11 @@ import {
   TFile,
   type ViewState,
   type WorkspaceLeaf,
+  WorkspaceTabs,
 } from "obsidian";
 import {
   MondoDashboardViewWrapper,
+  DASHBOARD_ICON,
   DASHBOARD_VIEW,
 } from "@/views/dashboard-view/wrapper";
 import { MondoAudioLogsViewWrapper } from "@/views/audio-logs-view/wrapper";
@@ -71,8 +73,13 @@ import { openDailyNote } from "@/commands/daily.open";
 import { addDailyLog } from "@/commands/daily.addLog";
 import { journalMoveFactory } from "@/commands/journal.nav";
 import { insertTimestamp } from "@/commands/timestamp.insert";
+import { copyNoteText } from "@/commands/note.copyText";
 import { sendToChatGPT } from "@/commands/chatgpt.send";
 import { openSelfPersonNote } from "@/commands/self.open";
+import {
+  findActiveOrSelectedImageFile,
+  openResizeImageModal,
+} from "@/commands/image.resize";
 import { injectJournalNav } from "@/events/inject-journal-nav";
 import {
   injectMondoLinks,
@@ -88,18 +95,24 @@ import {
 } from "@/utils/focusMode";
 import DailyNoteTracker from "@/utils/DailyNoteTracker";
 import { TimestampToolbarManager } from "@/utils/TimestampToolbarManager";
+import { CopyNoteToolbarManager } from "@/utils/CopyNoteToolbarManager";
 import {
   DEFAULT_TIMESTAMP_SETTINGS,
   normalizeTimestampSettings,
 } from "@/types/TimestampSettings";
 import { getTemplateForType, renderTemplate } from "@/utils/MondoTemplates";
 import { slugify, focusAndSelectTitle } from "@/utils/createLinkedNoteHelpers";
+import {
+  isCropSupported,
+  openCropImageModal,
+} from "@/utils/CropImageModal";
 
 const MONDO_ICON = "anchor";
 
 type PanelOpenOptions = {
   state?: Record<string, unknown>;
   reuseMatching?: (leaf: WorkspaceLeaf) => boolean;
+  ensureFirstInTabGroup?: boolean;
 };
 
 export default class Mondo extends Plugin {
@@ -138,9 +151,11 @@ export default class Mondo extends Plugin {
   private voiceoverManager: VoiceoverManager | null = null;
   private noteDictationManager: NoteDictationManager | null = null;
   private timestampToolbarManager: TimestampToolbarManager | null = null;
+  private copyNoteToolbarManager: CopyNoteToolbarManager | null = null;
   private dailyNoteTracker: DailyNoteTracker | null = null;
   private geolocationAbortController: AbortController | null = null;
   private mondoConfigManager: null = null;
+  private dashboardRibbonEl: HTMLElement | null = null;
   private audioLogsRibbonEl: HTMLElement | null = null;
 
   private applyGeolocationToFile = async (
@@ -361,11 +376,16 @@ export default class Mondo extends Plugin {
     this.timestampToolbarManager.initialize();
     this.timestampToolbarManager.activateMobileToolbar();
 
+    this.copyNoteToolbarManager = new CopyNoteToolbarManager(this);
+    this.copyNoteToolbarManager.initialize();
+    this.copyNoteToolbarManager.activateMobileToolbar();
+
     this.dailyNoteTracker = new DailyNoteTracker(this);
 
     this.app.workspace.onLayoutReady(() => {
       this.noteDictationManager?.activateMobileToolbar();
       this.timestampToolbarManager?.activateMobileToolbar();
+      this.copyNoteToolbarManager?.activateMobileToolbar();
     });
 
     // Initialize the Mondo file manager in the background (non-blocking)
@@ -398,7 +418,10 @@ export default class Mondo extends Plugin {
       id: "open-dashboard",
       name: "Open Mondo dashboard",
       hotkeys: [{ modifiers: ["Mod", "Shift"], key: "m" }], // Cmd/Ctrl+Shift+M (user can change later)
-      callback: () => this.showPanel(DASHBOARD_VIEW, "main"),
+      callback: () =>
+        this.showPanel(DASHBOARD_VIEW, "main", {
+          ensureFirstInTabGroup: true,
+        }),
     });
 
     this.addCommand({
@@ -426,6 +449,24 @@ export default class Mondo extends Plugin {
     });
 
     this.addCommand({
+      id: "resize-image",
+      name: "Resize Image",
+      checkCallback: (checking) => {
+        const file = findActiveOrSelectedImageFile(this.app);
+
+        if (!file) {
+          return false;
+        }
+
+        if (!checking) {
+          openResizeImageModal(this.app, file);
+        }
+
+        return true;
+      },
+    });
+
+    this.addCommand({
       id: "transcribe-audio-note",
       name: "Start transcription",
       checkCallback: (checking) => {
@@ -447,22 +488,26 @@ export default class Mondo extends Plugin {
     });
 
     this.addCommand({
-      id: "mondo-start-note-dictation",
-      name: "Start dictation",
-      editorCallback: async () => {
-        const result = await this.noteDictationManager?.startDictation();
-        if (result === "started") {
-          new Notice("Dictation started. Tap again to stop.");
-        } else if (result === "recording") {
-          new Notice("Dictation already in progress.");
+      id: "crop-image",
+      name: "Crop Image",
+      checkCallback: (checking) => {
+        const file = this.app.workspace.getActiveFile();
+
+        if (!file || !isCropSupported(file)) {
+          return false;
         }
+
+        if (!checking) {
+          openCropImageModal(this.app, file);
+        }
+
+        return true;
       },
     });
 
     this.addCommand({
-      id: "mondo-toggle-note-dictation",
-      name: "Start Dictation (Mobile)",
-      mobileOnly: true,
+      id: "mondo-start-note-dictation",
+      name: "Start Dictation",
       icon: MONDO_DICTATION_ICON_ID,
       editorCallback: async () => {
         const status = this.noteDictationManager?.getDictationStatus();
@@ -538,14 +583,30 @@ export default class Mondo extends Plugin {
     this.addCommand({
       id: "insert-timestamp",
       name: "Insert timestamp",
+      icon: "clock",
       editorCallback: () => {
         insertTimestamp(this.app, this);
       },
     });
 
     this.addCommand({
+      id: "copy-note-text",
+      name: "Copy note text",
+      icon: "copy",
+      editorCallback: (editor, context) => {
+        const markdownView =
+          context instanceof MarkdownView
+            ? context
+            : this.app.workspace.getActiveViewOfType(MarkdownView);
+
+        void copyNoteText(this.app, { editor, view: markdownView });
+      },
+    });
+
+    this.addCommand({
       id: "send-to-chatgpt",
       name: "Send to ChatGPT",
+      icon: "send",
       editorCallback: (editor, context) => {
         const markdownView =
           context instanceof MarkdownView
@@ -701,7 +762,7 @@ export default class Mondo extends Plugin {
 
     this.registerView(
       DASHBOARD_VIEW,
-      (leaf) => new MondoDashboardViewWrapper(leaf, MONDO_ICON)
+      (leaf) => new MondoDashboardViewWrapper(leaf, DASHBOARD_ICON)
     );
 
     this.registerView(
@@ -730,6 +791,13 @@ export default class Mondo extends Plugin {
     );
 
     if (Platform.isDesktopApp) {
+      this.dashboardRibbonEl = this.addRibbonIcon(
+        DASHBOARD_ICON,
+        "Open Mondo Dashboard",
+        () => {
+          void this.showPanel(DASHBOARD_VIEW, "main");
+        }
+      );
       this.audioLogsRibbonEl = this.addRibbonIcon(
         AUDIO_LOGS_ICON,
         "Open Audio Logs",
@@ -832,6 +900,8 @@ export default class Mondo extends Plugin {
       .getLeavesOfType(AUDIO_LOGS_VIEW)
       .forEach((leaf) => leaf.detach());
 
+    this.dashboardRibbonEl?.remove();
+    this.dashboardRibbonEl = null;
     this.audioLogsRibbonEl?.remove();
     this.audioLogsRibbonEl = null;
 
@@ -848,6 +918,9 @@ export default class Mondo extends Plugin {
 
     this.timestampToolbarManager?.dispose();
     this.timestampToolbarManager = null;
+
+    this.copyNoteToolbarManager?.dispose();
+    this.copyNoteToolbarManager = null;
   }
 
   getAudioTranscriptionManager(): AudioTranscriptionManager | null {
@@ -1095,7 +1168,71 @@ export default class Mondo extends Plugin {
       : { type: viewType, active: true };
 
     await leaf.setViewState(viewState);
+    if (options?.ensureFirstInTabGroup) {
+      this.ensureLeafIsFirstInMainTabs(leaf);
+    }
     workspace.revealLeaf(leaf);
+  }
+
+  private ensureLeafIsFirstInMainTabs(leaf: WorkspaceLeaf) {
+    const { workspace } = this.app;
+    const rootSplit = workspace.rootSplit;
+    if (!rootSplit) {
+      return;
+    }
+
+    const root = leaf.getRoot();
+    if (root !== rootSplit) {
+      return;
+    }
+
+    const parent = leaf.parent;
+    if (!(parent instanceof WorkspaceTabs)) {
+      return;
+    }
+
+    const tabs = parent as WorkspaceTabs & {
+      children?: WorkspaceLeaf[];
+      containerEl?: HTMLElement;
+      tabHeaderEl?: HTMLElement;
+      selectTab?: (leaf: WorkspaceLeaf) => void;
+      getTabInfo?: (target: WorkspaceLeaf) => { tabEl?: HTMLElement } | null;
+    };
+
+    const { children } = tabs;
+    if (!Array.isArray(children)) {
+      return;
+    }
+
+    const currentIndex = children.indexOf(leaf);
+    if (currentIndex <= 0) {
+      return;
+    }
+
+    children.splice(currentIndex, 1);
+    children.unshift(leaf);
+
+    const contentContainer = tabs.containerEl;
+    const viewContainer =
+      (leaf as unknown as { containerEl?: HTMLElement }).containerEl ??
+      leaf.view.containerEl;
+    if (contentContainer && viewContainer && contentContainer.firstElementChild !== viewContainer) {
+      contentContainer.insertBefore(
+        viewContainer,
+        contentContainer.firstElementChild ?? null
+      );
+    }
+
+    const headerContainer = tabs.tabHeaderEl;
+    const tabEl =
+      tabs.getTabInfo?.(leaf)?.tabEl ??
+      (leaf as unknown as { tabHeaderEl?: HTMLElement }).tabHeaderEl ??
+      null;
+    if (headerContainer && tabEl && headerContainer.firstElementChild !== tabEl) {
+      headerContainer.insertBefore(tabEl, headerContainer.firstElementChild ?? null);
+    }
+
+    tabs.selectTab?.(leaf);
   }
 
   private async syncPanels() {
@@ -1113,7 +1250,9 @@ export default class Mondo extends Plugin {
 
       const dashboardOpen = ws.getLeavesOfType(DASHBOARD_VIEW).length > 0;
       if (!dashboardOpen) {
-        await this.showPanel(DASHBOARD_VIEW, "main");
+        await this.showPanel(DASHBOARD_VIEW, "main", {
+          ensureFirstInTabGroup: true,
+        });
       }
 
       if (!isFocusModeActive() && !Platform.isMobileApp) {
@@ -1159,7 +1298,9 @@ export default class Mondo extends Plugin {
     if (!this.settings?.dashboard?.openAtBoot) return;
     if (this.hasFocusedDashboardOnStartup) return;
     this.hasFocusedDashboardOnStartup = true;
-    await this.showPanel(DASHBOARD_VIEW, "main");
+    await this.showPanel(DASHBOARD_VIEW, "main", {
+      ensureFirstInTabGroup: true,
+    });
   }
 
   getVoiceoverManager = () => this.voiceoverManager;
