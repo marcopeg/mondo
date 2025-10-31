@@ -481,7 +481,7 @@ export default class Mondo extends Plugin {
 
     this.addCommand({
       id: "insert-timestamp",
-      name: "Add Timestamp",
+      name: "Insert timestamp",
       editorCallback: () => {
         insertTimestamp(this.app, this);
       },
