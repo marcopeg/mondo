@@ -1,4 +1,5 @@
 import {
+  type App,
   MarkdownView,
   Plugin,
   Menu,
@@ -71,6 +72,7 @@ import { addDailyLog } from "@/commands/daily.addLog";
 import { journalMoveFactory } from "@/commands/journal.nav";
 import { insertTimestamp } from "@/commands/timestamp.insert";
 import { sendToChatGPT } from "@/commands/chatgpt.send";
+import { openSelfPersonNote } from "@/commands/self.open";
 import { injectJournalNav } from "@/events/inject-journal-nav";
 import {
   injectMondoLinks,
@@ -78,6 +80,12 @@ import {
 } from "@/events/inject-mondo-links";
 import { requestGeolocation } from "@/utils/geolocation";
 import { buildVoiceoverText } from "@/utils/buildVoiceoverText";
+import {
+  activateFocusMode,
+  deactivateFocusMode,
+  isFocusModeActive,
+  resetFocusMode,
+} from "@/utils/focusMode";
 import DailyNoteTracker from "@/utils/DailyNoteTracker";
 import { TimestampToolbarManager } from "@/utils/TimestampToolbarManager";
 import {
@@ -98,7 +106,9 @@ export default class Mondo extends Plugin {
   // Settings shape and defaults
   settings: any = {
     // default rootPaths: map every known Mondo type to '/'
-    rootPaths: Object.fromEntries(MONDO_FILE_TYPES.map((t) => [String(t), "/"])),
+    rootPaths: Object.fromEntries(
+      MONDO_FILE_TYPES.map((t) => [String(t), "/"])
+    ),
     journal: DEFAULT_MONDO_JOURNAL_SETTINGS,
     daily: DEFAULT_MONDO_DAILY_SETTINGS,
     templates: Object.fromEntries(MONDO_FILE_TYPES.map((t) => [String(t), ""])),
@@ -244,8 +254,7 @@ export default class Mondo extends Plugin {
       openAtBoot: dashboardSettings.openAtBoot === true,
       forceTab: dashboardSettings.forceTab === true,
       enableQuickTasks: dashboardSettings.enableQuickTasks !== false,
-      enableRelevantNotes:
-        dashboardSettings.enableRelevantNotes !== false,
+      enableRelevantNotes: dashboardSettings.enableRelevantNotes !== false,
       enableStats: dashboardSettings.enableStats !== false,
     };
   }
@@ -387,7 +396,7 @@ export default class Mondo extends Plugin {
 
     this.addCommand({
       id: "open-dashboard",
-      name: "Open Mondo Dashboard",
+      name: "Open Mondo dashboard",
       hotkeys: [{ modifiers: ["Mod", "Shift"], key: "m" }], // Cmd/Ctrl+Shift+M (user can change later)
       callback: () => this.showPanel(DASHBOARD_VIEW, "main"),
     });
@@ -418,7 +427,7 @@ export default class Mondo extends Plugin {
 
     this.addCommand({
       id: "transcribe-audio-note",
-      name: "Transcribe Audio Note",
+      name: "Start transcription",
       checkCallback: (checking) => {
         const file = this.app.workspace.getActiveFile();
 
@@ -438,17 +447,40 @@ export default class Mondo extends Plugin {
     });
 
     this.addCommand({
+      id: "mondo-start-note-dictation",
+      name: "Start dictation",
+      editorCallback: async () => {
+        const result = await this.noteDictationManager?.startDictation();
+        if (result === "started") {
+          new Notice("Dictation started. Tap again to stop.");
+        } else if (result === "recording") {
+          new Notice("Dictation already in progress.");
+        }
+      },
+    });
+
+    this.addCommand({
       id: "mondo-toggle-note-dictation",
       name: "Start Dictation (Mobile)",
       mobileOnly: true,
       icon: MONDO_DICTATION_ICON_ID,
       editorCallback: async () => {
-        const result = await this.noteDictationManager?.toggleRecording();
+        const status = this.noteDictationManager?.getDictationStatus();
+        if (status === "recording") {
+          const stopResult = this.noteDictationManager?.stopDictation({
+            showDisabledNotice: true,
+          });
+          if (stopResult === "stopped") {
+            new Notice("Dictation stopped. Processing…");
+          }
+          return;
+        }
+
+        const result = await this.noteDictationManager?.startDictation();
         if (result === "started") {
           new Notice("Dictation started. Tap again to stop.");
-        }
-        if (result === "stopped") {
-          new Notice("Dictation stopped. Processing…");
+        } else if (result === "recording") {
+          new Notice("Dictation already in progress.");
         }
       },
     });
@@ -456,7 +488,6 @@ export default class Mondo extends Plugin {
     this.addCommand({
       id: "open-journal",
       name: "Open Journal",
-      hotkeys: [{ modifiers: ["Mod", "Shift"], key: "j" }],
       callback: async () => {
         try {
           console.log("Opening journal...");
@@ -468,21 +499,45 @@ export default class Mondo extends Plugin {
     });
 
     this.addCommand({
+      id: "focus-mode-start",
+      name: "Start focus mode",
+      callback: () => {
+        activateFocusMode(this.app, "manual");
+      },
+    });
+
+    this.addCommand({
+      id: "focus-mode-stop",
+      name: "Stop focus mode",
+      callback: () => {
+        deactivateFocusMode(this.app, "manual");
+      },
+    });
+
+    this.addCommand({
       id: "open-today",
-      name: "Open Today's Note",
+      name: "Open Daily note",
       callback: async () => openDailyNote(this.app, this),
     });
 
     this.addCommand({
+      id: "open-self-person",
+      name: "Open myself",
+      callback: () => {
+        void openSelfPersonNote(this.app, this);
+      },
+    });
+
+    this.addCommand({
       id: "add-log",
-      name: "Add Log",
+      name: "Append to Daily note",
       hotkeys: [{ modifiers: ["Mod", "Shift"], key: "l" }],
       callback: async () => addDailyLog(this.app, this),
     });
 
     this.addCommand({
       id: "insert-timestamp",
-      name: "Add Timestamp",
+      name: "Insert timestamp",
       editorCallback: () => {
         insertTimestamp(this.app, this);
       },
@@ -541,8 +596,8 @@ export default class Mondo extends Plugin {
     });
 
     this.addCommand({
-      id: "generate-voiceover",
-      name: "Generate Voiceover",
+      id: "start-voiceover",
+      name: "Start Voiceover",
       checkCallback: (checking) => {
         const file = this.app.workspace.getActiveFile();
         if (!file || file.extension !== "md") {
@@ -569,7 +624,10 @@ export default class Mondo extends Plugin {
             void this.voiceoverManager?.generateVoiceover(
               file,
               activeEditor ?? null,
-              voiceoverText
+              voiceoverText,
+              {
+                scope: selectedText ? "selection" : "note",
+              }
             );
           })();
         }
@@ -734,7 +792,7 @@ export default class Mondo extends Plugin {
         }
 
         menu.addItem((item) => {
-          item.setTitle("Generate voiceover");
+          item.setTitle("Start Voiceover");
           item.setIcon("file-audio");
           item.onClick(() => {
             const selection = resolvedEditor?.getSelection?.() ?? "";
@@ -742,7 +800,8 @@ export default class Mondo extends Plugin {
               void this.voiceoverManager?.generateVoiceover(
                 file,
                 resolvedEditor,
-                selection
+                selection,
+                { scope: "selection" }
               );
             }
           });
@@ -756,6 +815,8 @@ export default class Mondo extends Plugin {
 
     // No config manager to dispose; settings-based config only
     this.mondoConfigManager = null;
+
+    resetFocusMode(this.app);
 
     // Cleanup the Mondo file manager
     const fileManager = MondoFileManager.getInstance(this.app);
@@ -799,10 +860,30 @@ export default class Mondo extends Plugin {
     }
 
     if (file.extension === "md") {
+      const commandId = `${this.manifest.id}:start-voiceover`;
+      const commandSources = new Set([
+        "view-header",
+        "more-options",
+        "inline-title",
+        "tab-header",
+      ]);
+
       menu.addItem((item) => {
-        item.setTitle("Generate voiceover");
+        item.setTitle("Start Voiceover");
         item.setIcon("file-audio");
         item.onClick(() => {
+          if (commandSources.has(source ?? "")) {
+            const commands = (
+              this.app as App & {
+                commands?: { executeCommandById?: (id: string) => boolean };
+              }
+            ).commands;
+            if (commands?.executeCommandById) {
+              void commands.executeCommandById(commandId);
+            }
+            return;
+          }
+
           void (async () => {
             const content = await this.app.vault.read(file);
             const activeView =
@@ -813,7 +894,8 @@ export default class Mondo extends Plugin {
             void this.voiceoverManager?.generateVoiceover(
               file,
               activeEditor ?? null,
-              voiceoverText
+              voiceoverText,
+              { scope: "note" }
             );
           })();
         });
@@ -884,16 +966,15 @@ export default class Mondo extends Plugin {
       const folderSetting = settings.rootPaths?.[entityType] ?? "/";
       const normalizedFolder = normalizeFolderPath(folderSetting);
       if (normalizedFolder) {
-        const existingFolder = this.app.vault.getAbstractFileByPath(
-          normalizedFolder
-        );
+        const existingFolder =
+          this.app.vault.getAbstractFileByPath(normalizedFolder);
         if (!existingFolder) {
           await this.app.vault.createFolder(normalizedFolder);
         }
       }
 
-      const displayBase = `Untitled ${label}`.replace(/\s+/g, " ").trim() ||
-        "Untitled";
+      const displayBase =
+        `Untitled ${label}`.replace(/\s+/g, " ").trim() || "Untitled";
       const fileBaseRoot =
         sanitizeFileBase(displayBase) || `untitled-${Date.now()}`;
 
@@ -935,10 +1016,7 @@ export default class Mondo extends Plugin {
         datetime: isoTimestamp,
       });
 
-      const created = (await this.app.vault.create(
-        filePath,
-        content
-      )) as TFile;
+      const created = (await this.app.vault.create(filePath, content)) as TFile;
 
       const leaf = this.app.workspace.getLeaf(true);
       if (leaf) {
@@ -958,7 +1036,10 @@ export default class Mondo extends Plugin {
   private async openEntityPanel(entityType: MondoFileType) {
     const state: MondoEntityPanelViewState = { entityType };
     if (!getMondoEntityConfig(entityType)) {
-      console.warn("Mondo: attempted to open panel for unknown type", entityType);
+      console.warn(
+        "Mondo: attempted to open panel for unknown type",
+        entityType
+      );
       return;
     }
     await this.showPanel(ENTITY_PANEL_VIEW, "main", {
@@ -1024,6 +1105,8 @@ export default class Mondo extends Plugin {
     const forceDashboardTab = Boolean(this.settings?.dashboard?.forceTab);
 
     if (!hasAnyNote) {
+      deactivateFocusMode(this.app, "journal");
+
       if (!forceDashboardTab) {
         return;
       }
@@ -1033,11 +1116,10 @@ export default class Mondo extends Plugin {
         await this.showPanel(DASHBOARD_VIEW, "main");
       }
 
-      if (!Platform.isMobileApp) {
+      if (!isFocusModeActive() && !Platform.isMobileApp) {
         ws.leftSplit?.expand?.();
       }
       ws.rightSplit?.collapse?.();
-      document.body.classList.remove("focus-mode");
       return;
     }
 
@@ -1062,14 +1144,13 @@ export default class Mondo extends Plugin {
       activePath.startsWith(journalRoot) && activePath.length > 0;
 
     if (isJournal) {
-      ws.leftSplit?.collapse?.();
-      ws.rightSplit?.collapse?.();
-      document.body.classList.add("focus-mode");
+      activateFocusMode(this.app, "journal");
       return;
     }
 
-    document.body.classList.remove("focus-mode");
-    if (!Platform.isMobileApp) {
+    deactivateFocusMode(this.app, "journal");
+
+    if (!isFocusModeActive() && !Platform.isMobileApp) {
       ws.leftSplit?.expand?.();
     }
   }

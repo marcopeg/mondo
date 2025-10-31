@@ -274,31 +274,39 @@ export class NoteDictationManager {
     void this.toggleRecording({ showDisabledNotice: false });
   };
 
-  toggleRecording = async ({
-    showDisabledNotice = true,
-  }: { showDisabledNotice?: boolean } = {}) => {
+  private resolveController = (showDisabledNotice: boolean) => {
     this.render();
 
-    const controller = this.controller;
-    if (!controller || !this.toolbarVisible) {
+    const controller = this.ensureController();
+
+    if (!this.toolbarVisible) {
       if (showDisabledNotice) {
         new Notice("Open a markdown note to record a voice snippet.");
       }
-      return "unavailable" as const;
+      return null;
     }
 
     if (this.toolbarDisabled) {
       if (showDisabledNotice && this.toolbarTooltip) {
         new Notice(this.toolbarTooltip);
       }
-      return "unavailable" as const;
+      return null;
     }
 
+    return controller;
+  };
+
+  private startWithController = async (
+    controller: NoteDictationController,
+    showDisabledNotice: boolean
+  ) => {
     const state = controller.getState();
 
     if (state.status === "recording") {
-      controller.stop();
-      return "stopped" as const;
+      if (showDisabledNotice) {
+        new Notice("Dictation already in progress.");
+      }
+      return "recording" as const;
     }
 
     if (state.status === "processing") {
@@ -312,6 +320,67 @@ export class NoteDictationManager {
 
     await controller.start();
     return "started" as const;
+  };
+
+  startDictation = async ({
+    showDisabledNotice = true,
+  }: { showDisabledNotice?: boolean } = {}) => {
+    const controller = this.resolveController(showDisabledNotice);
+    if (!controller) {
+      return "unavailable" as const;
+    }
+
+    return this.startWithController(controller, showDisabledNotice);
+  };
+
+  stopDictation = ({
+    showDisabledNotice = true,
+  }: { showDisabledNotice?: boolean } = {}) => {
+    const controller = this.resolveController(showDisabledNotice);
+    if (!controller) {
+      return "unavailable" as const;
+    }
+
+    const state = controller.getState();
+
+    if (state.status === "recording") {
+      controller.stop();
+      return "stopped" as const;
+    }
+
+    if (showDisabledNotice) {
+      if (state.status === "processing") {
+        new Notice(
+          "Please wait for the current dictation to finish processing."
+        );
+      } else if (state.status === "idle") {
+        new Notice("No active dictation to stop.");
+      }
+    }
+
+    return state.status;
+  };
+
+  getDictationStatus = () => {
+    return this.controller?.getState().status ?? "idle";
+  };
+
+  toggleRecording = async ({
+    showDisabledNotice = true,
+  }: { showDisabledNotice?: boolean } = {}) => {
+    const controller = this.resolveController(showDisabledNotice);
+    if (!controller) {
+      return "unavailable" as const;
+    }
+
+    const state = controller.getState();
+
+    if (state.status === "recording") {
+      controller.stop();
+      return "stopped" as const;
+    }
+
+    return this.startWithController(controller, showDisabledNotice);
   };
 
   private updateToolbarButton = () => {

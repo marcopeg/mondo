@@ -312,8 +312,10 @@ export class VoiceoverManager {
   generateVoiceover = async (
     file: TFile,
     _editor: Editor | null,
-    selectedText: string
+    selectedText: string,
+    options?: { scope?: "note" | "selection" }
   ) => {
+    const scope = options?.scope ?? "selection";
     const trimmed = selectedText.trim();
 
     if (!trimmed) {
@@ -356,6 +358,9 @@ export class VoiceoverManager {
 
       if (existing) {
         voiceoverModal.showPlayer(existing);
+        if (scope === "note") {
+          await this.associateVoiceoverWithNote(file, existing);
+        }
         return;
       }
 
@@ -382,6 +387,9 @@ export class VoiceoverManager {
       );
 
       voiceoverModal.showPlayer(audioFile);
+      if (scope === "note") {
+        await this.associateVoiceoverWithNote(file, audioFile);
+      }
       new Notice(`Voiceover saved to ${audioFile.path}`);
     } catch (error) {
       const abortError =
@@ -561,6 +569,32 @@ export class VoiceoverManager {
     const targetPath = normalizePath(`${normalizedDirectory}/${fileName}`);
     const created = await vault.createBinary(targetPath, audio);
     return created;
+  };
+
+  private associateVoiceoverWithNote = async (note: TFile, audio: TFile) => {
+    try {
+      await this.plugin.app.fileManager.processFrontMatter(note, (frontmatter) => {
+        const current =
+          typeof frontmatter.voiceover === "string"
+            ? frontmatter.voiceover.trim()
+            : "";
+
+        const metadataCache = this.plugin.app.metadataCache;
+        const linkTarget = metadataCache
+          .fileToLinktext(audio, note.path)
+          .trim();
+        const resolvedTarget = linkTarget || audio.path;
+        const voiceoverLink = `[[${resolvedTarget}]]`;
+
+        if (current === voiceoverLink) {
+          return;
+        }
+
+        frontmatter.voiceover = voiceoverLink;
+      });
+    } catch (error) {
+      console.error("Mondo: failed to associate voiceover with note", error);
+    }
   };
 
   private ensureFolder = async (folderPath: string) => {

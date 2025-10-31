@@ -20,7 +20,8 @@
       "book",
       "show",
       "newsletter",
-      "document"
+      "document",
+      "article"
     ]
   },
   "relevantNotes": {
@@ -45,7 +46,8 @@
         "book",
         "show",
         "newsletter",
-        "document"
+        "document",
+        "article"
       ]
     }
   },
@@ -2399,6 +2401,98 @@
             ],
             "sort": {
               "strategy": "manual"
+            }
+          }
+        }
+      ]
+    },
+    "article": {
+      "name": "Articles",
+      "icon": "newspaper",
+      "template": "\ndate: {{date}}\nstatus: draft\n---\n",
+      "list": {
+        "columns": ["cover", "show", "author", "status", "source"]
+      },
+      "links": [
+        {
+          "type": "backlinks",
+          "key": "tasks",
+          "config": {
+            "targetType": "task",
+            "properties": ["linksTo"],
+            "title": "Tasks",
+            "icon": "check-square",
+            "columns": [
+              {
+                "type": "show"
+              },
+              {
+                "type": "attribute",
+                "key": "status"
+              },
+              {
+                "type": "date",
+                "align": "right"
+              }
+            ],
+            "sort": {
+              "strategy": "manual"
+            }
+          }
+        },
+        {
+          "type": "backlinks",
+          "key": "logs",
+          "config": {
+            "targetType": "log",
+            "properties": ["linksTo"],
+            "title": "Logs",
+            "icon": "clipboard-list"
+          }
+        },
+        {
+          "type": "backlinks",
+          "key": "links",
+          "config": {
+            "title": "Links",
+            "icon": "layers",
+            "find": {
+              "query": [
+                {
+                  "description": "Notes referencing this article",
+                  "steps": [
+                    {
+                      "notIn": {
+                        "property": "linksTo",
+                        "type": ["log", "task"]
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            "columns": [
+              {
+                "type": "entityIcon"
+              },
+              {
+                "type": "show"
+              },
+              {
+                "type": "attribute",
+                "key": "type",
+                "label": "Type"
+              },
+              {
+                "type": "date",
+                "align": "right"
+              }
+            ],
+            "sort": {
+              "strategy": "manual"
+            },
+            "createEntity": {
+              "enabled": false
             }
           }
         }

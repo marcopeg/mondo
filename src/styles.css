@@ -430,6 +430,13 @@
   pointer-events: auto;
 }
 
+/* Hide FAB button on mobile-sized screens */
+@media (max-width: 640px) {
+  .mondo-voice-fab--desktop {
+    display: none !important;
+  }
+}
+
 .mondo-voice-fab__button {
   position: relative;
   display: inline-flex;
