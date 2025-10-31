@@ -6,6 +6,7 @@ import { MONDO_ENTITIES, MONDO_UI_CONFIG } from "@/entities";
 import EntityTilesGrid from "./components/EntityTilesGrid";
 import RelevantNotes from "./RelevantNotes";
 import QuickTasks from "./QuickTasks";
+import QuickSearch from "./QuickSearch";
 import { useSetting } from "@/hooks/use-setting";
 import { resolveSelfPerson } from "@/utils/selfPerson";
 import { useInboxTasks } from "@/hooks/use-inbox-tasks";
@@ -107,6 +108,18 @@ export const DashboardView = () => {
       }));
   }, []);
 
+  const quickSearchItems = useMemo(() => {
+    const configured = MONDO_UI_CONFIG?.quickSearch?.entities ?? [];
+    return configured
+      .map((type) => MONDO_ENTITIES[type])
+      .filter(Boolean)
+      .map((config) => ({
+        type: config.type,
+        icon: config.icon,
+        title: config.name,
+      }));
+  }, []);
+
   const quickActions = useMemo(
     () =>
       [
@@ -162,6 +175,12 @@ export const DashboardView = () => {
           ))}
         </div>
       </div>
+      {quickSearchItems.length > 0 && (
+        <div className="space-y-4">
+          <Typography variant="h1">IMS Entities Quick Search</Typography>
+          <QuickSearch items={quickSearchItems} onOpenEntityPanel={onOpenEntityPanel} />
+        </div>
+      )}
       {(quickTasksEnabled || relevantNotesEnabled) && (
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 lg:items-start">
           {quickTasksEnabled && (

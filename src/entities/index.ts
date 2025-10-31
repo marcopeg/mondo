@@ -16,6 +16,7 @@ type MondoEntityState = {
   ui: {
     tiles: { order: MondoEntityType[] };
     relevantNotes: { filter: { order: MondoEntityType[] } };
+    quickSearch: { entities: MondoEntityType[] };
   };
 };
 
@@ -44,6 +45,9 @@ const buildState = (config: MondoConfig): MondoEntityState => {
   const relevantOrder = Array.isArray(config.relevantNotes?.filter?.order)
     ? (config.relevantNotes?.filter?.order as MondoEntityType[])
     : types;
+  const quickSearchEntities = Array.isArray(config.quickSearch?.entities)
+    ? (config.quickSearch?.entities as MondoEntityType[])
+    : [];
 
   const ui = {
     tiles: {
@@ -53,6 +57,9 @@ const buildState = (config: MondoConfig): MondoEntityState => {
       filter: {
         order: relevantOrder,
       },
+    },
+    quickSearch: {
+      entities: quickSearchEntities,
     },
   } as const;
 
@@ -76,7 +83,7 @@ export let MONDO_ENTITY_TYPES = currentState.types;
 
 export let MONDO_ENTITY_TYPE_SET = currentState.typeSet;
 
-// UI configuration: controls ordering for tiles and relevant notes filters
+// UI configuration: controls ordering for tiles, relevant notes filters, and quick search panels
 export let MONDO_UI_CONFIG = currentState.ui;
 
 export type MondoConfigPreset = {
