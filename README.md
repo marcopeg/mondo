@@ -7,6 +7,7 @@ _Mondo_ is a general purpose plugin that adds plentiful of utilities to a standa
 - **📝 Transcription:** generate a transcription file out of any Obsidian recording
 - **🔈 Voiceover:** transform your note into an audio file
 - **🕰️ Timestamps:** quickly add timestamps into your notes
+- **🧘 Focus Mode:** hide most of the UI and focus on your writing
 - **🤖 Open in ChatGPT:** use your notes as templates for ChatGPT prompts
 - **👫 Mondo IMS:** typed entities with strong relations
 - **📈 Habits Tracker:** embed a streak tracking app in any note
@@ -78,6 +79,14 @@ Here is an example of a Heading level 2 timestamp template:
 ```Markdown
 ## YY/MM/DD hh:mm
 ```
+
+# 🧘 Focus Mode
+
+Sometimes, you just want to get lost in your writing.
+
+Run the command `Start Focus Mode` to hide away most of the Obsidian UI and focus entirely on your writing activity.
+
+👉 Mondo will activate this mode any time you step into your Journal to give you maximum focus on introspection and self-awarness.
 
 # 🤖 Open in ChatGPT
 
