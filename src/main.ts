@@ -13,6 +13,7 @@ import {
 } from "obsidian";
 import {
   MondoDashboardViewWrapper,
+  DASHBOARD_ICON,
   DASHBOARD_VIEW,
 } from "@/views/dashboard-view/wrapper";
 import { MondoAudioLogsViewWrapper } from "@/views/audio-logs-view/wrapper";
@@ -154,6 +155,7 @@ export default class Mondo extends Plugin {
   private dailyNoteTracker: DailyNoteTracker | null = null;
   private geolocationAbortController: AbortController | null = null;
   private mondoConfigManager: null = null;
+  private dashboardRibbonEl: HTMLElement | null = null;
   private audioLogsRibbonEl: HTMLElement | null = null;
 
   private applyGeolocationToFile = async (
@@ -772,7 +774,7 @@ export default class Mondo extends Plugin {
 
     this.registerView(
       DASHBOARD_VIEW,
-      (leaf) => new MondoDashboardViewWrapper(leaf, MONDO_ICON)
+      (leaf) => new MondoDashboardViewWrapper(leaf, DASHBOARD_ICON)
     );
 
     this.registerView(
@@ -801,6 +803,13 @@ export default class Mondo extends Plugin {
     );
 
     if (Platform.isDesktopApp) {
+      this.dashboardRibbonEl = this.addRibbonIcon(
+        DASHBOARD_ICON,
+        "Open Mondo Dashboard",
+        () => {
+          void this.showPanel(DASHBOARD_VIEW, "main");
+        }
+      );
       this.audioLogsRibbonEl = this.addRibbonIcon(
         AUDIO_LOGS_ICON,
         "Open Audio Logs",
@@ -903,6 +912,8 @@ export default class Mondo extends Plugin {
       .getLeavesOfType(AUDIO_LOGS_VIEW)
       .forEach((leaf) => leaf.detach());
 
+    this.dashboardRibbonEl?.remove();
+    this.dashboardRibbonEl = null;
     this.audioLogsRibbonEl?.remove();
     this.audioLogsRibbonEl = null;
 
