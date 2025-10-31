@@ -388,7 +388,7 @@ export default class Mondo extends Plugin {
 
     this.addCommand({
       id: "open-dashboard",
-      name: "Open Mondo Dashboard",
+      name: "Open Mondo dashboard",
       hotkeys: [{ modifiers: ["Mod", "Shift"], key: "m" }], // Cmd/Ctrl+Shift+M (user can change later)
       callback: () => this.showPanel(DASHBOARD_VIEW, "main"),
     });
