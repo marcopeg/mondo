@@ -80,6 +80,12 @@ import {
 } from "@/events/inject-mondo-links";
 import { requestGeolocation } from "@/utils/geolocation";
 import { buildVoiceoverText } from "@/utils/buildVoiceoverText";
+import {
+  activateFocusMode,
+  deactivateFocusMode,
+  isFocusModeActive,
+  resetFocusMode,
+} from "@/utils/focusMode";
 import DailyNoteTracker from "@/utils/DailyNoteTracker";
 import { TimestampToolbarManager } from "@/utils/TimestampToolbarManager";
 import {
@@ -492,6 +498,22 @@ export default class Mondo extends Plugin {
     });
 
     this.addCommand({
+      id: "focus-mode-start",
+      name: "Start focus mode",
+      callback: () => {
+        activateFocusMode(this.app, "manual");
+      },
+    });
+
+    this.addCommand({
+      id: "focus-mode-stop",
+      name: "Stop focus mode",
+      callback: () => {
+        deactivateFocusMode(this.app, "manual");
+      },
+    });
+
+    this.addCommand({
       id: "open-today",
       name: "Open Daily note",
       callback: async () => openDailyNote(this.app, this),
@@ -793,6 +815,8 @@ export default class Mondo extends Plugin {
     // No config manager to dispose; settings-based config only
     this.mondoConfigManager = null;
 
+    resetFocusMode(this.app);
+
     // Cleanup the Mondo file manager
     const fileManager = MondoFileManager.getInstance(this.app);
     fileManager.cleanup();
@@ -1081,6 +1105,8 @@ export default class Mondo extends Plugin {
     const forceDashboardTab = Boolean(this.settings?.dashboard?.forceTab);
 
     if (!hasAnyNote) {
+      deactivateFocusMode(this.app, "journal");
+
       if (!forceDashboardTab) {
         return;
       }
@@ -1090,11 +1116,10 @@ export default class Mondo extends Plugin {
         await this.showPanel(DASHBOARD_VIEW, "main");
       }
 
-      if (!Platform.isMobileApp) {
+      if (!isFocusModeActive() && !Platform.isMobileApp) {
         ws.leftSplit?.expand?.();
       }
       ws.rightSplit?.collapse?.();
-      document.body.classList.remove("focus-mode");
       return;
     }
 
@@ -1119,14 +1144,13 @@ export default class Mondo extends Plugin {
       activePath.startsWith(journalRoot) && activePath.length > 0;
 
     if (isJournal) {
-      ws.leftSplit?.collapse?.();
-      ws.rightSplit?.collapse?.();
-      document.body.classList.add("focus-mode");
+      activateFocusMode(this.app, "journal");
       return;
     }
 
-    document.body.classList.remove("focus-mode");
-    if (!Platform.isMobileApp) {
+    deactivateFocusMode(this.app, "journal");
+
+    if (!isFocusModeActive() && !Platform.isMobileApp) {
       ws.leftSplit?.expand?.();
     }
   }
