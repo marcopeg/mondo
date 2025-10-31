@@ -1,4 +1,5 @@
 import {
+  type App,
   MarkdownView,
   Plugin,
   Menu,
@@ -572,8 +573,8 @@ export default class Mondo extends Plugin {
     });
 
     this.addCommand({
-      id: "generate-voiceover",
-      name: "Generate Voiceover",
+      id: "start-voiceover",
+      name: "Start Voiceover",
       checkCallback: (checking) => {
         const file = this.app.workspace.getActiveFile();
         if (!file || file.extension !== "md") {
@@ -600,7 +601,10 @@ export default class Mondo extends Plugin {
             void this.voiceoverManager?.generateVoiceover(
               file,
               activeEditor ?? null,
-              voiceoverText
+              voiceoverText,
+              {
+                scope: selectedText ? "selection" : "note",
+              }
             );
           })();
         }
@@ -765,7 +769,7 @@ export default class Mondo extends Plugin {
         }
 
         menu.addItem((item) => {
-          item.setTitle("Generate voiceover");
+          item.setTitle("Start Voiceover");
           item.setIcon("file-audio");
           item.onClick(() => {
             const selection = resolvedEditor?.getSelection?.() ?? "";
@@ -773,7 +777,8 @@ export default class Mondo extends Plugin {
               void this.voiceoverManager?.generateVoiceover(
                 file,
                 resolvedEditor,
-                selection
+                selection,
+                { scope: "selection" }
               );
             }
           });
@@ -830,10 +835,30 @@ export default class Mondo extends Plugin {
     }
 
     if (file.extension === "md") {
+      const commandId = `${this.manifest.id}:start-voiceover`;
+      const commandSources = new Set([
+        "view-header",
+        "more-options",
+        "inline-title",
+        "tab-header",
+      ]);
+
       menu.addItem((item) => {
-        item.setTitle("Generate voiceover");
+        item.setTitle("Start Voiceover");
         item.setIcon("file-audio");
         item.onClick(() => {
+          if (commandSources.has(source ?? "")) {
+            const commands = (
+              this.app as App & {
+                commands?: { executeCommandById?: (id: string) => boolean };
+              }
+            ).commands;
+            if (commands?.executeCommandById) {
+              void commands.executeCommandById(commandId);
+            }
+            return;
+          }
+
           void (async () => {
             const content = await this.app.vault.read(file);
             const activeView =
@@ -844,7 +869,8 @@ export default class Mondo extends Plugin {
             void this.voiceoverManager?.generateVoiceover(
               file,
               activeEditor ?? null,
-              voiceoverText
+              voiceoverText,
+              { scope: "note" }
             );
           })();
         });
