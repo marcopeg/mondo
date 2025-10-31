@@ -475,7 +475,7 @@ export default class Mondo extends Plugin {
 
     this.addCommand({
       id: "add-log",
-      name: "Add Log",
+      name: "Add to Daily note",
       hotkeys: [{ modifiers: ["Mod", "Shift"], key: "l" }],
       callback: async () => addDailyLog(this.app, this),
     });
