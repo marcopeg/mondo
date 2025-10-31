@@ -418,7 +418,7 @@ export default class Mondo extends Plugin {
 
     this.addCommand({
       id: "transcribe-audio-note",
-      name: "Transcribe Audio Note",
+      name: "Start transcription",
       checkCallback: (checking) => {
         const file = this.app.workspace.getActiveFile();
 
