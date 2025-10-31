@@ -507,21 +507,7 @@ export default class Mondo extends Plugin {
 
     this.addCommand({
       id: "mondo-start-note-dictation",
-      name: "Start dictation",
-      editorCallback: async () => {
-        const result = await this.noteDictationManager?.startDictation();
-        if (result === "started") {
-          new Notice("Dictation started. Tap again to stop.");
-        } else if (result === "recording") {
-          new Notice("Dictation already in progress.");
-        }
-      },
-    });
-
-    this.addCommand({
-      id: "mondo-toggle-note-dictation",
-      name: "Start Dictation (Mobile)",
-      mobileOnly: true,
+      name: "Start Dictation",
       icon: MONDO_DICTATION_ICON_ID,
       editorCallback: async () => {
         const status = this.noteDictationManager?.getDictationStatus();
@@ -597,6 +583,7 @@ export default class Mondo extends Plugin {
     this.addCommand({
       id: "insert-timestamp",
       name: "Insert timestamp",
+      icon: "clock",
       editorCallback: () => {
         insertTimestamp(this.app, this);
       },
@@ -619,6 +606,7 @@ export default class Mondo extends Plugin {
     this.addCommand({
       id: "send-to-chatgpt",
       name: "Send to ChatGPT",
+      icon: "send",
       editorCallback: (editor, context) => {
         const markdownView =
           context instanceof MarkdownView
