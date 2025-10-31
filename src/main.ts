@@ -49,10 +49,7 @@ import { VoiceoverManager } from "@/utils/VoiceoverManager";
 import { NoteDictationManager } from "@/utils/NoteDictationManager";
 import { validateMondoConfig } from "@/utils/MondoConfigManager";
 import { normalizeFolderPath } from "@/utils/normalizeFolderPath";
-import {
-  MONDO_DICTATION_ICON_ID,
-  registerDictationIcon,
-} from "@/utils/registerDictationIcon";
+import { registerDictationIcon } from "@/utils/registerDictationIcon";
 import {
   MondoFileType,
   MONDO_FILE_TYPES,
@@ -507,8 +504,8 @@ export default class Mondo extends Plugin {
 
     this.addCommand({
       id: "mondo-start-note-dictation",
-      name: "Start Dictation",
-      icon: MONDO_DICTATION_ICON_ID,
+      name: "Start dictation",
+      icon: "mic",
       editorCallback: async () => {
         const status = this.noteDictationManager?.getDictationStatus();
         if (status === "recording") {
@@ -582,7 +579,7 @@ export default class Mondo extends Plugin {
 
     this.addCommand({
       id: "insert-timestamp",
-      name: "Insert timestamp",
+      name: "Add timestamp",
       icon: "clock",
       editorCallback: () => {
         insertTimestamp(this.app, this);
@@ -606,7 +603,7 @@ export default class Mondo extends Plugin {
     this.addCommand({
       id: "send-to-chatgpt",
       name: "Send to ChatGPT",
-      icon: "send",
+      icon: "external-link",
       editorCallback: (editor, context) => {
         const markdownView =
           context instanceof MarkdownView
@@ -659,6 +656,7 @@ export default class Mondo extends Plugin {
     this.addCommand({
       id: "start-voiceover",
       name: "Start Voiceover",
+      icon: "megaphone",
       checkCallback: (checking) => {
         const file = this.app.workspace.getActiveFile();
         if (!file || file.extension !== "md") {

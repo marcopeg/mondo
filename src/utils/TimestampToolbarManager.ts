@@ -77,8 +77,8 @@ export class TimestampToolbarManager {
     button.type = "button";
     button.className =
       "mondo-mobile-toolbar-button mondo-timestamp-toolbar-button";
-    button.setAttribute("aria-label", "Insert timestamp");
-    button.setAttribute("title", "Insert timestamp");
+    button.setAttribute("aria-label", "Add timestamp");
+    button.setAttribute("title", "Add timestamp");
     button.addEventListener("click", () => {
       void insertTimestamp(this.plugin.app, this.plugin);
     });
@@ -90,7 +90,7 @@ export class TimestampToolbarManager {
 
     const label = document.createElement("span");
     label.className = "mondo-mobile-toolbar-button__label";
-    label.textContent = "Timestamp";
+    label.textContent = "Add timestamp";
     button.appendChild(label);
 
     if (container.firstChild) {
