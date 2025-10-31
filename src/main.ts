@@ -438,17 +438,40 @@ export default class Mondo extends Plugin {
     });
 
     this.addCommand({
+      id: "mondo-start-note-dictation",
+      name: "Start dictation",
+      editorCallback: async () => {
+        const result = await this.noteDictationManager?.startDictation();
+        if (result === "started") {
+          new Notice("Dictation started. Tap again to stop.");
+        } else if (result === "recording") {
+          new Notice("Dictation already in progress.");
+        }
+      },
+    });
+
+    this.addCommand({
       id: "mondo-toggle-note-dictation",
       name: "Start Dictation (Mobile)",
       mobileOnly: true,
       icon: MONDO_DICTATION_ICON_ID,
       editorCallback: async () => {
-        const result = await this.noteDictationManager?.toggleRecording();
+        const status = this.noteDictationManager?.getDictationStatus();
+        if (status === "recording") {
+          const stopResult = this.noteDictationManager?.stopDictation({
+            showDisabledNotice: true,
+          });
+          if (stopResult === "stopped") {
+            new Notice("Dictation stopped. Processing…");
+          }
+          return;
+        }
+
+        const result = await this.noteDictationManager?.startDictation();
         if (result === "started") {
           new Notice("Dictation started. Tap again to stop.");
-        }
-        if (result === "stopped") {
-          new Notice("Dictation stopped. Processing…");
+        } else if (result === "recording") {
+          new Notice("Dictation already in progress.");
         }
       },
     });
