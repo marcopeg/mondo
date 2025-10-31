@@ -71,6 +71,7 @@ import { addDailyLog } from "@/commands/daily.addLog";
 import { journalMoveFactory } from "@/commands/journal.nav";
 import { insertTimestamp } from "@/commands/timestamp.insert";
 import { sendToChatGPT } from "@/commands/chatgpt.send";
+import { openSelfPersonNote } from "@/commands/self.open";
 import { injectJournalNav } from "@/events/inject-journal-nav";
 import {
   injectMondoLinks,
@@ -493,6 +494,14 @@ export default class Mondo extends Plugin {
       id: "open-today",
       name: "Open Today's Note",
       callback: async () => openDailyNote(this.app, this),
+    });
+
+    this.addCommand({
+      id: "open-self-person",
+      name: "Open myself",
+      callback: () => {
+        void openSelfPersonNote(this.app, this);
+      },
     });
 
     this.addCommand({
