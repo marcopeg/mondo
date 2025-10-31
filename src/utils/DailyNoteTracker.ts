@@ -112,8 +112,8 @@ export class DailyNoteTracker {
       return true;
     }
 
-    const inboxRoot = this.getInboxRoot();
-    if (!isInFolder(file.path, inboxRoot)) {
+    const dailyRoot = this.getDailyRoot();
+    if (!isInFolder(file.path, dailyRoot)) {
       return false;
     }
 
@@ -245,8 +245,8 @@ export class DailyNoteTracker {
     return `${year}-${month}-${day}`;
   };
 
-  private getInboxRoot = (): string =>
-    normalizeFolder((this.plugin as any).settings?.inbox ?? "Inbox");
+  private getDailyRoot = (): string =>
+    normalizeFolder((this.plugin as any).settings?.daily?.root ?? "Daily");
 
   private getDailyEntryFormat = (): string =>
     ((this.plugin as any).settings?.daily?.entry as string | undefined) ??
@@ -268,7 +268,7 @@ export class DailyNoteTracker {
   };
 
   private getDailyNotePath = (dateKey: string): string => {
-    const folder = this.getInboxRoot();
+    const folder = this.getDailyRoot();
     const name = this.buildDailyNoteName(dateKey);
     return folder ? `${folder}/${name}` : name;
   };
@@ -283,10 +283,10 @@ export class DailyNoteTracker {
       this.dailyNoteCache.delete(dateKey);
     }
 
-    const inboxRoot = this.getInboxRoot();
+    const dailyRoot = this.getDailyRoot();
     const files = this.app.vault.getMarkdownFiles();
     for (const candidate of files) {
-      if (!isInFolder(candidate.path, inboxRoot)) {
+      if (!isInFolder(candidate.path, dailyRoot)) {
         continue;
       }
       const cache = this.app.metadataCache.getFileCache(candidate);
@@ -344,7 +344,7 @@ export class DailyNoteTracker {
     }
 
     const path = this.getDailyNotePath(dateKey);
-    await this.ensureFolderExists(this.getInboxRoot());
+    await this.ensureFolderExists(this.getDailyRoot());
 
     let file = this.app.vault.getAbstractFileByPath(path);
     if (file instanceof TFile) {
