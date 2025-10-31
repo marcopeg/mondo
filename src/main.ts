@@ -492,7 +492,7 @@ export default class Mondo extends Plugin {
 
     this.addCommand({
       id: "open-today",
-      name: "Open Today's Note",
+      name: "Open Daily note",
       callback: async () => openDailyNote(this.app, this),
     });
 
