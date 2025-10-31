@@ -9,6 +9,7 @@ import {
   TFile,
   type ViewState,
   type WorkspaceLeaf,
+  WorkspaceTabs,
 } from "obsidian";
 import {
   MondoDashboardViewWrapper,
@@ -106,6 +107,7 @@ const MONDO_ICON = "anchor";
 type PanelOpenOptions = {
   state?: Record<string, unknown>;
   reuseMatching?: (leaf: WorkspaceLeaf) => boolean;
+  ensureFirstInTabGroup?: boolean;
 };
 
 export default class Mondo extends Plugin {
@@ -410,7 +412,10 @@ export default class Mondo extends Plugin {
       id: "open-dashboard",
       name: "Open Mondo dashboard",
       hotkeys: [{ modifiers: ["Mod", "Shift"], key: "m" }], // Cmd/Ctrl+Shift+M (user can change later)
-      callback: () => this.showPanel(DASHBOARD_VIEW, "main"),
+      callback: () =>
+        this.showPanel(DASHBOARD_VIEW, "main", {
+          ensureFirstInTabGroup: true,
+        }),
     });
 
     this.addCommand({
@@ -1142,7 +1147,71 @@ export default class Mondo extends Plugin {
       : { type: viewType, active: true };
 
     await leaf.setViewState(viewState);
+    if (options?.ensureFirstInTabGroup) {
+      this.ensureLeafIsFirstInMainTabs(leaf);
+    }
     workspace.revealLeaf(leaf);
+  }
+
+  private ensureLeafIsFirstInMainTabs(leaf: WorkspaceLeaf) {
+    const { workspace } = this.app;
+    const rootSplit = workspace.rootSplit;
+    if (!rootSplit) {
+      return;
+    }
+
+    const root = leaf.getRoot();
+    if (root !== rootSplit) {
+      return;
+    }
+
+    const parent = leaf.parent;
+    if (!(parent instanceof WorkspaceTabs)) {
+      return;
+    }
+
+    const tabs = parent as WorkspaceTabs & {
+      children?: WorkspaceLeaf[];
+      containerEl?: HTMLElement;
+      tabHeaderEl?: HTMLElement;
+      selectTab?: (leaf: WorkspaceLeaf) => void;
+      getTabInfo?: (target: WorkspaceLeaf) => { tabEl?: HTMLElement } | null;
+    };
+
+    const { children } = tabs;
+    if (!Array.isArray(children)) {
+      return;
+    }
+
+    const currentIndex = children.indexOf(leaf);
+    if (currentIndex <= 0) {
+      return;
+    }
+
+    children.splice(currentIndex, 1);
+    children.unshift(leaf);
+
+    const contentContainer = tabs.containerEl;
+    const viewContainer =
+      (leaf as unknown as { containerEl?: HTMLElement }).containerEl ??
+      leaf.view.containerEl;
+    if (contentContainer && viewContainer && contentContainer.firstElementChild !== viewContainer) {
+      contentContainer.insertBefore(
+        viewContainer,
+        contentContainer.firstElementChild ?? null
+      );
+    }
+
+    const headerContainer = tabs.tabHeaderEl;
+    const tabEl =
+      tabs.getTabInfo?.(leaf)?.tabEl ??
+      (leaf as unknown as { tabHeaderEl?: HTMLElement }).tabHeaderEl ??
+      null;
+    if (headerContainer && tabEl && headerContainer.firstElementChild !== tabEl) {
+      headerContainer.insertBefore(tabEl, headerContainer.firstElementChild ?? null);
+    }
+
+    tabs.selectTab?.(leaf);
   }
 
   private async syncPanels() {
@@ -1160,7 +1229,9 @@ export default class Mondo extends Plugin {
 
       const dashboardOpen = ws.getLeavesOfType(DASHBOARD_VIEW).length > 0;
       if (!dashboardOpen) {
-        await this.showPanel(DASHBOARD_VIEW, "main");
+        await this.showPanel(DASHBOARD_VIEW, "main", {
+          ensureFirstInTabGroup: true,
+        });
       }
 
       if (!isFocusModeActive() && !Platform.isMobileApp) {
@@ -1206,7 +1277,9 @@ export default class Mondo extends Plugin {
     if (!this.settings?.dashboard?.openAtBoot) return;
     if (this.hasFocusedDashboardOnStartup) return;
     this.hasFocusedDashboardOnStartup = true;
-    await this.showPanel(DASHBOARD_VIEW, "main");
+    await this.showPanel(DASHBOARD_VIEW, "main", {
+      ensureFirstInTabGroup: true,
+    });
   }
 
   getVoiceoverManager = () => this.voiceoverManager;
