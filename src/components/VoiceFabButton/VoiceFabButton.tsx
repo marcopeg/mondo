@@ -78,7 +78,9 @@ export const VoiceFabButton: React.FC<VoiceFabButtonProps> = ({
   disabled,
   tooltip,
 }) => {
-  const [state, setState] = useState<DictationState>(() => controller.getState());
+  const [state, setState] = useState<DictationState>(() =>
+    controller.getState()
+  );
   const [localMessage, setLocalMessage] = useState<string | null>(null);
   const [iconEl, setIconEl] = useState<HTMLSpanElement | null>(null);
 
@@ -112,7 +114,10 @@ export const VoiceFabButton: React.FC<VoiceFabButtonProps> = ({
     }
   }, [iconEl, state]);
 
-  const ariaLabel = useMemo(() => deriveAriaLabel(state, visible), [state, visible]);
+  const ariaLabel = useMemo(
+    () => deriveAriaLabel(state, visible),
+    [state, visible]
+  );
   const statusLabel = useMemo(() => deriveStatusLabel(state), [state]);
 
   const message = state.errorMessage ?? localMessage;
@@ -143,7 +148,11 @@ export const VoiceFabButton: React.FC<VoiceFabButtonProps> = ({
   };
 
   return (
-    <div className={`mondo-voice-fab ${visible ? "mondo-voice-fab--visible" : ""}`.trim()}>
+    <div
+      className={`mondo-voice-fab mondo-voice-fab--desktop ${
+        visible ? "mondo-voice-fab--visible" : ""
+      }`.trim()}
+    >
       <button
         className={`mondo-voice-fab__button mondo-voice-fab__button--${state.status}`}
         type="button"
@@ -162,11 +171,7 @@ export const VoiceFabButton: React.FC<VoiceFabButtonProps> = ({
             />
           ))}
         </span>
-        <span
-          className="mondo-voice-fab__icon"
-          aria-hidden
-          ref={setIconEl}
-        />
+        <span className="mondo-voice-fab__icon" aria-hidden ref={setIconEl} />
       </button>
       {visible ? (
         <div className="mondo-voice-fab__status" aria-live="polite">
