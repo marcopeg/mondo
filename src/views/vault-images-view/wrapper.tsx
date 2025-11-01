@@ -18,7 +18,7 @@ export class MondoVaultImagesViewWrapper extends ItemView {
   }
 
   getDisplayText() {
-    return "Vault Images";
+    return "Images";
   }
 
   getIcon(): string {

@@ -21,7 +21,7 @@ export class MondoAudioLogsViewWrapper extends ItemView {
   }
 
   getDisplayText() {
-    return "Audio Logs";
+    return "Audio Notes";
   }
 
   getIcon(): string {

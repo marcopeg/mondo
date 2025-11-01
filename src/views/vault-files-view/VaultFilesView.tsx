@@ -139,7 +139,9 @@ export const VaultFilesView = () => {
 
   return (
     <div className="p-4 space-y-6">
-      <Typography variant="h1">Vault Files</Typography>
+      <div className="border-b border-[var(--background-modifier-border)] pb-3">
+        <Typography variant="h1">Files</Typography>
+      </div>
       <div className="grid gap-3 sm:grid-cols-2">
         <div className="rounded-lg border border-[var(--background-modifier-border)] bg-[var(--background-secondary)] p-4">
           <div className="text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">
@@ -196,22 +198,40 @@ export const VaultFilesView = () => {
                   className="border-t border-[var(--background-modifier-border)]"
                 >
                   <Table.Cell className="p-3 align-middle">
-                    <div className="flex flex-col items-start gap-1">
-                      <Button
-                        variant="link"
-                        tone="info"
-                        className="font-medium"
-                        onClick={() => {
-                          void handleOpenFile(row.file);
-                        }}
-                        title={row.file.basename}
+                  <div className="flex flex-col items-start gap-1">
+                    <Button
+                      variant="link"
+                      tone="info"
+                      className="group relative max-w-xl font-medium"
+                      onClick={() => {
+                        void handleOpenFile(row.file);
+                      }}
+                      aria-label={`Open ${row.file.basename}`}
+                    >
+                      <span className="block max-w-full truncate">
+                        {row.file.basename}
+                      </span>
+                      <span
+                        className="pointer-events-none absolute left-0 top-full z-20 mt-1 hidden w-max max-w-xl rounded-md border border-[var(--background-modifier-border)] bg-[var(--background-secondary, var(--background-primary))] px-2 py-1 text-xs text-[var(--text-normal)] shadow-lg group-hover:block group-focus-visible:block group-focus-within:block"
+                        role="presentation"
                       >
                         {row.file.basename}
-                      </Button>
-                      <span className="max-w-xl truncate text-xs text-[var(--text-muted)]">
+                      </span>
+                    </Button>
+                    <div
+                      className="group relative max-w-xl text-xs text-[var(--text-muted)]"
+                      aria-label={row.pathLabel}
+                      tabIndex={0}
+                    >
+                      <span className="block truncate">{row.pathLabel}</span>
+                      <span
+                        className="pointer-events-none absolute left-0 top-full z-20 mt-1 hidden w-max max-w-xl rounded-md border border-[var(--background-modifier-border)] bg-[var(--background-secondary, var(--background-primary))] px-2 py-1 text-xs text-[var(--text-normal)] shadow-lg group-hover:block group-focus-visible:block group-focus-within:block"
+                        role="presentation"
+                      >
                         {row.pathLabel}
                       </span>
                     </div>
+                  </div>
                   </Table.Cell>
                   <Table.Cell className="p-3 align-middle">
                     <div className="flex items-center gap-2 text-[var(--text-normal)]">

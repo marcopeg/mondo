@@ -1,5 +1,13 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
-import type { EventRef, TFile } from "obsidian";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ChangeEvent,
+  type MouseEvent,
+} from "react";
+import { Menu, Notice, Platform, TFile, type EventRef } from "obsidian";
 import { Typography } from "@/components/ui/Typography";
 import { Icon } from "@/components/ui/Icon";
 import Table from "@/components/ui/Table";
@@ -10,6 +18,7 @@ import { resolveCoverImage, type ResolvedCoverImage } from "@/utils/resolveCover
 import { formatBytes } from "@/utils/formatBytes";
 import { getMondoEntityConfig, isMondoEntityType } from "@/types/MondoFileType";
 import type { TCachedFile } from "@/types/TCachedFile";
+import { openEditImageModal } from "@/utils/EditImageModal";
 
 type NoteRow = {
   file: TFile;
@@ -22,10 +31,74 @@ type NoteRow = {
   typeIcon: string;
 };
 
+const ACCEPTED_IMAGE_EXTENSIONS = new Set([
+  "png",
+  "jpg",
+  "jpeg",
+  "gif",
+  "bmp",
+  "webp",
+  "svg",
+  "avif",
+  "heic",
+  "heif",
+]);
+
+const getFileExtension = (file: File): string => {
+  const nameMatch = /\.([^.]+)$/.exec(file.name);
+  if (nameMatch) {
+    return nameMatch[1].toLowerCase();
+  }
+
+  const mime = file.type;
+  if (typeof mime === "string" && mime.startsWith("image/")) {
+    const [, ext] = mime.split("/");
+    if (ext) {
+      return ext.toLowerCase();
+    }
+  }
+
+  return "png";
+};
+
+const isAcceptedImageFile = (file: File): boolean => {
+  if (file.type && file.type.startsWith("image/")) {
+    return true;
+  }
+
+  const extension = getFileExtension(file);
+  return ACCEPTED_IMAGE_EXTENSIONS.has(extension);
+};
+
+const ensureAttachmentFilename = (file: File): string => {
+  const extension = getFileExtension(file);
+  const trimmed = file.name.trim();
+
+  if (trimmed.length === 0) {
+    return `cover.${extension}`;
+  }
+
+  if (trimmed.toLowerCase().endsWith(`.${extension}`)) {
+    return trimmed;
+  }
+
+  if (trimmed.includes(".")) {
+    return trimmed;
+  }
+
+  return `${trimmed}.${extension}`;
+};
+
 export const VaultNotesView = () => {
   const app = useApp();
   const [rows, setRows] = useState<NoteRow[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [uploadingCoverPath, setUploadingCoverPath] = useState<string | null>(
+    null
+  );
+  const coverLibraryInputRef = useRef<HTMLInputElement | null>(null);
+  const coverCameraInputRef = useRef<HTMLInputElement | null>(null);
+  const coverTargetRef = useRef<TFile | null>(null);
 
   const collect = useCallback(async (): Promise<NoteRow[]> => {
     const markdownFiles = app.vault
@@ -146,6 +219,128 @@ export const VaultNotesView = () => {
     [app]
   );
 
+  const handleCoverPlaceholderClick = useCallback(
+    (event: MouseEvent<HTMLButtonElement>, file: TFile) => {
+      if (uploadingCoverPath && uploadingCoverPath !== file.path) {
+        return;
+      }
+
+      coverTargetRef.current = file;
+
+      if (Platform.isMobileApp) {
+        event.preventDefault();
+
+        const menu = new Menu();
+
+        menu.addItem((item) => {
+          item.setTitle("Select image or take a photo");
+          item.onClick(() => {
+            if (coverCameraInputRef.current) {
+              coverCameraInputRef.current.click();
+            } else {
+              coverLibraryInputRef.current?.click();
+            }
+          });
+        });
+
+        menu.addItem((item) => {
+          item.setTitle("Select image");
+          item.onClick(() => {
+            coverLibraryInputRef.current?.click();
+          });
+        });
+
+        menu.showAtMouseEvent(event.nativeEvent);
+        return;
+      }
+
+      coverLibraryInputRef.current?.click();
+    },
+    [uploadingCoverPath]
+  );
+
+  const handleCoverFileChange = useCallback(
+    async (event: ChangeEvent<HTMLInputElement>) => {
+      const input = event.target;
+      const selectedFile = input.files?.[0] ?? null;
+      input.value = "";
+
+      const targetFile = coverTargetRef.current;
+      coverTargetRef.current = null;
+
+      if (!selectedFile) {
+        return;
+      }
+
+      if (!targetFile) {
+        new Notice("Unable to determine the selected note.");
+        return;
+      }
+
+      if (!isAcceptedImageFile(selectedFile)) {
+        new Notice("Please select an image file.");
+        return;
+      }
+
+      setUploadingCoverPath(targetFile.path);
+
+      try {
+        const filename = ensureAttachmentFilename(selectedFile);
+        const targetPath = await app.fileManager.getAvailablePathForAttachment(
+          filename,
+          targetFile.path
+        );
+        const arrayBuffer = await selectedFile.arrayBuffer();
+        const created = await app.vault.createBinary(targetPath, arrayBuffer);
+
+        let attachment: TFile | null = null;
+        if (created instanceof TFile) {
+          attachment = created;
+        } else {
+          const abstract = app.vault.getAbstractFileByPath(targetPath);
+          if (abstract instanceof TFile) {
+            attachment = abstract;
+          }
+        }
+
+        if (!attachment) {
+          throw new Error("Failed to create image attachment");
+        }
+
+        const linktext = app.metadataCache.fileToLinktext(
+          attachment,
+          targetFile.path,
+          false
+        );
+
+        await app.fileManager.processFrontMatter(targetFile, (frontmatter) => {
+          frontmatter.cover = `[[${linktext}]]`;
+        });
+      } catch (error) {
+        console.error("VaultNotesView: failed to set cover image", error);
+        new Notice("Failed to set cover image.");
+      } finally {
+        setUploadingCoverPath(null);
+      }
+    },
+    [app]
+  );
+
+  const handleCoverClick = useCallback(
+    (cover: ResolvedCoverImage) => {
+      try {
+        if (cover.kind === "vault") {
+          openEditImageModal(app, cover.file);
+        } else if (typeof window !== "undefined") {
+          window.open(cover.url, "_blank", "noopener,noreferrer");
+        }
+      } catch (error) {
+        console.debug("VaultNotesView: failed to open cover image", error);
+      }
+    },
+    [app]
+  );
+
   const totals = useMemo(() => {
     const totalSize = rows.reduce((acc, row) => acc + row.size, 0);
     return {
@@ -157,7 +352,24 @@ export const VaultNotesView = () => {
 
   return (
     <div className="p-4 space-y-6">
-      <Typography variant="h1">Vault Notes</Typography>
+      <div className="border-b border-[var(--background-modifier-border)] pb-3">
+        <Typography variant="h1">Markdown Notes</Typography>
+      </div>
+      <input
+        ref={coverLibraryInputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={handleCoverFileChange}
+      />
+      <input
+        ref={coverCameraInputRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        className="hidden"
+        onChange={handleCoverFileChange}
+      />
       <div className="grid gap-3 sm:grid-cols-2">
         <div className="rounded-lg border border-[var(--background-modifier-border)] bg-[var(--background-secondary)] p-4">
           <div className="text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">
@@ -218,42 +430,87 @@ export const VaultNotesView = () => {
                 </Table.Cell>
               </tr>
             ) : null}
-            {rows.map((row) => (
-              <Table.Row
-                key={row.file.path}
-                className="border-t border-[var(--background-modifier-border)]"
-              >
-                <Table.Cell className="p-3 align-middle">
-                  {row.cover ? (
-                    <div className="h-12 w-12 overflow-hidden rounded-md border border-[var(--background-modifier-border)]">
-                      <img
-                        src={row.cover.kind === "vault" ? row.cover.resourcePath : row.cover.url}
-                        alt={row.displayName}
-                        className="h-full w-full object-cover"
-                      />
-                    </div>
-                  ) : (
-                    <div className="flex h-12 w-12 items-center justify-center rounded-md border border-dashed border-[var(--background-modifier-border)] text-[var(--text-muted)]">
-                      <Icon name="file-text" className="h-5 w-5" />
-                    </div>
-                  )}
-                </Table.Cell>
+            {rows.map((row) => {
+              const isUploadingCover = uploadingCoverPath === row.file.path;
+
+              return (
+                <Table.Row
+                  key={row.file.path}
+                  className="border-t border-[var(--background-modifier-border)]"
+                >
+                  <Table.Cell className="p-3 align-middle">
+                    {row.cover ? (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          handleCoverClick(row.cover!);
+                        }}
+                        className="group flex h-12 w-12 items-center justify-center overflow-hidden rounded-md border border-[var(--background-modifier-border)] bg-[var(--background-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--interactive-accent)] focus-visible:ring-offset-0"
+                        aria-label={`Edit cover for ${row.displayName}`}
+                      >
+                        <img
+                          src={
+                            row.cover.kind === "vault"
+                              ? row.cover.resourcePath
+                              : row.cover.url
+                          }
+                          alt={row.displayName}
+                          className="h-full w-full object-cover transition-transform group-hover:scale-[1.02]"
+                        />
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={(event) => {
+                          handleCoverPlaceholderClick(event, row.file);
+                        }}
+                        className="flex h-12 w-12 items-center justify-center rounded-md border border-dashed border-[var(--background-modifier-border)] bg-[var(--background-primary)] text-[var(--text-muted)] transition hover:border-[var(--background-modifier-border-hover)] hover:text-[var(--text-normal)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--interactive-accent)] focus-visible:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-70"
+                        aria-label={`Select cover for ${row.displayName}`}
+                        disabled={isUploadingCover}
+                      >
+                        <Icon
+                          name={isUploadingCover ? "loader-2" : "image"}
+                          className={`h-5 w-5 ${
+                            isUploadingCover ? "animate-spin" : ""
+                          }`}
+                        />
+                      </button>
+                    )}
+                  </Table.Cell>
                 <Table.Cell className="p-3 align-middle">
                   <div className="flex flex-col items-start gap-1">
                     <Button
                       variant="link"
                       tone="info"
-                      className="font-medium"
+                      className="group relative max-w-xl font-medium"
                       onClick={() => {
                         void handleOpenFile(row.file);
                       }}
-                      title={row.displayName}
+                      aria-label={`Open ${row.displayName}`}
                     >
-                      {row.displayName}
+                      <span className="block max-w-full truncate">
+                        {row.displayName}
+                      </span>
+                      <span
+                        className="pointer-events-none absolute left-0 top-full z-20 mt-1 hidden w-max max-w-xl rounded-md border border-[var(--background-modifier-border)] bg-[var(--background-secondary, var(--background-primary))] px-2 py-1 text-xs text-[var(--text-normal)] shadow-lg group-hover:block group-focus-visible:block group-focus-within:block"
+                        role="presentation"
+                      >
+                        {row.displayName}
+                      </span>
                     </Button>
-                    <span className="max-w-xl truncate text-xs text-[var(--text-muted)]">
-                      {row.pathLabel}
-                    </span>
+                    <div
+                      className="group relative max-w-xl text-xs text-[var(--text-muted)]"
+                      aria-label={row.pathLabel}
+                      tabIndex={0}
+                    >
+                      <span className="block truncate">{row.pathLabel}</span>
+                      <span
+                        className="pointer-events-none absolute left-0 top-full z-20 mt-1 hidden w-max max-w-xl rounded-md border border-[var(--background-modifier-border)] bg-[var(--background-secondary, var(--background-primary))] px-2 py-1 text-xs text-[var(--text-normal)] shadow-lg group-hover:block group-focus-visible:block group-focus-within:block"
+                        role="presentation"
+                      >
+                        {row.pathLabel}
+                      </span>
+                    </div>
                   </div>
                 </Table.Cell>
                 <Table.Cell className="p-3 align-middle">
@@ -277,7 +534,8 @@ export const VaultNotesView = () => {
                   />
                 </Table.Cell>
               </Table.Row>
-            ))}
+            );
+          })}
           </tbody>
         </Table>
       </div>

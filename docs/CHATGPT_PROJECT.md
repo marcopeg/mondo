@@ -20,7 +20,7 @@ Create a personal knowledge system inside Obsidian that behaves like a lightweig
 
 ### 2. Dashboard & views
 - `DASHBOARD_VIEW` surfaces Quick Tasks, Relevant Notes, Quick Search, entity tiles, and vault stats.
-- Additional registered panes include: Entity Panel, Audio Logs, Vault Images, Vault Files, and Vault Notes.
+- Additional registered panes include: Entity Panel, Audio Notes, Images, Files, and Markdown Notes.
 - Markdown code blocks (triple backticks with the language `mondo`) render interactive widgets (journal navigator, habit tracker, training timers).
 
 ### 3. Audio & AI toolkit

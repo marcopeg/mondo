@@ -259,18 +259,20 @@ export const VaultImagesView = () => {
 
   return (
     <div className="p-4 space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--background-modifier-border)] pb-3">
         <Typography variant="h1" className="flex-1">
-          Vault Images
+          Images
         </Typography>
-        <Switch
-          checked={isGridView}
-          onCheckedChange={handleToggleViewMode}
-          uncheckedLabel="Wall"
-          checkedLabel="Grid"
-          aria-label="Toggle between wall and grid layouts"
-          className="shrink-0"
-        />
+        <div className="flex items-center">
+          <Switch
+            checked={isGridView}
+            onCheckedChange={handleToggleViewMode}
+            uncheckedLabel="Wall"
+            checkedLabel="Grid"
+            aria-label="Toggle between wall and grid layouts"
+            className="shrink-0"
+          />
+        </div>
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2">
@@ -330,10 +332,11 @@ export const VaultImagesView = () => {
                   <Table.Cell className="p-3 align-middle">
                     <button
                       type="button"
-                      className="group block h-16 w-16 overflow-hidden rounded-md border border-[var(--background-modifier-border)] focus:outline-none"
+                      className="group flex h-16 w-16 items-center justify-center overflow-hidden rounded-md border border-[var(--background-modifier-border)] bg-[var(--background-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--interactive-accent)] focus-visible:ring-offset-0"
                       onClick={() => {
                         handleEditImage(entry.file);
                       }}
+                      aria-label={`Edit cover for ${entry.file.basename}`}
                     >
                       <img
                         src={entry.resourcePath}
@@ -347,17 +350,35 @@ export const VaultImagesView = () => {
                       <Button
                         variant="link"
                         tone="info"
-                        className="max-w-xl truncate font-medium"
+                        className="group relative max-w-xl font-medium"
                         onClick={() => {
                           handleEditImage(entry.file);
                         }}
-                        title={entry.file.basename}
+                        aria-label={`Edit ${entry.file.basename}`}
                       >
-                        {entry.file.basename}
+                        <span className="block max-w-full truncate">
+                          {entry.file.basename}
+                        </span>
+                        <span
+                          className="pointer-events-none absolute left-0 top-full z-20 mt-1 hidden w-max max-w-xl rounded-md border border-[var(--background-modifier-border)] bg-[var(--background-secondary, var(--background-primary))] px-2 py-1 text-xs text-[var(--text-normal)] shadow-lg group-hover:block group-focus-visible:block group-focus-within:block"
+                          role="presentation"
+                        >
+                          {entry.file.basename}
+                        </span>
                       </Button>
-                      <span className="max-w-xl truncate text-xs text-[var(--text-muted)]">
-                        {entry.file.path}
-                      </span>
+                      <div
+                        className="group relative max-w-xl text-xs text-[var(--text-muted)]"
+                        aria-label={entry.file.path}
+                        tabIndex={0}
+                      >
+                        <span className="block truncate">{entry.file.path}</span>
+                        <span
+                          className="pointer-events-none absolute left-0 top-full z-20 mt-1 hidden w-max max-w-xl rounded-md border border-[var(--background-modifier-border)] bg-[var(--background-secondary, var(--background-primary))] px-2 py-1 text-xs text-[var(--text-normal)] shadow-lg group-hover:block group-focus-visible:block group-focus-within:block"
+                          role="presentation"
+                        >
+                          {entry.file.path}
+                        </span>
+                      </div>
                     </div>
                   </Table.Cell>
                   <Table.Cell className="p-3 align-middle text-sm text-[var(--text-normal)]">
@@ -369,7 +390,22 @@ export const VaultImagesView = () => {
                   <Table.Cell className="p-3 align-middle text-sm text-[var(--text-normal)]">
                     {sizeLabel}
                   </Table.Cell>
-                  <Table.Cell className="p-3 align-middle text-right">
+                  <Table.Cell className="flex items-center justify-end gap-1 p-3 align-middle">
+                    <Button
+                      icon="external-link"
+                      variant="link"
+                      tone="info"
+                      aria-label={`Open ${entry.file.basename} in a new tab`}
+                      onClick={() => {
+                        if (typeof window !== "undefined") {
+                          window.open(
+                            entry.resourcePath,
+                            "_blank",
+                            "noopener,noreferrer"
+                          );
+                        }
+                      }}
+                    />
                     <Button
                       icon="trash"
                       variant="link"

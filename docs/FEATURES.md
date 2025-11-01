@@ -27,7 +27,7 @@ Entry point: `src/views/dashboard-view/wrapper.tsx`.
 
 ## Commands (`src/main.ts` registration)
 
-- `Open Mondo dashboard`, `Open Audio Notes`, `Open Vault Images/Files/Notes` – Open the respective item views.
+- `Open Mondo dashboard`, `Open Audio Notes`, `Open Images/Files/Markdown Notes` – Open the respective item views.
 - `Edit Image` – Opens the in-app image editor for the focused or selected file (`src/commands/image.edit.ts`, `src/utils/EditImageModal.ts`).
 - `Start transcription` – Sends an audio file to Whisper and creates a transcription note (`src/commands/daily.addLog.ts`, `src/utils/AudioTranscriptionManager.ts`).
 - `Start dictation` – Records microphone audio and inserts the transcript into the current note with a stop/resume toggle (`src/utils/NoteDictationManager.tsx`).
@@ -92,7 +92,7 @@ The settings tab (`src/views/settings/SettingsView.tsx`) exposes:
 
 ## Ribbon & mobile integration
 
-- Dashboard and Audio Logs ribbon icons on desktop (`src/main.ts`).
+- Dashboard and Audio Notes ribbon icons on desktop (`src/main.ts`).
 - Mobile toolbars for dictation, timestamps, and copy note commands, activated when the workspace becomes ready (`src/main.ts`, respective managers).
 
 ## Error handling & lifecycle

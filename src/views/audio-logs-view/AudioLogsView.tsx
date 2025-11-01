@@ -7,10 +7,6 @@ import { Typography } from "@/components/ui/Typography";
 import { Icon } from "@/components/ui/Icon";
 import { ReadableDate } from "@/components/ui/ReadableDate";
 import { AUDIO_FILE_EXTENSIONS } from "@/utils/AudioTranscriptionManager";
-import {
-  AUDIO_LOGS_ICON,
-  OPEN_AUDIO_NOTES_COMMAND_ID,
-} from "./constants";
 import type { App, EventRef, TAbstractFile } from "obsidian";
 import { TFile } from "obsidian";
 
@@ -1037,23 +1033,12 @@ export const AudioLogsView = ({ plugin }: AudioLogsViewProps) => {
     : "--";
   const totalSizeLabel = formatFileSize(totals.totalSize);
 
-  const handleOpenAudioLogs = useCallback(() => {
-    (app as any).commands.executeCommandById(OPEN_AUDIO_NOTES_COMMAND_ID);
-  }, [app]);
-
   const hasMore = audioFiles.length > visibleFiles.length;
 
   return (
     <div className="p-4 space-y-6">
-      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-        <Typography variant="h1">Audio Logs</Typography>
-        <Button
-          icon={AUDIO_LOGS_ICON}
-          className="border border-[var(--background-modifier-border)] bg-[var(--background-secondary)] text-[var(--text-normal)] hover:bg-[var(--background-secondary-alt, var(--background-secondary))]"
-          onClick={handleOpenAudioLogs}
-        >
-          OpenAudioNotes
-        </Button>
+      <div className="border-b border-[var(--background-modifier-border)] pb-3">
+        <Typography variant="h1">Audio Notes</Typography>
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2">
@@ -1148,17 +1133,35 @@ export const AudioLogsView = ({ plugin }: AudioLogsViewProps) => {
                         <Button
                           variant="link"
                           tone="info"
-                          className="font-medium"
+                          className="group relative max-w-xl font-medium"
                           onClick={() => {
                             void openFileInWorkspace(app, row.file);
                           }}
-                          title={displayTitle}
+                          aria-label={`Open ${displayTitle}`}
                         >
-                          {displayTitle}
+                          <span className="block max-w-full truncate">
+                            {displayTitle}
+                          </span>
+                          <span
+                            className="pointer-events-none absolute left-0 top-full z-20 mt-1 hidden w-max max-w-xl rounded-md border border-[var(--background-modifier-border)] bg-[var(--background-secondary, var(--background-primary))] px-2 py-1 text-xs text-[var(--text-normal)] shadow-lg group-hover:block group-focus-visible:block group-focus-within:block"
+                            role="presentation"
+                          >
+                            {displayTitle}
+                          </span>
                         </Button>
-                        <span className="max-w-xl truncate text-xs text-[var(--text-muted)]">
-                          {row.pathLabel}
-                        </span>
+                        <div
+                          className="group relative max-w-xl text-xs text-[var(--text-muted)]"
+                          aria-label={row.pathLabel}
+                          tabIndex={0}
+                        >
+                          <span className="block truncate">{row.pathLabel}</span>
+                          <span
+                            className="pointer-events-none absolute left-0 top-full z-20 mt-1 hidden w-max max-w-xl rounded-md border border-[var(--background-modifier-border)] bg-[var(--background-secondary, var(--background-primary))] px-2 py-1 text-xs text-[var(--text-normal)] shadow-lg group-hover:block group-focus-visible:block group-focus-within:block"
+                            role="presentation"
+                          >
+                            {row.pathLabel}
+                          </span>
+                        </div>
                       </div>
                     </Table.Cell>
                     <Table.Cell className="p-3 align-middle text-[var(--text-muted)]">

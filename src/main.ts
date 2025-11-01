@@ -382,7 +382,7 @@ export default class Mondo extends Plugin {
       this.vaultImagesRibbonEl,
       isEnabled("vaultImages"),
       VAULT_IMAGES_ICON,
-      "Open Vault Images",
+      "Open Images",
       () => {
         void this.showPanel(VAULT_IMAGES_VIEW, "main");
       }
@@ -392,7 +392,7 @@ export default class Mondo extends Plugin {
       this.vaultFilesRibbonEl,
       isEnabled("vaultFiles"),
       VAULT_FILES_ICON,
-      "Open Vault Files",
+      "Open Files",
       () => {
         void this.showPanel(VAULT_FILES_VIEW, "main");
       }
@@ -402,7 +402,7 @@ export default class Mondo extends Plugin {
       this.vaultNotesRibbonEl,
       isEnabled("vaultNotes"),
       VAULT_NOTES_ICON,
-      "Open Vault Notes",
+      "Open Markdown Notes",
       () => {
         void this.showPanel(VAULT_NOTES_VIEW, "main");
       }
@@ -561,25 +561,25 @@ export default class Mondo extends Plugin {
 
     this.addCommand({
       id: "open-audio-notes",
-      name: "OpenAudioNotes",
+      name: "Open Audio Notes",
       callback: () => this.showPanel(AUDIO_LOGS_VIEW, "main"),
     });
 
     this.addCommand({
       id: "open-vault-images",
-      name: "Open Vault Images",
+      name: "Open Images",
       callback: () => this.showPanel(VAULT_IMAGES_VIEW, "main"),
     });
 
     this.addCommand({
       id: "open-vault-files",
-      name: "Open Vault Files",
+      name: "Open Files",
       callback: () => this.showPanel(VAULT_FILES_VIEW, "main"),
     });
 
     this.addCommand({
       id: "open-vault-notes",
-      name: "Open Vault Notes",
+      name: "Open Markdown Notes",
       callback: () => this.showPanel(VAULT_NOTES_VIEW, "main"),
     });
 
