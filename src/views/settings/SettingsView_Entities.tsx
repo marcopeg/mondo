@@ -392,6 +392,9 @@ export const renderEntityConfigurationSection = async (
       toggle.onChange(async (value) => {
         (plugin as any).settings.hideIMSHeaderOnUnknownNotes = !!value;
         await (plugin as any).saveSettings();
+        try {
+          window.dispatchEvent(new CustomEvent("mondo:settings-updated"));
+        } catch (_) {}
       });
     });
 

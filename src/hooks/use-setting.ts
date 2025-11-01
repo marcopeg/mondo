@@ -34,9 +34,21 @@ export function useSetting<T = any>(path: string, defaultValue: T) {
     read();
 
     // heuristic refresh: replay on metadata changes so UI updates after settings saved
-    const refMeta = app.metadataCache.on("changed", read);
+      const refMeta = app.metadataCache.on("changed", read);
+
+      // explicit refresh: listen to a custom event fired by settings UI
+      const onSettingsUpdated = () => read();
+      try {
+        window.addEventListener("mondo:settings-updated", onSettingsUpdated);
+      } catch (_) {}
     return () => {
       app.metadataCache.offref(refMeta);
+        try {
+          window.removeEventListener(
+            "mondo:settings-updated",
+            onSettingsUpdated
+          );
+        } catch (_) {}
     };
   }, [app, path, defaultValue]);
 

@@ -9,6 +9,7 @@ _Mondo_ is a general purpose plugin that adds plentiful of utilities to a standa
 - **🕰️ Timestamps:** quickly add timestamps into your notes
 - **🧘 Focus Mode:** hide most of the UI and focus on your writing
 - **🤖 Open in ChatGPT:** use your notes as templates for ChatGPT prompts
+- **🌆 Image Editor:** resize and crop images in your vault
 - **👫 Mondo IMS:** typed entities with strong relations
 - **📈 Habits Tracker:** embed a streak tracking app in any note
 - **⏱️ Training Timers:** embed a training trimer app in any note
@@ -91,6 +92,16 @@ Run the command `Start Focus Mode` to hide away most of the Obsidian UI and focu
 # 🤖 Open in ChatGPT
 
 Take any note or text selection and use the command `Send to ChatGPT` to open the famous AI tool with a pre-compiled prompt.
+
+# 🌆 Image Editor
+
+Open an image and run the command `Edit Image` to open the image editor. 
+
+There you can **resize** and **crop** an image to improve your vault without leaving it.
+
+> 📲 works on mobile as well!
+
+![Edit Image](./images/edit-image.png)
 
 # 👫 Mondo IMS
 

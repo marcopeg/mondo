@@ -4,6 +4,7 @@ import { SplitButton } from "@/components/ui/SplitButton";
 import { Icon } from "@/components/ui/Icon";
 import { useEntityFile } from "@/context/EntityFileProvider";
 import { useApp } from "@/hooks/use-app";
+import { useSetting } from "@/hooks/use-setting";
 import {
   MONDO_ENTITIES,
   MONDO_ENTITY_TYPES,
@@ -28,8 +29,16 @@ const headerClasses = [
 
 export const EntityHeaderUnknown = () => {
   const app = useApp();
+  const hideUnknown = useSetting<boolean>(
+    "hideIMSHeaderOnUnknownNotes",
+    false
+  );
   const { file } = useEntityFile();
   const cachedFile = file as TCachedFile | undefined;
+
+  if (hideUnknown) {
+    return null;
+  }
 
   const options = useMemo(buildEntityOptions, []);
 
