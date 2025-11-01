@@ -159,16 +159,24 @@ export const AudioLogsView = ({ plugin }: AudioLogsViewProps) => {
   const [voiceoverSourceFiles, setVoiceoverSourceFiles] = useState<TFile[]>([]);
   const [metadataVersion, setMetadataVersion] = useState(0);
   const [metadataMap, setMetadataMap] = useState<MetadataMap>({});
+  const [durationTotals, setDurationTotals] = useState<
+    Record<string, number | null>
+  >({});
   const [isLoading, setIsLoading] = useState(false);
   const [transcribing, setTranscribing] = useState<Record<string, boolean>>({});
   const [playingPath, setPlayingPath] = useState<string | null>(null);
   const [visibleCount, setVisibleCount] = useState(20);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const metadataMapRef = useRef<MetadataMap>({});
+  const durationTotalsRef = useRef<Record<string, number | null>>({});
 
   useEffect(() => {
     metadataMapRef.current = metadataMap;
   }, [metadataMap]);
+
+  useEffect(() => {
+    durationTotalsRef.current = durationTotals;
+  }, [durationTotals]);
 
   const audioFileLookup = useMemo(() => {
     const map = new Map<string, TFile>();
@@ -366,6 +374,152 @@ export const AudioLogsView = ({ plugin }: AudioLogsViewProps) => {
       return next;
     });
   }, [audioFiles]);
+
+  useEffect(() => {
+    if (!manager) {
+      durationTotalsRef.current = {};
+      setDurationTotals({});
+      return;
+    }
+
+    setDurationTotals((prev) => {
+      let changed = false;
+      const next: Record<string, number | null> = {};
+
+      audioFiles.forEach((file) => {
+        const hasPrev = Object.prototype.hasOwnProperty.call(
+          prev,
+          file.path
+        );
+        const prevValue = hasPrev ? prev[file.path] : undefined;
+        const meta = metadataMap[file.path];
+
+        if (meta) {
+          if (meta.durationSeconds != null) {
+            next[file.path] = meta.durationSeconds;
+            if (!hasPrev || prevValue !== meta.durationSeconds) {
+              changed = true;
+            }
+            return;
+          }
+
+          next[file.path] = null;
+          if (!hasPrev || prevValue !== null) {
+            changed = true;
+          }
+          return;
+        }
+
+        if (hasPrev) {
+          next[file.path] = prevValue ?? null;
+          if (prevValue === undefined) {
+            changed = true;
+          }
+        }
+      });
+
+      if (Object.keys(prev).length !== Object.keys(next).length) {
+        changed = true;
+      }
+
+      if (!changed) {
+        return prev;
+      }
+
+      durationTotalsRef.current = next;
+      return next;
+    });
+  }, [audioFiles, manager, metadataMap]);
+
+  useEffect(() => {
+    if (!manager) {
+      return;
+    }
+
+    const pending = audioFiles.filter((file) => {
+      const cached = durationTotalsRef.current[file.path];
+      return cached == null;
+    });
+
+    if (pending.length === 0) {
+      return;
+    }
+
+    let cancelled = false;
+
+    const run = async () => {
+      for (const file of pending) {
+        if (cancelled) {
+          break;
+        }
+
+        let durationSeconds = durationTotalsRef.current[file.path];
+
+        if (durationSeconds == null) {
+          try {
+            durationSeconds =
+              (await manager.getAudioDurationSeconds(file)) ?? null;
+          } catch (error) {
+            console.warn(
+              "Mondo Audio Logs: failed to load audio duration",
+              file.path,
+              error
+            );
+          }
+        }
+
+        if (cancelled) {
+          break;
+        }
+
+        const resolvedDuration = durationSeconds;
+
+        setDurationTotals((prev) => {
+          if (cancelled) {
+            return prev;
+          }
+
+          const existing = prev[file.path];
+          if (existing === resolvedDuration) {
+            return prev;
+          }
+
+          const next = { ...prev, [file.path]: resolvedDuration };
+          durationTotalsRef.current = next;
+          return next;
+        });
+
+        setMetadataMap((prev) => {
+          if (cancelled) {
+            return prev;
+          }
+
+          const existingMeta = prev[file.path];
+          if (
+            !existingMeta ||
+            existingMeta.durationSeconds != null ||
+            resolvedDuration == null
+          ) {
+            return prev;
+          }
+
+          const nextMeta: AudioMetadata = {
+            ...existingMeta,
+            durationSeconds: resolvedDuration,
+          };
+          const next = { ...prev, [file.path]: nextMeta };
+          metadataMapRef.current = next;
+          return next;
+        });
+      }
+    };
+
+    void run();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [audioFiles, durationTotals, manager]);
 
   const findAudioFileByReference = useCallback(
     (noteFile: TFile, value: unknown) => {
@@ -937,27 +1091,31 @@ export const AudioLogsView = ({ plugin }: AudioLogsViewProps) => {
 
   const totals = useMemo(() => {
     const totalSize = audioFiles.reduce((sum, file) => sum + file.stat.size, 0);
-    const totalDuration = audioFiles.reduce((sum, file) => {
-      const meta = metadataMap[file.path];
-      return sum + (meta?.durationSeconds ?? 0);
-    }, 0);
+    let hasAnyDurationMissing = false;
 
-    const hasAnyDurationMissing = audioFiles.some((file) => {
-      const meta = metadataMap[file.path];
-      return !meta || meta.durationSeconds == null;
-    });
+    const totalDuration = audioFiles.reduce((sum, file) => {
+      const duration = durationTotals[file.path];
+      if (duration == null) {
+        hasAnyDurationMissing = true;
+        return sum;
+      }
+
+      return sum + duration;
+    }, 0);
 
     return {
       totalSize,
       totalDuration: hasAnyDurationMissing ? null : totalDuration,
     };
-  }, [audioFiles, metadataMap]);
+  }, [audioFiles, durationTotals]);
 
   const rows = useMemo(
     () =>
       visibleFiles.map((file) => {
         const meta = metadataMap[file.path];
-        const durationLabel = formatDuration(meta?.durationSeconds);
+        const durationSeconds =
+          meta?.durationSeconds ?? durationTotals[file.path] ?? null;
+        const durationLabel = formatDuration(durationSeconds);
         const sizeLabel = formatFileSize(file.stat.size);
         const dateValue = file.stat.mtime;
         const transcription = meta?.transcription ?? {
@@ -1025,7 +1183,7 @@ export const AudioLogsView = ({ plugin }: AudioLogsViewProps) => {
           isResolved: meta?.isResolved ?? false,
         };
       }),
-    [manager, metadataMap, transcribing, visibleFiles]
+    [durationTotals, manager, metadataMap, transcribing, visibleFiles]
   );
 
   const totalDurationLabel = totals.totalDuration
@@ -1034,6 +1192,9 @@ export const AudioLogsView = ({ plugin }: AudioLogsViewProps) => {
   const totalSizeLabel = formatFileSize(totals.totalSize);
 
   const hasMore = audioFiles.length > visibleFiles.length;
+
+  const tooltipClasses =
+    "pointer-events-none absolute left-0 top-full z-20 mt-1 hidden w-max max-w-[28rem] break-words rounded-md border border-[var(--background-modifier-border)] bg-[var(--background-secondary, var(--background-primary))] px-2 py-1 text-xs text-[var(--text-normal)] shadow-lg group-hover:block group-focus-visible:block group-focus-within:block";
 
   return (
     <div className="p-4 space-y-6">
@@ -1129,36 +1290,37 @@ export const AudioLogsView = ({ plugin }: AudioLogsViewProps) => {
                       </button>
                     </Table.Cell>
                     <Table.Cell className="p-3 align-middle">
-                      <div className="flex flex-col items-start gap-1">
+                      <div className="flex w-full max-w-[28rem] min-w-0 flex-col items-start gap-1">
                         <Button
                           variant="link"
                           tone="info"
-                          className="group relative max-w-xl font-medium"
+                          fullWidth
+                          className="group relative overflow-hidden text-left font-medium"
                           onClick={() => {
                             void openFileInWorkspace(app, row.file);
                           }}
                           aria-label={`Open ${displayTitle}`}
+                          title={displayTitle ?? undefined}
                         >
-                          <span className="block max-w-full truncate">
+                          <span className="block w-full truncate">
                             {displayTitle}
                           </span>
-                          <span
-                            className="pointer-events-none absolute left-0 top-full z-20 mt-1 hidden w-max max-w-xl rounded-md border border-[var(--background-modifier-border)] bg-[var(--background-secondary, var(--background-primary))] px-2 py-1 text-xs text-[var(--text-normal)] shadow-lg group-hover:block group-focus-visible:block group-focus-within:block"
-                            role="presentation"
-                          >
-                            {displayTitle}
-                          </span>
+                          {displayTitle ? (
+                            <span className={tooltipClasses} role="presentation">
+                              {displayTitle}
+                            </span>
+                          ) : null}
                         </Button>
                         <div
-                          className="group relative max-w-xl text-xs text-[var(--text-muted)]"
+                          className="group relative w-full text-xs text-[var(--text-muted)]"
                           aria-label={row.pathLabel}
                           tabIndex={0}
+                          title={row.pathLabel}
                         >
-                          <span className="block truncate">{row.pathLabel}</span>
-                          <span
-                            className="pointer-events-none absolute left-0 top-full z-20 mt-1 hidden w-max max-w-xl rounded-md border border-[var(--background-modifier-border)] bg-[var(--background-secondary, var(--background-primary))] px-2 py-1 text-xs text-[var(--text-normal)] shadow-lg group-hover:block group-focus-visible:block group-focus-within:block"
-                            role="presentation"
-                          >
+                          <span className="block w-full truncate">
+                            {row.pathLabel}
+                          </span>
+                          <span className={tooltipClasses} role="presentation">
                             {row.pathLabel}
                           </span>
                         </div>
