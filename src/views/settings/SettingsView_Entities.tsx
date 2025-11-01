@@ -380,6 +380,21 @@ export const renderEntityConfigurationSection = async (
     await requestReload();
   });
 
+  // Global toggle: Hide IMS Header on unknown notes
+  new Setting(customConfigContainer)
+    .setName("Hide IMS Header on unknown notes")
+    .setDesc(
+      "when checked, note with types not known to the IMS will not show the standard header"
+    )
+    .addToggle((toggle) => {
+      const current = !!(plugin as any).settings?.hideIMSHeaderOnUnknownNotes;
+      toggle.setValue(current);
+      toggle.onChange(async (value) => {
+        (plugin as any).settings.hideIMSHeaderOnUnknownNotes = !!value;
+        await (plugin as any).saveSettings();
+      });
+    });
+
   // Only include actual configured entities; exclude special types like daily/log/journal
   const entityDefinitions = MONDO_ENTITY_CONFIG_LIST.map((cfg) => ({
     type: cfg.type,
