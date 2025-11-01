@@ -1,4 +1,4 @@
-import { AbstractInputSuggest, type App, setIcon } from "obsidian";
+import { Menu, setIcon } from "obsidian";
 import { createSettingsSection } from "./SettingsView_utils";
 import type Mondo from "@/main";
 import { DASHBOARD_ICON } from "@/views/dashboard-view/wrapper";
@@ -42,84 +42,7 @@ const persistDashboardSetting = async (
 type EntityTypeOption = {
   type: MondoEntityType;
   label: string;
-  search: string;
 };
-
-const parseEntityInput = (
-  value: string,
-  validTypes: readonly MondoEntityType[]
-) => {
-  const segments = value.split(",");
-  const partialRaw = segments.pop() ?? "";
-  const committed = sanitizeEntityTypeList(segments, validTypes);
-  const partial = partialRaw.trim().toLowerCase();
-  return { committed, partial };
-};
-
-class EntityTypeSuggest extends AbstractInputSuggest<EntityTypeOption> {
-  private readonly options: EntityTypeOption[];
-  private readonly validTypes: readonly MondoEntityType[];
-  private readonly onPick: (type: MondoEntityType) => void;
-  private readonly getCommittedTypes: () => readonly MondoEntityType[];
-
-  constructor(
-    app: App,
-    inputEl: HTMLInputElement,
-    options: EntityTypeOption[],
-    validTypes: readonly MondoEntityType[],
-    onPick: (type: MondoEntityType) => void,
-    getCommittedTypes?: () => readonly MondoEntityType[]
-  ) {
-    super(app, inputEl);
-    this.options = options;
-    this.validTypes = validTypes;
-    this.onPick = onPick;
-    this.getCommittedTypes = getCommittedTypes ?? (() => []);
-  }
-
-  getSuggestions(query: string): EntityTypeOption[] {
-    const { committed, partial } = parseEntityInput(
-      query ?? "",
-      this.validTypes
-    );
-    const committedSet = new Set([
-      ...committed,
-      ...this.getCommittedTypes(),
-    ]);
-    const normalizedPartial = partial ?? "";
-
-    return this.options.filter((option) => {
-      if (committedSet.has(option.type)) {
-        return false;
-      }
-
-      if (!normalizedPartial) {
-        return true;
-      }
-
-      return (
-        option.type.includes(normalizedPartial) ||
-        option.search.includes(normalizedPartial)
-      );
-    });
-  }
-
-  renderSuggestion(option: EntityTypeOption, el: HTMLElement) {
-    el.setText(option.label);
-  }
-
-  selectSuggestion(option: EntityTypeOption) {
-    try {
-      this.onPick(option.type);
-    } finally {
-      try {
-        this.close();
-      } catch (error) {
-        // ignore inability to close the suggest dropdown
-      }
-    }
-  }
-}
 
 const getRibbonSettings = (plugin: Mondo) => {
   (plugin as any).settings = (plugin as any).settings ?? {};
@@ -157,7 +80,6 @@ export const renderDashboardSection = (
       return {
         type: config.type,
         label: `${name} (${config.type})`,
-        search: `${name ?? ""} ${config.type}`.toLowerCase(),
       };
     });
   const quickSearchEntities = sanitizeEntityTypeList(
@@ -234,9 +156,7 @@ export const renderDashboardSection = (
   const quickSearchSetting = dashboardSection
     .createSetting()
     .setName("IMS Quick Search Entities")
-    .setDesc(
-      "Comma separated list of the entities that appear in the Quick Search list."
-    );
+    .setDesc("Choose which entities appear in the Quick Search list.");
 
   quickSearchSetting.settingEl.addClass(
     "mondo-settings-quick-search-entities"
@@ -249,26 +169,15 @@ export const renderDashboardSection = (
     cls: "mondo-settings-quick-search-tags",
   });
 
-  const quickSearchInputEl = quickSearchTagsEl.createEl("input", {
-    cls: "mondo-settings-quick-search-tags__input",
+  const quickSearchAddButtonEl = quickSearchTagsEl.createEl("button", {
+    cls: "mondo-settings-quick-search-tags__add-button",
+    text: "Add Entity",
     attr: {
-      type: "text",
-      placeholder: "person, company",
+      type: "button",
       "aria-label": "Add quick search entity",
-      spellcheck: "false",
+      "aria-haspopup": "menu",
     },
-  });
-
-  quickSearchTagsEl.addEventListener("mousedown", (event) => {
-    if (event.target === quickSearchTagsEl) {
-      event.preventDefault();
-      quickSearchInputEl.focus();
-    }
-  });
-
-  quickSearchTagsEl.addEventListener("click", () => {
-    quickSearchInputEl.focus();
-  });
+  }) as HTMLButtonElement;
 
   let quickSearchEntitiesState = [...quickSearchEntities];
 
@@ -276,6 +185,17 @@ export const renderDashboardSection = (
     quickSearchEntitiesState = next;
     dashboardSettings.quickSearchEntities = next;
     await persistDashboardSetting(plugin, "quickSearchEntities", next);
+  };
+
+  const getRemainingEntityOptions = () =>
+    availableEntityOptions.filter(
+      (option) => !quickSearchEntitiesState.includes(option.type)
+    );
+
+  const updateAddButtonState = () => {
+    const hasRemaining = getRemainingEntityOptions().length > 0;
+    quickSearchAddButtonEl.disabled = !hasRemaining;
+    quickSearchAddButtonEl.setAttr("aria-disabled", hasRemaining ? "false" : "true");
   };
 
   const renderQuickSearchTags = () => {
@@ -315,7 +235,7 @@ export const renderDashboardSection = (
         const next = quickSearchEntitiesState.filter((_, i) => i !== index);
         await persistQuickSearchState(next);
         renderQuickSearchTags();
-        quickSearchInputEl.focus();
+        quickSearchAddButtonEl.focus();
       };
 
       removeButton.addEventListener("click", () => {
@@ -386,75 +306,15 @@ export const renderDashboardSection = (
         });
       });
 
-      quickSearchTagsEl.insertBefore(chipEl, quickSearchInputEl);
+      quickSearchTagsEl.insertBefore(chipEl, quickSearchAddButtonEl);
     });
 
     quickSearchTagsEl.classList.toggle(
       "is-empty",
       quickSearchEntitiesState.length === 0
     );
+    updateAddButtonState();
   };
-
-  const commitQuickSearchInput = async () => {
-    const sanitized = sanitizeEntityTypeList(
-      quickSearchInputEl.value,
-      MONDO_ENTITY_TYPES
-    );
-    quickSearchInputEl.value = "";
-    if (sanitized.length === 0) {
-      return;
-    }
-
-    const next = [...quickSearchEntitiesState];
-    let changed = false;
-    sanitized.forEach((entry) => {
-      if (!next.includes(entry)) {
-        next.push(entry);
-        changed = true;
-      }
-    });
-
-    if (!changed) {
-      renderQuickSearchTags();
-      return;
-    }
-
-    await persistQuickSearchState(next);
-    renderQuickSearchTags();
-  };
-
-  quickSearchInputEl.addEventListener("keydown", (event) => {
-    if (event.key === "Enter" || event.key === ",") {
-      event.preventDefault();
-      void commitQuickSearchInput();
-      return;
-    }
-
-    if (event.key === "Tab") {
-      if (quickSearchInputEl.value.trim().length === 0) {
-        return;
-      }
-      event.preventDefault();
-      void commitQuickSearchInput();
-      return;
-    }
-
-    if (
-      event.key === "Backspace" &&
-      quickSearchInputEl.value.length === 0 &&
-      quickSearchEntitiesState.length > 0
-    ) {
-      event.preventDefault();
-      const next = quickSearchEntitiesState.slice(0, -1);
-      void persistQuickSearchState(next).then(() => {
-        renderQuickSearchTags();
-      });
-    }
-  });
-
-  quickSearchInputEl.addEventListener("blur", () => {
-    void commitQuickSearchInput();
-  });
 
   quickSearchTagsEl.addEventListener("dragover", (event) => {
     event.preventDefault();
@@ -489,31 +349,45 @@ export const renderDashboardSection = (
 
   renderQuickSearchTags();
 
-  try {
-    new EntityTypeSuggest(
-      plugin.app,
-      quickSearchInputEl,
-      availableEntityOptions,
-      MONDO_ENTITY_TYPES,
-      async (picked) => {
-        quickSearchInputEl.value = "";
-        if (quickSearchEntitiesState.includes(picked)) {
-          renderQuickSearchTags();
-          return;
-        }
-        const next = [...quickSearchEntitiesState, picked];
-        await persistQuickSearchState(next);
-        renderQuickSearchTags();
-        quickSearchInputEl.focus();
-      },
-      () => quickSearchEntitiesState
+  const openQuickSearchMenu = (event: MouseEvent | KeyboardEvent) => {
+    event.preventDefault();
+    if (quickSearchAddButtonEl.disabled) {
+      return;
+    }
+
+    const remainingOptions = getRemainingEntityOptions().sort((a, b) =>
+      a.label.localeCompare(b.label, undefined, { sensitivity: "base" })
     );
-  } catch (error) {
-    console.error(
-      "Mondo dashboard settings: failed to initialize entity suggest",
-      error
-    );
-  }
+
+    if (remainingOptions.length === 0) {
+      updateAddButtonState();
+      return;
+    }
+
+    const menu = new Menu();
+    remainingOptions.forEach((option) => {
+      menu.addItem((item) => {
+        item.setTitle(option.label).onClick(() => {
+          const next = [...quickSearchEntitiesState, option.type];
+          void persistQuickSearchState(next).then(() => {
+            renderQuickSearchTags();
+            quickSearchAddButtonEl.focus();
+          });
+        });
+      });
+    });
+
+    if (event instanceof MouseEvent && (event.clientX !== 0 || event.clientY !== 0)) {
+      menu.showAtMouseEvent(event);
+    } else {
+      const rect = quickSearchAddButtonEl.getBoundingClientRect();
+      menu.showAtPosition({ x: rect.left, y: rect.bottom });
+    }
+  };
+
+  quickSearchAddButtonEl.addEventListener("click", (event) => {
+    openQuickSearchMenu(event);
+  });
 
   dashboardSection
     .createSetting()

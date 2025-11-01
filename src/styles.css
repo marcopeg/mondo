@@ -402,7 +402,7 @@
     --background-modifier-form-field,
     var(--background-secondary-alt)
   );
-  cursor: text;
+  cursor: default;
 }
 
 .mondo-settings-quick-search-tags:focus-within {
@@ -465,23 +465,37 @@
   height: 0.75rem;
 }
 
-.mondo-settings-quick-search-tags__input {
-  flex: 1 1 8rem;
-  min-width: 8rem;
-  border: none;
+.mondo-settings-quick-search-tags__add-button {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--size-2-1, 0.25rem);
+  padding: var(--size-2-1, 0.25rem) var(--size-2-3, 0.5rem);
+  border-radius: var(--radius-round, 999px);
+  border: 1px dashed var(--background-modifier-border);
   background: transparent;
+  color: var(--text-muted);
   font-size: var(--font-small, 0.85rem);
-  color: inherit;
-  padding: var(--size-2-1, 0.25rem) 0;
+  cursor: pointer;
+  transition: color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
-.mondo-settings-quick-search-tags__input:focus {
+.mondo-settings-quick-search-tags__add-button:hover,
+.mondo-settings-quick-search-tags__add-button:focus-visible {
+  color: var(--text-normal);
+  border-color: var(--interactive-accent);
+}
+
+.mondo-settings-quick-search-tags__add-button:focus-visible {
   outline: none;
-  box-shadow: none;
+  box-shadow: 0 0 0 2px var(--interactive-accent);
 }
 
-.mondo-settings-quick-search-tags__input::placeholder {
+.mondo-settings-quick-search-tags__add-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  border-style: solid;
   color: var(--text-faint);
+  box-shadow: none;
 }
 
 .mondo-settings-entities {
