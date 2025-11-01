@@ -25,28 +25,41 @@ const normalizeToArray = (
 
 export const sanitizeEntityTypeList = (
   value: unknown,
-  validTypes: readonly MondoEntityType[]
+  validTypes?: readonly MondoEntityType[]
 ): MondoEntityType[] => {
+  const normalizedEntries = normalizeToArray(value)
+    .map((entry) => entry.trim())
+    .filter((entry) => entry.length > 0);
+
+  if (!validTypes || validTypes.length === 0) {
+    const seen = new Set<string>();
+    const unique: MondoEntityType[] = [];
+
+    for (const entry of normalizedEntries) {
+      const normalized = entry.toLowerCase();
+      if (seen.has(normalized)) {
+        continue;
+      }
+      seen.add(normalized);
+      unique.push(normalized as MondoEntityType);
+    }
+
+    return unique;
+  }
+
   const map = new Map(
     validTypes.map((type) => [type.toLowerCase(), type])
   );
 
   const unique: MondoEntityType[] = [];
 
-  for (const entry of normalizeToArray(value)) {
-    const normalized = entry.trim().toLowerCase();
-    if (!normalized) {
-      continue;
-    }
-
+  for (const entry of normalizedEntries) {
+    const normalized = entry.toLowerCase();
     const canonical = map.get(normalized);
-    if (!canonical) {
+    if (!canonical || unique.includes(canonical)) {
       continue;
     }
-
-    if (!unique.includes(canonical)) {
-      unique.push(canonical);
-    }
+    unique.push(canonical);
   }
 
   return unique;

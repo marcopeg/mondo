@@ -375,21 +375,21 @@
   outline-offset: 2px;
 }
 
-.mondo-settings-quick-search-entities {
+.mondo-settings-entity-list-setting {
   flex-direction: column;
   align-items: stretch;
 }
 
-.mondo-settings-quick-search-entities .setting-item-info,
-.mondo-settings-quick-search-entities .setting-item-control {
+.mondo-settings-entity-list-setting .setting-item-info,
+.mondo-settings-entity-list-setting .setting-item-control {
   width: 100%;
 }
 
-.mondo-settings-quick-search-entities .setting-item-control {
+.mondo-settings-entity-list-setting .setting-item-control {
   margin-top: var(--size-2-3, 0.5rem);
 }
 
-.mondo-settings-quick-search-tags {
+.mondo-settings-entity-tags {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -405,16 +405,16 @@
   cursor: default;
 }
 
-.mondo-settings-quick-search-tags:focus-within {
+.mondo-settings-entity-tags:focus-within {
   border-color: var(--interactive-accent);
   box-shadow: 0 0 0 1px var(--interactive-accent);
 }
 
-.mondo-settings-quick-search-tags.is-empty {
+.mondo-settings-entity-tags.is-empty {
   gap: 0;
 }
 
-.mondo-settings-quick-search-tags__chip {
+.mondo-settings-entity-tags__chip {
   display: inline-flex;
   align-items: center;
   gap: var(--size-2-1, 0.25rem);
@@ -428,19 +428,19 @@
   user-select: none;
 }
 
-.mondo-settings-quick-search-tags__chip.is-dragging {
+.mondo-settings-entity-tags__chip.is-dragging {
   opacity: 0.6;
 }
 
-.mondo-settings-quick-search-tags__chip.is-dragover {
+.mondo-settings-entity-tags__chip.is-dragover {
   outline: 2px dashed var(--interactive-accent);
 }
 
-.mondo-settings-quick-search-tags__chip-label {
+.mondo-settings-entity-tags__chip-label {
   white-space: nowrap;
 }
 
-.mondo-settings-quick-search-tags__chip-remove {
+.mondo-settings-entity-tags__chip-remove {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -451,8 +451,8 @@
   cursor: pointer;
 }
 
-.mondo-settings-quick-search-tags__chip-remove:hover,
-.mondo-settings-quick-search-tags__chip-remove:focus-visible {
+.mondo-settings-entity-tags__chip-remove:hover,
+.mondo-settings-entity-tags__chip-remove:focus-visible {
   color: var(--text-normal);
   background: var(
     --background-modifier-hover,
@@ -460,12 +460,12 @@
   );
 }
 
-.mondo-settings-quick-search-tags__chip-remove svg {
+.mondo-settings-entity-tags__chip-remove svg {
   width: 0.75rem;
   height: 0.75rem;
 }
 
-.mondo-settings-quick-search-tags__add-button {
+.mondo-settings-entity-tags__add-button {
   display: inline-flex;
   align-items: center;
   gap: var(--size-2-1, 0.25rem);
@@ -479,18 +479,18 @@
   transition: color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
-.mondo-settings-quick-search-tags__add-button:hover,
-.mondo-settings-quick-search-tags__add-button:focus-visible {
+.mondo-settings-entity-tags__add-button:hover,
+.mondo-settings-entity-tags__add-button:focus-visible {
   color: var(--text-normal);
   border-color: var(--interactive-accent);
 }
 
-.mondo-settings-quick-search-tags__add-button:focus-visible {
+.mondo-settings-entity-tags__add-button:focus-visible {
   outline: none;
   box-shadow: 0 0 0 2px var(--interactive-accent);
 }
 
-.mondo-settings-quick-search-tags__add-button:disabled {
+.mondo-settings-entity-tags__add-button:disabled {
   opacity: 0.6;
   cursor: not-allowed;
   border-style: solid;

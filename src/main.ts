@@ -277,6 +277,7 @@ export default class Mondo extends Plugin {
     const disableStatsSetting = dashboardSettings.disableStats;
     const legacyEnableStats = dashboardSettings.enableStats;
     const quickSearchEntitiesSetting = dashboardSettings.quickSearchEntities;
+    const entityTilesSetting = dashboardSettings.entityTiles;
     const disableStats =
       disableStatsSetting === true
         ? true
@@ -291,6 +292,10 @@ export default class Mondo extends Plugin {
       quickSearchEntitiesSetting,
       MONDO_ENTITY_TYPES
     );
+    const entityTiles = sanitizeEntityTypeList(
+      entityTilesSetting,
+      MONDO_ENTITY_TYPES
+    );
     this.settings.dashboard = {
       openAtBoot: dashboardSettings.openAtBoot === true,
       forceTab: dashboardSettings.forceTab === true,
@@ -298,6 +303,7 @@ export default class Mondo extends Plugin {
       enableRelevantNotes: dashboardSettings.enableRelevantNotes !== false,
       disableStats,
       quickSearchEntities,
+      entityTiles,
     };
 
     const ribbonSettings = this.settings.ribbonIcons ?? {};

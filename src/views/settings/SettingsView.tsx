@@ -65,6 +65,7 @@ export class SettingsView extends PluginSettingTab {
     const disableStatsSetting = dashboardSettings.disableStats;
     const legacyEnableStats = dashboardSettings.enableStats;
     const quickSearchEntitiesSetting = dashboardSettings.quickSearchEntities;
+    const entityTilesSetting = dashboardSettings.entityTiles;
     const disableStats =
       disableStatsSetting === true
         ? true
@@ -79,6 +80,10 @@ export class SettingsView extends PluginSettingTab {
       quickSearchEntitiesSetting,
       MONDO_ENTITY_TYPES
     );
+    const entityTiles = sanitizeEntityTypeList(
+      entityTilesSetting,
+      MONDO_ENTITY_TYPES
+    );
     (this.plugin as any).settings.dashboard = {
       openAtBoot: dashboardSettings.openAtBoot === true,
       forceTab: dashboardSettings.forceTab === true,
@@ -87,6 +92,7 @@ export class SettingsView extends PluginSettingTab {
         dashboardSettings.enableRelevantNotes !== false,
       disableStats,
       quickSearchEntities,
+      entityTiles,
     };
 
     const ribbonSettings = (this.plugin as any).settings.ribbonIcons ?? {};

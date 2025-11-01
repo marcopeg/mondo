@@ -1,4 +1,4 @@
-import { Menu, setIcon } from "obsidian";
+import { Menu, Setting, setIcon } from "obsidian";
 import { createSettingsSection } from "./SettingsView_utils";
 import type Mondo from "@/main";
 import { DASHBOARD_ICON } from "@/views/dashboard-view/wrapper";
@@ -30,7 +30,14 @@ const persistDashboardSetting = async (
   value: unknown
 ) => {
   const dashboardSettings = getDashboardSettings(plugin);
-  dashboardSettings[key] = value;
+  const nextDashboard = {
+    ...dashboardSettings,
+    [key]: value,
+  } as Record<string, unknown>;
+
+  (plugin as any).settings.dashboard = nextDashboard;
+  Object.assign(dashboardSettings, nextDashboard);
+
   await (plugin as any).saveSettings();
   try {
     window.dispatchEvent(new CustomEvent("mondo:settings-updated"));
@@ -84,6 +91,10 @@ export const renderDashboardSection = (
     });
   const quickSearchEntities = sanitizeEntityTypeList(
     dashboardSettings.quickSearchEntities,
+    MONDO_ENTITY_TYPES
+  );
+  const entityTiles = sanitizeEntityTypeList(
+    dashboardSettings.entityTiles,
     MONDO_ENTITY_TYPES
   );
   const dashboardSection = createSettingsSection(
@@ -153,240 +164,270 @@ export const renderDashboardSection = (
       });
     });
 
+  const renderEntityListControl = (options: {
+    setting: Setting;
+    initialState: MondoEntityType[];
+    persist: (next: MondoEntityType[]) => Promise<void>;
+    addButtonAriaLabel: string;
+    removeButtonAriaLabel: (type: MondoEntityType) => string;
+  }) => {
+    const { setting, initialState, persist, addButtonAriaLabel, removeButtonAriaLabel } =
+      options;
+
+    setting.settingEl.addClass("mondo-settings-entity-list-setting");
+
+    const controlEl = setting.controlEl;
+    controlEl.empty();
+
+    const tagsEl = controlEl.createDiv({
+      cls: "mondo-settings-entity-tags",
+    });
+
+    const addButtonEl = tagsEl.createEl("button", {
+      cls: "mondo-settings-entity-tags__add-button",
+      text: "Add Entity",
+      attr: {
+        type: "button",
+        "aria-label": addButtonAriaLabel,
+        "aria-haspopup": "menu",
+      },
+    }) as HTMLButtonElement;
+
+    let state = [...initialState];
+
+    const persistState = async (next: MondoEntityType[]) => {
+      state = next;
+      await persist(next);
+    };
+
+    const getRemainingOptions = () =>
+      availableEntityOptions.filter((option) => !state.includes(option.type));
+
+    const updateAddButtonState = () => {
+      const hasRemaining = getRemainingOptions().length > 0;
+      addButtonEl.disabled = !hasRemaining;
+      addButtonEl.setAttr("aria-disabled", hasRemaining ? "false" : "true");
+    };
+
+    const renderTags = () => {
+      const existing = tagsEl.querySelectorAll<HTMLElement>(
+        ".mondo-settings-entity-tags__chip"
+      );
+      existing.forEach((element) => {
+        element.remove();
+      });
+
+      state.forEach((type, index) => {
+        const chipEl = tagsEl.createSpan({
+          cls: "mondo-settings-entity-tags__chip",
+          attr: {
+            draggable: "true",
+            "data-index": `${index}`,
+            role: "listitem",
+          },
+        });
+
+        const labelEl = chipEl.createSpan({
+          cls: "mondo-settings-entity-tags__chip-label",
+        });
+        labelEl.setText(type);
+
+        const removeButton = chipEl.createSpan({
+          cls: "mondo-settings-entity-tags__chip-remove",
+          attr: {
+            role: "button",
+            tabindex: "0",
+            "aria-label": removeButtonAriaLabel(type),
+          },
+        });
+        setIcon(removeButton, "x");
+
+        const removeAtIndex = async () => {
+          const next = state.filter((_, i) => i !== index);
+          await persistState(next);
+          renderTags();
+          addButtonEl.focus();
+        };
+
+        removeButton.addEventListener("click", () => {
+          void removeAtIndex();
+        });
+
+        removeButton.addEventListener("keydown", (event) => {
+          if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            void removeAtIndex();
+          }
+        });
+
+        chipEl.addEventListener("dragstart", (event) => {
+          const dataTransfer = event.dataTransfer;
+          if (dataTransfer) {
+            dataTransfer.setData("text/plain", `${index}`);
+            dataTransfer.effectAllowed = "move";
+          }
+          chipEl.classList.add("is-dragging");
+        });
+
+        chipEl.addEventListener("dragend", () => {
+          chipEl.classList.remove("is-dragging");
+          chipEl.classList.remove("is-dragover");
+        });
+
+        chipEl.addEventListener("dragover", (event) => {
+          event.preventDefault();
+          chipEl.classList.add("is-dragover");
+          const dataTransfer = event.dataTransfer;
+          if (dataTransfer) {
+            dataTransfer.dropEffect = "move";
+          }
+        });
+
+        chipEl.addEventListener("dragleave", () => {
+          chipEl.classList.remove("is-dragover");
+        });
+
+        chipEl.addEventListener("drop", (event) => {
+          event.preventDefault();
+          chipEl.classList.remove("is-dragover");
+          const fromIndexRaw = event.dataTransfer?.getData("text/plain");
+          const fromIndex = Number.parseInt(fromIndexRaw ?? "", 10);
+          if (Number.isNaN(fromIndex)) {
+            return;
+          }
+          const toIndex = Number.parseInt(chipEl.dataset.index ?? "", 10);
+          if (Number.isNaN(toIndex)) {
+            return;
+          }
+          if (fromIndex === toIndex) {
+            return;
+          }
+          const next = [...state];
+          const [moved] = next.splice(fromIndex, 1);
+          if (!moved) {
+            return;
+          }
+          if (toIndex >= next.length) {
+            next.push(moved);
+          } else {
+            next.splice(Math.max(toIndex, 0), 0, moved);
+          }
+          void persistState(next).then(() => {
+            renderTags();
+          });
+        });
+
+        tagsEl.insertBefore(chipEl, addButtonEl);
+      });
+
+      tagsEl.classList.toggle("is-empty", state.length === 0);
+      updateAddButtonState();
+    };
+
+    tagsEl.addEventListener("dragover", (event) => {
+      event.preventDefault();
+      const dataTransfer = event.dataTransfer;
+      if (dataTransfer) {
+        dataTransfer.dropEffect = "move";
+      }
+    });
+
+    tagsEl.addEventListener("drop", (event) => {
+      event.preventDefault();
+      if ((event.target as HTMLElement).closest(".mondo-settings-entity-tags__chip")) {
+        return;
+      }
+      const fromIndexRaw = event.dataTransfer?.getData("text/plain");
+      const fromIndex = Number.parseInt(fromIndexRaw ?? "", 10);
+      if (Number.isNaN(fromIndex)) {
+        return;
+      }
+      const next = [...state];
+      const [moved] = next.splice(fromIndex, 1);
+      if (!moved) {
+        return;
+      }
+      next.push(moved);
+      void persistState(next).then(() => {
+        renderTags();
+      });
+    });
+
+    const openMenu = (event: MouseEvent | KeyboardEvent) => {
+      event.preventDefault();
+      if (addButtonEl.disabled) {
+        return;
+      }
+
+      const remainingOptions = getRemainingOptions().sort((a, b) =>
+        a.label.localeCompare(b.label, undefined, { sensitivity: "base" })
+      );
+
+      if (remainingOptions.length === 0) {
+        updateAddButtonState();
+        return;
+      }
+
+      const menu = new Menu();
+      remainingOptions.forEach((option) => {
+        menu.addItem((item) => {
+          item.setTitle(option.label).onClick(() => {
+            const next = [...state, option.type];
+            void persistState(next).then(() => {
+              renderTags();
+              addButtonEl.focus();
+            });
+          });
+        });
+      });
+
+      if (event instanceof MouseEvent && (event.clientX !== 0 || event.clientY !== 0)) {
+        menu.showAtMouseEvent(event);
+      } else {
+        const rect = addButtonEl.getBoundingClientRect();
+        menu.showAtPosition({ x: rect.left, y: rect.bottom });
+      }
+    };
+
+    addButtonEl.addEventListener("click", (event) => {
+      openMenu(event);
+    });
+
+    renderTags();
+  };
+
   const quickSearchSetting = dashboardSection
     .createSetting()
     .setName("IMS Quick Search Entities")
     .setDesc("Choose which entities appear in the Quick Search list.");
 
-  quickSearchSetting.settingEl.addClass(
-    "mondo-settings-quick-search-entities"
-  );
-
-  const quickSearchControlEl = quickSearchSetting.controlEl;
-  quickSearchControlEl.empty();
-
-  const quickSearchTagsEl = quickSearchControlEl.createDiv({
-    cls: "mondo-settings-quick-search-tags",
-  });
-
-  const quickSearchAddButtonEl = quickSearchTagsEl.createEl("button", {
-    cls: "mondo-settings-quick-search-tags__add-button",
-    text: "Add Entity",
-    attr: {
-      type: "button",
-      "aria-label": "Add quick search entity",
-      "aria-haspopup": "menu",
-    },
-  }) as HTMLButtonElement;
-
-  let quickSearchEntitiesState = [...quickSearchEntities];
-
   const persistQuickSearchState = async (next: MondoEntityType[]) => {
-    quickSearchEntitiesState = next;
-    dashboardSettings.quickSearchEntities = next;
     await persistDashboardSetting(plugin, "quickSearchEntities", next);
   };
 
-  const getRemainingEntityOptions = () =>
-    availableEntityOptions.filter(
-      (option) => !quickSearchEntitiesState.includes(option.type)
-    );
-
-  const updateAddButtonState = () => {
-    const hasRemaining = getRemainingEntityOptions().length > 0;
-    quickSearchAddButtonEl.disabled = !hasRemaining;
-    quickSearchAddButtonEl.setAttr("aria-disabled", hasRemaining ? "false" : "true");
-  };
-
-  const renderQuickSearchTags = () => {
-    const existing = quickSearchTagsEl.querySelectorAll<HTMLElement>(
-      ".mondo-settings-quick-search-tags__chip"
-    );
-    existing.forEach((element) => {
-      element.remove();
-    });
-
-    quickSearchEntitiesState.forEach((type, index) => {
-      const chipEl = quickSearchTagsEl.createSpan({
-        cls: "mondo-settings-quick-search-tags__chip",
-        attr: {
-          draggable: "true",
-          "data-index": `${index}`,
-          role: "listitem",
-        },
-      });
-
-      const labelEl = chipEl.createSpan({
-        cls: "mondo-settings-quick-search-tags__chip-label",
-      });
-      labelEl.setText(type);
-
-      const removeButton = chipEl.createSpan({
-        cls: "mondo-settings-quick-search-tags__chip-remove",
-        attr: {
-          role: "button",
-          tabindex: "0",
-          "aria-label": `Remove ${type} from quick search`,
-        },
-      });
-      setIcon(removeButton, "x");
-
-      const removeAtIndex = async () => {
-        const next = quickSearchEntitiesState.filter((_, i) => i !== index);
-        await persistQuickSearchState(next);
-        renderQuickSearchTags();
-        quickSearchAddButtonEl.focus();
-      };
-
-      removeButton.addEventListener("click", () => {
-        void removeAtIndex();
-      });
-
-      removeButton.addEventListener("keydown", (event) => {
-        if (event.key === "Enter" || event.key === " ") {
-          event.preventDefault();
-          void removeAtIndex();
-        }
-      });
-
-      chipEl.addEventListener("dragstart", (event) => {
-        const dataTransfer = event.dataTransfer;
-        if (dataTransfer) {
-          dataTransfer.setData("text/plain", `${index}`);
-          dataTransfer.effectAllowed = "move";
-        }
-        chipEl.classList.add("is-dragging");
-      });
-
-      chipEl.addEventListener("dragend", () => {
-        chipEl.classList.remove("is-dragging");
-        chipEl.classList.remove("is-dragover");
-      });
-
-      chipEl.addEventListener("dragover", (event) => {
-        event.preventDefault();
-        chipEl.classList.add("is-dragover");
-        const dataTransfer = event.dataTransfer;
-        if (dataTransfer) {
-          dataTransfer.dropEffect = "move";
-        }
-      });
-
-      chipEl.addEventListener("dragleave", () => {
-        chipEl.classList.remove("is-dragover");
-      });
-
-      chipEl.addEventListener("drop", (event) => {
-        event.preventDefault();
-        chipEl.classList.remove("is-dragover");
-        const fromIndexRaw = event.dataTransfer?.getData("text/plain");
-        const fromIndex = Number.parseInt(fromIndexRaw ?? "", 10);
-        if (Number.isNaN(fromIndex)) {
-          return;
-        }
-        const toIndex = Number.parseInt(chipEl.dataset.index ?? "", 10);
-        if (Number.isNaN(toIndex)) {
-          return;
-        }
-        if (fromIndex === toIndex) {
-          return;
-        }
-        const next = [...quickSearchEntitiesState];
-        const [moved] = next.splice(fromIndex, 1);
-        if (!moved) {
-          return;
-        }
-        if (toIndex >= next.length) {
-          next.push(moved);
-        } else {
-          next.splice(Math.max(toIndex, 0), 0, moved);
-        }
-        void persistQuickSearchState(next).then(() => {
-          renderQuickSearchTags();
-        });
-      });
-
-      quickSearchTagsEl.insertBefore(chipEl, quickSearchAddButtonEl);
-    });
-
-    quickSearchTagsEl.classList.toggle(
-      "is-empty",
-      quickSearchEntitiesState.length === 0
-    );
-    updateAddButtonState();
-  };
-
-  quickSearchTagsEl.addEventListener("dragover", (event) => {
-    event.preventDefault();
-    const dataTransfer = event.dataTransfer;
-    if (dataTransfer) {
-      dataTransfer.dropEffect = "move";
-    }
+  renderEntityListControl({
+    setting: quickSearchSetting,
+    initialState: quickSearchEntities,
+    persist: persistQuickSearchState,
+    addButtonAriaLabel: "Add quick search entity",
+    removeButtonAriaLabel: (type) => `Remove ${type} from quick search`,
   });
 
-  quickSearchTagsEl.addEventListener("drop", (event) => {
-    event.preventDefault();
-    if ((event.target as HTMLElement).closest(
-      ".mondo-settings-quick-search-tags__chip"
-    )) {
-      return;
-    }
-    const fromIndexRaw = event.dataTransfer?.getData("text/plain");
-    const fromIndex = Number.parseInt(fromIndexRaw ?? "", 10);
-    if (Number.isNaN(fromIndex)) {
-      return;
-    }
-    const next = [...quickSearchEntitiesState];
-    const [moved] = next.splice(fromIndex, 1);
-    if (!moved) {
-      return;
-    }
-    next.push(moved);
-    void persistQuickSearchState(next).then(() => {
-      renderQuickSearchTags();
-    });
-  });
+  const entityTilesSetting = dashboardSection
+    .createSetting()
+    .setName("IMS Entities")
+    .setDesc("Choose which entities appear in the IMS Entities grid.");
 
-  renderQuickSearchTags();
-
-  const openQuickSearchMenu = (event: MouseEvent | KeyboardEvent) => {
-    event.preventDefault();
-    if (quickSearchAddButtonEl.disabled) {
-      return;
-    }
-
-    const remainingOptions = getRemainingEntityOptions().sort((a, b) =>
-      a.label.localeCompare(b.label, undefined, { sensitivity: "base" })
-    );
-
-    if (remainingOptions.length === 0) {
-      updateAddButtonState();
-      return;
-    }
-
-    const menu = new Menu();
-    remainingOptions.forEach((option) => {
-      menu.addItem((item) => {
-        item.setTitle(option.label).onClick(() => {
-          const next = [...quickSearchEntitiesState, option.type];
-          void persistQuickSearchState(next).then(() => {
-            renderQuickSearchTags();
-            quickSearchAddButtonEl.focus();
-          });
-        });
-      });
-    });
-
-    if (event instanceof MouseEvent && (event.clientX !== 0 || event.clientY !== 0)) {
-      menu.showAtMouseEvent(event);
-    } else {
-      const rect = quickSearchAddButtonEl.getBoundingClientRect();
-      menu.showAtPosition({ x: rect.left, y: rect.bottom });
-    }
+  const persistEntityTilesState = async (next: MondoEntityType[]) => {
+    await persistDashboardSetting(plugin, "entityTiles", next);
   };
 
-  quickSearchAddButtonEl.addEventListener("click", (event) => {
-    openQuickSearchMenu(event);
+  renderEntityListControl({
+    setting: entityTilesSetting,
+    initialState: entityTiles,
+    persist: persistEntityTilesState,
+    addButtonAriaLabel: "Add IMS entity",
+    removeButtonAriaLabel: (type) => `Remove ${type} from IMS Entities`,
   });
 
   dashboardSection
