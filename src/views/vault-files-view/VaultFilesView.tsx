@@ -3,6 +3,7 @@ import type { EventRef, TFile } from "obsidian";
 import { Typography } from "@/components/ui/Typography";
 import { Icon } from "@/components/ui/Icon";
 import Table from "@/components/ui/Table";
+import Button from "@/components/ui/Button";
 import { useApp } from "@/hooks/use-app";
 import { formatBytes } from "@/utils/formatBytes";
 import { isOtherVaultFile } from "@/utils/fileTypeFilters";
@@ -13,6 +14,7 @@ type FileRow = {
   typeLabel: string;
   icon: string;
   sizeLabel: string;
+  size: number;
   createdValue: number;
   pathLabel: string;
 };
@@ -75,22 +77,28 @@ export const VaultFilesView = () => {
     };
   }, [app, collect]);
 
-  const rows = useMemo((): FileRow[] =>
-    files.map((file) => {
-      const extension = normalizeExtension(file);
-      const icon = ICON_MAP[extension] ?? "file";
-      const createdValue = file.stat.ctime;
+  const rows = useMemo(
+    (): FileRow[] =>
+      files.map((file) => {
+        const extension = normalizeExtension(file);
+        const icon = ICON_MAP[extension] ?? "file";
+        const createdValue = file.stat.ctime;
+        const size = file.stat.size ?? 0;
+        const parentPath = file.parent?.path ?? "";
+        const pathLabel = parentPath.length > 0 ? parentPath : "/";
 
-      return {
-        file,
-        typeLabel: extension.toUpperCase(),
-        icon,
-        sizeLabel: formatBytes(file.stat.size ?? 0),
-        createdValue,
-        pathLabel: file.path,
-      };
-    }),
-  [files]);
+        return {
+          file,
+          typeLabel: extension.toUpperCase(),
+          icon,
+          sizeLabel: formatBytes(size),
+          size,
+          createdValue,
+          pathLabel,
+        };
+      }),
+    [files]
+  );
 
   const handleOpenFile = useCallback(
     async (file: TFile) => {
@@ -100,18 +108,62 @@ export const VaultFilesView = () => {
     [app]
   );
 
+  const handleDeleteFile = useCallback(
+    async (file: TFile) => {
+      const confirmed = window.confirm(
+        `Are you sure you want to delete "${file.basename}"?`
+      );
+      if (!confirmed) {
+        return;
+      }
+
+      try {
+        await app.vault.delete(file);
+        setFiles((previous) =>
+          previous.filter((entry) => entry.path !== file.path)
+        );
+      } catch (error) {
+        console.debug("VaultFilesView: failed to delete file", file.path, error);
+      }
+    },
+    [app]
+  );
+
+  const totals = useMemo(() => {
+    const totalSize = rows.reduce((acc, row) => acc + row.size, 0);
+    return {
+      totalCount: rows.length,
+      totalSizeLabel: formatBytes(totalSize),
+    };
+  }, [rows]);
+
   return (
     <div className="p-4 space-y-6">
       <Typography variant="h1">Vault Files</Typography>
-      <div className="overflow-hidden rounded-lg border border-[var(--background-modifier-border)] bg-[var(--background-secondary)]">
+      <div className="grid gap-3 sm:grid-cols-2">
+        <div className="rounded-lg border border-[var(--background-modifier-border)] bg-[var(--background-secondary)] p-4">
+          <div className="text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">
+            Total Files
+          </div>
+          <div className="mt-2 text-2xl font-semibold text-[var(--text-normal)]">
+            {totals.totalCount.toLocaleString()}
+          </div>
+        </div>
+        <div className="rounded-lg border border-[var(--background-modifier-border)] bg-[var(--background-secondary)] p-4">
+          <div className="text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">
+            Total File Size
+          </div>
+          <div className="mt-2 text-2xl font-semibold text-[var(--text-normal)]">
+            {totals.totalSizeLabel}
+          </div>
+        </div>
+      </div>
+      <div className="overflow-hidden rounded-lg border border-[var(--background-modifier-border)]">
         <Table>
           <thead className="bg-[var(--background-secondary-alt, var(--background-secondary))]">
             <tr>
               <Table.HeadCell className="p-3 text-left text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">
-                Title
-              </Table.HeadCell>
-              <Table.HeadCell className="p-3 text-left text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">
-                Path
+                File
               </Table.HeadCell>
               <Table.HeadCell className="w-40 p-3 text-left text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">
                 Type
@@ -121,6 +173,9 @@ export const VaultFilesView = () => {
               </Table.HeadCell>
               <Table.HeadCell className="w-48 p-3 text-left text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">
                 Created
+              </Table.HeadCell>
+              <Table.HeadCell className="w-16 p-3 text-right text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">
+                <span className="sr-only">Actions</span>
               </Table.HeadCell>
             </tr>
           </thead>
@@ -141,23 +196,22 @@ export const VaultFilesView = () => {
                   className="border-t border-[var(--background-modifier-border)]"
                 >
                   <Table.Cell className="p-3 align-middle">
-                    <a
-                      href="#"
-                      className="group inline-flex max-w-full items-center gap-2 text-left text-[var(--interactive-accent)] hover:underline"
-                      onClick={(event) => {
-                        event.preventDefault();
-                        void handleOpenFile(row.file);
-                      }}
-                      title={row.file.basename}
-                    >
-                      <Icon name="external-link" className="h-4 w-4 flex-shrink-0" />
-                      <span className="truncate">{row.file.basename}</span>
-                    </a>
-                  </Table.Cell>
-                  <Table.Cell className="p-3 align-middle text-[var(--text-muted)]">
-                    <span className="block max-w-xs truncate md:max-w-sm lg:max-w-md" title={row.pathLabel}>
-                      {row.pathLabel}
-                    </span>
+                    <div className="flex flex-col items-start gap-1">
+                      <Button
+                        variant="link"
+                        tone="info"
+                        className="font-medium"
+                        onClick={() => {
+                          void handleOpenFile(row.file);
+                        }}
+                        title={row.file.basename}
+                      >
+                        {row.file.basename}
+                      </Button>
+                      <span className="max-w-xl truncate text-xs text-[var(--text-muted)]">
+                        {row.pathLabel}
+                      </span>
+                    </div>
                   </Table.Cell>
                   <Table.Cell className="p-3 align-middle">
                     <div className="flex items-center gap-2 text-[var(--text-normal)]">
@@ -170,6 +224,17 @@ export const VaultFilesView = () => {
                   </Table.Cell>
                   <Table.Cell className="p-3 align-middle text-[var(--text-muted)]">
                     <ReadableDate value={row.createdValue} fallback="—" />
+                  </Table.Cell>
+                  <Table.Cell className="p-3 align-middle text-right">
+                    <Button
+                      icon="trash"
+                      variant="link"
+                      tone="danger"
+                      aria-label={`Delete ${row.file.basename}`}
+                      onClick={() => {
+                        void handleDeleteFile(row.file);
+                      }}
+                    />
                   </Table.Cell>
                 </Table.Row>
               ))

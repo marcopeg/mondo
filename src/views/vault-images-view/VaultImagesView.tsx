@@ -27,8 +27,18 @@ const VIEW_MODE_SETTING_KEY = "vaultImages.viewMode";
 export const VaultImagesView = () => {
   const app = useApp();
   const [files, setFiles] = useState<TFile[]>([]);
-  const viewModeSetting = useSetting<ViewMode>(VIEW_MODE_SETTING_KEY, "wall");
-  const [viewMode, setViewMode] = useState<ViewMode>(viewModeSetting);
+  const initialViewMode = useMemo<ViewMode>(() => {
+    const pluginInstance = (app as any)?.plugins?.getPlugin?.("mondo") as
+      | any
+      | undefined;
+    const stored = pluginInstance?.settings?.vaultImages?.viewMode;
+    return stored === "grid" ? "grid" : "wall";
+  }, [app]);
+  const viewModeSetting = useSetting<ViewMode>(
+    VIEW_MODE_SETTING_KEY,
+    initialViewMode
+  );
+  const [viewMode, setViewMode] = useState<ViewMode>(initialViewMode);
   const [dimensions, setDimensions] = useState<Record<string, ImageDimensions | null>>({});
   const dimensionsRef = useRef(new Map<string, ImageDimensions | null>());
 
@@ -239,24 +249,55 @@ export const VaultImagesView = () => {
 
   const isGridView = viewMode === "grid";
 
+  const totals = useMemo(() => {
+    const totalSize = files.reduce((acc, file) => acc + (file.stat.size ?? 0), 0);
+    return {
+      totalImages: files.length,
+      totalSizeLabel: formatBytes(totalSize),
+    };
+  }, [files]);
+
   return (
     <div className="p-4 space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <Typography variant="h1">Vault Images</Typography>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <Typography variant="h1" className="flex-1">
+          Vault Images
+        </Typography>
         <Switch
           checked={isGridView}
           onCheckedChange={handleToggleViewMode}
           uncheckedLabel="Wall"
           checkedLabel="Grid"
           aria-label="Toggle between wall and grid layouts"
+          className="shrink-0"
         />
       </div>
+
+      <div className="grid gap-3 sm:grid-cols-2">
+        <div className="rounded-lg border border-[var(--background-modifier-border)] bg-[var(--background-secondary)] p-4">
+          <div className="text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">
+            Total Images
+          </div>
+          <div className="mt-2 text-2xl font-semibold text-[var(--text-normal)]">
+            {totals.totalImages.toLocaleString()}
+          </div>
+        </div>
+        <div className="rounded-lg border border-[var(--background-modifier-border)] bg-[var(--background-secondary)] p-4">
+          <div className="text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">
+            Total File Size
+          </div>
+          <div className="mt-2 text-2xl font-semibold text-[var(--text-normal)]">
+            {totals.totalSizeLabel}
+          </div>
+        </div>
+      </div>
+
       {entries.length === 0 ? (
-        <div className="rounded-lg border border-[var(--background-modifier-border)] bg-[var(--background-secondary)] p-6 text-center text-[var(--text-muted)]">
+        <div className="rounded-lg border border-[var(--background-modifier-border)] p-6 text-center text-[var(--text-muted)]">
           No images found in your vault.
         </div>
       ) : isGridView ? (
-        <div className="overflow-hidden rounded-lg border border-[var(--background-modifier-border)] bg-[var(--background-secondary)]">
+        <div className="overflow-hidden rounded-lg border border-[var(--background-modifier-border)]">
           <Table>
             <thead className="bg-[var(--background-secondary-alt, var(--background-secondary))]">
               <tr>
@@ -345,19 +386,21 @@ export const VaultImagesView = () => {
           </Table>
         </div>
       ) : (
-        <div className="grid grid-cols-2 gap-0 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-8">
-          {entries.map((entry) => (
-            <div key={entry.file.path} className="aspect-square overflow-hidden">
-              <img
-                src={entry.resourcePath}
-                alt={entry.file.basename}
-                className="block h-full w-full cursor-pointer object-cover"
-                onClick={() => {
-                  handleEditImage(entry.file);
-                }}
-              />
-            </div>
-          ))}
+        <div className="rounded-lg border border-[var(--background-modifier-border)] p-2">
+          <div className="grid grid-cols-2 gap-0 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-8">
+            {entries.map((entry) => (
+              <div key={entry.file.path} className="aspect-square overflow-hidden">
+                <img
+                  src={entry.resourcePath}
+                  alt={entry.file.basename}
+                  className="block h-full w-full cursor-pointer object-cover"
+                  onClick={() => {
+                    handleEditImage(entry.file);
+                  }}
+                />
+              </div>
+            ))}
+          </div>
         </div>
       )}
     </div>

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import type { EventRef, TFile } from "obsidian";
 import { Typography } from "@/components/ui/Typography";
 import { Icon } from "@/components/ui/Icon";
@@ -7,6 +7,8 @@ import Button from "@/components/ui/Button";
 import { useApp } from "@/hooks/use-app";
 import { isMarkdownFile } from "@/utils/fileTypeFilters";
 import { resolveCoverImage, type ResolvedCoverImage } from "@/utils/resolveCoverImage";
+import { formatBytes } from "@/utils/formatBytes";
+import { getMondoEntityConfig, isMondoEntityType } from "@/types/MondoFileType";
 import type { TCachedFile } from "@/types/TCachedFile";
 
 type NoteRow = {
@@ -14,27 +16,10 @@ type NoteRow = {
   displayName: string;
   pathLabel: string;
   cover: ResolvedCoverImage | null;
-  wordCount: number | null;
-};
-
-const sanitizeContentForWordCount = (content: string): string =>
-  content
-    .replace(/```[\s\S]*?```/g, " ")
-    .replace(/`[^`]*`/g, " ")
-    .replace(/!\[[^\]]*\]\([^)]*\)/g, " ")
-    .replace(/\[[^\]]*\]\([^)]*\)/g, " ")
-    .replace(/[#>*_\-]+/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-
-const computeWordCount = (content: string): number | null => {
-  const sanitized = sanitizeContentForWordCount(content);
-  if (!sanitized) {
-    return null;
-  }
-
-  const words = sanitized.split(" ").filter(Boolean);
-  return words.length;
+  size: number;
+  sizeLabel: string;
+  typeLabel: string;
+  typeIcon: string;
 };
 
 export const VaultNotesView = () => {
@@ -57,21 +42,39 @@ export const VaultNotesView = () => {
       const displayName = showRaw.trim() || file.basename;
       const cachedFile: TCachedFile = { file, cache: cache ?? undefined };
       const cover = resolveCoverImage(app, cachedFile);
+      const parentPath = file.parent?.path ?? "";
+      const hasShowField = Boolean(showRaw.trim());
+      const pathLabel = hasShowField
+        ? file.path
+        : parentPath.length > 0
+        ? parentPath
+        : "/";
+      const rawType =
+        typeof frontmatter.type === "string" ? frontmatter.type.trim() : "";
+      const normalizedType = rawType.toLowerCase();
+      let typeLabel = rawType || "Markdown";
+      let typeIcon = "file-text";
 
-      let wordCount: number | null = null;
-      try {
-        const content = await app.vault.cachedRead(file);
-        wordCount = computeWordCount(content);
-      } catch (error) {
-        console.debug("VaultNotesView: failed to read note", file.path, error);
+      if (normalizedType && isMondoEntityType(normalizedType)) {
+        const config = getMondoEntityConfig(normalizedType);
+        typeLabel = config?.name ?? (rawType || "Markdown");
+        typeIcon = config?.icon ?? "tag";
+      } else if (normalizedType) {
+        typeLabel = rawType;
+        typeIcon = "tag";
       }
+
+      const size = file.stat.size ?? 0;
 
       results.push({
         file,
         displayName,
-        pathLabel: file.path,
+        pathLabel,
         cover,
-        wordCount,
+        size,
+        sizeLabel: formatBytes(size),
+        typeLabel,
+        typeIcon,
       });
     }
 
@@ -143,10 +146,37 @@ export const VaultNotesView = () => {
     [app]
   );
 
+  const totals = useMemo(() => {
+    const totalSize = rows.reduce((acc, row) => acc + row.size, 0);
+    return {
+      totalCount: rows.length,
+      totalSize,
+      totalSizeLabel: formatBytes(totalSize),
+    };
+  }, [rows]);
+
   return (
     <div className="p-4 space-y-6">
       <Typography variant="h1">Vault Notes</Typography>
-      <div className="overflow-hidden rounded-lg border border-[var(--background-modifier-border)] bg-[var(--background-secondary)]">
+      <div className="grid gap-3 sm:grid-cols-2">
+        <div className="rounded-lg border border-[var(--background-modifier-border)] bg-[var(--background-secondary)] p-4">
+          <div className="text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">
+            Total Notes
+          </div>
+          <div className="mt-2 text-2xl font-semibold text-[var(--text-normal)]">
+            {totals.totalCount.toLocaleString()}
+          </div>
+        </div>
+        <div className="rounded-lg border border-[var(--background-modifier-border)] bg-[var(--background-secondary)] p-4">
+          <div className="text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">
+            Total File Size
+          </div>
+          <div className="mt-2 text-2xl font-semibold text-[var(--text-normal)]">
+            {totals.totalSizeLabel}
+          </div>
+        </div>
+      </div>
+      <div className="overflow-hidden rounded-lg border border-[var(--background-modifier-border)]">
         <Table>
           <thead className="bg-[var(--background-secondary-alt, var(--background-secondary))]">
             <tr>
@@ -156,8 +186,11 @@ export const VaultNotesView = () => {
               <Table.HeadCell className="p-3 text-left text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">
                 Note
               </Table.HeadCell>
+              <Table.HeadCell className="w-36 p-3 text-left text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">
+                Type
+              </Table.HeadCell>
               <Table.HeadCell className="w-32 p-3 text-left text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">
-                Words
+                Size
               </Table.HeadCell>
               <Table.HeadCell className="w-16 p-3 text-right text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">
                 <span className="sr-only">Actions</span>
@@ -168,7 +201,7 @@ export const VaultNotesView = () => {
             {isLoading && rows.length === 0 ? (
               <tr>
                 <Table.Cell
-                  colSpan={4}
+                  colSpan={5}
                   className="p-6 text-center text-[var(--text-muted)]"
                 >
                   Loading notes…
@@ -178,7 +211,7 @@ export const VaultNotesView = () => {
             {!isLoading && rows.length === 0 ? (
               <tr>
                 <Table.Cell
-                  colSpan={4}
+                  colSpan={5}
                   className="p-6 text-center text-[var(--text-muted)]"
                 >
                   No notes found.
@@ -210,7 +243,7 @@ export const VaultNotesView = () => {
                     <Button
                       variant="link"
                       tone="info"
-                      className="max-w-xl truncate font-medium"
+                      className="font-medium"
                       onClick={() => {
                         void handleOpenFile(row.file);
                       }}
@@ -223,8 +256,14 @@ export const VaultNotesView = () => {
                     </span>
                   </div>
                 </Table.Cell>
+                <Table.Cell className="p-3 align-middle">
+                  <div className="flex items-center gap-2 text-[var(--text-normal)]">
+                    <Icon name={row.typeIcon} className="h-4 w-4" />
+                    <span className="truncate text-sm">{row.typeLabel}</span>
+                  </div>
+                </Table.Cell>
                 <Table.Cell className="p-3 align-middle text-[var(--text-normal)]">
-                  {typeof row.wordCount === "number" ? row.wordCount.toLocaleString() : "—"}
+                  {row.sizeLabel}
                 </Table.Cell>
                 <Table.Cell className="p-3 align-middle text-right">
                   <Button

@@ -1014,6 +1014,7 @@ export const AudioLogsView = ({ plugin }: AudioLogsViewProps) => {
           durationLabel,
           sizeLabel,
           dateValue,
+          pathLabel: file.path,
           transcription,
           transcriptionLabel,
           transcriptionTooltip,
@@ -1143,17 +1144,22 @@ export const AudioLogsView = ({ plugin }: AudioLogsViewProps) => {
                       </button>
                     </Table.Cell>
                     <Table.Cell className="p-3 align-middle">
-                      <a
-                        href="#"
-                        className="block max-w-[22rem] truncate text-[var(--interactive-accent)] hover:underline"
-                        onClick={(event) => {
-                          event.preventDefault();
-                          void openFileInWorkspace(app, row.file);
-                        }}
-                        title={displayTitle}
-                      >
-                        {displayTitle}
-                      </a>
+                      <div className="flex flex-col items-start gap-1">
+                        <Button
+                          variant="link"
+                          tone="info"
+                          className="font-medium"
+                          onClick={() => {
+                            void openFileInWorkspace(app, row.file);
+                          }}
+                          title={displayTitle}
+                        >
+                          {displayTitle}
+                        </Button>
+                        <span className="max-w-xl truncate text-xs text-[var(--text-muted)]">
+                          {row.pathLabel}
+                        </span>
+                      </div>
                     </Table.Cell>
                     <Table.Cell className="p-3 align-middle text-[var(--text-muted)]">
                       <ReadableDate value={row.dateValue} fallback="--" />
@@ -1239,14 +1245,15 @@ export const AudioLogsView = ({ plugin }: AudioLogsViewProps) => {
                       )}
                     </Table.Cell>
                     <Table.Cell className="p-3 text-right align-middle">
-                      <button
-                        type="button"
-                        className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-transparent text-[var(--text-muted)] hover:text-[var(--color-red, #d94848)]"
-                        onClick={() => handleDelete(row.file)}
+                      <Button
+                        icon="trash"
+                        variant="link"
+                        tone="danger"
                         aria-label="Delete audio note"
-                      >
-                        <Icon name="trash-2" className="m-0" />
-                      </button>
+                        onClick={() => {
+                          void handleDelete(row.file);
+                        }}
+                      />
                     </Table.Cell>
                   </Table.Row>
                 );
