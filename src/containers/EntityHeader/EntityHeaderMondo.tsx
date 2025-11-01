@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useRef, useState } from "react";
-import type { ChangeEvent } from "react";
-import { Notice, TFile } from "obsidian";
+import type { ChangeEvent, MouseEvent } from "react";
+import { Menu, Notice, Platform, TFile } from "obsidian";
 import { SplitButton } from "@/components/ui/SplitButton";
 import { Icon } from "@/components/ui/Icon";
 import { Badge } from "@/components/ui/Badge";
@@ -196,7 +196,8 @@ export const EntityHeaderMondo = ({ entityType }: EntityHeaderMondoProps) => {
   const app = useApp();
 
   const cachedFile = file as TCachedFile | undefined;
-  const coverInputRef = useRef<HTMLInputElement | null>(null);
+  const coverLibraryInputRef = useRef<HTMLInputElement | null>(null);
+  const coverCameraInputRef = useRef<HTMLInputElement | null>(null);
   const [isUploadingCover, setIsUploadingCover] = useState(false);
 
   const displayName = useMemo(
@@ -408,13 +409,43 @@ export const EntityHeaderMondo = ({ entityType }: EntityHeaderMondoProps) => {
     void handleCreateAction(primary);
   }, [handleCreateAction, isBusy, primary]);
 
-  const handleCoverPlaceholderClick = useCallback(() => {
-    if (isUploadingCover) {
-      return;
-    }
+  const handleCoverPlaceholderClick = useCallback(
+    (event: MouseEvent<HTMLButtonElement>) => {
+      if (isUploadingCover) {
+        return;
+      }
 
-    coverInputRef.current?.click();
-  }, [isUploadingCover]);
+      if (Platform.isMobileApp) {
+        event.preventDefault();
+
+        const menu = new Menu();
+
+        menu.addItem((item) => {
+          item.setTitle("Take Photo");
+          item.onClick(() => {
+            if (coverCameraInputRef.current) {
+              coverCameraInputRef.current.click();
+            } else {
+              coverLibraryInputRef.current?.click();
+            }
+          });
+        });
+
+        menu.addItem((item) => {
+          item.setTitle("Choose from Library");
+          item.onClick(() => {
+            coverLibraryInputRef.current?.click();
+          });
+        });
+
+        menu.showAtMouseEvent(event.nativeEvent);
+        return;
+      }
+
+      coverLibraryInputRef.current?.click();
+    },
+    [isUploadingCover]
+  );
 
   const handleCoverFileChange = useCallback(
     async (event: ChangeEvent<HTMLInputElement>) => {
@@ -503,7 +534,14 @@ export const EntityHeaderMondo = ({ entityType }: EntityHeaderMondoProps) => {
       ) : (
         <div className="relative flex h-20 w-20 flex-shrink-0 items-center justify-center">
           <input
-            ref={coverInputRef}
+            ref={coverLibraryInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={handleCoverFileChange}
+          />
+          <input
+            ref={coverCameraInputRef}
             type="file"
             accept="image/*"
             capture="environment"
