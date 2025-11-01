@@ -1,23 +1,24 @@
 import { useCallback, useEffect, useState } from "react";
 import type { EventRef, TFile } from "obsidian";
 import { Typography } from "@/components/ui/Typography";
-import Badge from "@/components/ui/Badge";
+import { Icon } from "@/components/ui/Icon";
+import Table from "@/components/ui/Table";
+import Button from "@/components/ui/Button";
 import { useApp } from "@/hooks/use-app";
 import { isMarkdownFile } from "@/utils/fileTypeFilters";
-import { ReadableDate } from "@/components/ui/ReadableDate";
+import { resolveCoverImage, type ResolvedCoverImage } from "@/utils/resolveCoverImage";
+import type { TCachedFile } from "@/types/TCachedFile";
 
 type NoteRow = {
   file: TFile;
-  typeLabel: string;
   displayName: string;
-  snippet: string;
-  updatedValue: number;
+  pathLabel: string;
+  cover: ResolvedCoverImage | null;
+  wordCount: number | null;
 };
 
-const MAX_SNIPPET_WORDS = 20;
-
-const buildSnippet = (content: string): string => {
-  const sanitized = content
+const sanitizeContentForWordCount = (content: string): string =>
+  content
     .replace(/```[\s\S]*?```/g, " ")
     .replace(/`[^`]*`/g, " ")
     .replace(/!\[[^\]]*\]\([^)]*\)/g, " ")
@@ -26,14 +27,14 @@ const buildSnippet = (content: string): string => {
     .replace(/\s+/g, " ")
     .trim();
 
+const computeWordCount = (content: string): number | null => {
+  const sanitized = sanitizeContentForWordCount(content);
   if (!sanitized) {
-    return "";
+    return null;
   }
 
-  const words = sanitized.split(" ");
-  const snippetWords = words.slice(0, MAX_SNIPPET_WORDS);
-  const snippet = snippetWords.join(" ");
-  return words.length > snippetWords.length ? `${snippet}…` : snippet;
+  const words = sanitized.split(" ").filter(Boolean);
+  return words.length;
 };
 
 export const VaultNotesView = () => {
@@ -52,24 +53,25 @@ export const VaultNotesView = () => {
     for (const file of markdownFiles) {
       const cache = app.metadataCache.getFileCache(file);
       const frontmatter = cache?.frontmatter ?? {};
-      const type = typeof frontmatter.type === "string" ? frontmatter.type : "note";
       const showRaw = typeof frontmatter.show === "string" ? frontmatter.show : "";
       const displayName = showRaw.trim() || file.basename;
+      const cachedFile: TCachedFile = { file, cache: cache ?? undefined };
+      const cover = resolveCoverImage(app, cachedFile);
 
-      let snippet = "";
+      let wordCount: number | null = null;
       try {
         const content = await app.vault.cachedRead(file);
-        snippet = buildSnippet(content);
+        wordCount = computeWordCount(content);
       } catch (error) {
         console.debug("VaultNotesView: failed to read note", file.path, error);
       }
 
       results.push({
         file,
-        typeLabel: type,
         displayName,
-        snippet,
-        updatedValue: file.stat.mtime,
+        pathLabel: file.path,
+        cover,
+        wordCount,
       });
     }
 
@@ -120,46 +122,125 @@ export const VaultNotesView = () => {
     [app]
   );
 
+  const handleDeleteFile = useCallback(
+    async (file: TFile) => {
+      const confirmed = window.confirm(
+        `Are you sure you want to delete "${file.basename}"?`
+      );
+      if (!confirmed) {
+        return;
+      }
+
+      try {
+        await app.vault.delete(file);
+        setRows((previous) =>
+          previous.filter((entry) => entry.file.path !== file.path)
+        );
+      } catch (error) {
+        console.debug("VaultNotesView: failed to delete note", file.path, error);
+      }
+    },
+    [app]
+  );
+
   return (
     <div className="p-4 space-y-6">
       <Typography variant="h1">Vault Notes</Typography>
-      <div className="space-y-3">
-        {isLoading && rows.length === 0 ? (
-          <div className="rounded-lg border border-[var(--background-modifier-border)] bg-[var(--background-secondary)] p-6 text-center text-[var(--text-muted)]">
-            Loading notes…
-          </div>
-        ) : null}
-        {!isLoading && rows.length === 0 ? (
-          <div className="rounded-lg border border-[var(--background-modifier-border)] bg-[var(--background-secondary)] p-6 text-center text-[var(--text-muted)]">
-            No notes found.
-          </div>
-        ) : null}
-        {rows.map((row) => (
-          <button
-            key={row.file.path}
-            type="button"
-            className="w-full rounded-lg border border-[var(--background-modifier-border)] bg-[var(--background-secondary)] p-4 text-left transition-colors hover:bg-[var(--background-secondary-alt, var(--background-secondary))]"
-            onClick={() => {
-              void handleOpenFile(row.file);
-            }}
-            title={row.displayName}
-          >
-            <div className="flex items-center justify-between gap-3">
-              <Badge>{row.typeLabel}</Badge>
-              <span className="text-xs text-[var(--text-muted)]">
-                <ReadableDate value={row.updatedValue} fallback="—" />
-              </span>
-            </div>
-            <div className="mt-2 text-lg font-semibold text-[var(--text-normal)]">
-              <span className="block truncate">{row.displayName}</span>
-            </div>
-            <div className="mt-1 text-sm text-[var(--text-muted)]">
-              <span className="block truncate">
-                {row.snippet || "No preview available."}
-              </span>
-            </div>
-          </button>
-        ))}
+      <div className="overflow-hidden rounded-lg border border-[var(--background-modifier-border)] bg-[var(--background-secondary)]">
+        <Table>
+          <thead className="bg-[var(--background-secondary-alt, var(--background-secondary))]">
+            <tr>
+              <Table.HeadCell className="w-20 p-3 text-left text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">
+                Cover
+              </Table.HeadCell>
+              <Table.HeadCell className="p-3 text-left text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">
+                Note
+              </Table.HeadCell>
+              <Table.HeadCell className="w-32 p-3 text-left text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">
+                Words
+              </Table.HeadCell>
+              <Table.HeadCell className="w-16 p-3 text-right text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">
+                <span className="sr-only">Actions</span>
+              </Table.HeadCell>
+            </tr>
+          </thead>
+          <tbody>
+            {isLoading && rows.length === 0 ? (
+              <tr>
+                <Table.Cell
+                  colSpan={4}
+                  className="p-6 text-center text-[var(--text-muted)]"
+                >
+                  Loading notes…
+                </Table.Cell>
+              </tr>
+            ) : null}
+            {!isLoading && rows.length === 0 ? (
+              <tr>
+                <Table.Cell
+                  colSpan={4}
+                  className="p-6 text-center text-[var(--text-muted)]"
+                >
+                  No notes found.
+                </Table.Cell>
+              </tr>
+            ) : null}
+            {rows.map((row) => (
+              <Table.Row
+                key={row.file.path}
+                className="border-t border-[var(--background-modifier-border)]"
+              >
+                <Table.Cell className="p-3 align-middle">
+                  {row.cover ? (
+                    <div className="h-12 w-12 overflow-hidden rounded-md border border-[var(--background-modifier-border)]">
+                      <img
+                        src={row.cover.kind === "vault" ? row.cover.resourcePath : row.cover.url}
+                        alt={row.displayName}
+                        className="h-full w-full object-cover"
+                      />
+                    </div>
+                  ) : (
+                    <div className="flex h-12 w-12 items-center justify-center rounded-md border border-dashed border-[var(--background-modifier-border)] text-[var(--text-muted)]">
+                      <Icon name="file-text" className="h-5 w-5" />
+                    </div>
+                  )}
+                </Table.Cell>
+                <Table.Cell className="p-3 align-middle">
+                  <div className="flex flex-col items-start gap-1">
+                    <Button
+                      variant="link"
+                      tone="info"
+                      className="max-w-xl truncate font-medium"
+                      onClick={() => {
+                        void handleOpenFile(row.file);
+                      }}
+                      title={row.displayName}
+                    >
+                      {row.displayName}
+                    </Button>
+                    <span className="max-w-xl truncate text-xs text-[var(--text-muted)]">
+                      {row.pathLabel}
+                    </span>
+                  </div>
+                </Table.Cell>
+                <Table.Cell className="p-3 align-middle text-[var(--text-normal)]">
+                  {typeof row.wordCount === "number" ? row.wordCount.toLocaleString() : "—"}
+                </Table.Cell>
+                <Table.Cell className="p-3 align-middle text-right">
+                  <Button
+                    icon="trash"
+                    variant="link"
+                    tone="danger"
+                    aria-label={`Delete ${row.displayName}`}
+                    onClick={() => {
+                      void handleDeleteFile(row.file);
+                    }}
+                  />
+                </Table.Cell>
+              </Table.Row>
+            ))}
+          </tbody>
+        </Table>
       </div>
     </div>
   );
