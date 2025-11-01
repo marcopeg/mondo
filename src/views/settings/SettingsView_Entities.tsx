@@ -298,6 +298,18 @@ export const renderEntityConfigurationSection = async (
   const configBlock = configSetting.controlEl.createDiv();
   configBlock.style.width = "100%";
 
+  // Heading placed inside the settings block so it appears just above the textarea
+  const imsHeader = new Setting(configBlock)
+    .setName("Custom IMS")
+    .setDesc("create your own CRM/ERP structure from scratch!")
+    .setHeading();
+  try {
+    imsHeader.settingEl.style.paddingLeft = "0";
+    imsHeader.settingEl.style.paddingRight = "0";
+    imsHeader.settingEl.style.marginLeft = "0";
+    imsHeader.settingEl.style.textAlign = "left";
+  } catch (_) {}
+
   const textArea = document.createElement("textarea");
   textArea.rows = 14;
   textArea.style.width = "100%";
