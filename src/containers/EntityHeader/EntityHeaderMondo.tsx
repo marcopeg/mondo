@@ -1,6 +1,6 @@
-import { useCallback, useMemo, useRef, useState } from "react";
-import type { ChangeEvent } from "react";
-import { Notice, TFile } from "obsidian";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type { ChangeEvent, MouseEvent } from "react";
+import { Menu, Notice, Platform, TFile } from "obsidian";
 import { SplitButton } from "@/components/ui/SplitButton";
 import { Icon } from "@/components/ui/Icon";
 import { Badge } from "@/components/ui/Badge";
@@ -15,6 +15,7 @@ import type {
 import { isMondoEntityType } from "@/types/MondoFileType";
 import createEntityForEntity from "@/utils/createEntityForEntity";
 import { resolveCoverImage } from "@/utils/resolveCoverImage";
+import { openEditImageModal } from "@/utils/EditImageModal";
 import { getEntityDisplayName } from "@/utils/getEntityDisplayName";
 import {
   useEntityLinksLayout,
@@ -196,7 +197,10 @@ export const EntityHeaderMondo = ({ entityType }: EntityHeaderMondoProps) => {
   const app = useApp();
 
   const cachedFile = file as TCachedFile | undefined;
-  const coverInputRef = useRef<HTMLInputElement | null>(null);
+  const coverLibraryInputRef = useRef<HTMLInputElement | null>(null);
+  const coverCameraInputRef = useRef<HTMLInputElement | null>(null);
+  const headerRef = useRef<HTMLDivElement | null>(null);
+  const previousCoverRef = useRef<string | null>(null);
   const [isUploadingCover, setIsUploadingCover] = useState(false);
 
   const displayName = useMemo(
@@ -216,6 +220,17 @@ export const EntityHeaderMondo = ({ entityType }: EntityHeaderMondoProps) => {
     return cover.kind === "vault" ? cover.resourcePath : cover.url;
   }, [cover]);
 
+  useEffect(() => {
+    const header = headerRef.current;
+    const currentCover = coverSrc ?? null;
+
+    if (header && currentCover && previousCoverRef.current !== currentCover) {
+      header.focus({ preventScroll: true });
+    }
+
+    previousCoverRef.current = currentCover;
+  }, [coverSrc]);
+
   const handleCoverClick = useCallback(() => {
     if (!cover) {
       return;
@@ -223,9 +238,7 @@ export const EntityHeaderMondo = ({ entityType }: EntityHeaderMondoProps) => {
 
     try {
       if (cover.kind === "vault") {
-        const leaf =
-          app.workspace.getLeaf(false) ?? app.workspace.getLeaf(true);
-        void leaf?.openFile(cover.file);
+        openEditImageModal(app, cover.file);
       } else if (typeof window !== "undefined") {
         window.open(cover.url, "_blank", "noopener,noreferrer");
       }
@@ -408,13 +421,43 @@ export const EntityHeaderMondo = ({ entityType }: EntityHeaderMondoProps) => {
     void handleCreateAction(primary);
   }, [handleCreateAction, isBusy, primary]);
 
-  const handleCoverPlaceholderClick = useCallback(() => {
-    if (isUploadingCover) {
-      return;
-    }
+  const handleCoverPlaceholderClick = useCallback(
+    (event: MouseEvent<HTMLButtonElement>) => {
+      if (isUploadingCover) {
+        return;
+      }
 
-    coverInputRef.current?.click();
-  }, [isUploadingCover]);
+      if (Platform.isMobileApp) {
+        event.preventDefault();
+
+        const menu = new Menu();
+
+        menu.addItem((item) => {
+          item.setTitle("Take Photo");
+          item.onClick(() => {
+            if (coverCameraInputRef.current) {
+              coverCameraInputRef.current.click();
+            } else {
+              coverLibraryInputRef.current?.click();
+            }
+          });
+        });
+
+        menu.addItem((item) => {
+          item.setTitle("Choose from Library");
+          item.onClick(() => {
+            coverLibraryInputRef.current?.click();
+          });
+        });
+
+        menu.showAtMouseEvent(event.nativeEvent);
+        return;
+      }
+
+      coverLibraryInputRef.current?.click();
+    },
+    [isUploadingCover]
+  );
 
   const handleCoverFileChange = useCallback(
     async (event: ChangeEvent<HTMLInputElement>) => {
@@ -485,7 +528,12 @@ export const EntityHeaderMondo = ({ entityType }: EntityHeaderMondoProps) => {
   );
 
   return (
-    <div className={headerClasses}>
+    <div
+      ref={headerRef}
+      className={headerClasses}
+      tabIndex={-1}
+      data-entity-header
+    >
       {coverSrc ? (
         <button
           type="button"
@@ -503,7 +551,14 @@ export const EntityHeaderMondo = ({ entityType }: EntityHeaderMondoProps) => {
       ) : (
         <div className="relative flex h-20 w-20 flex-shrink-0 items-center justify-center">
           <input
-            ref={coverInputRef}
+            ref={coverLibraryInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={handleCoverFileChange}
+          />
+          <input
+            ref={coverCameraInputRef}
             type="file"
             accept="image/*"
             capture="environment"

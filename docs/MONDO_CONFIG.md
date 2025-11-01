@@ -1,57 +1,61 @@
 # Mondo Configuration
 
-The plugin loads all Mondo metadata from `src/mondo-config.json`.  
-This file is the single source of truth for:
+Mondo loads its entity system from `src/mondo-config.json`. At runtime the plugin can replace those defaults with a JSON blob pasted into the settings screen or provided from an external vault file, but the schema is always the same.
 
-- the dashboard tile order;
-- the filter buttons used in _Relevant Notes_;
-- the entity panels displayed in _IMS Entities Quick Search_;
-- every Mondo entity definition (name, icon, templates, list layout, links).
+## Responsibilities
 
-Keeping the configuration centralized ensures the UI, hooks, and utilities stay in sync. Any change to Mondo entities must be done here unless explicitly noted otherwise.
+The configuration controls:
 
-## File Structure
+- Entity catalogue: type ids, display names, icons, templates, list layout, link panels, and related-note templates.
+- Dashboard ordering: tile order, relevant-notes filter buttons, and which entities appear in the Quick Search grid.
+- UI presets: reusable creation flows and backlinks panels surfaced by entity notes.
+
+Every change flows through the validator in `src/utils/MondoConfigManager.ts`, so invalid JSON is rejected before it can break the UI.
+
+## File structure
 
 ```jsonc
 {
   "titles": {
-    "order": ["person", "fact", "log", "..."]
+    "order": ["person", "company", "project"]
   },
   "relevantNotes": {
     "filter": {
-      "order": ["person", "fact", "log", "..."]
+      "order": ["person", "project"]
     }
   },
   "quickSearch": {
-    "entities": ["person", "company", "role", "..."]
+    "entities": ["person", "company"]
   },
   "entities": {
-    "<entityType>": {
-      "type": "<entityType>",
-      "name": "<display name>",
-      "icon": "<lucide icon id>",
-      "settings": {
-        "template": "<default frontmatter & body>"
-        "sort": { "column": "...", "direction": "asc|desc" }
-      There are two sources involved in configuration:
-
-      1) Built‑in defaults: `src/mondo-config.json` (minimal)
-         - This file ships with the plugin and provides the default configuration.
-         - It’s intentionally minimal; use it as the baseline when no custom JSON is set.
-
-      2) Runtime overrides: Settings → “Custom Mondo configuration (JSON)”
-         - Paste a JSON config in the settings to override the defaults at runtime.
-         - On Apply or Use defaults, you’ll be prompted to restart so changes apply everywhere.
-
-      For a complete schema example, see `src/mondo-config.full.json` (reference only).
-
-      Keeping the configuration centralized ensures the UI, hooks, and utilities stay in sync. Use the settings JSON for day‑to‑day changes; update `src/mondo-config.json` only when changing the plugin’s shipped defaults.
+    "person": {
+      "name": "People",
+      "icon": "user",
+      "template": "...",
+      "list": {
+        "columns": ["cover", "show", "company"],
+        "sort": { "column": "show", "direction": "asc" }
       },
+      "createRelated": [
+        {
+          "key": "report",
+          "label": "Report",
+          "referenceLink": "reports",
+          "create": {
+            "title": "Untitled Report to {@this.show}",
+            "attributes": { "reportsTo": "{@this}" },
+            "linkProperties": "reports"
+          }
+        }
+      ],
       "links": [
         {
           "type": "backlinks",
-          "key": "...",
-          "config": { "...see ENTITY_LINKS.md..." }
+          "key": "reports",
+          "config": {
+            "title": "Reports",
+            "columns": [{ "type": "cover" }, { "type": "show" }]
+          }
         }
       ]
     }
@@ -59,48 +63,51 @@ Keeping the configuration centralized ensures the UI, hooks, and utilities stay 
 }
 ```
 
-### `titles.order`
+### Ordering sections
 
-            "template": "<default frontmatter & body>",
+- `titles.order` drives the entity tiles shown on the dashboard home view (`src/views/dashboard-view/components/EntityTilesGrid`). Missing types are appended automatically, so supply only the deliberate order.
+- `relevantNotes.filter.order` determines which types render filter buttons inside the _Relevant Notes_ card. Unknown strings are dropped; the validator fills in any missing configured entity so the UI never breaks.
+- `quickSearch.entities` lists the entity types that expose the Quick Search creation widget. The validator trims to valid, unique entity ids.
 
-Controls the order of filter buttons in the _Relevant Notes_ panel. Each entry must match a `type` key declared under `entities`.
+### Entity definition
 
-### `quickSearch.entities`
+Each object in `entities` must comply with `MondoEntityConfig` (`src/types/MondoEntityConfig.ts`). Key fields:
 
-Defines which entity types render an _IMS Entities Quick Search_ card on the dashboard. The array is order sensitive, trimmed, and lower‑cased. Items that do not correspond to a declared entity (or are duplicated) are automatically dropped during validation.
+- `name` and `icon` feed UI labels and icons across dashboard tiles, filters, and entity headers.
+- `template` is injected when the user creates a new note of that type (Quick Search, panel actions, command palette, etc.). Tokens like `{{title}}`, `{{date}}`, `{@this}` are expanded by helpers in `src/utils/MondoTemplates.ts` and `src/utils/createEntityNoteFromInput.ts`.
+- `list` configures default table columns and sorting for entity list views rendered by `EntityView` (`src/views/entity-panel-view/EntityView.tsx`). Columns accept custom strings; the view renders matching metadata or falls back to `show`/frontmatter values.
+- `createRelated` defines reusable creation flows surfaced by entity headers and link panels. Supported keys inside `create`:
+  - `title`: string with templating tokens.
+  - `attributes`: object of frontmatter values to prefill (strings, numbers, booleans, arrays, nested objects).
+  - `linkProperties`: single property name or array; the helper links the new note back to the host using these keys.
+  - `openAfterCreate`: optional boolean to open the created note immediately.
+- `links` enumerates the panels rendered inside the injected entity sidebar (`src/events/inject-mondo-links.tsx`). Built-in `type: "backlinks"` uses the schema documented in `MondoEntityBacklinksLinkConfig`. Custom types map to React components registered in `src/containers/EntityLinks/EntityLinks.tsx`.
 
-### `entities`
+### Validation and defaults
 
-An object keyed by the Mondo entity type. Each value must comply with the `MondoEntityConfig` TypeScript interface. Important fields:
+`validateMondoConfig` (`src/utils/MondoConfigManager.ts`) sanitizes any pasted JSON:
 
-- `type`: **required**. Must match the object key.
-- `name`: Human readable label shown across the UI.
-- `icon`: Lucide icon id used in tiles, filters, and headers.
-- `settings.template`: Default frontmatter/body inserted when creating a note of this type.
-- `list`: Table configuration used by entity list views (`columns`, `sort`).
-- `links`: Link panel definitions. For guidance on link shapes see [`ENTITY_LINKS.md`](./ENTITY_LINKS.md).
-  Other properties defined in `MondoEntityConfig` can be extended as needed as the schema evolves.
+1. Confirms the payload is an object, optionally wrapped in `{ "mondoConfig": { ... } }`.
+2. Ensures `entities` contains at least one object and normalises `name`/`icon` strings.
+3. Verifies `links` arrays are arrays when present.
+4. Normalises ordering arrays so that every known entity appears exactly once.
+5. Filters `quickSearch.entities` to valid ids.
 
-## Editing Guidelines
+When validation fails, the plugin shows an Obsidian notice and logs detailed issues to the console. Successful validation updates the in-memory configuration and notifies subscribers through `setMondoConfig` (`src/entities/index.ts`).
 
-1. **Validate JSON** – the file is loaded at runtime; invalid JSON will break the build.
-2. **Keep orders in sync** – every string in `titles.order` and `relevantNotes.filter.order` must reference an entity declared under `entities`.
-3. **Update types when adding entities** – after introducing a new entity, add it to both order arrays unless there is a deliberate reason not to surface it.
-4. **Reuse link patterns** – common backlink configurations that used to live in `default-backlinks.ts` are now copied into each entity. When adjusting reusable pieces, update every affected entity (consider small utilities if patterns diverge).
-   - `name`: Human readable label shown across the UI.
-   - `icon`: Lucide icon id used in tiles, filters, and headers.
-   - `template`: Default frontmatter/body inserted when creating a note of this type.
+## Runtime sources
 
-- `src/entities/index.ts` reads this file to expose:
-  - `MONDO_ENTITIES`: record keyed by entity type.
-  - `MONDO_ENTITY_TYPES`: ordered list of types.
-  - `MONDO_UI_CONFIG`: dashboard and relevant-notes ordering.
-    1. Validate JSON – invalid JSON in settings won’t be applied; a modal lists issues.
-    2. Keep orders in sync – strings in `titles.order` and `relevantNotes.filter.order` must reference a declared entity. If omitted, the plugin falls back to the declared entities’ order.
-    3. Update when adding entities – consider adding new types to both order arrays so they surface in the Dashboard and Relevant Notes.
-    4. Reuse link patterns – see `ENTITY_LINKS.md` for backlinks examples.
-    5. Templates – templates are injected as-is. Ensure frontmatter is wrapped by `---` and templating tokens match the helpers (`{{title}}`, `{{date}}`, etc.).
+The plugin chooses configuration in this order:
 
-2. Adjust `type`, `name`, `icon`, `settings.template`, `list`, and `links`.
-   `src/entities/index.ts` imports `src/mondo-config.json` as the built‑in defaults and exposes: - `MONDO_ENTITIES`: record keyed by entity type. - `MONDO_ENTITY_TYPES`: ordered list of types. - `MONDO_UI_CONFIG`: dashboard and relevant-notes ordering.
-   At runtime, the settings JSON replaces the in-memory config via `setMondoConfig(...)`.
+1. **Custom JSON pasted in settings** – `Settings → Mondo → Custom Mondo configuration (JSON)`. On apply, the validator runs and the workspace receives a `mondo:config-updated` event.
+2. **Preset selector** – Settings expose presets from `MONDO_CONFIG_PRESETS` (`src/entities/index.ts`), currently `full` and `mini`.
+3. **Built-in default** – `src/mondo-config.json` ships with the plugin (empty by default).
+
+Use the custom JSON option for experiments. Update `src/mondo-config.json` only when changing the default bundle distributed with the plugin.
+
+## Editing checklist
+
+1. Keep the JSON valid – prefer a formatter or schema-aware editor.
+2. Update ordering arrays whenever you add or remove an entity.
+3. Review dashboards and entity panels after a change; entity components subscribe to config updates and will immediately reflect mistakes.
+4. Document reusable link shapes in [`docs/ENTITY_LINKS.md`](./ENTITY_LINKS.md) so other contributors know how to adopt them.

@@ -7,7 +7,7 @@ import {
   AbstractInputSuggest,
 } from "obsidian";
 import type Mondo from "@/main";
-import { MONDO_ENTITY_CONFIG_LIST } from "@/entities";
+import { MONDO_ENTITY_CONFIG_LIST, MONDO_ENTITY_TYPES } from "@/entities";
 import {
   DEFAULT_TIMESTAMP_SETTINGS,
   normalizeTimestampSettings,
@@ -19,6 +19,7 @@ import { renderAudioSection } from "./SettingsView_Audio";
 import { renderDailySection } from "./SettingsView_Daily";
 import { renderJournalSection } from "./SettingsView_Journal";
 import { renderDashboardSection } from "./SettingsView_Dashboard";
+import { sanitizeEntityTypeList } from "@/utils/sanitizeEntityTypeList";
 
 // Settings view for Mondo plugin
 export class SettingsView extends PluginSettingTab {
@@ -61,13 +62,51 @@ export class SettingsView extends PluginSettingTab {
       (this.plugin as any).settings.timestamp ?? DEFAULT_TIMESTAMP_SETTINGS
     );
     const dashboardSettings = (this.plugin as any).settings.dashboard ?? {};
+    const disableStatsSetting = dashboardSettings.disableStats;
+    const legacyEnableStats = dashboardSettings.enableStats;
+    const quickSearchEntitiesSetting = dashboardSettings.quickSearchEntities;
+    const entityTilesSetting = dashboardSettings.entityTiles;
+    const disableStats =
+      disableStatsSetting === true
+        ? true
+        : disableStatsSetting === false
+        ? false
+        : legacyEnableStats === true
+        ? false
+        : legacyEnableStats === false
+        ? true
+        : true;
+    const quickSearchEntities = sanitizeEntityTypeList(
+      quickSearchEntitiesSetting,
+      MONDO_ENTITY_TYPES
+    );
+    const entityTiles = sanitizeEntityTypeList(
+      entityTilesSetting,
+      MONDO_ENTITY_TYPES
+    );
     (this.plugin as any).settings.dashboard = {
       openAtBoot: dashboardSettings.openAtBoot === true,
       forceTab: dashboardSettings.forceTab === true,
       enableQuickTasks: dashboardSettings.enableQuickTasks !== false,
       enableRelevantNotes:
         dashboardSettings.enableRelevantNotes !== false,
-      enableStats: dashboardSettings.enableStats !== false,
+      disableStats,
+      quickSearchEntities,
+      entityTiles,
+    };
+
+    const ribbonSettings = (this.plugin as any).settings.ribbonIcons ?? {};
+    (this.plugin as any).settings.ribbonIcons = {
+      dashboard: ribbonSettings.dashboard !== false,
+      audioLogs: ribbonSettings.audioLogs !== false,
+      vaultImages: ribbonSettings.vaultImages !== false,
+      vaultFiles: ribbonSettings.vaultFiles !== false,
+      vaultNotes: ribbonSettings.vaultNotes !== false,
+    };
+
+    const vaultImagesSettings = (this.plugin as any).settings.vaultImages ?? {};
+    (this.plugin as any).settings.vaultImages = {
+      viewMode: vaultImagesSettings.viewMode === "grid" ? "grid" : "wall",
     };
     // Helper: collect folder paths from the vault
     const collectFolderPaths = (

@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import { Notice } from "obsidian";
 import { SplitButton } from "@/components/ui/SplitButton";
 import { Icon } from "@/components/ui/Icon";
@@ -12,6 +12,7 @@ import {
 } from "@/entities";
 import type { TCachedFile } from "@/types/TCachedFile";
 import { resolveCoverImage } from "@/utils/resolveCoverImage";
+import { openEditImageModal } from "@/utils/EditImageModal";
 import { getEntityDisplayName } from "@/utils/getEntityDisplayName";
 
 const buildEntityOptions = () =>
@@ -35,6 +36,8 @@ export const EntityHeaderUnknown = () => {
   );
   const { file } = useEntityFile();
   const cachedFile = file as TCachedFile | undefined;
+  const headerRef = useRef<HTMLDivElement | null>(null);
+  const previousCoverRef = useRef<string | null>(null);
 
   if (hideUnknown) {
     return null;
@@ -57,6 +60,17 @@ export const EntityHeaderUnknown = () => {
     return cover.kind === "vault" ? cover.resourcePath : cover.url;
   }, [cover]);
 
+  useEffect(() => {
+    const header = headerRef.current;
+    const currentCover = coverSrc ?? null;
+
+    if (header && currentCover && previousCoverRef.current !== currentCover) {
+      header.focus({ preventScroll: true });
+    }
+
+    previousCoverRef.current = currentCover;
+  }, [coverSrc]);
+
   const handleCoverClick = useCallback(() => {
     if (!cover) {
       return;
@@ -64,8 +78,7 @@ export const EntityHeaderUnknown = () => {
 
     try {
       if (cover.kind === "vault") {
-        const leaf = app.workspace.getLeaf(false) ?? app.workspace.getLeaf(true);
-        void leaf?.openFile(cover.file);
+        openEditImageModal(app, cover.file);
       } else if (typeof window !== "undefined") {
         window.open(cover.url, "_blank", "noopener,noreferrer");
       }
@@ -106,7 +119,12 @@ export const EntityHeaderUnknown = () => {
   );
 
   return (
-    <div className={headerClasses}>
+    <div
+      ref={headerRef}
+      className={headerClasses}
+      tabIndex={-1}
+      data-entity-header
+    >
       {coverSrc ? (
         <button
           type="button"

@@ -2,19 +2,19 @@
 
 _Mondo_ is a general purpose plugin that adds plentiful of utilities to a standard [Obsidian](https://obsidian.md/) vault:
 
-- **🏚️ Dashboard:** vault overview and quick activities
-- **🎤 Dictation:** talk to your note to write its content
-- **📝 Transcription:** generate a transcription file out of any Obsidian recording
-- **🔈 Voiceover:** transform your note into an audio file
-- **🕰️ Timestamps:** quickly add timestamps into your notes
-- **🧘 Focus Mode:** hide most of the UI and focus on your writing
-- **🤖 Open in ChatGPT:** use your notes as templates for ChatGPT prompts
-- **🌆 Image Editor:** resize and crop images in your vault
-- **👫 Mondo IMS:** typed entities with strong relations
-- **📈 Habits Tracker:** embed a streak tracking app in any note
-- **⏱️ Training Timers:** embed a training trimer app in any note
-- **📆 Daily Notes:** quick and timestamped annotations
-- **🖌️ Journaling:** distraction-free journaling experience
+- [**🏚️ Dashboard:** vault overview and quick activities](#🏚️-dashboard)
+- [**🎤 Dictation:** talk to your note to write its content](#🎤-dictation)
+- [**📝 Transcription:** generate a transcription file out of any Obsidian recording](#📝-transcription)
+- [**🔈 Voiceover:** transform your note into an audio file](#🔈-voiceover)
+- [**🕰️ Timestamps:** quickly add timestamps into your notes](#🕰️-timestamps)
+- [**🧘 Focus Mode:** hide most of the UI and focus on your writing](#🧘-focus-mode)
+- [**🤖 Open in ChatGPT:** use your notes as templates for ChatGPT prompts](#🤖-open-in-chatgpt)
+- [**🌆 Image Editor:** resize and crop images in your vault](#🌆-image-editor)
+- [**👫 Mondo IMS:** typed entities with strong relations](#👫-mondo-ims)
+- [**📈 Habits Tracker:** embed a streak tracking app in any note](#📈-habits-tracker)
+- [**⏱️ Training Timers:** embed a training trimer app in any note](#⏱️-training-timers)
+- [**📆 Daily Notes:** quick and timestamped annotations](#📆-daily-notes)
+- [**🖌️ Journaling:** distraction-free journaling experience](#🖌️-journaling)
 
 > I'm developing this plugin to facilitate my life 🤘
 
@@ -137,7 +137,7 @@ You can add a block as many `habits` blocks you want:
 
 ![Timer - single](./images/timer-source.png)
 
-# 📆 Daily Notes (to refine)
+# 📆 Daily Notes
 
 Daily notes help jotting down quick information.
 
@@ -149,7 +149,7 @@ Configure the template and shape of the time-based annotations in the `Mondo Set
 
 Mondo keeps a log of all the notes that were created, modified, and opened each day in the _Daily Note_. That becomes your vault's hystory datatabase and also a damn good way to find out notes when you rememeber when you worked on someting.
 
-# 📝 Journal (to refine)
+# 🖌️ Journaling
 
 Dealing with the modern world and its crazy pace can crash your soul. **Journaling** is a simple yet effective way to keep your thoughts, emotions, and hidden convinctions under control.
 

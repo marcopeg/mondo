@@ -1,4 +1,4 @@
-import { App, Modal, Notice, TFile } from "obsidian";
+import { App, Modal, Notice, Platform, TFile, setIcon } from "obsidian";
 
 import { isImageFile } from "@/utils/fileTypeFilters";
 
@@ -103,6 +103,8 @@ class ImageEditModal extends Modal {
   };
   private newFileCheckbox: HTMLInputElement | null = null;
   private saveButtonEl: HTMLButtonElement | null = null;
+  private deleteButtonEl: HTMLButtonElement | null = null;
+  private closeButtonEl: HTMLButtonElement | null = null;
   private pointerOperation: PointerOperation | null = null;
   private pointerTarget: HTMLElement | null = null;
   private activePointerId: number | null = null;
@@ -123,6 +125,8 @@ class ImageEditModal extends Modal {
   private previewToken = 0;
   private originalSize = 0;
   private imageResizeObserver: ResizeObserver | null = null;
+  private mobileMediaQuery: MediaQueryList | null = null;
+  private isMobileLayout = false;
 
   constructor(app: App, file: TFile) {
     super(app);
@@ -133,6 +137,53 @@ class ImageEditModal extends Modal {
     this.modalEl.addClass("mondo-crop-modal");
     this.contentEl.addClass("mondo-crop-modal__content");
     this.titleEl.setText(`Edit ${this.file.name}`);
+
+    this.modalEl
+      .querySelectorAll(".modal-close-button, .modal-close-x")
+      .forEach((el) => {
+        (el as HTMLElement).remove();
+      });
+
+    this.titleEl.addClass("mondo-crop-modal__title");
+    const titleContainer = this.titleEl.parentElement;
+    if (titleContainer instanceof HTMLElement) {
+      const header = titleContainer.createDiv({
+        cls: "mondo-crop-modal__header",
+      });
+      header.appendChild(this.titleEl);
+      const closeButton = header.createEl("button", {
+        cls: "mondo-crop-modal__close",
+        attr: {
+          type: "button",
+          "aria-label": "Close image editor",
+        },
+      });
+      const closeIcon = closeButton.createSpan({
+        cls: "mondo-crop-modal__close-icon",
+        attr: { "aria-hidden": "true" },
+      });
+      setIcon(closeIcon, "x");
+      closeButton.addEventListener("click", () => {
+        if (this.isProcessing) {
+          return;
+        }
+        this.close();
+      });
+      this.closeButtonEl = closeButton;
+    }
+
+    if (typeof window !== "undefined" && "matchMedia" in window) {
+      this.mobileMediaQuery = window.matchMedia("(max-width: 600px)");
+      this.mobileMediaQuery.addEventListener(
+        "change",
+        this.handleMobileQueryChange
+      );
+      this.updateMobileLayout(
+        Platform.isMobileApp || this.mobileMediaQuery.matches
+      );
+    } else {
+      this.updateMobileLayout(Platform.isMobileApp);
+    }
 
     const body = this.contentEl.createDiv({
       cls: "mondo-crop-modal__body",
@@ -145,6 +196,7 @@ class ImageEditModal extends Modal {
     const imageContainer = previewWrapper.createDiv({
       cls: "mondo-crop-modal__image-container",
     });
+    imageContainer.style.touchAction = "none";
 
     const image = imageContainer.createEl("img", {
       cls: "mondo-crop-modal__image",
@@ -336,13 +388,20 @@ class ImageEditModal extends Modal {
       cls: "mondo-crop-modal__footer-actions",
     });
 
-    const cancelButton = footerActions.createEl("button", { text: "Cancel" });
-    cancelButton.addEventListener("click", () => {
-      if (this.isProcessing) {
-        return;
-      }
-      this.close();
+    const deleteButton = footerActions.createEl("button", {
+      cls: "mondo-crop-modal__delete",
+      attr: { type: "button" },
     });
+    const deleteIcon = deleteButton.createSpan({
+      cls: "mondo-crop-modal__delete-icon",
+      attr: { "aria-hidden": "true" },
+    });
+    setIcon(deleteIcon, "trash");
+    deleteButton.createSpan({ text: "Delete" });
+    deleteButton.addEventListener("click", () => {
+      void this.handleDelete();
+    });
+    this.deleteButtonEl = deleteButton;
 
     const saveButton = footerActions.createEl("button", {
       text: "Save",
@@ -360,6 +419,14 @@ class ImageEditModal extends Modal {
       this.imageEl.removeEventListener("load", this.handleImageLoaded);
       this.imageEl.removeEventListener("error", this.handleImageError);
     }
+    if (this.mobileMediaQuery) {
+      this.mobileMediaQuery.removeEventListener(
+        "change",
+        this.handleMobileQueryChange
+      );
+      this.mobileMediaQuery = null;
+    }
+    this.updateMobileLayout(false);
     if (this.imageResizeObserver) {
       this.imageResizeObserver.disconnect();
       this.imageResizeObserver = null;
@@ -372,6 +439,9 @@ class ImageEditModal extends Modal {
       window.clearTimeout(this.previewUpdateTimer);
       this.previewUpdateTimer = null;
     }
+    this.closeButtonEl = null;
+    this.deleteButtonEl = null;
+    this.saveButtonEl = null;
   }
 
   private handleImageLoaded = () => {
@@ -413,6 +483,20 @@ class ImageEditModal extends Modal {
   private handleImageError = () => {
     new Notice("Failed to load the image for editing.");
     this.close();
+  };
+
+  private handleMobileQueryChange = (event: MediaQueryListEvent) => {
+    this.updateMobileLayout(Platform.isMobileApp || event.matches);
+  };
+
+  private updateMobileLayout = (enable: boolean) => {
+    if (enable === this.isMobileLayout) {
+      return;
+    }
+
+    this.isMobileLayout = enable;
+    this.modalEl.toggleClass("mondo-crop-modal--mobile", enable);
+    this.updateSelectionUI();
   };
 
   private updateCurrentConstraintState = () => {
@@ -1137,6 +1221,12 @@ class ImageEditModal extends Modal {
     if (this.saveButtonEl) {
       this.saveButtonEl.disabled = true;
     }
+    if (this.deleteButtonEl) {
+      this.deleteButtonEl.disabled = true;
+    }
+    if (this.closeButtonEl) {
+      this.closeButtonEl.disabled = true;
+    }
 
     try {
       const blob = await this.generateEditedBlob(
@@ -1166,6 +1256,58 @@ class ImageEditModal extends Modal {
       this.isProcessing = false;
       if (this.saveButtonEl) {
         this.saveButtonEl.disabled = false;
+      }
+      if (this.deleteButtonEl) {
+        this.deleteButtonEl.disabled = false;
+      }
+      if (this.closeButtonEl) {
+        this.closeButtonEl.disabled = false;
+      }
+    }
+  };
+
+  private handleDelete = async () => {
+    if (this.isProcessing) {
+      return;
+    }
+
+    const confirmed = confirm(
+      `Delete ${this.file.name}? This action cannot be undone.`
+    );
+    if (!confirmed) {
+      return;
+    }
+
+    const wasSaveDisabled = this.saveButtonEl?.disabled ?? false;
+
+    this.isProcessing = true;
+    if (this.saveButtonEl) {
+      this.saveButtonEl.disabled = true;
+    }
+    if (this.deleteButtonEl) {
+      this.deleteButtonEl.disabled = true;
+    }
+    if (this.closeButtonEl) {
+      this.closeButtonEl.disabled = true;
+    }
+
+    try {
+      await this.app.vault.delete(this.file);
+      new Notice(`Deleted ${this.file.name}.`);
+      this.close();
+    } catch (error) {
+      console.error("Mondo: Failed to delete image", error);
+      new Notice("Deleting image failed. Check the console for details.");
+    } finally {
+      this.isProcessing = false;
+      if (this.saveButtonEl) {
+        this.saveButtonEl.disabled = wasSaveDisabled;
+      }
+      if (this.deleteButtonEl) {
+        this.deleteButtonEl.disabled = false;
+      }
+      if (this.closeButtonEl) {
+        this.closeButtonEl.disabled = false;
       }
     }
   };

@@ -18,7 +18,7 @@ export class MondoVaultNotesViewWrapper extends ItemView {
   }
 
   getDisplayText() {
-    return "Vault Notes";
+    return "Markdown Notes";
   }
 
   getIcon(): string {
