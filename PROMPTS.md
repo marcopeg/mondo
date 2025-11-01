@@ -383,3 +383,21 @@ WIP:
 Focus on the images tab from the stats area of the dashboard. Right now, that shows a wall of images, and if you click the image, it opens up the image. Now, let's change that. When you click on the image, it should open the image editor right away, on that image. And then, on top of the list, there should be a switch button that basically lets you move between the wall of images, as it is now, and a list of images. If the user moves to the list, you should display all the images as a grid, basically, like the other panels. There should be the image cover, the image file name, and a very small path beneath the name as a second column. And then, I want the image type, the image dimensions, and the image size. At the end, there should be the delete button to delete the image, and clicking on the image should open the image editor as well, on that image. The switch value should be saved in the settings. Basically, there should be a setting that is controlled by the switch that will define whether to show the image wall or the image grid.
 
 ---
+
+TODO:
+
+Review the codebase in search of any cover tile that shows the related item’s cover.
+
+Create a unique ui/Cover dumb component that can render both the placeholder and the cover.
+
+It should be squared by default with a default width that can be passed as param.
+
+It should have a strategy cover/contain defaulted to contain.
+
+It should have the onSelectCover that receives the file path after a new cover is selected.
+
+Clicking on the cover should initiate the selection of a new media if there is none, and then trigger thr onSelectCover. If there is a media already, open the Edit Image functionality.
+
+Replace any custom cover implementation with this centralized one.
+
+Cleanup the code and update docs and agents for cover usage
