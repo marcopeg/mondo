@@ -375,6 +375,115 @@
   outline-offset: 2px;
 }
 
+.mondo-settings-quick-search-entities {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.mondo-settings-quick-search-entities .setting-item-info,
+.mondo-settings-quick-search-entities .setting-item-control {
+  width: 100%;
+}
+
+.mondo-settings-quick-search-entities .setting-item-control {
+  margin-top: var(--size-2-3, 0.5rem);
+}
+
+.mondo-settings-quick-search-tags {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--size-2-2, 0.35rem);
+  width: 100%;
+  padding: var(--size-2-2, 0.35rem) var(--size-2-3, 0.5rem);
+  border-radius: var(--radius-s, 0.5rem);
+  border: 1px solid var(--background-modifier-border);
+  background-color: var(
+    --background-modifier-form-field,
+    var(--background-secondary-alt)
+  );
+  cursor: text;
+}
+
+.mondo-settings-quick-search-tags:focus-within {
+  border-color: var(--interactive-accent);
+  box-shadow: 0 0 0 1px var(--interactive-accent);
+}
+
+.mondo-settings-quick-search-tags.is-empty {
+  gap: 0;
+}
+
+.mondo-settings-quick-search-tags__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--size-2-1, 0.25rem);
+  padding: 0 var(--size-2-3, 0.5rem);
+  border-radius: var(--radius-round, 999px);
+  background: var(--background-modifier-accent);
+  color: var(--text-normal);
+  font-size: var(--font-small, 0.85rem);
+  line-height: 1.4;
+  cursor: grab;
+  user-select: none;
+}
+
+.mondo-settings-quick-search-tags__chip.is-dragging {
+  opacity: 0.6;
+}
+
+.mondo-settings-quick-search-tags__chip.is-dragover {
+  outline: 2px dashed var(--interactive-accent);
+}
+
+.mondo-settings-quick-search-tags__chip-label {
+  white-space: nowrap;
+}
+
+.mondo-settings-quick-search-tags__chip-remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.1rem;
+  height: 1.1rem;
+  border-radius: 999px;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.mondo-settings-quick-search-tags__chip-remove:hover,
+.mondo-settings-quick-search-tags__chip-remove:focus-visible {
+  color: var(--text-normal);
+  background: var(
+    --background-modifier-hover,
+    rgba(255, 255, 255, 0.05)
+  );
+}
+
+.mondo-settings-quick-search-tags__chip-remove svg {
+  width: 0.75rem;
+  height: 0.75rem;
+}
+
+.mondo-settings-quick-search-tags__input {
+  flex: 1 1 8rem;
+  min-width: 8rem;
+  border: none;
+  background: transparent;
+  font-size: var(--font-small, 0.85rem);
+  color: inherit;
+  padding: var(--size-2-1, 0.25rem) 0;
+}
+
+.mondo-settings-quick-search-tags__input:focus {
+  outline: none;
+  box-shadow: none;
+}
+
+.mondo-settings-quick-search-tags__input::placeholder {
+  color: var(--text-faint);
+}
+
 .mondo-settings-entities {
   margin-bottom: var(--size-4-4, 1rem);
 }
