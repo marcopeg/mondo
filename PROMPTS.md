@@ -377,3 +377,9 @@ Respect the order.
 If this field is empty, use the configuration value from the IMs config as it is now
 
 ---
+
+TODO:
+
+Focus on the images tab from the stats area of the dashboard. Right now, that shows a wall of images, and if you click the image, it opens up the image. Now, let's change that. When you click on the image, it should open the image editor right away, on that image. And then, on top of the list, there should be a switch button that basically lets you move between the wall of images, as it is now, and a list of images. If the user moves to the list, you should display all the images as a grid, basically, like the other panels. There should be the image cover, the image file name, and a very small path beneath the name as a second column. And then, I want the image type, the image dimensions, and the image size. At the end, there should be the delete button to delete the image, and clicking on the image should open the image editor as well, on that image. The switch value should be saved in the settings. Basically, there should be a setting that is controlled by the switch that will define whether to show the image wall or the image grid.
+
+---
