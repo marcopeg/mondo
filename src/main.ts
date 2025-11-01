@@ -100,6 +100,7 @@ import {
   isImageEditSupported,
   openEditImageModal,
 } from "@/utils/EditImageModal";
+import { sanitizeEntityTypeList } from "@/utils/sanitizeEntityTypeList";
 
 const MONDO_ICON = "anchor";
 
@@ -136,6 +137,7 @@ export default class Mondo extends Plugin {
       enableQuickTasks: true,
       enableRelevantNotes: true,
       disableStats: true,
+      quickSearchEntities: [],
     },
     ribbonIcons: {
       dashboard: true,
@@ -274,6 +276,7 @@ export default class Mondo extends Plugin {
     const dashboardSettings = this.settings.dashboard ?? {};
     const disableStatsSetting = dashboardSettings.disableStats;
     const legacyEnableStats = dashboardSettings.enableStats;
+    const quickSearchEntitiesSetting = dashboardSettings.quickSearchEntities;
     const disableStats =
       disableStatsSetting === true
         ? true
@@ -284,12 +287,17 @@ export default class Mondo extends Plugin {
         : legacyEnableStats === false
         ? true
         : true;
+    const quickSearchEntities = sanitizeEntityTypeList(
+      quickSearchEntitiesSetting,
+      MONDO_ENTITY_TYPES
+    );
     this.settings.dashboard = {
       openAtBoot: dashboardSettings.openAtBoot === true,
       forceTab: dashboardSettings.forceTab === true,
       enableQuickTasks: dashboardSettings.enableQuickTasks !== false,
       enableRelevantNotes: dashboardSettings.enableRelevantNotes !== false,
       disableStats,
+      quickSearchEntities,
     };
 
     const ribbonSettings = this.settings.ribbonIcons ?? {};

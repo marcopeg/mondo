@@ -1,15 +1,25 @@
 import { useCallback, useMemo } from "react";
 import { Typography } from "@/components/ui/Typography";
 import { useApp } from "@/hooks/use-app";
+import { useSetting } from "@/hooks/use-setting";
 import QuickSearch from "../../QuickSearch";
 import { MONDO_ENTITIES, MONDO_UI_CONFIG } from "@/entities";
+import type { MondoEntityType } from "@/types/MondoEntityTypes";
 
 export const ImsEntities = () => {
   const app = useApp();
+  const quickSearchOverride = useSetting<MondoEntityType[]>(
+    "dashboard.quickSearchEntities",
+    []
+  );
 
   const quickSearchItems = useMemo(() => {
     const configured = MONDO_UI_CONFIG?.quickSearch?.entities ?? [];
-    return configured
+    const source =
+      Array.isArray(quickSearchOverride) && quickSearchOverride.length > 0
+        ? quickSearchOverride
+        : configured;
+    return source
       .map((type) => MONDO_ENTITIES[type])
       .filter(Boolean)
       .map((config) => ({
@@ -17,7 +27,7 @@ export const ImsEntities = () => {
         icon: config.icon,
         title: config.name,
       }));
-  }, []);
+  }, [quickSearchOverride]);
 
   const onOpenEntityPanel = useCallback(
     (entityType: string) => {

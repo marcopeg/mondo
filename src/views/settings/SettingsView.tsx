@@ -7,7 +7,7 @@ import {
   AbstractInputSuggest,
 } from "obsidian";
 import type Mondo from "@/main";
-import { MONDO_ENTITY_CONFIG_LIST } from "@/entities";
+import { MONDO_ENTITY_CONFIG_LIST, MONDO_ENTITY_TYPES } from "@/entities";
 import {
   DEFAULT_TIMESTAMP_SETTINGS,
   normalizeTimestampSettings,
@@ -19,6 +19,7 @@ import { renderAudioSection } from "./SettingsView_Audio";
 import { renderDailySection } from "./SettingsView_Daily";
 import { renderJournalSection } from "./SettingsView_Journal";
 import { renderDashboardSection } from "./SettingsView_Dashboard";
+import { sanitizeEntityTypeList } from "@/utils/sanitizeEntityTypeList";
 
 // Settings view for Mondo plugin
 export class SettingsView extends PluginSettingTab {
@@ -63,6 +64,7 @@ export class SettingsView extends PluginSettingTab {
     const dashboardSettings = (this.plugin as any).settings.dashboard ?? {};
     const disableStatsSetting = dashboardSettings.disableStats;
     const legacyEnableStats = dashboardSettings.enableStats;
+    const quickSearchEntitiesSetting = dashboardSettings.quickSearchEntities;
     const disableStats =
       disableStatsSetting === true
         ? true
@@ -73,6 +75,10 @@ export class SettingsView extends PluginSettingTab {
         : legacyEnableStats === false
         ? true
         : true;
+    const quickSearchEntities = sanitizeEntityTypeList(
+      quickSearchEntitiesSetting,
+      MONDO_ENTITY_TYPES
+    );
     (this.plugin as any).settings.dashboard = {
       openAtBoot: dashboardSettings.openAtBoot === true,
       forceTab: dashboardSettings.forceTab === true,
@@ -80,6 +86,7 @@ export class SettingsView extends PluginSettingTab {
       enableRelevantNotes:
         dashboardSettings.enableRelevantNotes !== false,
       disableStats,
+      quickSearchEntities,
     };
 
     const ribbonSettings = (this.plugin as any).settings.ribbonIcons ?? {};

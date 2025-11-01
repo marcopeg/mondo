@@ -1,4 +1,4 @@
-import { setIcon } from "obsidian";
+import { AbstractInputSuggest, type App, setIcon } from "obsidian";
 import { createSettingsSection } from "./SettingsView_utils";
 import type Mondo from "@/main";
 import { DASHBOARD_ICON } from "@/views/dashboard-view/wrapper";
@@ -6,6 +6,15 @@ import { AUDIO_LOGS_ICON } from "@/views/audio-logs-view/constants";
 import { VAULT_IMAGES_ICON } from "@/views/vault-images-view/constants";
 import { VAULT_FILES_ICON } from "@/views/vault-files-view/constants";
 import { VAULT_NOTES_ICON } from "@/views/vault-notes-view/constants";
+import {
+  MONDO_ENTITY_CONFIG_LIST,
+  MONDO_ENTITY_TYPES,
+} from "@/entities";
+import type { MondoEntityType } from "@/types/MondoEntityTypes";
+import {
+  formatEntityTypeList,
+  sanitizeEntityTypeList,
+} from "@/utils/sanitizeEntityTypeList";
 
 interface SettingsDashboardProps {
   plugin: Mondo;
@@ -21,12 +30,93 @@ const getDashboardSettings = (plugin: Mondo) => {
 const persistDashboardSetting = async (
   plugin: Mondo,
   key: string,
-  value: boolean
+  value: unknown
 ) => {
   const dashboardSettings = getDashboardSettings(plugin);
   dashboardSettings[key] = value;
   await (plugin as any).saveSettings();
+  try {
+    window.dispatchEvent(new CustomEvent("mondo:settings-updated"));
+  } catch (_) {
+    // ignore environments where window is unavailable
+  }
 };
+
+type EntityTypeOption = {
+  type: MondoEntityType;
+  label: string;
+  search: string;
+};
+
+const parseEntityInput = (
+  value: string,
+  validTypes: readonly MondoEntityType[]
+) => {
+  const segments = value.split(",");
+  const partialRaw = segments.pop() ?? "";
+  const committed = sanitizeEntityTypeList(segments, validTypes);
+  const partial = partialRaw.trim().toLowerCase();
+  return { committed, partial };
+};
+
+class EntityTypeSuggest extends AbstractInputSuggest<EntityTypeOption> {
+  private readonly options: EntityTypeOption[];
+  private readonly validTypes: readonly MondoEntityType[];
+  private readonly onPick: (type: MondoEntityType) => void;
+
+  constructor(
+    app: App,
+    inputEl: HTMLInputElement,
+    options: EntityTypeOption[],
+    validTypes: readonly MondoEntityType[],
+    onPick: (type: MondoEntityType) => void
+  ) {
+    super(app, inputEl);
+    this.options = options;
+    this.validTypes = validTypes;
+    this.onPick = onPick;
+  }
+
+  getSuggestions(query: string): EntityTypeOption[] {
+    const { committed, partial } = parseEntityInput(
+      query ?? "",
+      this.validTypes
+    );
+    const committedSet = new Set(committed);
+    const normalizedPartial = partial ?? "";
+
+    return this.options.filter((option) => {
+      if (committedSet.has(option.type)) {
+        return false;
+      }
+
+      if (!normalizedPartial) {
+        return true;
+      }
+
+      return (
+        option.type.includes(normalizedPartial) ||
+        option.search.includes(normalizedPartial)
+      );
+    });
+  }
+
+  renderSuggestion(option: EntityTypeOption, el: HTMLElement) {
+    el.setText(option.label);
+  }
+
+  selectSuggestion(option: EntityTypeOption) {
+    try {
+      this.onPick(option.type);
+    } finally {
+      try {
+        this.close();
+      } catch (error) {
+        // ignore inability to close the suggest dropdown
+      }
+    }
+  }
+}
 
 const getRibbonSettings = (plugin: Mondo) => {
   (plugin as any).settings = (plugin as any).settings ?? {};
@@ -58,6 +148,20 @@ export const renderDashboardSection = (
 
   const dashboardSettings = getDashboardSettings(plugin);
   const ribbonSettings = getRibbonSettings(plugin);
+  const availableEntityOptions: EntityTypeOption[] =
+    MONDO_ENTITY_CONFIG_LIST.map((config) => {
+      const name = typeof config.name === "string" ? config.name : config.type;
+      return {
+        type: config.type,
+        label: `${name} (${config.type})`,
+        search: `${name ?? ""} ${config.type}`.toLowerCase(),
+      };
+    });
+  const quickSearchEntities = sanitizeEntityTypeList(
+    dashboardSettings.quickSearchEntities,
+    MONDO_ENTITY_TYPES
+  );
+  const quickSearchDisplayValue = formatEntityTypeList(quickSearchEntities);
 
   const dashboardSection = createSettingsSection(
     containerEl,
@@ -124,6 +228,68 @@ export const renderDashboardSection = (
       toggle.setValue(current).onChange(async (value) => {
         await persistDashboardSetting(plugin, "disableStats", value);
       });
+    });
+
+  dashboardSection
+    .createSetting()
+    .setName("IMS Quick Search Entities")
+    .setDesc(
+      "Comma separated list of the entities that appear in the Quick Search list."
+    )
+    .addText((text) => {
+      text
+        .setPlaceholder("person, company")
+        .setValue(quickSearchDisplayValue)
+        .onChange(async (value) => {
+          const sanitized = sanitizeEntityTypeList(
+            value,
+            MONDO_ENTITY_TYPES
+          );
+          dashboardSettings.quickSearchEntities = sanitized;
+          await persistDashboardSetting(
+            plugin,
+            "quickSearchEntities",
+            sanitized
+          );
+        });
+
+      text.inputEl.addEventListener("blur", () => {
+        const normalized = formatEntityTypeList(
+          sanitizeEntityTypeList(text.getValue(), MONDO_ENTITY_TYPES)
+        );
+        text.setValue(normalized);
+      });
+
+      try {
+        new EntityTypeSuggest(
+          plugin.app,
+          text.inputEl,
+          availableEntityOptions,
+          MONDO_ENTITY_TYPES,
+          async (picked) => {
+            const current = sanitizeEntityTypeList(
+              text.getValue(),
+              MONDO_ENTITY_TYPES
+            );
+            if (!current.includes(picked)) {
+              current.push(picked);
+            }
+            const nextDisplay = formatEntityTypeList(current);
+            text.setValue(nextDisplay ? `${nextDisplay}, ` : "");
+            dashboardSettings.quickSearchEntities = current;
+            await persistDashboardSetting(
+              plugin,
+              "quickSearchEntities",
+              current
+            );
+          }
+        );
+      } catch (error) {
+        console.error(
+          "Mondo dashboard settings: failed to initialize entity suggest",
+          error
+        );
+      }
     });
 
   dashboardSection
