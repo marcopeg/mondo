@@ -1,178 +1,93 @@
-# Development
+# Development Workflow
 
-This is an Obsidian plugin and runs inside an Electron app.
+This plugin runs inside the Obsidian Electron app.
 
 ```bash
 # Install dependencies
 yarn install
 
-# Lint & Build
-# (useful to check if a change builds without errors)
+# Lint & build (validate a change without starting the dev server)
 yarn build
 
-# Continuous Development
+# Continuous development
 yarn dev
 ```
 
-# Mondo Obsidian Plugin
+# Plugin Overview
 
-This codebase implements an Obsidian Plugin for Mondo purposes.
-The goal is to enrich Obsidian UI with lists of related notes by context (such as `People` associated with a `Company`).
+Mondo enriches Obsidian by rendering React views around the standard Markdown experience.
 
-## FrontMatter
+- Frontmatter drives the plugin. When a note declares a `type` listed in `src/mondo-config.json`, Mondo treats it as a first-class entity and unlocks custom UI.
+- Entity behaviour (tiles, quick search, link panels, templates) is defined centrally in the JSON config. Refer to [`docs/MONDO_CONFIG.md`](./docs/MONDO_CONFIG.md) and [`docs/ENTITY_LINKS.md`](./docs/ENTITY_LINKS.md) for maintenance guidelines.
 
-This plugin relies on the frontmatter's attribute `type` to identify Mondo-specific files and activate the rich UI functionalities.
+# TypeScript Guidelines
 
-## Entities
+- Prefer arrow functions `() => {}`.
+- Default to `const`; use `let` only when mutation is required.
+- Never use `var`.
+- Never use the `any` type.
+- Do not use the `function` keyword for declarations.
 
-Supported values for the `type` frontmatter field are defined in [`src/mondo-config.json`](./src/mondo-config.json).  
-Current entity types:
-
-- person
-- fact
-- log
-- task
-- project
-- idea
-- company
-- team
-- meeting
-- role
-- location
-- restaurant
-- gear
-- tool
-- recipe
-- book
-- show
-- document
-
-The config also drives dashboard tile ordering, relevant-note filters, and per-entity templates. See [`MONDO_CONFIG.md`](./docs/MONDO_CONFIG.md) for details on maintaining the configuration, and [`ENTITY_LINKS.md`](./docs/ENTITY_LINKS.md) for link panel guidance.
-
-# TypeScript
-
-## Do
-
-- Use arrow functions `() => {}`
-- Prefer `const` over `let` unless necessary
-
-## Dont
-
-- Never use `var`
-- Never use type `any`
-- Never use the keyword `function`
-
-# React
-
-## Folder Structure
+# React Structure
 
 ```
 src/
-  types/           # TypeScript types
-  urils/           # generic libraries
-  hooks/           # reusable react hooks
-  components/      # reusable dumb components
-    ui/            # UI specific reusable components
-  containers/      # state-aware components
-  views/           # aggregation components for complex UI/UX
+  types/           # Domain types
+  utils/           # Generic utilities
+  hooks/           # Reusable React hooks
+  components/      # Presentational components
+    ui/            # Shared UI building blocks
+  containers/      # Stateful components (fetch/use hooks)
+  views/           # Page-level aggregations
 ```
 
-## UI Components
+- UI components implement a single visual control (button, grid, text field, etc.).
+- Containers bridge hooks/business logic with UI. Shared presentation pieces belong in `src/components`; bespoke pieces can live next to their container.
+- Views coordinate multiple containers and components to build full experiences.
 
-A UI component implements a visual control, such as a Button, grid, or text field.
-
-## Containers
-
-Containers are the connection between business logic and UI.
-If the presentational layer (UI) is shared with other containers (like a customizable List), it should be placed into `src/components`; else, it is a specific UI component and should be placed within the Container's folder structure.
-
-The business logic must be abstracted away into custom hooks placed along the container.
-
-One or more Views can use a container.
-
-## Views
-
-Page-level components that usually aggregate multiple Containers and Components.
-
-## Component Structure
-
-Components must be structured as:
+## Component Conventions
 
 ```
-- ComponentName/
-  - index.ts
-  - ComponentName.tsx
-  - useCustomStuff.ts (optional hooks)
-  - SubComponent/
-    - ... same structure recursively
+ComponentName/
+  index.ts          # `export { ComponentName as default } from "./ComponentName";`
+  ComponentName.tsx # `export const ComponentName = () => { ... }`
+  useFeature.ts     # Optional hooks
+  SubComponent/
+    ...
 ```
 
-```ts
-// index.ts
-export { ComponentName as default } from "./ComponentName";
-```
+Keep files short and respect single-responsibility boundaries. Tailwind is available via `src/styles.css`; stay aligned with Obsidian theming.
 
-```tsx
-// ComponentName/ComponentName.tsx
-export const ComponentName = () => { ... }
-```
-
-Aim for the best possible granularity of component structure.
-Files should be short and strictly respectful of the Single Responsibility Principle.
-
-## Styles
-
-Tailwind is enabled and configured in the codebase so we can use all the basic classes. The entry point is `src/styles.css`.
-
-All the components must follow Obsidian guidelines for any theme-related properties such as colors, spacing, etc.
-
-# Obsidian Plugin
-
-## Folder Structure
+# Obsidian Integration
 
 ```
 src/
   main.ts    # Plugin entry point
-  styles.css # CSS entrypoint (Tailwind enabled)
-  commands/  # Register logic as an Obsidian Command
-  events/    # Associated logic to an Obsidian Event
+  styles.css # Tailwind entry point
+  commands/  # Registered Obsidian commands
+  events/    # Event listeners / DOM injections
 ```
 
 ## Commands
 
-```bash
-yarn dev     # start the development server
-yarn build   # lint and build the artifacts
-yarn version # bump the release version
+```
+yarn dev      # Start development server
+yarn build    # Lint and build distributable assets
+yarn version  # Bump release version
 ```
 
-# Plugin Utilities
+# Entity Notes
 
-## src/hooks/use-app.ts
+Entity behaviour is split across multiple components under `src/containers/EntityHeader`:
 
-This hook gives access to the Obsidian context from a React Component perspective.
+- `EntityHeader.tsx` remains a light delegator: detect the current note type, verify against the configured entities, and pick `EntityHeaderMondo` (known type) or `EntityHeaderUnknown` (unknown type). If no entities are configured, return `null`.
+- `EntityHeaderMondo.tsx` renders the complete header for known entities (cover preview, metadata, “Add Related” actions) and fetches its own data through hooks.
+- `EntityHeaderUnknown.tsx` mirrors the layout while encouraging users to convert the note via the “Create as Mondo Note” actions.
 
-It return an instance of the Obsidian's App object:
+Each sub-component owns its data requirements so `EntityHeader` stays presentation-agnostic.
 
-```ts
-import type { App } from "obsidian";
-export const useApp = (): App { ... }
-```
+# Hooks Reference
 
-## src/hooks/use-setting.ts
-
-This hook gives access to one of the plugin settings providing the setting's path and an optional default value:
-
-```ts
-const foo = useSetting("foo", "bar");
-```
-
-## src/hooks/use-files.ts
-
-This hook returns a list of vault files filtered by a Mondo-known entity type.
-
-The second argument, `options`, can be used to apply filters or other hook-specific logic.
-
-```ts
-const files = useFiles("person");
-```
+- `src/hooks/use-app.ts` exposes the Obsidian `App` object to React components.
+- `src/hooks/use-setting.ts` returns a plugin setting by key with an optional default (`const foo = useSetting("foo", "bar");`).
+- `src/hooks/use-files.ts` loads vault files filtered by entity type and optional predicates (`const files = useFiles("person");`).
