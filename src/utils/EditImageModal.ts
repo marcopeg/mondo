@@ -1,4 +1,4 @@
-import { App, Modal, Notice, TFile } from "obsidian";
+import { App, Modal, Notice, Platform, TFile } from "obsidian";
 
 import { isImageFile } from "@/utils/fileTypeFilters";
 
@@ -123,6 +123,8 @@ class ImageEditModal extends Modal {
   private previewToken = 0;
   private originalSize = 0;
   private imageResizeObserver: ResizeObserver | null = null;
+  private mobileMediaQuery: MediaQueryList | null = null;
+  private isMobileLayout = false;
 
   constructor(app: App, file: TFile) {
     super(app);
@@ -133,6 +135,19 @@ class ImageEditModal extends Modal {
     this.modalEl.addClass("mondo-crop-modal");
     this.contentEl.addClass("mondo-crop-modal__content");
     this.titleEl.setText(`Edit ${this.file.name}`);
+
+    if (typeof window !== "undefined" && "matchMedia" in window) {
+      this.mobileMediaQuery = window.matchMedia("(max-width: 600px)");
+      this.mobileMediaQuery.addEventListener(
+        "change",
+        this.handleMobileQueryChange
+      );
+      this.updateMobileLayout(
+        Platform.isMobileApp || this.mobileMediaQuery.matches
+      );
+    } else {
+      this.updateMobileLayout(Platform.isMobileApp);
+    }
 
     const body = this.contentEl.createDiv({
       cls: "mondo-crop-modal__body",
@@ -145,6 +160,7 @@ class ImageEditModal extends Modal {
     const imageContainer = previewWrapper.createDiv({
       cls: "mondo-crop-modal__image-container",
     });
+    imageContainer.style.touchAction = "none";
 
     const image = imageContainer.createEl("img", {
       cls: "mondo-crop-modal__image",
@@ -360,6 +376,14 @@ class ImageEditModal extends Modal {
       this.imageEl.removeEventListener("load", this.handleImageLoaded);
       this.imageEl.removeEventListener("error", this.handleImageError);
     }
+    if (this.mobileMediaQuery) {
+      this.mobileMediaQuery.removeEventListener(
+        "change",
+        this.handleMobileQueryChange
+      );
+      this.mobileMediaQuery = null;
+    }
+    this.updateMobileLayout(false);
     if (this.imageResizeObserver) {
       this.imageResizeObserver.disconnect();
       this.imageResizeObserver = null;
@@ -413,6 +437,20 @@ class ImageEditModal extends Modal {
   private handleImageError = () => {
     new Notice("Failed to load the image for editing.");
     this.close();
+  };
+
+  private handleMobileQueryChange = (event: MediaQueryListEvent) => {
+    this.updateMobileLayout(Platform.isMobileApp || event.matches);
+  };
+
+  private updateMobileLayout = (enable: boolean) => {
+    if (enable === this.isMobileLayout) {
+      return;
+    }
+
+    this.isMobileLayout = enable;
+    this.modalEl.toggleClass("mondo-crop-modal--mobile", enable);
+    this.updateSelectionUI();
   };
 
   private updateCurrentConstraintState = () => {
