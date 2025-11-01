@@ -357,3 +357,23 @@ And should have those backlings panels:
 - links (eterogeneous)
 
 Careful not to create circular dependencies with the import of the files.
+
+---
+
+TODO:
+
+Add a nee setting item to the dashboard group called “IMS Quick Search Entities”
+
+Subtitle: comma separated list of the entities that appear in the Quick Search list
+
+TextField control with autocomplete based on the current list of entities defined in the system.
+
+Once an item is selected from the autocomplete, append a comma and space after it.
+
+This setting should be used by the IMS QuickSearch panel to provide the list of quick searches.
+
+Any unknown or invalid value should be ignored.
+Respect the order.
+If this field is empty, use the configuration value from the IMs config as it is now
+
+---
