@@ -34,7 +34,7 @@ export const ImsEntities = () => {
 
   return (
     <div className="space-y-4">
-      <Typography variant="h1">IMS Entities Quick Search</Typography>
+      <Typography variant="h1">IMS Quick Search</Typography>
       <QuickSearch items={quickSearchItems} onOpenEntityPanel={onOpenEntityPanel} />
     </div>
   );

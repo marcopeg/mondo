@@ -23,13 +23,13 @@ export const DashboardView = () => {
     <div className="p-4 space-y-6">
       <Typography variant="h1">Mondo Dashboard</Typography>
       <QuickButtons />
-      <ImsEntities />
       {shouldShowProductivity && (
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 lg:items-start">
           <QuickTasksSection enabled={quickTasksEnabled} />
           <RelevantNotesSection enabled={relevantNotesEnabled} />
         </div>
       )}
+      <ImsEntities />
       <ImsButtons />
       <VaultStatsSection />
     </div>
