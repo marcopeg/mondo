@@ -30,26 +30,6 @@ const hasAudioExtension = (value: string) => {
   return AUDIO_FILE_EXTENSIONS.has(normalized);
 };
 
-const formatDuration = (seconds: number | null | undefined) => {
-  if (seconds == null || !Number.isFinite(seconds)) {
-    return "--";
-  }
-
-  const total = Math.max(0, Math.round(seconds));
-  const hours = Math.floor(total / 3600);
-  const minutes = Math.floor((total % 3600) / 60);
-  const remaining = total % 60;
-
-  const hh = hours > 0 ? String(hours).padStart(2, "0") : null;
-  const mm = String(hours > 0 ? minutes : Math.floor(total / 60)).padStart(
-    2,
-    "0"
-  );
-  const ss = String(remaining).padStart(2, "0");
-
-  return hh ? `${hh}:${mm}:${ss}` : `${mm}:${ss}`;
-};
-
 const formatFileSize = (size: number | null | undefined) => {
   if (size == null || size <= 0) {
     return "--";
@@ -128,7 +108,6 @@ const openFileInWorkspace = async (app: App, file: TFile) => {
 };
 
 type AudioMetadata = {
-  durationSeconds: number | null;
   transcription: {
     file: TFile | null;
     title: string | null;
@@ -159,24 +138,16 @@ export const AudioLogsView = ({ plugin }: AudioLogsViewProps) => {
   const [voiceoverSourceFiles, setVoiceoverSourceFiles] = useState<TFile[]>([]);
   const [metadataVersion, setMetadataVersion] = useState(0);
   const [metadataMap, setMetadataMap] = useState<MetadataMap>({});
-  const [durationTotals, setDurationTotals] = useState<
-    Record<string, number | null>
-  >({});
   const [isLoading, setIsLoading] = useState(false);
   const [transcribing, setTranscribing] = useState<Record<string, boolean>>({});
   const [playingPath, setPlayingPath] = useState<string | null>(null);
   const [visibleCount, setVisibleCount] = useState(20);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const metadataMapRef = useRef<MetadataMap>({});
-  const durationTotalsRef = useRef<Record<string, number | null>>({});
 
   useEffect(() => {
     metadataMapRef.current = metadataMap;
   }, [metadataMap]);
-
-  useEffect(() => {
-    durationTotalsRef.current = durationTotals;
-  }, [durationTotals]);
 
   const audioFileLookup = useMemo(() => {
     const map = new Map<string, TFile>();
@@ -375,151 +346,7 @@ export const AudioLogsView = ({ plugin }: AudioLogsViewProps) => {
     });
   }, [audioFiles]);
 
-  useEffect(() => {
-    if (!manager) {
-      durationTotalsRef.current = {};
-      setDurationTotals({});
-      return;
-    }
-
-    setDurationTotals((prev) => {
-      let changed = false;
-      const next: Record<string, number | null> = {};
-
-      audioFiles.forEach((file) => {
-        const hasPrev = Object.prototype.hasOwnProperty.call(
-          prev,
-          file.path
-        );
-        const prevValue = hasPrev ? prev[file.path] : undefined;
-        const meta = metadataMap[file.path];
-
-        if (meta) {
-          if (meta.durationSeconds != null) {
-            next[file.path] = meta.durationSeconds;
-            if (!hasPrev || prevValue !== meta.durationSeconds) {
-              changed = true;
-            }
-            return;
-          }
-
-          next[file.path] = null;
-          if (!hasPrev || prevValue !== null) {
-            changed = true;
-          }
-          return;
-        }
-
-        if (hasPrev) {
-          next[file.path] = prevValue ?? null;
-          if (prevValue === undefined) {
-            changed = true;
-          }
-        }
-      });
-
-      if (Object.keys(prev).length !== Object.keys(next).length) {
-        changed = true;
-      }
-
-      if (!changed) {
-        return prev;
-      }
-
-      durationTotalsRef.current = next;
-      return next;
-    });
-  }, [audioFiles, manager, metadataMap]);
-
-  useEffect(() => {
-    if (!manager) {
-      return;
-    }
-
-    const pending = audioFiles.filter((file) => {
-      const cached = durationTotalsRef.current[file.path];
-      return cached == null;
-    });
-
-    if (pending.length === 0) {
-      return;
-    }
-
-    let cancelled = false;
-
-    const run = async () => {
-      for (const file of pending) {
-        if (cancelled) {
-          break;
-        }
-
-        let durationSeconds = durationTotalsRef.current[file.path];
-
-        if (durationSeconds == null) {
-          try {
-            durationSeconds =
-              (await manager.getAudioDurationSeconds(file)) ?? null;
-          } catch (error) {
-            console.warn(
-              "Mondo Audio Logs: failed to load audio duration",
-              file.path,
-              error
-            );
-          }
-        }
-
-        if (cancelled) {
-          break;
-        }
-
-        const resolvedDuration = durationSeconds;
-
-        setDurationTotals((prev) => {
-          if (cancelled) {
-            return prev;
-          }
-
-          const existing = prev[file.path];
-          if (existing === resolvedDuration) {
-            return prev;
-          }
-
-          const next = { ...prev, [file.path]: resolvedDuration };
-          durationTotalsRef.current = next;
-          return next;
-        });
-
-        setMetadataMap((prev) => {
-          if (cancelled) {
-            return prev;
-          }
-
-          const existingMeta = prev[file.path];
-          if (
-            !existingMeta ||
-            existingMeta.durationSeconds != null ||
-            resolvedDuration == null
-          ) {
-            return prev;
-          }
-
-          const nextMeta: AudioMetadata = {
-            ...existingMeta,
-            durationSeconds: resolvedDuration,
-          };
-          const next = { ...prev, [file.path]: nextMeta };
-          metadataMapRef.current = next;
-          return next;
-        });
-      }
-    };
-
-    void run();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [audioFiles, durationTotals, manager]);
+  
 
   const findAudioFileByReference = useCallback(
     (noteFile: TFile, value: unknown) => {
@@ -761,7 +588,8 @@ export const AudioLogsView = ({ plugin }: AudioLogsViewProps) => {
       const voiceoverChanged =
         (voiceoverFile?.path ?? null) !== previousVoiceoverPath;
       const versionChanged = existing?.version !== currentVersion;
-      const needsRefresh = !existing || versionChanged || transcriptionChanged || voiceoverChanged;
+      const needsRefresh =
+        !existing || versionChanged || transcriptionChanged || voiceoverChanged;
 
       const transcriptionTitle = transcriptionFile
         ? extractNoteTitle(app, transcriptionFile)
@@ -769,7 +597,6 @@ export const AudioLogsView = ({ plugin }: AudioLogsViewProps) => {
       const voiceoverTitle = voiceoverFile ? extractNoteTitle(app, voiceoverFile) : null;
 
       const metadata: AudioMetadata = {
-        durationSeconds: needsRefresh ? null : existing?.durationSeconds ?? null,
         transcription: transcriptionFile
           ? {
               file: transcriptionFile,
@@ -821,13 +648,12 @@ export const AudioLogsView = ({ plugin }: AudioLogsViewProps) => {
 
       updates[file.path] = metadata;
 
-      const needsDuration = metadata.durationSeconds == null;
       const needsTranscriptionSnippet =
         Boolean(metadata.transcription.file) && !metadata.transcription.hasLoadedSnippet;
       const needsVoiceoverSnippet =
         Boolean(metadata.voiceoverSource.file) && !metadata.voiceoverSource.hasLoadedSnippet;
 
-      if (needsRefresh || needsDuration || needsTranscriptionSnippet || needsVoiceoverSnippet) {
+      if (needsRefresh || needsTranscriptionSnippet || needsVoiceoverSnippet) {
         pendingFiles.push(file);
       }
     });
@@ -853,24 +679,6 @@ export const AudioLogsView = ({ plugin }: AudioLogsViewProps) => {
           break;
         }
 
-        let durationSeconds = metadataMapRef.current[file.path]?.durationSeconds ?? null;
-
-        if (durationSeconds == null) {
-          try {
-            durationSeconds = (await manager.getAudioDurationSeconds(file)) ?? null;
-          } catch (error) {
-            console.warn(
-              "Mondo Audio Logs: failed to load audio metadata",
-              file.path,
-              error
-            );
-          }
-        }
-
-        if (cancelled) {
-          break;
-        }
-
         const current = metadataMapRef.current[file.path];
         if (!current) {
           continue;
@@ -878,7 +686,6 @@ export const AudioLogsView = ({ plugin }: AudioLogsViewProps) => {
 
         const nextMeta: AudioMetadata = {
           ...current,
-          durationSeconds,
           transcription: current.transcription,
           voiceoverSource: current.voiceoverSource,
         };
@@ -951,7 +758,6 @@ export const AudioLogsView = ({ plugin }: AudioLogsViewProps) => {
           }
           const merged: AudioMetadata = {
             ...existingMeta,
-            durationSeconds: nextMeta.durationSeconds,
             transcription: nextMeta.transcription,
             voiceoverSource: nextMeta.voiceoverSource,
             version: currentVersion,
@@ -1091,31 +897,16 @@ export const AudioLogsView = ({ plugin }: AudioLogsViewProps) => {
 
   const totals = useMemo(() => {
     const totalSize = audioFiles.reduce((sum, file) => sum + file.stat.size, 0);
-    let hasAnyDurationMissing = false;
-
-    const totalDuration = audioFiles.reduce((sum, file) => {
-      const duration = durationTotals[file.path];
-      if (duration == null) {
-        hasAnyDurationMissing = true;
-        return sum;
-      }
-
-      return sum + duration;
-    }, 0);
-
     return {
       totalSize,
-      totalDuration: hasAnyDurationMissing ? null : totalDuration,
+      totalNotes: audioFiles.length,
     };
-  }, [audioFiles, durationTotals]);
+  }, [audioFiles]);
 
   const rows = useMemo(
     () =>
       visibleFiles.map((file) => {
         const meta = metadataMap[file.path];
-        const durationSeconds =
-          meta?.durationSeconds ?? durationTotals[file.path] ?? null;
-        const durationLabel = formatDuration(durationSeconds);
         const sizeLabel = formatFileSize(file.stat.size);
         const dateValue = file.stat.mtime;
         const transcription = meta?.transcription ?? {
@@ -1165,7 +956,6 @@ export const AudioLogsView = ({ plugin }: AudioLogsViewProps) => {
 
         return {
           file,
-          durationLabel,
           sizeLabel,
           dateValue,
           pathLabel: file.path,
@@ -1183,12 +973,9 @@ export const AudioLogsView = ({ plugin }: AudioLogsViewProps) => {
           isResolved: meta?.isResolved ?? false,
         };
       }),
-    [durationTotals, manager, metadataMap, transcribing, visibleFiles]
+    [manager, metadataMap, transcribing, visibleFiles]
   );
-
-  const totalDurationLabel = totals.totalDuration
-    ? formatDuration(totals.totalDuration)
-    : "--";
+  const totalNotesLabel = totals.totalNotes.toLocaleString();
   const totalSizeLabel = formatFileSize(totals.totalSize);
 
   const hasMore = audioFiles.length > visibleFiles.length;
@@ -1205,10 +992,10 @@ export const AudioLogsView = ({ plugin }: AudioLogsViewProps) => {
       <div className="grid gap-3 sm:grid-cols-2">
         <div className="rounded-lg border border-[var(--background-modifier-border)] bg-[var(--background-secondary)] p-4">
           <div className="text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">
-            Total Duration
+            Total Notes
           </div>
           <div className="mt-2 text-2xl font-semibold text-[var(--text-normal)]">
-            {totalDurationLabel}
+            {totalNotesLabel}
           </div>
         </div>
         <div className="rounded-lg border border-[var(--background-modifier-border)] bg-[var(--background-secondary)] p-4">
@@ -1235,9 +1022,6 @@ export const AudioLogsView = ({ plugin }: AudioLogsViewProps) => {
                 Date
               </Table.HeadCell>
               <Table.HeadCell className="w-24 p-3 text-left text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">
-                Duration
-              </Table.HeadCell>
-              <Table.HeadCell className="w-24 p-3 text-left text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">
                 Size
               </Table.HeadCell>
               <Table.HeadCell className="p-3 text-left text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">
@@ -1253,7 +1037,7 @@ export const AudioLogsView = ({ plugin }: AudioLogsViewProps) => {
               <tr>
                 <Table.Cell
                   className="p-6 text-center text-[var(--text-muted)]"
-                  colSpan={7}
+                  colSpan={6}
                 >
                   {isLoading
                     ? "Loading audio notes..."
@@ -1328,9 +1112,6 @@ export const AudioLogsView = ({ plugin }: AudioLogsViewProps) => {
                     </Table.Cell>
                     <Table.Cell className="p-3 align-middle text-[var(--text-muted)]">
                       <ReadableDate value={row.dateValue} fallback="--" />
-                    </Table.Cell>
-                    <Table.Cell className="p-3 align-middle text-[var(--text-normal)]">
-                      {row.durationLabel}
                     </Table.Cell>
                     <Table.Cell className="p-3 align-middle text-[var(--text-normal)]">
                       {row.sizeLabel}
