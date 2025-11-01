@@ -1,5 +1,11 @@
+import { setIcon } from "obsidian";
 import { createSettingsSection } from "./SettingsView_utils";
 import type Mondo from "@/main";
+import { DASHBOARD_ICON } from "@/views/dashboard-view/wrapper";
+import { AUDIO_LOGS_ICON } from "@/views/audio-logs-view/constants";
+import { VAULT_IMAGES_ICON } from "@/views/vault-images-view/constants";
+import { VAULT_FILES_ICON } from "@/views/vault-files-view/constants";
+import { VAULT_NOTES_ICON } from "@/views/vault-notes-view/constants";
 
 interface SettingsDashboardProps {
   plugin: Mondo;
@@ -22,12 +28,36 @@ const persistDashboardSetting = async (
   await (plugin as any).saveSettings();
 };
 
+const getRibbonSettings = (plugin: Mondo) => {
+  (plugin as any).settings = (plugin as any).settings ?? {};
+  (plugin as any).settings.ribbonIcons =
+    (plugin as any).settings.ribbonIcons ?? {};
+  return (plugin as any).settings.ribbonIcons as Record<string, unknown>;
+};
+
+const persistRibbonSetting = async (
+  plugin: Mondo,
+  key: string,
+  value: boolean
+) => {
+  const ribbonSettings = getRibbonSettings(plugin);
+  if ((ribbonSettings[key] as boolean | undefined) === value) {
+    plugin.refreshRibbonIcons();
+    return;
+  }
+
+  ribbonSettings[key] = value;
+  await (plugin as any).saveSettings();
+  plugin.refreshRibbonIcons();
+};
+
 export const renderDashboardSection = (
   props: SettingsDashboardProps
 ): void => {
   const { plugin, containerEl } = props;
 
   const dashboardSettings = getDashboardSettings(plugin);
+  const ribbonSettings = getRibbonSettings(plugin);
 
   const dashboardSection = createSettingsSection(
     containerEl,
@@ -87,12 +117,81 @@ export const renderDashboardSection = (
 
   dashboardSection
     .createSetting()
-    .setName("Enable Stats")
-    .setDesc("Show the dashboard statistics panel.")
+    .setName("Disable Stats Block")
+    .setDesc("Hide the stats block on the dashboard.")
     .addToggle((toggle) => {
-      const current = dashboardSettings.enableStats !== false ? true : false;
+      const current = dashboardSettings.disableStats === false ? false : true;
       toggle.setValue(current).onChange(async (value) => {
-        await persistDashboardSetting(plugin, "enableStats", value);
+        await persistDashboardSetting(plugin, "disableStats", value);
       });
     });
+
+  dashboardSection
+    .createSetting()
+    .setName("Ribbon Shortcuts")
+    .setDesc("Choose which stats shortcuts appear in the left ribbon.")
+    .setHeading();
+
+  const addRibbonToggle = (options: {
+    key: string;
+    name: string;
+    description: string;
+    icon: string;
+  }) => {
+    const currentValue = ribbonSettings[options.key] !== false;
+    const setting = dashboardSection
+      .createSetting()
+      .setName(options.name)
+      .setDesc(options.description);
+
+    const iconWrapper = setting.controlEl.createSpan({
+      cls: "mondo-settings-ribbon-toggle-icon",
+      attr: { "aria-hidden": "true" },
+    });
+    const iconEl = iconWrapper.createSpan();
+    setIcon(iconEl, options.icon);
+
+    setting.addToggle((toggle) => {
+      toggle.setValue(currentValue).onChange(async (value) => {
+        ribbonSettings[options.key] = value;
+        await persistRibbonSetting(plugin, options.key, value);
+      });
+    });
+  };
+
+  addRibbonToggle({
+    key: "dashboard",
+    name: "Show Dashboard Ribbon Icon",
+    description: "Toggle the dashboard shortcut in Obsidian's left ribbon.",
+    icon: DASHBOARD_ICON,
+  });
+
+  addRibbonToggle({
+    key: "audioLogs",
+    name: "Show Audio Notes Ribbon Icon",
+    description: "Toggle the audio notes shortcut in Obsidian's left ribbon.",
+    icon: AUDIO_LOGS_ICON,
+  });
+
+  addRibbonToggle({
+    key: "vaultImages",
+    name: "Show Images Ribbon Icon",
+    description:
+      "Toggle the images stats shortcut in Obsidian's left ribbon.",
+    icon: VAULT_IMAGES_ICON,
+  });
+
+  addRibbonToggle({
+    key: "vaultFiles",
+    name: "Show Files Ribbon Icon",
+    description: "Toggle the files stats shortcut in Obsidian's left ribbon.",
+    icon: VAULT_FILES_ICON,
+  });
+
+  addRibbonToggle({
+    key: "vaultNotes",
+    name: "Show Notes Ribbon Icon",
+    description: "Toggle the notes stats shortcut in Obsidian's left ribbon.",
+    icon: VAULT_NOTES_ICON,
+  });
 };

@@ -135,7 +135,14 @@ export default class Mondo extends Plugin {
       forceTab: false,
       enableQuickTasks: true,
       enableRelevantNotes: true,
-      enableStats: true,
+      disableStats: true,
+    },
+    ribbonIcons: {
+      dashboard: true,
+      audioLogs: true,
+      vaultImages: true,
+      vaultFiles: true,
+      vaultNotes: true,
     },
   };
 
@@ -151,6 +158,9 @@ export default class Mondo extends Plugin {
   private mondoConfigManager: null = null;
   private dashboardRibbonEl: HTMLElement | null = null;
   private audioLogsRibbonEl: HTMLElement | null = null;
+  private vaultImagesRibbonEl: HTMLElement | null = null;
+  private vaultFilesRibbonEl: HTMLElement | null = null;
+  private vaultNotesRibbonEl: HTMLElement | null = null;
 
   private applyGeolocationToFile = async (
     file: TFile,
@@ -259,13 +269,126 @@ export default class Mondo extends Plugin {
     );
 
     const dashboardSettings = this.settings.dashboard ?? {};
+    const disableStatsSetting = dashboardSettings.disableStats;
+    const legacyEnableStats = dashboardSettings.enableStats;
+    const disableStats =
+      disableStatsSetting === true
+        ? true
+        : disableStatsSetting === false
+        ? false
+        : legacyEnableStats === true
+        ? false
+        : legacyEnableStats === false
+        ? true
+        : true;
     this.settings.dashboard = {
       openAtBoot: dashboardSettings.openAtBoot === true,
       forceTab: dashboardSettings.forceTab === true,
       enableQuickTasks: dashboardSettings.enableQuickTasks !== false,
       enableRelevantNotes: dashboardSettings.enableRelevantNotes !== false,
-      enableStats: dashboardSettings.enableStats !== false,
+      disableStats,
     };
+
+    const ribbonSettings = this.settings.ribbonIcons ?? {};
+    this.settings.ribbonIcons = {
+      dashboard: ribbonSettings.dashboard !== false,
+      audioLogs: ribbonSettings.audioLogs !== false,
+      vaultImages: ribbonSettings.vaultImages !== false,
+      vaultFiles: ribbonSettings.vaultFiles !== false,
+      vaultNotes: ribbonSettings.vaultNotes !== false,
+    };
+  }
+
+  private syncRibbonIcon(
+    current: HTMLElement | null,
+    enabled: boolean,
+    icon: string,
+    title: string,
+    onClick: () => void
+  ): HTMLElement | null {
+    if (!enabled) {
+      current?.remove();
+      return null;
+    }
+
+    if (current && current.isConnected) {
+      return current;
+    }
+
+    current?.remove();
+    return this.addRibbonIcon(icon, title, onClick);
+  }
+
+  public refreshRibbonIcons(): void {
+    if (!Platform.isDesktopApp) {
+      this.dashboardRibbonEl?.remove();
+      this.dashboardRibbonEl = null;
+      this.audioLogsRibbonEl?.remove();
+      this.audioLogsRibbonEl = null;
+      this.vaultImagesRibbonEl?.remove();
+      this.vaultImagesRibbonEl = null;
+      this.vaultFilesRibbonEl?.remove();
+      this.vaultFilesRibbonEl = null;
+      this.vaultNotesRibbonEl?.remove();
+      this.vaultNotesRibbonEl = null;
+      return;
+    }
+
+    const ribbonSettings = (this.settings.ribbonIcons ?? {}) as Record<
+      string,
+      unknown
+    >;
+    const isEnabled = (key: string): boolean => ribbonSettings[key] !== false;
+
+    this.dashboardRibbonEl = this.syncRibbonIcon(
+      this.dashboardRibbonEl,
+      isEnabled("dashboard"),
+      DASHBOARD_ICON,
+      "Open Mondo Dashboard",
+      () => {
+        void this.showPanel(DASHBOARD_VIEW, "main");
+      }
+    );
+
+    this.audioLogsRibbonEl = this.syncRibbonIcon(
+      this.audioLogsRibbonEl,
+      isEnabled("audioLogs"),
+      AUDIO_LOGS_ICON,
+      "Open Audio Notes",
+      () => {
+        void this.showPanel(AUDIO_LOGS_VIEW, "main");
+      }
+    );
+
+    this.vaultImagesRibbonEl = this.syncRibbonIcon(
+      this.vaultImagesRibbonEl,
+      isEnabled("vaultImages"),
+      VAULT_IMAGES_ICON,
+      "Open Vault Images",
+      () => {
+        void this.showPanel(VAULT_IMAGES_VIEW, "main");
+      }
+    );
+
+    this.vaultFilesRibbonEl = this.syncRibbonIcon(
+      this.vaultFilesRibbonEl,
+      isEnabled("vaultFiles"),
+      VAULT_FILES_ICON,
+      "Open Vault Files",
+      () => {
+        void this.showPanel(VAULT_FILES_VIEW, "main");
+      }
+    );
+
+    this.vaultNotesRibbonEl = this.syncRibbonIcon(
+      this.vaultNotesRibbonEl,
+      isEnabled("vaultNotes"),
+      VAULT_NOTES_ICON,
+      "Open Vault Notes",
+      () => {
+        void this.showPanel(VAULT_NOTES_VIEW, "main");
+      }
+    );
   }
 
   async saveSettings() {
@@ -767,22 +890,7 @@ export default class Mondo extends Plugin {
       (leaf) => new MondoEntityPanelViewWrapper(leaf, MONDO_ICON)
     );
 
-    if (Platform.isDesktopApp) {
-      this.dashboardRibbonEl = this.addRibbonIcon(
-        DASHBOARD_ICON,
-        "Open Mondo Dashboard",
-        () => {
-          void this.showPanel(DASHBOARD_VIEW, "main");
-        }
-      );
-      this.audioLogsRibbonEl = this.addRibbonIcon(
-        AUDIO_LOGS_ICON,
-        "Open Audio Logs",
-        () => {
-          void this.showPanel(AUDIO_LOGS_VIEW, "main");
-        }
-      );
-    }
+    this.refreshRibbonIcons();
 
     // Auto open/close panels based on context (debounced)
     this.app.workspace.onLayoutReady(async () => {
@@ -881,6 +989,12 @@ export default class Mondo extends Plugin {
     this.dashboardRibbonEl = null;
     this.audioLogsRibbonEl?.remove();
     this.audioLogsRibbonEl = null;
+    this.vaultImagesRibbonEl?.remove();
+    this.vaultImagesRibbonEl = null;
+    this.vaultFilesRibbonEl?.remove();
+    this.vaultFilesRibbonEl = null;
+    this.vaultNotesRibbonEl?.remove();
+    this.vaultNotesRibbonEl = null;
 
     disposeMondoLinkInjections();
 

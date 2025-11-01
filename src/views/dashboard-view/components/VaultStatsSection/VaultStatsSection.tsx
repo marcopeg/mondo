@@ -2,9 +2,9 @@ import VaultStatsCard from "../VaultStatsCard";
 import { useSetting } from "@/hooks/use-setting";
 
 export const VaultStatsSection = () => {
-  const statsEnabled = useSetting<boolean>("dashboard.enableStats", true);
+  const statsDisabled = useSetting<boolean>("dashboard.disableStats", true);
 
-  if (!statsEnabled) {
+  if (statsDisabled) {
     return null;
   }
 

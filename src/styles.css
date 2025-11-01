@@ -383,6 +383,19 @@
   display: none;
 }
 
+.mondo-settings-ribbon-toggle-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 0.5rem;
+  color: var(--text-muted);
+}
+
+.mondo-settings-ribbon-toggle-icon svg {
+  width: 18px;
+  height: 18px;
+}
+
 .mondo-settings-entity + .mondo-settings-entity {
   margin-top: var(--size-4-4, 1rem);
 }

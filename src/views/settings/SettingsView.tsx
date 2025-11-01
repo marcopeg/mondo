@@ -61,13 +61,34 @@ export class SettingsView extends PluginSettingTab {
       (this.plugin as any).settings.timestamp ?? DEFAULT_TIMESTAMP_SETTINGS
     );
     const dashboardSettings = (this.plugin as any).settings.dashboard ?? {};
+    const disableStatsSetting = dashboardSettings.disableStats;
+    const legacyEnableStats = dashboardSettings.enableStats;
+    const disableStats =
+      disableStatsSetting === true
+        ? true
+        : disableStatsSetting === false
+        ? false
+        : legacyEnableStats === true
+        ? false
+        : legacyEnableStats === false
+        ? true
+        : true;
     (this.plugin as any).settings.dashboard = {
       openAtBoot: dashboardSettings.openAtBoot === true,
       forceTab: dashboardSettings.forceTab === true,
       enableQuickTasks: dashboardSettings.enableQuickTasks !== false,
       enableRelevantNotes:
         dashboardSettings.enableRelevantNotes !== false,
-      enableStats: dashboardSettings.enableStats !== false,
+      disableStats,
+    };
+
+    const ribbonSettings = (this.plugin as any).settings.ribbonIcons ?? {};
+    (this.plugin as any).settings.ribbonIcons = {
+      dashboard: ribbonSettings.dashboard !== false,
+      audioLogs: ribbonSettings.audioLogs !== false,
+      vaultImages: ribbonSettings.vaultImages !== false,
+      vaultFiles: ribbonSettings.vaultFiles !== false,
+      vaultNotes: ribbonSettings.vaultNotes !== false,
     };
     // Helper: collect folder paths from the vault
     const collectFolderPaths = (
