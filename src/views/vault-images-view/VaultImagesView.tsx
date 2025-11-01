@@ -1,17 +1,40 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { EventRef, TFile } from "obsidian";
 import { Typography } from "@/components/ui/Typography";
+import Switch from "@/components/ui/Switch";
+import Button from "@/components/ui/Button";
+import Table from "@/components/ui/Table";
 import { useApp } from "@/hooks/use-app";
+import { useSetting } from "@/hooks/use-setting";
 import { isImageFile } from "@/utils/fileTypeFilters";
+import { openEditImageModal } from "@/utils/EditImageModal";
+import { formatBytes } from "@/utils/formatBytes";
 
 type ImageEntry = {
   file: TFile;
   resourcePath: string;
 };
 
+type ImageDimensions = {
+  width: number;
+  height: number;
+};
+
+type ViewMode = "wall" | "grid";
+
+const VIEW_MODE_SETTING_KEY = "vaultImages.viewMode";
+
 export const VaultImagesView = () => {
   const app = useApp();
   const [files, setFiles] = useState<TFile[]>([]);
+  const viewModeSetting = useSetting<ViewMode>(VIEW_MODE_SETTING_KEY, "wall");
+  const [viewMode, setViewMode] = useState<ViewMode>(viewModeSetting);
+  const [dimensions, setDimensions] = useState<Record<string, ImageDimensions | null>>({});
+  const dimensionsRef = useRef(new Map<string, ImageDimensions | null>());
+
+  useEffect(() => {
+    setViewMode(viewModeSetting);
+  }, [viewModeSetting]);
 
   const collect = useCallback(() => {
     const images = app.vault
@@ -63,20 +86,263 @@ export const VaultImagesView = () => {
     });
   }, [app, files]);
 
-  const handleOpenFile = useCallback(
-    async (file: TFile) => {
-      const leaf = app.workspace.getLeaf(true);
-      await leaf.openFile(file);
+  useEffect(() => {
+    let disposed = false;
+
+    entries.forEach((entry) => {
+      if (dimensionsRef.current.has(entry.file.path)) {
+        return;
+      }
+
+      const image = new Image();
+      image.onload = () => {
+        if (disposed) {
+          return;
+        }
+
+        const value: ImageDimensions = {
+          width: image.naturalWidth,
+          height: image.naturalHeight,
+        };
+        dimensionsRef.current.set(entry.file.path, value);
+        setDimensions((previous) => ({
+          ...previous,
+          [entry.file.path]: value,
+        }));
+      };
+      image.onerror = () => {
+        if (disposed) {
+          return;
+        }
+
+        dimensionsRef.current.set(entry.file.path, null);
+        setDimensions((previous) => ({
+          ...previous,
+          [entry.file.path]: null,
+        }));
+      };
+      image.src = entry.resourcePath;
+    });
+
+    return () => {
+      disposed = true;
+    };
+  }, [entries]);
+
+  const plugin = useMemo(
+    () => (app as any)?.plugins?.getPlugin?.("mondo") as any | undefined,
+    [app]
+  );
+
+  const persistViewMode = useCallback(
+    async (mode: ViewMode) => {
+      if (!plugin) {
+        return;
+      }
+
+      const settings = plugin.settings ?? {};
+      const vaultImagesSettings = settings.vaultImages ?? {};
+      if (vaultImagesSettings.viewMode === mode) {
+        return;
+      }
+
+      plugin.settings = {
+        ...settings,
+        vaultImages: {
+          ...vaultImagesSettings,
+          viewMode: mode,
+        },
+      };
+
+      try {
+        await plugin.saveSettings?.();
+      } catch (error) {
+        console.debug("VaultImagesView: failed to persist view mode", error);
+      }
+
+      try {
+        window.dispatchEvent(new CustomEvent("mondo:settings-updated"));
+      } catch (error) {
+        console.debug(
+          "VaultImagesView: failed to dispatch settings update event",
+          error
+        );
+      }
+    },
+    [plugin]
+  );
+
+  const handleToggleViewMode = useCallback(
+    (checked: boolean) => {
+      const mode: ViewMode = checked ? "grid" : "wall";
+      setViewMode(mode);
+      void persistViewMode(mode);
+    },
+    [persistViewMode]
+  );
+
+  const handleEditImage = useCallback(
+    (file: TFile) => {
+      openEditImageModal(app, file);
     },
     [app]
   );
 
+  const handleDeleteImage = useCallback(
+    async (file: TFile) => {
+      const confirmed = window.confirm(
+        `Are you sure you want to delete "${file.basename}"?`
+      );
+      if (!confirmed) {
+        return;
+      }
+
+      try {
+        await app.vault.delete(file);
+        setFiles((previous) =>
+          previous.filter((entry) => entry.path !== file.path)
+        );
+        setDimensions((previous) => {
+          if (!(file.path in previous)) {
+            return previous;
+          }
+
+          const next = { ...previous };
+          delete next[file.path];
+          dimensionsRef.current.delete(file.path);
+          return next;
+        });
+      } catch (error) {
+        console.debug("VaultImagesView: failed to delete image", file.path, error);
+      }
+    },
+    [app]
+  );
+
+  const rows = useMemo(
+    () =>
+      entries.map((entry) => {
+        const dimensionValue = dimensions[entry.file.path] ?? null;
+        const dimensionLabel = dimensionValue
+          ? `${dimensionValue.width} × ${dimensionValue.height}`
+          : "—";
+
+        return {
+          entry,
+          dimensionLabel,
+          sizeLabel: formatBytes(entry.file.stat.size ?? 0),
+          typeLabel: entry.file.extension.toUpperCase(),
+        };
+      }),
+    [dimensions, entries]
+  );
+
+  const isGridView = viewMode === "grid";
+
   return (
     <div className="p-4 space-y-6">
-      <Typography variant="h1">Vault Images</Typography>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <Typography variant="h1">Vault Images</Typography>
+        <Switch
+          checked={isGridView}
+          onCheckedChange={handleToggleViewMode}
+          uncheckedLabel="Wall"
+          checkedLabel="Grid"
+          aria-label="Toggle between wall and grid layouts"
+        />
+      </div>
       {entries.length === 0 ? (
         <div className="rounded-lg border border-[var(--background-modifier-border)] bg-[var(--background-secondary)] p-6 text-center text-[var(--text-muted)]">
           No images found in your vault.
+        </div>
+      ) : isGridView ? (
+        <div className="overflow-hidden rounded-lg border border-[var(--background-modifier-border)] bg-[var(--background-secondary)]">
+          <Table>
+            <thead className="bg-[var(--background-secondary-alt, var(--background-secondary))]">
+              <tr>
+                <Table.HeadCell className="w-24 p-3 text-left text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">
+                  Cover
+                </Table.HeadCell>
+                <Table.HeadCell className="p-3 text-left text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">
+                  Image
+                </Table.HeadCell>
+                <Table.HeadCell className="w-32 p-3 text-left text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">
+                  Type
+                </Table.HeadCell>
+                <Table.HeadCell className="w-40 p-3 text-left text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">
+                  Dimensions
+                </Table.HeadCell>
+                <Table.HeadCell className="w-32 p-3 text-left text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">
+                  Size
+                </Table.HeadCell>
+                <Table.HeadCell className="w-20 p-3 text-right text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">
+                  <span className="sr-only">Actions</span>
+                </Table.HeadCell>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map(({ entry, dimensionLabel, sizeLabel, typeLabel }) => (
+                <Table.Row
+                  key={entry.file.path}
+                  className="border-t border-[var(--background-modifier-border)]"
+                >
+                  <Table.Cell className="p-3 align-middle">
+                    <button
+                      type="button"
+                      className="group block h-16 w-16 overflow-hidden rounded-md border border-[var(--background-modifier-border)] focus:outline-none"
+                      onClick={() => {
+                        handleEditImage(entry.file);
+                      }}
+                    >
+                      <img
+                        src={entry.resourcePath}
+                        alt={entry.file.basename}
+                        className="h-full w-full object-cover transition-transform group-hover:scale-[1.02]"
+                      />
+                    </button>
+                  </Table.Cell>
+                  <Table.Cell className="p-3 align-middle">
+                    <div className="flex flex-col items-start gap-1">
+                      <Button
+                        variant="link"
+                        tone="info"
+                        className="max-w-xl truncate font-medium"
+                        onClick={() => {
+                          handleEditImage(entry.file);
+                        }}
+                        title={entry.file.basename}
+                      >
+                        {entry.file.basename}
+                      </Button>
+                      <span className="max-w-xl truncate text-xs text-[var(--text-muted)]">
+                        {entry.file.path}
+                      </span>
+                    </div>
+                  </Table.Cell>
+                  <Table.Cell className="p-3 align-middle text-sm text-[var(--text-normal)]">
+                    {typeLabel}
+                  </Table.Cell>
+                  <Table.Cell className="p-3 align-middle text-sm text-[var(--text-normal)]">
+                    {dimensionLabel}
+                  </Table.Cell>
+                  <Table.Cell className="p-3 align-middle text-sm text-[var(--text-normal)]">
+                    {sizeLabel}
+                  </Table.Cell>
+                  <Table.Cell className="p-3 align-middle text-right">
+                    <Button
+                      icon="trash"
+                      variant="link"
+                      tone="danger"
+                      aria-label={`Delete ${entry.file.basename}`}
+                      onClick={() => {
+                        void handleDeleteImage(entry.file);
+                      }}
+                    />
+                  </Table.Cell>
+                </Table.Row>
+              ))}
+            </tbody>
+          </Table>
         </div>
       ) : (
         <div className="grid grid-cols-2 gap-0 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-8">
@@ -87,7 +353,7 @@ export const VaultImagesView = () => {
                 alt={entry.file.basename}
                 className="block h-full w-full cursor-pointer object-cover"
                 onClick={() => {
-                  void handleOpenFile(entry.file);
+                  handleEditImage(entry.file);
                 }}
               />
             </div>

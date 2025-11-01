@@ -90,6 +90,11 @@ export class SettingsView extends PluginSettingTab {
       vaultFiles: ribbonSettings.vaultFiles !== false,
       vaultNotes: ribbonSettings.vaultNotes !== false,
     };
+
+    const vaultImagesSettings = (this.plugin as any).settings.vaultImages ?? {};
+    (this.plugin as any).settings.vaultImages = {
+      viewMode: vaultImagesSettings.viewMode === "grid" ? "grid" : "wall",
+    };
     // Helper: collect folder paths from the vault
     const collectFolderPaths = (
       root: TFolder,

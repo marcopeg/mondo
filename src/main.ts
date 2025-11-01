@@ -144,6 +144,9 @@ export default class Mondo extends Plugin {
       vaultFiles: true,
       vaultNotes: true,
     },
+    vaultImages: {
+      viewMode: "wall",
+    },
   };
 
   private hasFocusedDashboardOnStartup = false;
@@ -296,6 +299,13 @@ export default class Mondo extends Plugin {
       vaultImages: ribbonSettings.vaultImages !== false,
       vaultFiles: ribbonSettings.vaultFiles !== false,
       vaultNotes: ribbonSettings.vaultNotes !== false,
+    };
+
+    const vaultImagesSettings = this.settings.vaultImages ?? {};
+    const viewMode =
+      vaultImagesSettings.viewMode === "grid" ? "grid" : "wall";
+    this.settings.vaultImages = {
+      viewMode,
     };
   }
 
