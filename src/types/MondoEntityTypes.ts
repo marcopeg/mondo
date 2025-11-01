@@ -7,6 +7,9 @@ export interface MondoConfig {
       order?: string[];
     };
   };
+  quickSearch?: {
+    entities?: string[];
+  };
   entities: Record<string, Record<string, unknown>>;
 }
 

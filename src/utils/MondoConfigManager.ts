@@ -46,6 +46,35 @@ const ensureOrder = (rawOrder: unknown, entityKeys: string[]): string[] => {
   return completed;
 };
 
+const ensureSubset = (raw: unknown, entityKeys: string[]): string[] => {
+  if (!Array.isArray(raw)) {
+    return [];
+  }
+
+  const normalizedKeys = new Set(
+    entityKeys.map((key) => String(key || "").trim().toLowerCase())
+  );
+
+  const result: string[] = [];
+
+  for (const value of raw) {
+    if (typeof value !== "string") {
+      continue;
+    }
+
+    const normalized = value.trim().toLowerCase();
+    if (!normalized || !normalizedKeys.has(normalized)) {
+      continue;
+    }
+
+    if (!result.includes(normalized)) {
+      result.push(normalized);
+    }
+  }
+
+  return result;
+};
+
 type ValidationIssue = {
   path: string;
   message: string;
@@ -94,6 +123,30 @@ export const validateMondoConfig = (candidate: unknown): ValidationResult => {
       path: "entities",
       message: "`entities` must include at least one definition.",
     });
+  }
+
+  let quickSearchEntitiesRaw: unknown = undefined;
+  if ("quickSearch" in resolved) {
+    const quickSearch = (resolved as Record<string, unknown>).quickSearch;
+    if (quickSearch !== undefined) {
+      if (!isRecord(quickSearch)) {
+        issues.push({
+          path: "quickSearch",
+          message: "`quickSearch` must be an object when provided.",
+        });
+      } else if (
+        "entities" in quickSearch &&
+        !Array.isArray((quickSearch as Record<string, unknown>).entities)
+      ) {
+        issues.push({
+          path: "quickSearch.entities",
+          message: "`quickSearch.entities` must be an array when provided.",
+        });
+      } else {
+        quickSearchEntitiesRaw = (quickSearch as Record<string, unknown>)
+          .entities;
+      }
+    }
   }
 
   for (const [entityKey, entityValue] of Object.entries(entities)) {
@@ -149,6 +202,10 @@ export const validateMondoConfig = (candidate: unknown): ValidationResult => {
     isRecord(resolved.relevantNotes) && isRecord(resolved.relevantNotes.filter)
       ? (resolved.relevantNotes.filter as Record<string, unknown>).order
       : undefined;
+  const sanitizedQuickSearch = ensureSubset(
+    quickSearchEntitiesRaw,
+    entityKeys
+  );
   const sanitized: MondoConfig = {
     titles: {
       order: ensureOrder(resolvedTitlesOrder, entityKeys),
@@ -157,6 +214,9 @@ export const validateMondoConfig = (candidate: unknown): ValidationResult => {
       filter: {
         order: ensureOrder(resolvedRelevantFilter, entityKeys),
       },
+    },
+    quickSearch: {
+      entities: sanitizedQuickSearch,
     },
     entities: sanitizedEntities,
   };

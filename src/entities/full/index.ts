@@ -73,6 +73,9 @@ export const mondoConfigFull = {
       ],
     },
   },
+  quickSearch: {
+    entities: ["person", "company", "location", "role", "task"],
+  },
   entities: {
     person,
     fact,

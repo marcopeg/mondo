@@ -1,5 +1,6 @@
-import { useCallback, useMemo, useState } from "react";
-import { Notice } from "obsidian";
+import { useCallback, useMemo, useRef, useState } from "react";
+import type { ChangeEvent } from "react";
+import { Notice, TFile } from "obsidian";
 import { SplitButton } from "@/components/ui/SplitButton";
 import { Icon } from "@/components/ui/Icon";
 import { Badge } from "@/components/ui/Badge";
@@ -106,6 +107,64 @@ const normalizeLinkProperties = (
   return Array.from(new Set(normalized));
 };
 
+const ACCEPTED_IMAGE_EXTENSIONS = new Set([
+  "png",
+  "jpg",
+  "jpeg",
+  "gif",
+  "bmp",
+  "webp",
+  "svg",
+  "avif",
+  "heic",
+  "heif",
+]);
+
+const getFileExtension = (file: File): string => {
+  const nameMatch = /\.([^.]+)$/.exec(file.name);
+  if (nameMatch) {
+    return nameMatch[1].toLowerCase();
+  }
+
+  const mime = file.type;
+  if (typeof mime === "string" && mime.startsWith("image/")) {
+    const [, ext] = mime.split("/");
+    if (ext) {
+      return ext.toLowerCase();
+    }
+  }
+
+  return "png";
+};
+
+const isAcceptedImageFile = (file: File): boolean => {
+  if (file.type && file.type.startsWith("image/")) {
+    return true;
+  }
+
+  const extension = getFileExtension(file);
+  return ACCEPTED_IMAGE_EXTENSIONS.has(extension);
+};
+
+const ensureAttachmentFilename = (file: File): string => {
+  const extension = getFileExtension(file);
+  const trimmed = file.name.trim();
+
+  if (trimmed.length === 0) {
+    return `cover.${extension}`;
+  }
+
+  if (trimmed.toLowerCase().endsWith(`.${extension}`)) {
+    return trimmed;
+  }
+
+  if (trimmed.includes(".")) {
+    return trimmed;
+  }
+
+  return `${trimmed}.${extension}`;
+};
+
 const CollapsedPanelButton = ({ panel }: { panel: CollapsedPanelSummary }) => {
   return (
     <button
@@ -137,6 +196,8 @@ export const EntityHeaderMondo = ({ entityType }: EntityHeaderMondoProps) => {
   const app = useApp();
 
   const cachedFile = file as TCachedFile | undefined;
+  const coverInputRef = useRef<HTMLInputElement | null>(null);
+  const [isUploadingCover, setIsUploadingCover] = useState(false);
 
   const displayName = useMemo(
     () => (cachedFile ? getEntityDisplayName(cachedFile) : "Untitled"),
@@ -283,6 +344,7 @@ export const EntityHeaderMondo = ({ entityType }: EntityHeaderMondoProps) => {
   const { collapsedPanels } = useEntityLinksLayout();
   const [pendingAction, setPendingAction] = useState<string | null>(null);
   const isPending = pendingAction !== null;
+  const isBusy = isPending || isUploadingCover;
 
   const handleCreateAction = useCallback(
     async (action: RelatedAction) => {
@@ -328,23 +390,99 @@ export const EntityHeaderMondo = ({ entityType }: EntityHeaderMondoProps) => {
       actions.map((action) => ({
         label: action.label,
         icon: action.icon,
-        disabled: isPending,
+        disabled: isBusy,
         onSelect: () => {
-          if (isPending) {
+          if (isBusy) {
             return;
           }
           void handleCreateAction(action);
         },
       })),
-    [actions, handleCreateAction, isPending]
+    [actions, handleCreateAction, isBusy]
   );
 
   const handlePrimaryClick = useCallback(() => {
-    if (!primary || isPending) {
+    if (!primary || isBusy) {
       return;
     }
     void handleCreateAction(primary);
-  }, [handleCreateAction, isPending, primary]);
+  }, [handleCreateAction, isBusy, primary]);
+
+  const handleCoverPlaceholderClick = useCallback(() => {
+    if (isUploadingCover) {
+      return;
+    }
+
+    coverInputRef.current?.click();
+  }, [isUploadingCover]);
+
+  const handleCoverFileChange = useCallback(
+    async (event: ChangeEvent<HTMLInputElement>) => {
+      const input = event.target;
+      const selectedFile = input.files?.[0];
+      input.value = "";
+
+      if (!selectedFile) {
+        return;
+      }
+
+      if (!isAcceptedImageFile(selectedFile)) {
+        new Notice("Please select an image file.");
+        return;
+      }
+
+      if (!cachedFile) {
+        new Notice("Unable to determine the current entity.");
+        return;
+      }
+
+      setIsUploadingCover(true);
+
+      try {
+        const filename = ensureAttachmentFilename(selectedFile);
+        const targetPath =
+          await app.fileManager.getAvailablePathForAttachment(
+            filename,
+            cachedFile.file.path
+          );
+        const arrayBuffer = await selectedFile.arrayBuffer();
+        const created = await app.vault.createBinary(targetPath, arrayBuffer);
+
+        let targetFile: TFile | null = null;
+        if (created instanceof TFile) {
+          targetFile = created;
+        } else {
+          const abstract = app.vault.getAbstractFileByPath(targetPath);
+          if (abstract instanceof TFile) {
+            targetFile = abstract;
+          }
+        }
+
+        if (!targetFile) {
+          throw new Error("Failed to create image attachment");
+        }
+
+        const linktext = app.metadataCache.fileToLinktext(
+          targetFile,
+          cachedFile.file.path,
+          false
+        );
+
+        await app.fileManager.processFrontMatter(
+          cachedFile.file,
+          (frontmatter) => {
+            frontmatter.cover = `[[${linktext}]]`;
+          }
+        );
+      } catch (error) {
+        console.error("EntityHeaderMondo: failed to attach cover image", error);
+        new Notice("Failed to set cover image.");
+      } finally {
+        setIsUploadingCover(false);
+      }
+    },
+    [app, cachedFile]
+  );
 
   return (
     <div className={headerClasses}>
@@ -363,11 +501,29 @@ export const EntityHeaderMondo = ({ entityType }: EntityHeaderMondoProps) => {
           />
         </button>
       ) : (
-        <div className="flex h-20 w-20 flex-shrink-0 items-center justify-center rounded-md bg-[var(--background-modifier-border)]">
-          <Icon
-            name={placeholderIcon}
-            className="h-8 w-8 text-[var(--text-muted)]"
+        <div className="relative flex h-20 w-20 flex-shrink-0 items-center justify-center">
+          <input
+            ref={coverInputRef}
+            type="file"
+            accept="image/*"
+            capture="environment"
+            className="hidden"
+            onChange={handleCoverFileChange}
           />
+          <button
+            type="button"
+            onClick={handleCoverPlaceholderClick}
+            className="flex h-full w-full items-center justify-center rounded-md border border-dashed border-[var(--background-modifier-border)] bg-[var(--background-primary)] text-[var(--text-muted)] transition hover:border-[var(--background-modifier-border-hover)] hover:text-[var(--text-normal)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--interactive-accent)] focus-visible:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-70"
+            aria-label="Add cover image"
+            disabled={isUploadingCover}
+          >
+            <Icon
+              name={isUploadingCover ? "loader-2" : placeholderIcon}
+              className={`h-8 w-8 text-[var(--text-muted)] ${
+                isUploadingCover ? "animate-spin" : ""
+              }`}
+            />
+          </button>
         </div>
       )}
 
@@ -387,7 +543,7 @@ export const EntityHeaderMondo = ({ entityType }: EntityHeaderMondoProps) => {
                 onClick={handlePrimaryClick}
                 secondaryActions={secondary}
                 menuAriaLabel="Select related entity to create"
-                disabled={isPending}
+                disabled={isBusy}
               >
                 {`+ ${primary.label}`}
               </SplitButton>

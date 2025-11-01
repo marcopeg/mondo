@@ -49,10 +49,7 @@ import { VoiceoverManager } from "@/utils/VoiceoverManager";
 import { NoteDictationManager } from "@/utils/NoteDictationManager";
 import { validateMondoConfig } from "@/utils/MondoConfigManager";
 import { normalizeFolderPath } from "@/utils/normalizeFolderPath";
-import {
-  MONDO_DICTATION_ICON_ID,
-  registerDictationIcon,
-} from "@/utils/registerDictationIcon";
+import { registerDictationIcon } from "@/utils/registerDictationIcon";
 import {
   MondoFileType,
   MONDO_FILE_TYPES,
@@ -76,10 +73,7 @@ import { insertTimestamp } from "@/commands/timestamp.insert";
 import { copyNoteText } from "@/commands/note.copyText";
 import { sendToChatGPT } from "@/commands/chatgpt.send";
 import { openSelfPersonNote } from "@/commands/self.open";
-import {
-  findActiveOrSelectedImageFile,
-  openResizeImageModal,
-} from "@/commands/image.resize";
+import { findActiveOrSelectedImageFile } from "@/commands/image.edit";
 import { injectJournalNav } from "@/events/inject-journal-nav";
 import {
   injectMondoLinks,
@@ -103,9 +97,9 @@ import {
 import { getTemplateForType, renderTemplate } from "@/utils/MondoTemplates";
 import { slugify, focusAndSelectTitle } from "@/utils/createLinkedNoteHelpers";
 import {
-  isCropSupported,
-  openCropImageModal,
-} from "@/utils/CropImageModal";
+  isImageEditSupported,
+  openEditImageModal,
+} from "@/utils/EditImageModal";
 
 const MONDO_ICON = "anchor";
 
@@ -449,17 +443,17 @@ export default class Mondo extends Plugin {
     });
 
     this.addCommand({
-      id: "resize-image",
-      name: "Resize Image",
+      id: "edit-image",
+      name: "Edit Image",
       checkCallback: (checking) => {
         const file = findActiveOrSelectedImageFile(this.app);
 
-        if (!file) {
+        if (!file || !isImageEditSupported(file)) {
           return false;
         }
 
         if (!checking) {
-          openResizeImageModal(this.app, file);
+          openEditImageModal(this.app, file);
         }
 
         return true;
@@ -488,27 +482,9 @@ export default class Mondo extends Plugin {
     });
 
     this.addCommand({
-      id: "crop-image",
-      name: "Crop Image",
-      checkCallback: (checking) => {
-        const file = this.app.workspace.getActiveFile();
-
-        if (!file || !isCropSupported(file)) {
-          return false;
-        }
-
-        if (!checking) {
-          openCropImageModal(this.app, file);
-        }
-
-        return true;
-      },
-    });
-
-    this.addCommand({
       id: "mondo-start-note-dictation",
-      name: "Start Dictation",
-      icon: MONDO_DICTATION_ICON_ID,
+      name: "Start dictation",
+      icon: "mic",
       editorCallback: async () => {
         const status = this.noteDictationManager?.getDictationStatus();
         if (status === "recording") {
@@ -582,7 +558,7 @@ export default class Mondo extends Plugin {
 
     this.addCommand({
       id: "insert-timestamp",
-      name: "Insert timestamp",
+      name: "Add timestamp",
       icon: "clock",
       editorCallback: () => {
         insertTimestamp(this.app, this);
@@ -606,7 +582,7 @@ export default class Mondo extends Plugin {
     this.addCommand({
       id: "send-to-chatgpt",
       name: "Send to ChatGPT",
-      icon: "send",
+      icon: "external-link",
       editorCallback: (editor, context) => {
         const markdownView =
           context instanceof MarkdownView
@@ -659,6 +635,7 @@ export default class Mondo extends Plugin {
     this.addCommand({
       id: "start-voiceover",
       name: "Start Voiceover",
+      icon: "megaphone",
       checkCallback: (checking) => {
         const file = this.app.workspace.getActiveFile();
         if (!file || file.extension !== "md") {

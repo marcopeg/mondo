@@ -5,6 +5,7 @@ This file is the single source of truth for:
 
 - the dashboard tile order;
 - the filter buttons used in _Relevant Notes_;
+- the entity panels displayed in _IMS Entities Quick Search_;
 - every Mondo entity definition (name, icon, templates, list layout, links).
 
 Keeping the configuration centralized ensures the UI, hooks, and utilities stay in sync. Any change to Mondo entities must be done here unless explicitly noted otherwise.
@@ -20,6 +21,9 @@ Keeping the configuration centralized ensures the UI, hooks, and utilities stay 
     "filter": {
       "order": ["person", "fact", "log", "..."]
     }
+  },
+  "quickSearch": {
+    "entities": ["person", "company", "role", "..."]
   },
   "entities": {
     "<entityType>": {
@@ -60,6 +64,10 @@ Keeping the configuration centralized ensures the UI, hooks, and utilities stay 
             "template": "<default frontmatter & body>",
 
 Controls the order of filter buttons in the _Relevant Notes_ panel. Each entry must match a `type` key declared under `entities`.
+
+### `quickSearch.entities`
+
+Defines which entity types render an _IMS Entities Quick Search_ card on the dashboard. The array is order sensitive, trimmed, and lower‑cased. Items that do not correspond to a declared entity (or are duplicated) are automatically dropped during validation.
 
 ### `entities`
 

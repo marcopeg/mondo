@@ -298,6 +298,18 @@ export const renderEntityConfigurationSection = async (
   const configBlock = configSetting.controlEl.createDiv();
   configBlock.style.width = "100%";
 
+  // Heading placed inside the settings block so it appears just above the textarea
+  const imsHeader = new Setting(configBlock)
+    .setName("Custom IMS")
+    .setDesc("create your own CRM/ERP structure from scratch!")
+    .setHeading();
+  try {
+    imsHeader.settingEl.style.paddingLeft = "0";
+    imsHeader.settingEl.style.paddingRight = "0";
+    imsHeader.settingEl.style.marginLeft = "0";
+    imsHeader.settingEl.style.textAlign = "left";
+  } catch (_) {}
+
   const textArea = document.createElement("textarea");
   textArea.rows = 14;
   textArea.style.width = "100%";
@@ -367,6 +379,24 @@ export const renderEntityConfigurationSection = async (
     textArea.value = "";
     await requestReload();
   });
+
+  // Global toggle: Hide IMS Header on unknown notes
+  new Setting(customConfigContainer)
+    .setName("Hide IMS Header on unknown notes")
+    .setDesc(
+      "when checked, note with types not known to the IMS will not show the standard header"
+    )
+    .addToggle((toggle) => {
+      const current = !!(plugin as any).settings?.hideIMSHeaderOnUnknownNotes;
+      toggle.setValue(current);
+      toggle.onChange(async (value) => {
+        (plugin as any).settings.hideIMSHeaderOnUnknownNotes = !!value;
+        await (plugin as any).saveSettings();
+        try {
+          window.dispatchEvent(new CustomEvent("mondo:settings-updated"));
+        } catch (_) {}
+      });
+    });
 
   // Only include actual configured entities; exclude special types like daily/log/journal
   const entityDefinitions = MONDO_ENTITY_CONFIG_LIST.map((cfg) => ({
