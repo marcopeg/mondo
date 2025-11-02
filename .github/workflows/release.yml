@@ -15,9 +15,10 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           ref: main
+          fetch-depth: 0
 
       - name: Use Node.js
         uses: actions/setup-node@v3
@@ -48,6 +49,12 @@ jobs:
         run: |
           VERSION=$(node -p "require('./package.json').version")
           git commit -m "v$VERSION"
+
+      - name: Rebase onto latest main
+        run: |
+          # Ensure our version commit is rebased on top of the latest remote main to avoid non-FF push
+          git fetch origin main
+          git rebase origin/main
 
       - name: Push version commit
         run: git push origin main
