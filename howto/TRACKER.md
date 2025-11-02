@@ -1,10 +1,14 @@
-# Habit Tracker How-To
+# 📈 How to use the Habit Tracker
 
-This guide walks through embedding Mondo habit trackers in your notes. We will start with the simplest possible block, then layer on configuration options until you can run a multi-tracker dashboard powered entirely by note frontmatter.
+This guide walks through embedding Mondo habit trackers in your notes.
+
+We will start with the simplest possible block, then layer on configuration options until you can run a multi-tracker dashboard powered entirely by note frontmatter.
 
 ## 1. Core concept
 
-Habit trackers are rendered by `mondo` Markdown code blocks. When you add a block with the `habits` identifier, Mondo stores the tracker state (checked days and the last selected view) in the note’s frontmatter under the tracker key.
+Habit trackers are rendered by `mondo` Markdown code blocks. 
+
+When you add a block with the `habits` identifier, Mondo stores the tracker state (checked days and the last selected view) in the note’s frontmatter under the tracker key.
 
 - **Tracked days** are saved as ISO date strings (`YYYY-MM-DD`).
 - **View preference** (`streak` or `calendar`) is stored alongside the data using the naming pattern `<key>-view`.
@@ -31,6 +35,8 @@ habits-view: streak
 
 Clicking on calendar cells toggles dates in the `habits` list. Switching between streak and calendar mode updates `habits-view`.
 
+> You don't have to do anything about this, it's automatic!
+
 ## 3. Naming your tracker
 
 To keep multiple trackers in the same note, assign each one a unique key. Provide the key with the `key` query parameter or as YAML.
@@ -43,7 +49,7 @@ habits?key=meditation
 ```
 ````
 
-### YAML body
+### YAML variant
 
 ````markdown
 ```mondo
@@ -52,9 +58,9 @@ key: evening-routine
 ```
 ````
 
-Both snippets create (and persist) frontmatter entries named `meditation`/`meditation-view` or `evening-routine`/`evening-routine-view` respectively.
+You can use both queryString style ad YAML definition blocks.
 
-## 4. Custom titles and layout hints
+## 4. Custom Titles
 
 Add a `title` to display a heading above the tracker. You can use inline parameters, YAML, or a mix of both.
 
@@ -124,24 +130,3 @@ meditation-view: calendar
 ```
 
 The block normalizes dates and will sort them automatically the next time it writes to frontmatter.
-
-## 7. Reusing a tracker from another note
-
-The `notePath` prop lets you render the tracker defined in a different file—great for embedding a central habit log inside daily notes.
-
-````markdown
-```mondo
-habits?key=meditation&notePath=Projects/Habits.md
-```
-````
-
-In this example, the block reads and updates the `meditation` frontmatter stored in `Projects/Habits.md`, even though the block is rendered elsewhere. Make sure the path matches the note’s vault-relative path and that the destination note already contains the tracker frontmatter (or open it once so Mondo can initialize it).
-
-## 8. Troubleshooting checklist
-
-- **Block renders an error:** confirm the first line of the block is exactly `habits` (case-sensitive).
-- **Changes are not saved:** ensure the note is not read-only and that Obsidian can write frontmatter for the file referenced by `notePath`.
-- **Unexpected dates disappear:** the tracker keeps only valid strings; double-check that the frontmatter dates use the `YYYY-MM-DD` format.
-- **View mode keeps reverting:** verify that `<key>-view` is either `streak` or `calendar`.
-
-Once you understand how keys and frontmatter interplay, you can tailor trackers for any workflow—from a single daily streak to a vault-wide wellness dashboard.
