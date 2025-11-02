@@ -41,9 +41,8 @@ jobs:
       - name: Update manifest and versions.json
         run: |
           node version-bump.mjs
-          # Stage versioned files and build artifacts
+          # Stage only versioned files; do NOT track build artifacts
           git add package.json manifest.json versions.json
-          git add -f main.js styles.css
 
       - name: Create version commit
         run: |
