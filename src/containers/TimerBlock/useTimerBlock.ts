@@ -270,10 +270,10 @@ export const useTimerBlock = (props: TimerBlockProps): TimerBlockController => {
     [props.duration]
   );
   const basePauseSeconds = useMemo(() => {
-    // New prop name: pause. Backward-compatible with legacy 'interval'.
-    const raw = props.pause ?? props.interval;
+    // New prop name: rest. Backward-compatible with legacy 'pause' and 'interval'.
+    const raw = props.rest ?? props.pause ?? props.interval;
     return parseSeconds(raw);
-  }, [props.pause, props.interval]);
+  }, [props.rest, props.pause, props.interval]);
 
   // Loop config
   const loopConfig = useMemo(() => parseLoop(props.loop), [props.loop]);
@@ -322,10 +322,11 @@ export const useTimerBlock = (props: TimerBlockProps): TimerBlockController => {
   const hasPlan = planSteps.length > 0;
   const initialPlanDuration = hasPlan ? planSteps[0].durationSeconds : 0;
 
-  // If no timer options are provided (duration/pause/steps/loop),
+  // If no timer options are provided (duration/rest/steps/loop),
   // default to a single work phase of 25 minutes and a 5 minute rest.
   const noTimerOptions =
     props.duration == null &&
+    props.rest == null &&
     props.pause == null &&
     props.interval == null &&
     props.steps == null &&

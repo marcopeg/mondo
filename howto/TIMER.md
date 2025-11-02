@@ -23,16 +23,16 @@ Click the play button to start.
 
 ## 2. Set Explicit Work and Rest Durations
 
-Control the work (`duration`) and rest (`pause`) phases by passing query parameters after `timer`. Both values are expressed in **seconds**:
+Control the work (`duration`) and rest (`rest`) phases by passing query parameters after `timer`. Both values are expressed in **seconds**:
 
 ````markdown
 ```mondo
-timer?duration=10&pause=5
+timer?duration=10&rest=5
 ```
 ````
 
 * `duration` is the work phase, here 10 seconds.
-* `pause` is the rest phase, here 5 seconds.
+* `rest` is the recovery phase, here 5 seconds.
 
 ## 3. Add a Title, Color, and Loop Limit
 
@@ -40,7 +40,7 @@ Enhance the UI by setting optional props.
 
 ````markdown
 ```mondo
-timer?duration=10&pause=5&title=Deep%20Work&color=#55aaff&loop=3
+timer?duration=10&rest=5&title=Deep%20Work&color=#55aaff&loop=3
 ```
 ````
 
@@ -60,7 +60,7 @@ timer?color=tomato
 title: Focus Sprint
 loop: 3
 duration: 900
-pause: 180
+rest: 180
 step: 60
 heptic: audio
 ```
@@ -84,10 +84,10 @@ heptic: both
 steps:
   - title: Warmup
     duration: 300   # 5 min work
-    pause: 60       # 1 min rest
+    rest: 60        # 1 min rest
   - title: Strength Circuit
     duration: 900
-    pause: 180
+    rest: 180
   - title: Cooldown
     duration: 300
     rest: 0
@@ -98,19 +98,6 @@ Each entry under `steps` represents a work phase:
 
 * `title` names the phase displayed inside the timer.
 * `duration` sets the work length in seconds and must be greater than zero.
-* `pause` defines the recovery break after the phase.
+* `rest` defines the recovery break after the phase.
 
 The timer cycles through each step, follows the configured rests, and repeats the entire plan twice because `loop=2`.
-
-## 6. Advanced Options Checklist
-
-| Option | Applies to | Description |
-| ------ | ---------- | ----------- |
-| `loop` | `timer`, `time-plan` | `false` stops after one pass, a number repeats N times, omit for infinite. |
-| `heptic` | Both | `audio`, `vibration`, `both`, or `none` (default) for feedback control. |
-| `step` | Both | Interval (seconds) for work-phase cadence beeps; default is `0` (disabled). |
-| `nextTitle` | `timer` | Override the "rest" label shown between loops. |
-| `color` | Both | Custom accent color for the ring, progress track, and buttons. |
-| `mute` | Both | Set to `true` to silence all audio cues while keeping vibration (if allowed). |
-
-> For a full parameter reference and behavioral details, see [`docs/TIMER.md`](../docs/TIMER.md).
