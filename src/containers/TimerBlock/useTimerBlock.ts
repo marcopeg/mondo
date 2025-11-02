@@ -283,7 +283,8 @@ export const useTimerBlock = (props: TimerBlockProps): TimerBlockController => {
     ) {
       return rawValue;
     }
-    return "both";
+    // Default to no haptic/audio feedback unless explicitly requested
+    return "none";
   }, [props.heptic]);
 
   // Optional step beep every N seconds while in work phase

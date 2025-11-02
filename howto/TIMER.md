@@ -1,4 +1,4 @@
-# How to Add and Configure Timers
+# ⏱️ How to Add and Configure Timers
 
 This guide walks you through embedding Mondo's interactive timer blocks inside an Obsidian note. Start with a minimal timer, customize it with titles and colors, and finish with a full training plan featuring multi-step loops, audio cues, and reusable templates.
 
@@ -22,16 +22,16 @@ By default the timer runs a single work phase for **25 minutes** followed by a *
 
 ## 2. Set Explicit Work and Rest Durations
 
-Control the work (`duration`) and rest (`interval`) phases by passing query parameters after `timer`.
+Control the work (`duration`) and rest (`interval`) phases by passing query parameters after `timer`. Both values are expressed in **seconds**:
 
 ````markdown
 ```mondo
-timer?duration=20&interval=0
+timer?duration=10&interval=5
 ```
 ````
 
-* `duration` is the work phase in seconds (here, 20 minutes).
-* `interval` is the rest phase in seconds. Setting `0` creates a single uninterrupted block.
+* `duration` is the work phase in seconds (here, 10 seconds).
+* `interval` is the rest phase in seconds.
 
 ## 3. Add a Title, Color, and Loop Limit
 
@@ -39,17 +39,17 @@ Enhance the UI by setting optional props.
 
 ````markdown
 ```mondo
-timer?duration=1500&interval=300&title=Deep%20Work&color=#55aaff&loop=4
+timer?duration=10&interval=5&title=Deep%20Work&color=#55aaff&loop=3
 ```
 ````
 
 * `title` appears above the timer and should be URL encoded in query strings.
 * `color` accepts any CSS color (`#RRGGBB`, `hsl()`, named colors) and tints the progress ring and buttons.
-* `loop` caps how many times the timer repeats. Use `loop=false` to stop after one work/rest cycle or omit it for infinite loops.
+* `loop` caps how many times the timer repeats. Use `loop=false` to stop after one work/rest cycle or omit it for infinite loops. (Defaults to `true` so infinite repetition)
 
 ## 4. Combine Query Parameters with YAML
 
-When the configuration grows, move structured settings into the body of the code block using YAML. Keep high-level props (color, loop) in the query string.
+When the configuration grows, move structured settings into the body of the code block using YAML. Both syntax work and are equivalent.
 
 ````markdown
 ```mondo
@@ -64,7 +64,7 @@ heptic: audio
 ````
 
 * Lines inside the block are parsed as YAML key/value pairs.
-* `step` adds a soft cue every N seconds during work (disabled during the final countdown).
+* `step` adds a soft cue every N seconds during work
 * `heptic` controls audio/vibration feedback (`audio`, `vibration`, `both`, or `none`).
 
 ## 5. Upgrade to a Multi-Step Plan

@@ -105,7 +105,7 @@ There you can **resize** and **crop** an image to improve your vault without lea
 
 # 👫 Mondo IMS
 
-Mondo ships a powerful _Information Management System_ in which you can define your own entities and their relations to bring to life your tailored ERP/IMS/CMS of sort.
+Mondo ships a powerful _Information Management System_ in which you can define your own entities and their relations to bring to life your tailored ERP/CRM/CMS of sort.
 
 ![Mondo IMS](./images/ims.png)
 
@@ -135,7 +135,7 @@ You can add a block as many `habits` blocks you want:
 
 ![Timer - single](./images/timer-single.png)
 
-![Timer - single](./images/timer-source.png)
+![Timer - source](./images/timer-source.png)
 
 # 📆 Daily Notes
 
