@@ -447,8 +447,9 @@ export const VaultImagesView = () => {
           No images found in your vault.
         </div>
       ) : isGridView ? (
-        <div className="overflow-hidden rounded-lg border border-[var(--background-modifier-border)]">
-          <Table>
+        <div className="space-y-3">
+          <div className="hidden overflow-hidden rounded-lg border border-[var(--background-modifier-border)] sm:block">
+            <Table>
             <thead className="bg-[var(--background-secondary-alt, var(--background-secondary))]">
               <tr>
                 <Table.HeadCell className="w-24 p-3 text-left text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">
@@ -566,7 +567,80 @@ export const VaultImagesView = () => {
                 </Table.Row>
               ))}
             </tbody>
-          </Table>
+            </Table>
+          </div>
+          <div className="space-y-3 sm:hidden">
+            {rows.map(({ entry, dimensionLabel, sizeLabel, typeLabel }) => (
+              <div
+                key={entry.file.path}
+                className="rounded-lg border border-[var(--background-modifier-border)] bg-[var(--background-secondary)] p-4"
+              >
+                <div className="flex items-start gap-3">
+                  <button
+                    type="button"
+                    className="group flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-md border border-[var(--background-modifier-border)] bg-[var(--background-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--interactive-accent)] focus-visible:ring-offset-0"
+                    onClick={() => {
+                      handleEditImage(entry.file);
+                    }}
+                    aria-label={`Edit ${entry.file.basename}`}
+                  >
+                    <img
+                      src={entry.resourcePath}
+                      alt={entry.file.basename}
+                      className="h-full w-full object-cover transition-transform group-hover:scale-[1.02]"
+                    />
+                  </button>
+                  <div className="min-w-0 flex-1 space-y-2">
+                    <Button
+                      variant="link"
+                      tone="info"
+                      className="block w-full truncate text-left font-medium"
+                      onClick={() => {
+                        handleEditImage(entry.file);
+                      }}
+                      aria-label={`Edit ${entry.file.basename}`}
+                    >
+                      {entry.file.basename}
+                    </Button>
+                    <div
+                      className="text-xs text-[var(--text-muted)]"
+                      aria-label={entry.file.path}
+                      title={entry.file.path}
+                    >
+                      <span className="block truncate">{entry.file.path}</span>
+                    </div>
+                    <div className="flex flex-wrap gap-x-4 gap-y-2 text-sm text-[var(--text-normal)]">
+                      <span>Type: {typeLabel}</span>
+                      <span>Size: {sizeLabel}</span>
+                      <span className="text-[var(--text-muted)]">Dimensions: {dimensionLabel}</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="mt-3 flex justify-end gap-2">
+                  <Button
+                    icon="external-link"
+                    variant="link"
+                    tone="info"
+                    aria-label={`Open ${entry.file.basename} in a new tab`}
+                    onClick={() => {
+                      if (typeof window !== "undefined") {
+                        window.open(entry.resourcePath, "_blank", "noopener,noreferrer");
+                      }
+                    }}
+                  />
+                  <Button
+                    icon="trash"
+                    variant="link"
+                    tone="danger"
+                    aria-label={`Delete ${entry.file.basename}`}
+                    onClick={() => {
+                      void handleDeleteImage(entry.file);
+                    }}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       ) : (
         <div

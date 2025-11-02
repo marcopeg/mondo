@@ -160,7 +160,7 @@ export const VaultFilesView = () => {
           </div>
         </div>
       </div>
-      <div className="overflow-hidden rounded-lg border border-[var(--background-modifier-border)]">
+      <div className="hidden overflow-hidden rounded-lg border border-[var(--background-modifier-border)] sm:block">
         <Table>
           <thead className="bg-[var(--background-secondary-alt, var(--background-secondary))]">
             <tr>
@@ -261,6 +261,62 @@ export const VaultFilesView = () => {
             )}
           </tbody>
         </Table>
+      </div>
+      <div className="space-y-3 sm:hidden">
+        {rows.length === 0 ? (
+          <div className="rounded-lg border border-[var(--background-modifier-border)] bg-[var(--background-secondary)] p-4 text-center text-[var(--text-muted)]">
+            No files found.
+          </div>
+        ) : (
+          rows.map((row) => (
+            <div
+              key={row.file.path}
+              className="rounded-lg border border-[var(--background-modifier-border)] bg-[var(--background-secondary)] p-4"
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0 flex-1 space-y-2">
+                  <Button
+                    variant="link"
+                    tone="info"
+                    className="block w-full truncate text-left font-medium"
+                    onClick={() => {
+                      void handleOpenFile(row.file);
+                    }}
+                    aria-label={`Open ${row.file.basename}`}
+                  >
+                    {row.file.basename}
+                  </Button>
+                  <div
+                    className="text-xs text-[var(--text-muted)]"
+                    aria-label={row.pathLabel}
+                    title={row.pathLabel}
+                  >
+                    <span className="block truncate">{row.pathLabel}</span>
+                  </div>
+                </div>
+                <Button
+                  icon="trash"
+                  variant="link"
+                  tone="danger"
+                  aria-label={`Delete ${row.file.basename}`}
+                  onClick={() => {
+                    void handleDeleteFile(row.file);
+                  }}
+                />
+              </div>
+              <div className="mt-3 flex flex-wrap gap-x-4 gap-y-2 text-sm text-[var(--text-normal)]">
+                <div className="flex items-center gap-2">
+                  <Icon name={row.icon} className="h-4 w-4" />
+                  <span>{row.typeLabel}</span>
+                </div>
+                <div className="text-[var(--text-normal)]">Size: {row.sizeLabel}</div>
+                <div className="text-[var(--text-muted)]">
+                  Created: <ReadableDate value={row.createdValue} fallback="—" />
+                </div>
+              </div>
+            </div>
+          ))
+        )}
       </div>
     </div>
   );

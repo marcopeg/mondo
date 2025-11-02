@@ -388,7 +388,7 @@ export const VaultNotesView = () => {
           </div>
         </div>
       </div>
-      <div className="overflow-hidden rounded-lg border border-[var(--background-modifier-border)]">
+      <div className="hidden overflow-hidden rounded-lg border border-[var(--background-modifier-border)] sm:block">
         <Table>
           <thead className="bg-[var(--background-secondary-alt, var(--background-secondary))]">
             <tr>
@@ -538,6 +538,104 @@ export const VaultNotesView = () => {
           })}
           </tbody>
         </Table>
+      </div>
+      <div className="space-y-3 sm:hidden">
+        {isLoading && rows.length === 0 ? (
+          <div className="rounded-lg border border-[var(--background-modifier-border)] bg-[var(--background-secondary)] p-4 text-center text-[var(--text-muted)]">
+            Loading notes…
+          </div>
+        ) : null}
+        {!isLoading && rows.length === 0 ? (
+          <div className="rounded-lg border border-[var(--background-modifier-border)] bg-[var(--background-secondary)] p-4 text-center text-[var(--text-muted)]">
+            No notes found.
+          </div>
+        ) : null}
+        {rows.map((row) => {
+          const isUploadingCover = uploadingCoverPath === row.file.path;
+
+          return (
+            <div
+              key={row.file.path}
+              className="rounded-lg border border-[var(--background-modifier-border)] bg-[var(--background-secondary)] p-4"
+            >
+              <div className="flex items-start gap-3">
+                <div className="shrink-0">
+                  {row.cover ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        handleCoverClick(row.cover!);
+                      }}
+                      className="group flex h-16 w-16 items-center justify-center overflow-hidden rounded-md border border-[var(--background-modifier-border)] bg-[var(--background-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--interactive-accent)] focus-visible:ring-offset-0"
+                      aria-label={`Edit cover for ${row.displayName}`}
+                    >
+                      <img
+                        src={
+                          row.cover.kind === "vault"
+                            ? row.cover.resourcePath
+                            : row.cover.url
+                        }
+                        alt={row.displayName}
+                        className="h-full w-full object-cover transition-transform group-hover:scale-[1.02]"
+                      />
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={(event) => {
+                        handleCoverPlaceholderClick(event, row.file);
+                      }}
+                      className="flex h-16 w-16 items-center justify-center rounded-md border border-dashed border-[var(--background-modifier-border)] bg-[var(--background-primary)] text-[var(--text-muted)] transition hover:border-[var(--background-modifier-border-hover)] hover:text-[var(--text-normal)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--interactive-accent)] focus-visible:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-70"
+                      aria-label={`Select cover for ${row.displayName}`}
+                      disabled={isUploadingCover}
+                    >
+                      <Icon
+                        name={isUploadingCover ? "loader-2" : "image"}
+                        className={`h-5 w-5 ${isUploadingCover ? "animate-spin" : ""}`}
+                      />
+                    </button>
+                  )}
+                </div>
+                <div className="min-w-0 flex-1 space-y-2">
+                  <Button
+                    variant="link"
+                    tone="info"
+                    className="block w-full truncate text-left font-medium"
+                    onClick={() => {
+                      void handleOpenFile(row.file);
+                    }}
+                    aria-label={`Open ${row.displayName}`}
+                  >
+                    {row.displayName}
+                  </Button>
+                  <div
+                    className="text-xs text-[var(--text-muted)]"
+                    aria-label={row.pathLabel}
+                    title={row.pathLabel}
+                  >
+                    <span className="block truncate">{row.pathLabel}</span>
+                  </div>
+                  <div className="flex flex-wrap gap-x-4 gap-y-2 text-sm text-[var(--text-normal)]">
+                    <div className="flex items-center gap-2">
+                      <Icon name={row.typeIcon} className="h-4 w-4" />
+                      <span>{row.typeLabel}</span>
+                    </div>
+                    <div>Size: {row.sizeLabel}</div>
+                  </div>
+                </div>
+                <Button
+                  icon="trash"
+                  variant="link"
+                  tone="danger"
+                  aria-label={`Delete ${row.displayName}`}
+                  onClick={() => {
+                    void handleDeleteFile(row.file);
+                  }}
+                />
+              </div>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
