@@ -68,6 +68,7 @@ import {
 import { openJournal } from "@/commands/journal.open";
 import { openDailyNote } from "@/commands/daily.open";
 import { addDailyLog } from "@/commands/daily.addLog";
+import { talkToDaily } from "@/commands/daily.talkToDaily";
 import { journalMoveFactory } from "@/commands/journal.nav";
 import { insertTimestamp } from "@/commands/timestamp.insert";
 import { copyNoteText } from "@/commands/note.copyText";
@@ -704,6 +705,12 @@ export default class Mondo extends Plugin {
       name: "Append to Daily note",
       hotkeys: [{ modifiers: ["Mod", "Shift"], key: "l" }],
       callback: async () => addDailyLog(this.app, this),
+    });
+
+    this.addCommand({
+      id: "talk-to-daily",
+      name: "Talk to Daily Note",
+      callback: async () => talkToDaily(this.app, this),
     });
 
     this.addCommand({
