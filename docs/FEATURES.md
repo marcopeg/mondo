@@ -57,6 +57,7 @@ Entry point: `src/views/dashboard-view/wrapper.tsx`.
 ## Entity experience
 
 - **Entity header** – Displays cover image, metadata, quick actions, and related-note creation for known types (`src/containers/EntityHeader`).
+- **Cover thumbnails** – Use the shared `ui/Cover` component for every cover tile (entity headers, vault lists, grids). See `docs/COVER_COMPONENT.md` for guidance.
 - **Link panels** – Config-driven React panels (backlinks, meetings, tasks, projects, custom implementations) rendered beneath the header (`src/containers/EntityLinks`).
 - **Create-related flows** – Buttons that spawn linked notes (reports, meetings, tasks) using templated attributes and property linking (`src/utils/createEntityForEntity.ts`, `src/utils/createMeetingForPerson.ts`, etc.).
 - **Quick search + creation** – Dashboard cards and settings quick search list referencing the config’s `quickSearch.entities` order.

@@ -39,8 +39,8 @@ https://github.com/marcopeg/mondo
 Run the command `Open Mondo Dashboard` to open your vault's control center:
 
 - **Quick Tasks** let you create new task-notes on the fly by typing or dictating your thoughs.
-- **Relevant Notes** let you find your notes by frequency of utilization or history. And you can filter by _Entity Type (see the CRM feature)_-
-- **CRM Entities Wall** wall let you jump to the various entities lists. Think \_"Obsidian bases on steroid".
+- **Relevant Notes** let you find your notes by frequency of utilization or history. And you can filter by _Entity Type (see the IMS feature)_-
+- **IMS Entities Wall** wall let you jump to the various entities lists. Think \_"Obsidian bases on steroid".
 - **Stats** show some numbers about your valut and offer some file based views of your stuff. Not only notes, but also images, audio and generic attachments across the whole vault.
 
 # 🎤 Dictation
@@ -131,11 +131,19 @@ You can add a block as many `habits` blocks you want:
 
 👉 Be careful configuring a unique `key` for each block because the data is stored in the note's _frontmatter_ under that key.
 
+👉 [How to add Habit Trackers into your notes](./howto/TRACKER.md)
+
 # ⏱️ Training Timers
+
+Timers let you embed any kind of working timers in your notes.
+
+I find it particularly useful for my workouts in combination with the _Habits Tracker_ functionality.
 
 ![Timer - single](./images/timer-single.png)
 
-![Timer - single](./images/timer-source.png)
+![Timer - source](./images/timer-source.png)
+
+👉 [How to Add and Configure Timers](./howto/TIMER.md)
 
 # 📆 Daily Notes
 

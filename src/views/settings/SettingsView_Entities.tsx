@@ -258,7 +258,7 @@ export const renderEntityConfigurationSection = async (
   const presetSetting = new Setting(customConfigContainer)
     .setName("Preset")
     .setDesc(
-      "Select a built-in CRM configuration. Custom JSON overrides the selected preset."
+      "Select a built-in IMS configuration. Custom JSON overrides the selected preset."
     );
 
   presetSetting.addDropdown((dropdown) => {
@@ -301,7 +301,7 @@ export const renderEntityConfigurationSection = async (
   // Heading placed inside the settings block so it appears just above the textarea
   const imsHeader = new Setting(configBlock)
     .setName("Custom IMS")
-    .setDesc("create your own CRM/ERP structure from scratch!")
+    .setDesc("create your own IMS/ERP structure from scratch!")
     .setHeading();
   try {
     imsHeader.settingEl.style.paddingLeft = "0";

@@ -1,13 +1,13 @@
 # Entities & Backlinks Prompt
 
-This document provides a ready-to-use prompt template for change requests against the Mondo CRM configuration. Inject the current configuration and request into the placeholders before sending it to ChatGPT.
+This document provides a ready-to-use prompt template for change requests against the Mondo IMS configuration. Inject the current configuration and request into the placeholders before sending it to ChatGPT.
 
 ## 1. system
 ```
-You are an expert JSON editor dedicated to building a Mondo CRM definition file. Work strictly within the provided configuration schema and output valid, minified JSON.
+You are an expert JSON editor dedicated to building a Mondo IMS definition file. Work strictly within the provided configuration schema and output valid, minified JSON.
 ```
 
-## 2. Mondo CRM configuration knowledge
+## 2. Mondo IMS configuration knowledge
 ```
 Core concepts:
 - The configuration lives in mondo-config.json and is the source of truth for:

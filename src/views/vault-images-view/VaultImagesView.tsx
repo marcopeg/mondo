@@ -12,6 +12,7 @@ import Switch from "@/components/ui/Switch";
 import Button from "@/components/ui/Button";
 import Table from "@/components/ui/Table";
 import { ReadableDate } from "@/components/ui/ReadableDate";
+import { Cover } from "@/components/ui/Cover";
 import { useApp } from "@/hooks/use-app";
 import { useSetting } from "@/hooks/use-setting";
 import { isImageFile } from "@/utils/fileTypeFilters";
@@ -447,8 +448,9 @@ export const VaultImagesView = () => {
           No images found in your vault.
         </div>
       ) : isGridView ? (
-        <div className="overflow-hidden rounded-lg border border-[var(--background-modifier-border)]">
-          <Table>
+        <div className="space-y-3">
+          <div className="hidden overflow-hidden rounded-lg border border-[var(--background-modifier-border)] sm:block">
+            <Table>
             <thead className="bg-[var(--background-secondary-alt, var(--background-secondary))]">
               <tr>
                 <Table.HeadCell className="w-24 p-3 text-left text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">
@@ -475,20 +477,15 @@ export const VaultImagesView = () => {
                   className="border-t border-[var(--background-modifier-border)]"
                 >
                   <Table.Cell className="p-3 align-middle">
-                    <button
-                      type="button"
-                      className="group flex h-16 w-16 items-center justify-center overflow-hidden rounded-md border border-[var(--background-modifier-border)] bg-[var(--background-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--interactive-accent)] focus-visible:ring-offset-0"
-                      onClick={() => {
+                    <Cover
+                      src={entry.resourcePath}
+                      alt={entry.file.basename}
+                      size={64}
+                      editLabel={`Edit cover for ${entry.file.basename}`}
+                      onEditCover={() => {
                         handleEditImage(entry.file);
                       }}
-                      aria-label={`Edit cover for ${entry.file.basename}`}
-                    >
-                      <img
-                        src={entry.resourcePath}
-                        alt={entry.file.basename}
-                        className="h-full w-full object-cover transition-transform group-hover:scale-[1.02]"
-                      />
-                    </button>
+                    />
                   </Table.Cell>
                   <Table.Cell className="p-3 align-middle">
                     <div className="flex flex-col items-start gap-1">
@@ -566,7 +563,75 @@ export const VaultImagesView = () => {
                 </Table.Row>
               ))}
             </tbody>
-          </Table>
+            </Table>
+          </div>
+          <div className="space-y-3 sm:hidden">
+            {rows.map(({ entry, dimensionLabel, sizeLabel, typeLabel }) => (
+              <div
+                key={entry.file.path}
+                className="rounded-lg border border-[var(--background-modifier-border)] bg-[var(--background-secondary)] p-4"
+              >
+                <div className="flex items-start gap-3">
+                  <Cover
+                    src={entry.resourcePath}
+                    alt={entry.file.basename}
+                    size={80}
+                    editLabel={`Edit ${entry.file.basename}`}
+                    onEditCover={() => {
+                      handleEditImage(entry.file);
+                    }}
+                  />
+                  <div className="min-w-0 flex-1 space-y-2">
+                    <Button
+                      variant="link"
+                      tone="info"
+                      className="block w-full truncate text-left font-medium"
+                      onClick={() => {
+                        handleEditImage(entry.file);
+                      }}
+                      aria-label={`Edit ${entry.file.basename}`}
+                    >
+                      {entry.file.basename}
+                    </Button>
+                    <div
+                      className="text-xs text-[var(--text-muted)]"
+                      aria-label={entry.file.path}
+                      title={entry.file.path}
+                    >
+                      <span className="block truncate">{entry.file.path}</span>
+                    </div>
+                    <div className="flex flex-wrap gap-x-4 gap-y-2 text-sm text-[var(--text-normal)]">
+                      <span>Type: {typeLabel}</span>
+                      <span>Size: {sizeLabel}</span>
+                      <span className="text-[var(--text-muted)]">Dimensions: {dimensionLabel}</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="mt-3 flex justify-end gap-2">
+                  <Button
+                    icon="external-link"
+                    variant="link"
+                    tone="info"
+                    aria-label={`Open ${entry.file.basename} in a new tab`}
+                    onClick={() => {
+                      if (typeof window !== "undefined") {
+                        window.open(entry.resourcePath, "_blank", "noopener,noreferrer");
+                      }
+                    }}
+                  />
+                  <Button
+                    icon="trash"
+                    variant="link"
+                    tone="danger"
+                    aria-label={`Delete ${entry.file.basename}`}
+                    onClick={() => {
+                      void handleDeleteImage(entry.file);
+                    }}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       ) : (
         <div
@@ -581,12 +646,6 @@ export const VaultImagesView = () => {
                   role="button"
                   tabIndex={0}
                   className="relative h-full w-full cursor-pointer overflow-hidden outline-none transition-transform duration-200 ease-out hover:z-20 hover:scale-[1.06] hover:rounded-lg hover:shadow-[0_14px_45px_rgba(0,0,0,0.55)] focus-visible:z-20 focus-visible:scale-[1.04] focus-visible:rounded-lg focus-visible:shadow-[0_12px_36px_rgba(0,0,0,0.5)] focus-visible:ring-2 focus-visible:ring-[var(--interactive-accent)] focus-visible:ring-offset-0"
-                  onClick={() => {
-                    handleEditImage(entry.file);
-                  }}
-                  onKeyDown={(event) => {
-                    handleWallItemKeyDown(entry, event);
-                  }}
                   onMouseEnter={(event) => {
                     handleWallItemEnter(entry, event);
                   }}
@@ -596,10 +655,15 @@ export const VaultImagesView = () => {
                   onMouseLeave={handleWallItemLeave}
                   aria-label={`Edit ${entry.file.basename}`}
                 >
-                  <img
+                  <Cover
                     src={entry.resourcePath}
                     alt={entry.file.basename}
-                    className="block h-full w-full object-cover transition-transform duration-300 ease-out"
+                    size="100%"
+                    coverClassName="rounded-none border-none"
+                    editLabel={`Edit ${entry.file.basename}`}
+                    onEditCover={() => {
+                      handleEditImage(entry.file);
+                    }}
                   />
                 </div>
               </div>

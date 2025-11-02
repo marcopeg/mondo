@@ -24,7 +24,7 @@ const TimerBlockContent: FC<TimerBlockContentProps> = ({
     formattedElapsed,
     formattedRemaining,
     hasFiniteLoops,
-    intervalSeconds,
+    pauseSeconds,
     isResting,
     isRunning,
     nextLabel,
@@ -179,7 +179,7 @@ const TimerBlockContent: FC<TimerBlockContentProps> = ({
           <>
             <span className="mondo-timer-block__meta-duration">{`${durationSeconds}s`}</span>
             <span className="mondo-timer-block__meta-separator">/</span>
-            <span className="mondo-timer-block__meta-interval">{`${intervalSeconds}s`}</span>
+            <span className="mondo-timer-block__meta-interval">{`${pauseSeconds}s`}</span>
           </>
         )}
       </div>

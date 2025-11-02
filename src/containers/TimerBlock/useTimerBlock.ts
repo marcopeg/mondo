@@ -22,7 +22,7 @@ export type TimerBlockController = {
   formattedElapsed: string;
   formattedRemaining: string;
   hasFiniteLoops: boolean;
-  intervalSeconds: number;
+  pauseSeconds: number;
   isResting: boolean;
   isRunning: boolean;
   nextLabel?: string;
@@ -69,10 +69,17 @@ type LoopConfig =
   | { mode: "infinite" }
   | { mode: "finite"; total: number };
 const parseLoop = (value: unknown): LoopConfig => {
-  const raw = typeof value === "string" ? value : String(value ?? "");
+  // New semantics:
+  // - omitted/empty or `true` => infinite
+  // - `false` or numeric 0 => none
+  // - numeric N > 0 => finite with total N
+  if (value === undefined || value === null) return { mode: "infinite" };
+  const raw = typeof value === "string" ? value : String(value);
   const normalized = raw.trim().toLowerCase();
-  if (!normalized || normalized === "true") return { mode: "infinite" };
+
+  if (normalized === "" || normalized === "true") return { mode: "infinite" };
   if (normalized === "false") return { mode: "none" };
+
   const n = Number(normalized);
   if (!Number.isFinite(n)) return { mode: "infinite" };
   const total = Math.floor(n);
@@ -262,17 +269,14 @@ export const useTimerBlock = (props: TimerBlockProps): TimerBlockController => {
     () => parseSeconds(props.duration),
     [props.duration]
   );
-  const baseIntervalSeconds = useMemo(
-    () => parseSeconds(props.interval),
-    [props.interval]
-  );
+  const basePauseSeconds = useMemo(() => {
+    // New prop name: rest. Backward-compatible with legacy 'pause' and 'interval'.
+    const raw = props.rest ?? props.pause ?? props.interval;
+    return parseSeconds(raw);
+  }, [props.rest, props.pause, props.interval]);
 
   // Loop config
   const loopConfig = useMemo(() => parseLoop(props.loop), [props.loop]);
-  const hasFiniteLoops = loopConfig.mode === "finite";
-  const totalLoops = hasFiniteLoops
-    ? (loopConfig as Extract<LoopConfig, { mode: "finite" }>).total
-    : 0;
 
   // Heptic/audio mode
   const hepticMode: HepticMode = useMemo(() => {
@@ -287,17 +291,18 @@ export const useTimerBlock = (props: TimerBlockProps): TimerBlockController => {
     ) {
       return rawValue;
     }
-    return "both";
+    // Default to no haptic/audio feedback unless explicitly requested
+    return "none";
   }, [props.heptic]);
 
   // Optional step beep every N seconds while in work phase
   const stepSeconds = useMemo(() => {
     const raw = props.step;
     if (raw === undefined || raw === null) {
-      return 10;
+      return 0;
     }
     if (typeof raw === "string" && raw.trim() === "") {
-      return 10;
+      return 0;
     }
     const parsed = parseSeconds(raw);
     if (parsed > 0) {
@@ -309,13 +314,45 @@ export const useTimerBlock = (props: TimerBlockProps): TimerBlockController => {
     ) {
       return 0;
     }
-    return 10;
+    return 0;
   }, [props.step]);
 
   // Optional plan steps
   const planSteps = useMemo(() => parsePlanSteps(props.steps), [props.steps]);
   const hasPlan = planSteps.length > 0;
   const initialPlanDuration = hasPlan ? planSteps[0].durationSeconds : 0;
+
+  // If no timer options are provided (duration/rest/steps/loop),
+  // default to a single work phase of 25 minutes and a 5 minute rest.
+  const noTimerOptions =
+    props.duration == null &&
+    props.rest == null &&
+    props.pause == null &&
+    props.interval == null &&
+    props.steps == null &&
+    props.loop == null;
+
+  const effectiveBaseDurationSeconds = useMemo(() => {
+    if (hasPlan) return initialPlanDuration;
+    if (noTimerOptions) return 25 * 60; // 25 minutes
+    return baseDurationSeconds;
+  }, [hasPlan, initialPlanDuration, noTimerOptions, baseDurationSeconds]);
+
+  const effectiveBasePauseSeconds = useMemo(() => {
+    if (hasPlan) return 0;
+    if (noTimerOptions) return 5 * 60; // 5 minutes
+    return basePauseSeconds;
+  }, [hasPlan, noTimerOptions, basePauseSeconds]);
+
+  const effectiveLoopConfig = useMemo(() => {
+    if (noTimerOptions) return { mode: "none" } as const;
+    return loopConfig;
+  }, [noTimerOptions, loopConfig]);
+
+  const hasFiniteLoops = effectiveLoopConfig.mode === "finite";
+  const totalLoops = hasFiniteLoops
+    ? (effectiveLoopConfig as Extract<LoopConfig, { mode: "finite" }>).total
+    : 0;
 
   // Title
   const title = useMemo(() => {
@@ -330,14 +367,14 @@ export const useTimerBlock = (props: TimerBlockProps): TimerBlockController => {
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [currentLoop, setCurrentLoop] = useState(0);
   const [remainingSeconds, setRemainingSeconds] = useState(
-    hasPlan ? initialPlanDuration : baseDurationSeconds
+    hasPlan ? initialPlanDuration : effectiveBaseDurationSeconds
   );
   const [elapsedMilliseconds, setElapsedMilliseconds] = useState(0);
   const [progress, setProgress] = useState(1);
 
   // Refs for timing and feedback
   const phaseDurationRef = useRef(
-    Math.max((hasPlan ? initialPlanDuration : baseDurationSeconds) || 1, 1)
+    Math.max((hasPlan ? initialPlanDuration : effectiveBaseDurationSeconds) || 1, 1)
   );
   const phaseStartTimeRef = useRef<number | null>(null);
   const animationFrameRef = useRef<number | null>(null);
@@ -358,10 +395,10 @@ export const useTimerBlock = (props: TimerBlockProps): TimerBlockController => {
 
   const durationSeconds = hasPlan
     ? currentPlanStep?.durationSeconds ?? 0
-    : baseDurationSeconds;
-  const intervalSeconds = hasPlan
+    : effectiveBaseDurationSeconds;
+  const pauseSeconds = hasPlan
     ? currentPlanStep?.pauseSeconds ?? 0
-    : baseIntervalSeconds;
+    : effectiveBasePauseSeconds;
 
   const getNow = useCallback(() => {
     if (
@@ -461,10 +498,10 @@ export const useTimerBlock = (props: TimerBlockProps): TimerBlockController => {
   }, [isRunning]);
 
   // Start/Stop
-  const canStart = hasPlan ? initialPlanDuration > 0 : baseDurationSeconds > 0;
+  const canStart = hasPlan ? initialPlanDuration > 0 : effectiveBaseDurationSeconds > 0;
 
   const start = useCallback(() => {
-    const initial = hasPlan ? initialPlanDuration : baseDurationSeconds;
+    const initial = hasPlan ? initialPlanDuration : effectiveBaseDurationSeconds;
     if (initial <= 0) return;
     stepCountRef.current = 0;
     stopCurrentFeedback();
@@ -492,14 +529,14 @@ export const useTimerBlock = (props: TimerBlockProps): TimerBlockController => {
     setIsRunning(false);
     setPhase("work");
     setCurrentStepIndex(0);
-    setRemainingSeconds(hasPlan ? initialPlanDuration : baseDurationSeconds);
+    setRemainingSeconds(hasPlan ? initialPlanDuration : effectiveBaseDurationSeconds);
     setProgress(1);
     phaseStartTimeRef.current = null;
     stepCountRef.current = 0;
     stopCurrentFeedback();
     void releaseWakeLock();
   }, [
-    baseDurationSeconds,
+    effectiveBaseDurationSeconds,
     hasPlan,
     initialPlanDuration,
     releaseWakeLock,
@@ -597,10 +634,10 @@ export const useTimerBlock = (props: TimerBlockProps): TimerBlockController => {
 
       // Simple mode (no plan)
       if (phase === "work") {
-        if (intervalSeconds > 0) {
+        if (pauseSeconds > 0) {
           playRest();
           setPhase("rest");
-          setRemainingSeconds(intervalSeconds);
+          setRemainingSeconds(pauseSeconds);
           setProgress(1);
           phaseStartTimeRef.current = null;
           return;
@@ -655,7 +692,7 @@ export const useTimerBlock = (props: TimerBlockProps): TimerBlockController => {
     remainingSeconds,
     phase,
     durationSeconds,
-    intervalSeconds,
+  pauseSeconds,
     hasPlan,
     currentPlanStep?.pauseSeconds,
     planSteps,
@@ -673,9 +710,9 @@ export const useTimerBlock = (props: TimerBlockProps): TimerBlockController => {
   // Active phase duration used by timer computation
   const activePhaseDuration = useMemo(() => {
     if (phase === "rest")
-      return intervalSeconds > 0 ? intervalSeconds : durationSeconds || 1;
+      return pauseSeconds > 0 ? pauseSeconds : durationSeconds || 1;
     return durationSeconds || 1;
-  }, [durationSeconds, intervalSeconds, phase]);
+  }, [durationSeconds, pauseSeconds, phase]);
 
   // Reinitialize timing on phase or duration change
   useEffect(() => {
@@ -825,7 +862,7 @@ export const useTimerBlock = (props: TimerBlockProps): TimerBlockController => {
     formattedElapsed: formatChronograph(elapsedMilliseconds),
     formattedRemaining,
     hasFiniteLoops,
-    intervalSeconds,
+    pauseSeconds,
     isResting: phase === "rest",
     isRunning,
     nextLabel,
