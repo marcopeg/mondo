@@ -77,7 +77,7 @@ export const EntityCoverCell = ({ value, row }: EntityCoverCellProps) => {
         size={64}
         strategy="cover"
         coverClassName="border border-[var(--background-modifier-border)] bg-[var(--background-primary)]"
-        editLabel={`Open ${row.displayName}`}
+        editLabel={`Open ${row.label}`}
         onEditCover={handleOpen}
       />
     </div>

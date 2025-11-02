@@ -69,10 +69,17 @@ type LoopConfig =
   | { mode: "infinite" }
   | { mode: "finite"; total: number };
 const parseLoop = (value: unknown): LoopConfig => {
-  const raw = typeof value === "string" ? value : String(value ?? "");
+  // New semantics:
+  // - omitted/empty or `true` => infinite
+  // - `false` or numeric 0 => none
+  // - numeric N > 0 => finite with total N
+  if (value === undefined || value === null) return { mode: "infinite" };
+  const raw = typeof value === "string" ? value : String(value);
   const normalized = raw.trim().toLowerCase();
-  if (!normalized || normalized === "true") return { mode: "infinite" };
+
+  if (normalized === "" || normalized === "true") return { mode: "infinite" };
   if (normalized === "false") return { mode: "none" };
+
   const n = Number(normalized);
   if (!Number.isFinite(n)) return { mode: "infinite" };
   const total = Math.floor(n);

@@ -137,6 +137,8 @@ You can add a block as many `habits` blocks you want:
 
 ![Timer - source](./images/timer-source.png)
 
+[How to Add and Configure Timers](./howto/TIMER.md)
+
 # 📆 Daily Notes
 
 Daily notes help jotting down quick information.

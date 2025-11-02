@@ -477,41 +477,37 @@ export const VaultNotesView = () => {
             >
               <div className="flex items-start gap-3">
                 <div className="shrink-0">
-                  {row.cover ? (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        handleCoverClick(row.cover!);
-                      }}
-                      className="group flex h-16 w-16 items-center justify-center overflow-hidden rounded-md border border-[var(--background-modifier-border)] bg-[var(--background-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--interactive-accent)] focus-visible:ring-offset-0"
-                      aria-label={`Edit cover for ${row.displayName}`}
-                    >
-                      <img
-                        src={
-                          row.cover.kind === "vault"
-                            ? row.cover.resourcePath
-                            : row.cover.url
-                        }
-                        alt={row.displayName}
-                        className="h-full w-full object-cover transition-transform group-hover:scale-[1.02]"
-                      />
-                    </button>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={(event) => {
-                        handleCoverPlaceholderClick(event, row.file);
-                      }}
-                      className="flex h-16 w-16 items-center justify-center rounded-md border border-dashed border-[var(--background-modifier-border)] bg-[var(--background-primary)] text-[var(--text-muted)] transition hover:border-[var(--background-modifier-border-hover)] hover:text-[var(--text-normal)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--interactive-accent)] focus-visible:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-70"
-                      aria-label={`Select cover for ${row.displayName}`}
-                      disabled={isUploadingCover}
-                    >
-                      <Icon
-                        name={isUploadingCover ? "loader-2" : "image"}
-                        className={`h-5 w-5 ${isUploadingCover ? "animate-spin" : ""}`}
-                      />
-                    </button>
-                  )}
+                  <Cover
+                    src={
+                      row.cover
+                        ? row.cover.kind === "vault"
+                          ? row.cover.resourcePath
+                          : row.cover.url
+                        : undefined
+                    }
+                    alt={row.displayName}
+                    size={64}
+                    strategy="cover"
+                    placeholderIcon="image"
+                    placeholderIconClassName="h-5 w-5 text-[var(--text-muted)]"
+                    placeholderVariant="dashed"
+                    className="bg-[var(--background-primary)]"
+                    coverClassName="border border-[var(--background-modifier-border)]"
+                    isLoading={isUploadingCover}
+                    disabled={isUploadingCover}
+                    selectLabel={`Select cover for ${row.displayName}`}
+                    editLabel={`Edit cover for ${row.displayName}`}
+                    onSelectCover={(filePath, file) => {
+                      void handleSelectCover(row.file, filePath, file);
+                    }}
+                    onEditCover={
+                      row.cover
+                        ? () => {
+                            handleCoverClick(row.cover!);
+                          }
+                        : undefined
+                    }
+                  />
                 </div>
                 <div className="min-w-0 flex-1 space-y-2">
                   <Button

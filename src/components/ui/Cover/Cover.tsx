@@ -31,7 +31,7 @@ export type CoverProps = {
   coverClassName?: string;
   placeholderVariant?: PlaceholderVariant;
   accept?: string;
-  capture?: string;
+  capture?: boolean | "user" | "environment";
   allowCameraCapture?: boolean;
   isLoading?: boolean;
   disabled?: boolean;
