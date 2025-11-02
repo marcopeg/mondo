@@ -36,7 +36,7 @@ jobs:
         run: npm run build
 
       - name: Stage build artifacts
-        run: git add main.js styles.css manifest.json
+        run: git add -f main.js styles.css manifest.json
 
       - name: Bump version (patch)
         run: npm version patch
