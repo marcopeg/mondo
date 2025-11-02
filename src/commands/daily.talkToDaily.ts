@@ -1,19 +1,20 @@
 import { App, Notice } from "obsidian";
 import type Mondo from "@/main";
-import { addDailyLog } from "@/commands/daily.addLog";
+import { setupDailyLogAndPositionCursor } from "@/commands/daily.addLog";
 
 export const talkToDaily = async (app: App, plugin: Mondo) => {
-  // 1. Execute "Append to Daily note" command
+  // 1. Execute the core "Append to Daily note" setup logic
   try {
-    await addDailyLog(app, plugin);
+    const result = await setupDailyLogAndPositionCursor(app, plugin);
+    if (!result) {
+      new Notice("Failed to set up daily note.");
+      return;
+    }
   } catch (error) {
     console.error("Mondo: Failed to append to daily note", error);
     new Notice("Failed to append to daily note.");
     return;
   }
-
-  // Wait a tick to ensure the daily note is fully set up
-  await new Promise((resolve) => setTimeout(resolve, 100));
 
   // 2. Start the dictation functionality
   const noteDictationManager = (plugin as any).noteDictationManager;

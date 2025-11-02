@@ -34,6 +34,259 @@ export interface AddDailyLogOptions {
   mode?: DailyLogEntryMode;
 }
 
+/**
+ * Core result type returned after setting up the daily note and positioning the cursor.
+ * Used by "Talk to Daily Note" and "Record to Daily Note" to extend functionality.
+ */
+export interface DailyLogSetupResult {
+  file: TFile;
+  view: MarkdownView;
+  editor: any;
+  headingLine: string;
+}
+
+/**
+ * Core function that sets up the daily note and positions the cursor.
+ * This is the reusable logic used by "Append to Daily note" and extended by other commands.
+ * Returns the necessary context for additional operations (dictation, recording, etc).
+ */
+export async function setupDailyLogAndPositionCursor(
+  app: App,
+  plugin: Mondo
+): Promise<DailyLogSetupResult | null> {
+  const settings = (plugin as any).settings || {};
+  const daily = settings.daily || {
+    root: "Daily",
+    entry: "YYYY-MM-DD",
+    note: "HH:MM",
+  };
+  const folderSetting = daily.root || "Daily";
+  const entryFormat = daily.entry || "YYYY-MM-DD";
+  const noteFormat = daily.note || "HH:MM";
+  const useBullets =
+    typeof daily.useBullets === "boolean" ? daily.useBullets : true;
+
+  const normalizedFolder =
+    folderSetting === "/" ? "" : folderSetting.replace(/^\/+|\/+$/g, "");
+
+  try {
+    if (normalizedFolder !== "") {
+      const existing = app.vault.getAbstractFileByPath(normalizedFolder);
+      if (!existing) {
+        await app.vault.createFolder(normalizedFolder);
+      }
+    }
+  } catch (e) {
+    throw e;
+  }
+
+  const now = new Date();
+  const fileBase = formatDate(entryFormat, now);
+  let fileName = fileBase;
+  if (!fileName.endsWith(".md")) fileName = `${fileName}.md`;
+  const filePath = normalizedFolder
+    ? `${normalizedFolder}/${fileName}`
+    : fileName;
+
+  let tfile = app.vault.getAbstractFileByPath(filePath) as TFile | null;
+  const isoDate = `${String(now.getFullYear())}-${String(
+    now.getMonth() + 1
+  ).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+
+  const makeFrontmatter = (dateStr: string) => {
+    return (
+      `---\n` +
+      `type: ${DAILY_NOTE_TYPE}\n` +
+      `date: ${dateStr}\n` +
+      `---\n`
+    );
+  };
+
+  if (!tfile) {
+    tfile = await app.vault.create(filePath, makeFrontmatter(isoDate));
+  } else {
+    try {
+      const raw = await app.vault.read(tfile);
+      const fmRegex = /^\s*---\n([\s\S]*?)\n---\r?\n?/;
+      const fmMatch = raw.match(fmRegex);
+      if (fmMatch) {
+        const existingFm = fmMatch[1] || "";
+        const hasDailyType = new RegExp(
+          `(^|\\n)\\s*type\\s*:\\s*${DAILY_NOTE_TYPE}(\\s|$)`,
+          "i"
+        ).test(existingFm);
+        const hasLegacyType = new RegExp(
+          `(^|\\n)\\s*type\\s*:\\s*${LEGACY_DAILY_NOTE_TYPE}(\\s|$)`,
+          "i"
+        ).test(existingFm);
+        const hasDate = /(^|\n)\s*date\s*:\s*\d{4}-\d{2}-\d{2}(\s|$)/i.test(
+          existingFm
+        );
+        const hasIsoDate = new RegExp(
+          `(^|\\n)\\s*date\\s*:\\s*${isoDate}(\\s|$)`,
+          "i"
+        ).test(existingFm);
+
+        if (hasLegacyType && !hasDailyType && hasIsoDate) {
+          const updatedFrontmatter = existingFm.replace(
+            new RegExp(
+              `(^|\\n)(\\s*type\\s*:\\s*)${LEGACY_DAILY_NOTE_TYPE}(\\s|$)`,
+              "i"
+            ),
+            `$1$2${DAILY_NOTE_TYPE}$3`
+          );
+          const rest = raw.replace(fmRegex, "").replace(/^\r?\n+/, "");
+          const newContent = `---\n${updatedFrontmatter}\n---\n` + rest;
+          await app.vault.modify(tfile, newContent);
+        } else if (!hasDailyType || !hasDate || !hasIsoDate) {
+          const rest = raw.replace(fmRegex, "").replace(/^\r?\n+/, "");
+          const newContent = makeFrontmatter(isoDate) + rest;
+          await app.vault.modify(tfile, newContent);
+        }
+      } else {
+        const rest = raw.replace(/^\r?\n+/, "");
+        const newContent = makeFrontmatter(isoDate) + rest;
+        await app.vault.modify(tfile, newContent);
+      }
+    } catch (e) {
+      // ignore read/modify errors
+    }
+  }
+
+  const headingText = formatTime(noteFormat, now);
+  const section = (daily.section || "h2").toLowerCase();
+  const match = section.match(/^h([1-6])$/);
+  const level = match ? Math.max(1, Math.min(6, Number(match[1]))) : 2;
+  const prefix = "#".repeat(level);
+  const headingLine = `${prefix} ${headingText}`;
+  const bulletPrefix = useBullets ? "- " : "";
+
+  const markdownLeaves = app.workspace.getLeavesOfType("markdown");
+  const existingLeaf = markdownLeaves.find((l) => {
+    try {
+      const f = (l.view as any)?.file as TFile | undefined | null;
+      return f?.path === filePath;
+    } catch (e) {
+      return false;
+    }
+  });
+
+  const leaf = (existingLeaf as any) ?? app.workspace.getLeaf(true);
+  if (existingLeaf) {
+    app.workspace.revealLeaf(existingLeaf);
+  } else {
+    await leaf.openFile(tfile as TFile);
+  }
+
+  try {
+    const view = leaf.view as unknown as MarkdownView | null;
+    if (!view || !view.editor) return null;
+    const editor = view.editor;
+    const content = editor.getValue();
+    const lines = content.split(/\r?\n/);
+
+    let foundIndex = -1;
+    for (let i = 0; i < lines.length; i++) {
+      if (lines[i].trim() === headingLine) {
+        foundIndex = i;
+        break;
+      }
+    }
+
+    const findSectionEnd = (startIndex: number) => {
+      for (let i = startIndex + 1; i < lines.length; i++) {
+        if (/^#\s+/.test(lines[i])) return i - 1;
+      }
+      return lines.length - 1;
+    };
+
+    if (foundIndex >= 0) {
+      const sectionEnd = findSectionEnd(foundIndex);
+      let insertLine = sectionEnd + 1;
+      let nextLineText = lines[insertLine] ?? null;
+
+      if (
+        nextLineText === null &&
+        sectionEnd >= 0 &&
+        lines[sectionEnd]?.trim() === ""
+      ) {
+        insertLine = sectionEnd;
+        nextLineText = lines[insertLine] ?? null;
+      }
+
+      if (nextLineText === "") {
+        const prefixText = useBullets ? "- " : "";
+        editor.replaceRange(
+          prefixText,
+          { line: insertLine, ch: 0 },
+          { line: insertLine, ch: nextLineText.length }
+        );
+        editor.setCursor({ line: insertLine, ch: prefixText.length });
+      } else {
+        const insert = `\n${useBullets ? "- " : ""}`;
+        editor.replaceRange(insert, { line: insertLine, ch: 0 });
+        editor.setCursor({ line: insertLine + 1, ch: useBullets ? 2 : 0 });
+      }
+      editor.focus();
+      try {
+        if (typeof (editor as any).scrollIntoView === "function") {
+          (editor as any).scrollIntoView({ line: insertLine + 1, ch: 0 }, true);
+        } else if ((view as any).containerEl) {
+          const cursorCoords = (editor as any).cursorCoords
+            ? (editor as any).cursorCoords(true)
+            : null;
+          const scroller = (view as any).containerEl.querySelector?.(
+            ".cm-scroller, .CodeMirror-scroll"
+          );
+          if (cursorCoords && scroller) {
+            const sc = scroller as HTMLElement;
+            const middle = sc.clientHeight / 2;
+            sc.scrollTop = Math.max(0, cursorCoords.top - middle + 10);
+          }
+        }
+      } catch (e) {}
+      return { file: tfile, view, editor, headingLine };
+    }
+
+    let lastH1 = -1;
+    for (let i = 0; i < lines.length; i++) {
+      if (/^#\s+/.test(lines[i])) lastH1 = i;
+    }
+
+    const insertPosLine =
+      lastH1 >= 0 ? findSectionEnd(lastH1) + 1 : lines.length;
+    const prependNewline = insertPosLine !== 0;
+    const insertText = `${
+      prependNewline ? "\n" : ""
+    }${headingLine}\n${bulletPrefix}`;
+    editor.replaceRange(insertText, { line: insertPosLine, ch: 0 });
+    const targetLine = insertPosLine + (prependNewline ? 2 : 1);
+    editor.setCursor({ line: targetLine, ch: bulletPrefix.length });
+    editor.focus();
+    try {
+      if (typeof (editor as any).scrollIntoView === "function") {
+        (editor as any).scrollIntoView({ line: targetLine, ch: 0 }, true);
+      } else if ((view as any).containerEl) {
+        const cursorCoords = (editor as any).cursorCoords
+          ? (editor as any).cursorCoords(true)
+          : null;
+        const scroller = (view as any).containerEl.querySelector?.(
+          ".cm-scroller, .CodeMirror-scroll"
+        );
+        if (cursorCoords && scroller) {
+          const sc = scroller as HTMLElement;
+          const middle = sc.clientHeight / 2;
+          sc.scrollTop = Math.max(0, cursorCoords.top - middle + 10);
+        }
+      }
+    } catch (e) {}
+    return { file: tfile, view, editor, headingLine };
+  } catch (e) {
+    // ignore
+    return null;
+  }
+}
+
 export async function addDailyLog(
   app: App,
   plugin: Mondo,
@@ -79,7 +332,6 @@ export async function addDailyLog(
     : fileName;
 
   let tfile = app.vault.getAbstractFileByPath(filePath) as TFile | null;
-  // Build today's date in YYYY-MM-DD format
   const isoDate = `${String(now.getFullYear())}-${String(
     now.getMonth() + 1
   ).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
@@ -93,10 +345,8 @@ export async function addDailyLog(
   };
 
   if (!tfile) {
-    // create with frontmatter
     tfile = await app.vault.create(filePath, makeFrontmatter(isoDate));
   } else {
-    // Ensure existing file has normalized frontmatter (add or replace as needed)
     try {
       const raw = await app.vault.read(tfile);
       const fmRegex = /^\s*---\n([\s\S]*?)\n---\r?\n?/;
@@ -131,13 +381,11 @@ export async function addDailyLog(
           const newContent = `---\n${updatedFrontmatter}\n---\n` + rest;
           await app.vault.modify(tfile, newContent);
         } else if (!hasDailyType || !hasDate || !hasIsoDate) {
-          // replace frontmatter with normalized one
           const rest = raw.replace(fmRegex, "").replace(/^\r?\n+/, "");
           const newContent = makeFrontmatter(isoDate) + rest;
           await app.vault.modify(tfile, newContent);
         }
       } else {
-        // prepend frontmatter
         const rest = raw.replace(/^\r?\n+/, "");
         const newContent = makeFrontmatter(isoDate) + rest;
         await app.vault.modify(tfile, newContent);
@@ -166,137 +414,8 @@ export async function addDailyLog(
     return;
   }
 
-  const markdownLeaves = app.workspace.getLeavesOfType("markdown");
-  const existingLeaf = markdownLeaves.find((l) => {
-    try {
-      const f = (l.view as any)?.file as TFile | undefined | null;
-      return f?.path === filePath;
-    } catch (e) {
-      return false;
-    }
-  });
-
-  const leaf = (existingLeaf as any) ?? app.workspace.getLeaf(true);
-  if (existingLeaf) {
-    app.workspace.revealLeaf(existingLeaf);
-  } else {
-    await leaf.openFile(tfile as TFile);
-  }
-
-  // Editor work
-  try {
-    const view = leaf.view as unknown as MarkdownView | null;
-    if (!view || !view.editor) return;
-    const editor = view.editor;
-    const content = editor.getValue();
-    const lines = content.split(/\r?\n/);
-
-    // Find existing H1 matching the headingText
-    let foundIndex = -1;
-    for (let i = 0; i < lines.length; i++) {
-      if (lines[i].trim() === headingLine) {
-        foundIndex = i;
-        break;
-      }
-    }
-
-    const findSectionEnd = (startIndex: number) => {
-      for (let i = startIndex + 1; i < lines.length; i++) {
-        if (/^#\s+/.test(lines[i])) return i - 1;
-      }
-      return lines.length - 1;
-    };
-
-    if (foundIndex >= 0) {
-      // Move cursor to a new bullet line at end of this section
-      const sectionEnd = findSectionEnd(foundIndex);
-      let insertLine = sectionEnd + 1;
-      let nextLineText = lines[insertLine] ?? null;
-
-      if (
-        nextLineText === null &&
-        sectionEnd >= 0 &&
-        lines[sectionEnd]?.trim() === ""
-      ) {
-        insertLine = sectionEnd;
-        nextLineText = lines[insertLine] ?? null;
-      }
-
-      if (nextLineText === "") {
-        // Replace the existing empty line with a bullet
-        // replaceRange(from, to) using positions
-        const prefixText = useBullets ? "- " : "";
-        editor.replaceRange(
-          prefixText,
-          { line: insertLine, ch: 0 },
-          { line: insertLine, ch: nextLineText.length }
-        );
-        editor.setCursor({ line: insertLine, ch: prefixText.length });
-      } else {
-        // Insert a single newline + bullet (no extra blank lines)
-        const insert = `\n${useBullets ? "- " : ""}`;
-        editor.replaceRange(insert, { line: insertLine, ch: 0 });
-        editor.setCursor({ line: insertLine + 1, ch: useBullets ? 2 : 0 });
-      }
-      editor.focus();
-      try {
-        if (typeof (editor as any).scrollIntoView === "function") {
-          (editor as any).scrollIntoView({ line: insertLine + 1, ch: 0 }, true);
-        } else if ((view as any).containerEl) {
-          const cursorCoords = (editor as any).cursorCoords
-            ? (editor as any).cursorCoords(true)
-            : null;
-          const scroller = (view as any).containerEl.querySelector?.(
-            ".cm-scroller, .CodeMirror-scroll"
-          );
-          if (cursorCoords && scroller) {
-            const sc = scroller as HTMLElement;
-            const middle = sc.clientHeight / 2;
-            sc.scrollTop = Math.max(0, cursorCoords.top - middle + 10);
-          }
-        }
-      } catch (e) {}
-      return;
-    }
-
-    // Not found: append heading right after the last H1 (or at EOF)
-    let lastH1 = -1;
-    for (let i = 0; i < lines.length; i++) {
-      if (/^#\s+/.test(lines[i])) lastH1 = i;
-    }
-
-    const insertPosLine =
-      lastH1 >= 0 ? findSectionEnd(lastH1) + 1 : lines.length;
-    const prependNewline = insertPosLine !== 0;
-    const bulletPrefix = useBullets ? "- " : "";
-    const insertText = `${
-      prependNewline ? "\n" : ""
-    }${headingLine}\n${bulletPrefix}`;
-    editor.replaceRange(insertText, { line: insertPosLine, ch: 0 });
-    // place cursor after the bullet (or at line start if no bullets)
-    const targetLine = insertPosLine + (prependNewline ? 2 : 1);
-    editor.setCursor({ line: targetLine, ch: bulletPrefix.length });
-    editor.focus();
-    try {
-      if (typeof (editor as any).scrollIntoView === "function") {
-        (editor as any).scrollIntoView({ line: targetLine, ch: 0 }, true);
-      } else if ((view as any).containerEl) {
-        const cursorCoords = (editor as any).cursorCoords
-          ? (editor as any).cursorCoords(true)
-          : null;
-        const scroller = (view as any).containerEl.querySelector?.(
-          ".cm-scroller, .CodeMirror-scroll"
-        );
-        if (cursorCoords && scroller) {
-          const sc = scroller as HTMLElement;
-          const middle = sc.clientHeight / 2;
-          sc.scrollTop = Math.max(0, cursorCoords.top - middle + 10);
-        }
-      }
-    } catch (e) {}
-  } catch (e) {
-    // ignore
-  }
+  // Use the core setup function
+  await setupDailyLogAndPositionCursor(app, plugin);
 }
 
 interface AppendLogEntryOptions {

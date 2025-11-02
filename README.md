@@ -165,6 +165,10 @@ Notes in your daily are automatically organized by day/time blocks and default t
 
 Configure the template and shape of the time-based annotations in the `Mondo Settings`.
 
+Try also the following commands:
+- 🎤 `Talk to Daily Note` to automatically start a voice recognition session
+- 🎤 `Record to Daily Note` to automatically start a recording into the daily note's block
+
 Mondo keeps a log of all the notes that were created, modified, and opened each day in the _Daily Note_. That becomes your vault's hystory datatabase and also a damn good way to find out notes when you rememeber when you worked on someting.
 
 # 🖌️ Journaling
