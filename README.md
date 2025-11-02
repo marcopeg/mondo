@@ -139,9 +139,19 @@ Timers let you embed any kind of working timers in your notes.
 
 I find it particularly useful for my workouts in combination with the _Habits Tracker_ functionality.
 
+Try this snippet to quickly insert a Pomodoro timer:
+
+````markdown
+```mondo
+timer
+```
+````
+
+You should get this:
+
 ![Timer - single](./images/timer-single.png)
 
-![Timer - source](./images/timer-source.png)
+Follow the full tutorial for more information and options:
 
 👉 [How to Add and Configure Timers](./howto/TIMER.md)
 
@@ -154,6 +164,10 @@ Run the command `Open Daily note` to open the **Daily Note**; or run `Append to 
 Notes in your daily are automatically organized by day/time blocks and default to bullet lists so to facilitate note refactoring later on.
 
 Configure the template and shape of the time-based annotations in the `Mondo Settings`.
+
+Try also the following commands:
+- 🎤 `Talk to Daily Note` to automatically start a voice recognition session
+- 🎤 `Record to Daily Note` to automatically start a recording into the daily note's block
 
 Mondo keeps a log of all the notes that were created, modified, and opened each day in the _Daily Note_. That becomes your vault's hystory datatabase and also a damn good way to find out notes when you rememeber when you worked on someting.
 
