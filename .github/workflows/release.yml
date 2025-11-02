@@ -29,19 +29,28 @@ jobs:
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
 
-      - name: Install dependencies
-        run: npm install
+      - name: Install dependencies (no lockfile)
+        run: npm install --no-package-lock
 
       - name: Build plugin
         run: npm run build
 
-      - name: Stage build artifacts
-        run: git add -f main.js styles.css manifest.json
+      - name: Bump version (patch) without commit/tag
+        run: npm version patch --no-git-tag-version
 
-      - name: Bump version (patch)
-        run: npm version patch
+      - name: Update manifest and versions.json
+        run: |
+          node version-bump.mjs
+          # Stage versioned files and build artifacts
+          git add package.json manifest.json versions.json
+          git add -f main.js styles.css
 
-      - name: Push version bump
+      - name: Create version commit
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          git commit -m "v$VERSION"
+
+      - name: Push version commit
         run: git push origin main
 
       - name: Create tag
