@@ -37,6 +37,12 @@ jobs:
       - name: Build plugin
         run: npm run build
 
+      - name: Stage build artifacts
+        run: git add main.js styles.css manifest.json versions.json
+
+      - name: Amend version commit with build artifacts
+        run: git commit --amend --no-edit
+
       - name: Push version bump
         run: git push origin main
 
