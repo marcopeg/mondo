@@ -10,6 +10,7 @@ import { Table } from "@/components/ui/Table";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { Icon } from "@/components/ui/Icon";
+import { Cover } from "@/components/ui/Cover";
 import { EntityLinksTable } from "@/components/EntityLinksTable";
 import { useFiles } from "@/hooks/use-files";
 import { useEntityLinkOrdering } from "@/hooks/use-entity-link-ordering";
@@ -1156,15 +1157,14 @@ export const BacklinksLinks = ({
                         style={{ width: "4rem" }}
                       >
                         {src ? (
-                          <img
-                            src={src}
-                            alt={show}
-                            className="h-16 w-16 mx-auto block"
-                            style={{
-                              objectFit:
-                                col.mode === "contain" ? "contain" : "cover",
-                            }}
-                          />
+                          <div className="flex justify-center">
+                            <Cover
+                              src={src}
+                              alt={show}
+                              size={64}
+                              strategy={col.mode === "contain" ? "contain" : "cover"}
+                            />
+                          </div>
                         ) : null}
                       </Table.Cell>
                     );

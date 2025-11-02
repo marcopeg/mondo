@@ -12,6 +12,7 @@ import Switch from "@/components/ui/Switch";
 import Button from "@/components/ui/Button";
 import Table from "@/components/ui/Table";
 import { ReadableDate } from "@/components/ui/ReadableDate";
+import { Cover } from "@/components/ui/Cover";
 import { useApp } from "@/hooks/use-app";
 import { useSetting } from "@/hooks/use-setting";
 import { isImageFile } from "@/utils/fileTypeFilters";
@@ -476,20 +477,15 @@ export const VaultImagesView = () => {
                   className="border-t border-[var(--background-modifier-border)]"
                 >
                   <Table.Cell className="p-3 align-middle">
-                    <button
-                      type="button"
-                      className="group flex h-16 w-16 items-center justify-center overflow-hidden rounded-md border border-[var(--background-modifier-border)] bg-[var(--background-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--interactive-accent)] focus-visible:ring-offset-0"
-                      onClick={() => {
+                    <Cover
+                      src={entry.resourcePath}
+                      alt={entry.file.basename}
+                      size={64}
+                      editLabel={`Edit cover for ${entry.file.basename}`}
+                      onEditCover={() => {
                         handleEditImage(entry.file);
                       }}
-                      aria-label={`Edit cover for ${entry.file.basename}`}
-                    >
-                      <img
-                        src={entry.resourcePath}
-                        alt={entry.file.basename}
-                        className="h-full w-full object-cover transition-transform group-hover:scale-[1.02]"
-                      />
-                    </button>
+                    />
                   </Table.Cell>
                   <Table.Cell className="p-3 align-middle">
                     <div className="flex flex-col items-start gap-1">
@@ -576,20 +572,15 @@ export const VaultImagesView = () => {
                 className="rounded-lg border border-[var(--background-modifier-border)] bg-[var(--background-secondary)] p-4"
               >
                 <div className="flex items-start gap-3">
-                  <button
-                    type="button"
-                    className="group flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-md border border-[var(--background-modifier-border)] bg-[var(--background-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--interactive-accent)] focus-visible:ring-offset-0"
-                    onClick={() => {
+                  <Cover
+                    src={entry.resourcePath}
+                    alt={entry.file.basename}
+                    size={80}
+                    editLabel={`Edit ${entry.file.basename}`}
+                    onEditCover={() => {
                       handleEditImage(entry.file);
                     }}
-                    aria-label={`Edit ${entry.file.basename}`}
-                  >
-                    <img
-                      src={entry.resourcePath}
-                      alt={entry.file.basename}
-                      className="h-full w-full object-cover transition-transform group-hover:scale-[1.02]"
-                    />
-                  </button>
+                  />
                   <div className="min-w-0 flex-1 space-y-2">
                     <Button
                       variant="link"
@@ -655,12 +646,6 @@ export const VaultImagesView = () => {
                   role="button"
                   tabIndex={0}
                   className="relative h-full w-full cursor-pointer overflow-hidden outline-none transition-transform duration-200 ease-out hover:z-20 hover:scale-[1.06] hover:rounded-lg hover:shadow-[0_14px_45px_rgba(0,0,0,0.55)] focus-visible:z-20 focus-visible:scale-[1.04] focus-visible:rounded-lg focus-visible:shadow-[0_12px_36px_rgba(0,0,0,0.5)] focus-visible:ring-2 focus-visible:ring-[var(--interactive-accent)] focus-visible:ring-offset-0"
-                  onClick={() => {
-                    handleEditImage(entry.file);
-                  }}
-                  onKeyDown={(event) => {
-                    handleWallItemKeyDown(entry, event);
-                  }}
                   onMouseEnter={(event) => {
                     handleWallItemEnter(entry, event);
                   }}
@@ -670,10 +655,15 @@ export const VaultImagesView = () => {
                   onMouseLeave={handleWallItemLeave}
                   aria-label={`Edit ${entry.file.basename}`}
                 >
-                  <img
+                  <Cover
                     src={entry.resourcePath}
                     alt={entry.file.basename}
-                    className="block h-full w-full object-cover transition-transform duration-300 ease-out"
+                    size="100%"
+                    coverClassName="rounded-none border-none"
+                    editLabel={`Edit ${entry.file.basename}`}
+                    onEditCover={() => {
+                      handleEditImage(entry.file);
+                    }}
                   />
                 </div>
               </div>

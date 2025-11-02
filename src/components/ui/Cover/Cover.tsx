@@ -66,7 +66,7 @@ export const Cover = ({
   src,
   alt = "Cover image",
   size,
-  strategy = "contain",
+  strategy = "cover",
   placeholderIcon = DEFAULT_PLACEHOLDER_ICON,
   placeholderIconClassName = "h-8 w-8",
   imageClassName = "h-full w-full transition-transform duration-200 group-hover:scale-[1.02]",
@@ -99,7 +99,7 @@ export const Cover = ({
 
   const placeholderClasses = useMemo(() => {
     const base = [
-      "group flex items-center justify-center rounded-md text-[var(--text-muted)] transition",
+      "group flex items-center justify-center rounded-md p-0 text-[var(--text-muted)] transition",
       "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--interactive-accent)] focus-visible:ring-offset-0",
       "disabled:cursor-not-allowed disabled:opacity-70",
     ];
@@ -129,7 +129,7 @@ export const Cover = ({
 
   const coverClasses = useMemo(() => {
     const base = [
-      "group relative flex items-center justify-center overflow-hidden rounded-md transition",
+      "group relative flex items-center justify-center overflow-hidden rounded-md p-0 transition",
       "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--interactive-accent)] focus-visible:ring-offset-0",
     ];
 
