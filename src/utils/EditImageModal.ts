@@ -1228,6 +1228,12 @@ class ImageEditModal extends Modal {
       this.closeButtonEl.disabled = true;
     }
 
+    const shouldCreateNewFile = this.newFileCheckbox?.checked ?? false;
+
+    if (this.newFileCheckbox) {
+      this.newFileCheckbox.disabled = true;
+    }
+
     try {
       const blob = await this.generateEditedBlob(
         selection,
@@ -1236,7 +1242,7 @@ class ImageEditModal extends Modal {
       );
       const arrayBuffer = await blob.arrayBuffer();
 
-      if (this.newFileCheckbox?.checked) {
+      if (shouldCreateNewFile) {
         const newPath = await this.createEditedFile(
           arrayBuffer,
           targetWidth,
@@ -1262,6 +1268,9 @@ class ImageEditModal extends Modal {
       }
       if (this.closeButtonEl) {
         this.closeButtonEl.disabled = false;
+      }
+      if (this.newFileCheckbox) {
+        this.newFileCheckbox.disabled = false;
       }
     }
   };
