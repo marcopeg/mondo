@@ -29,19 +29,17 @@ jobs:
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
 
-      - name: Bump version (patch)
-        run: |
-          npm install
-          npm version patch
+      - name: Install dependencies
+        run: npm install
 
       - name: Build plugin
         run: npm run build
 
       - name: Stage build artifacts
-        run: git add main.js styles.css manifest.json versions.json
+        run: git add main.js styles.css manifest.json
 
-      - name: Amend version commit with build artifacts
-        run: git commit --amend --no-edit
+      - name: Bump version (patch)
+        run: npm version patch
 
       - name: Push version bump
         run: git push origin main
