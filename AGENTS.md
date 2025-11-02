@@ -44,6 +44,7 @@ src/
 - UI components implement a single visual control (button, grid, text field, etc.).
 - Containers bridge hooks/business logic with UI. Shared presentation pieces belong in `src/components`; bespoke pieces can live next to their container.
 - Views coordinate multiple containers and components to build full experiences.
+- Reuse the shared `ui/Cover` component for any cover thumbnail instead of reimplementing `<img>` wrappers or hidden file inputs.
 
 ## Component Conventions
 

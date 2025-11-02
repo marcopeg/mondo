@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { Notice } from "obsidian";
 import { SplitButton } from "@/components/ui/SplitButton";
-import { Icon } from "@/components/ui/Icon";
+import { Cover } from "@/components/ui/Cover";
 import { useEntityFile } from "@/context/EntityFileProvider";
 import { useApp } from "@/hooks/use-app";
 import { useSetting } from "@/hooks/use-setting";
@@ -125,28 +125,17 @@ export const EntityHeaderUnknown = () => {
       tabIndex={-1}
       data-entity-header
     >
-      {coverSrc ? (
-        <button
-          type="button"
-          onClick={handleCoverClick}
-          className="group h-20 w-20 flex-shrink-0 overflow-hidden rounded-md border border-transparent focus:outline-none focus-visible:border-[var(--interactive-accent)]"
-          aria-label="Open cover image"
-        >
-          <img
-            src={coverSrc}
-            alt="Cover thumbnail"
-            className="h-full w-full transition-transform group-hover:scale-[1.02]"
-            style={{ objectFit: "cover" }}
-          />
-        </button>
-      ) : (
-        <div className="flex h-20 w-20 flex-shrink-0 items-center justify-center rounded-md bg-[var(--background-modifier-border)]">
-          <Icon
-            name="file-text"
-            className="h-8 w-8 text-[var(--text-muted)]"
-          />
-        </div>
-      )}
+      <Cover
+        src={coverSrc ?? undefined}
+        alt="Cover thumbnail"
+        size={80}
+        strategy="cover"
+        placeholderVariant="solid"
+        placeholderIcon="file-text"
+        placeholderIconClassName="h-8 w-8 text-[var(--text-muted)]"
+        editLabel="Open cover image"
+        onEditCover={handleCoverClick}
+      />
 
       <div className="min-w-0 flex-1">
         <div className="truncate text-sm font-semibold text-[var(--text-normal)]">

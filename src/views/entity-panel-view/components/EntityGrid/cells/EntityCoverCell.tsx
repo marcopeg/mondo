@@ -2,6 +2,7 @@ import { useMemo, useCallback } from "react";
 import { TFile } from "obsidian";
 import { useApp } from "@/hooks/use-app";
 import type { MondoEntityListRow } from "@/views/entity-panel-view/useEntityPanels";
+import { Cover } from "@/components/ui/Cover";
 
 const extractFirstEntry = (value: unknown): string | null => {
   if (!value) return null;
@@ -69,14 +70,15 @@ export const EntityCoverCell = ({ value, row }: EntityCoverCellProps) => {
   const resourcePath = app.vault.getResourcePath(cover);
 
   return (
-    <div
-      onClick={handleOpen}
-      className="relative block h-16 w-16 cursor-pointer overflow-hidden mx-auto"
-    >
-      <img
+    <div className="mx-auto">
+      <Cover
         src={resourcePath}
         alt={cover.name}
-        className="h-full w-full object-cover"
+        size={64}
+        strategy="cover"
+        coverClassName="border border-[var(--background-modifier-border)] bg-[var(--background-primary)]"
+        editLabel={`Open ${row.displayName}`}
+        onEditCover={handleOpen}
       />
     </div>
   );

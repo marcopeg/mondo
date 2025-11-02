@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { ChangeEvent, MouseEvent } from "react";
-import { Menu, Notice, Platform, TFile } from "obsidian";
+import { Notice, TFile } from "obsidian";
 import { SplitButton } from "@/components/ui/SplitButton";
+import { Cover } from "@/components/ui/Cover";
 import { Icon } from "@/components/ui/Icon";
 import { Badge } from "@/components/ui/Badge";
 import { useEntityFile } from "@/context/EntityFileProvider";
@@ -197,8 +197,6 @@ export const EntityHeaderMondo = ({ entityType }: EntityHeaderMondoProps) => {
   const app = useApp();
 
   const cachedFile = file as TCachedFile | undefined;
-  const coverLibraryInputRef = useRef<HTMLInputElement | null>(null);
-  const coverCameraInputRef = useRef<HTMLInputElement | null>(null);
   const headerRef = useRef<HTMLDivElement | null>(null);
   const previousCoverRef = useRef<string | null>(null);
   const [isUploadingCover, setIsUploadingCover] = useState(false);
@@ -231,7 +229,7 @@ export const EntityHeaderMondo = ({ entityType }: EntityHeaderMondoProps) => {
     previousCoverRef.current = currentCover;
   }, [coverSrc]);
 
-  const handleCoverClick = useCallback(() => {
+  const handleCoverEdit = useCallback(() => {
     if (!cover) {
       return;
     }
@@ -421,54 +419,8 @@ export const EntityHeaderMondo = ({ entityType }: EntityHeaderMondoProps) => {
     void handleCreateAction(primary);
   }, [handleCreateAction, isBusy, primary]);
 
-  const handleCoverPlaceholderClick = useCallback(
-    (event: MouseEvent<HTMLButtonElement>) => {
-      if (isUploadingCover) {
-        return;
-      }
-
-      if (Platform.isMobileApp) {
-        event.preventDefault();
-
-        const menu = new Menu();
-
-        menu.addItem((item) => {
-          item.setTitle("Take Photo");
-          item.onClick(() => {
-            if (coverCameraInputRef.current) {
-              coverCameraInputRef.current.click();
-            } else {
-              coverLibraryInputRef.current?.click();
-            }
-          });
-        });
-
-        menu.addItem((item) => {
-          item.setTitle("Choose from Library");
-          item.onClick(() => {
-            coverLibraryInputRef.current?.click();
-          });
-        });
-
-        menu.showAtMouseEvent(event.nativeEvent);
-        return;
-      }
-
-      coverLibraryInputRef.current?.click();
-    },
-    [isUploadingCover]
-  );
-
-  const handleCoverFileChange = useCallback(
-    async (event: ChangeEvent<HTMLInputElement>) => {
-      const input = event.target;
-      const selectedFile = input.files?.[0];
-      input.value = "";
-
-      if (!selectedFile) {
-        return;
-      }
-
+  const handleCoverSelect = useCallback(
+    async (_filePath: string, selectedFile: File) => {
       if (!isAcceptedImageFile(selectedFile)) {
         new Notice("Please select an image file.");
         return;
@@ -534,53 +486,20 @@ export const EntityHeaderMondo = ({ entityType }: EntityHeaderMondoProps) => {
       tabIndex={-1}
       data-entity-header
     >
-      {coverSrc ? (
-        <button
-          type="button"
-          onClick={handleCoverClick}
-          className="group h-20 w-20 flex-shrink-0 overflow-hidden rounded-md border border-transparent focus:outline-none focus-visible:border-[var(--interactive-accent)]"
-          aria-label="Open cover image"
-        >
-          <img
-            src={coverSrc}
-            alt="Cover thumbnail"
-            className="h-full w-full transition-transform group-hover:scale-[1.02]"
-            style={{ objectFit: "cover" }}
-          />
-        </button>
-      ) : (
-        <div className="relative flex h-20 w-20 flex-shrink-0 items-center justify-center">
-          <input
-            ref={coverLibraryInputRef}
-            type="file"
-            accept="image/*"
-            className="hidden"
-            onChange={handleCoverFileChange}
-          />
-          <input
-            ref={coverCameraInputRef}
-            type="file"
-            accept="image/*"
-            capture="environment"
-            className="hidden"
-            onChange={handleCoverFileChange}
-          />
-          <button
-            type="button"
-            onClick={handleCoverPlaceholderClick}
-            className="flex h-full w-full items-center justify-center rounded-md border border-dashed border-[var(--background-modifier-border)] bg-[var(--background-primary)] text-[var(--text-muted)] transition hover:border-[var(--background-modifier-border-hover)] hover:text-[var(--text-normal)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--interactive-accent)] focus-visible:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-70"
-            aria-label="Add cover image"
-            disabled={isUploadingCover}
-          >
-            <Icon
-              name={isUploadingCover ? "loader-2" : placeholderIcon}
-              className={`h-8 w-8 text-[var(--text-muted)] ${
-                isUploadingCover ? "animate-spin" : ""
-              }`}
-            />
-          </button>
-        </div>
-      )}
+      <Cover
+        src={coverSrc ?? undefined}
+        alt="Cover thumbnail"
+        size={80}
+        strategy="cover"
+        placeholderIcon={placeholderIcon}
+        placeholderIconClassName="h-8 w-8 text-[var(--text-muted)]"
+        isLoading={isUploadingCover}
+        disabled={isUploadingCover}
+        selectLabel="Add cover image"
+        editLabel="Open cover image"
+        onSelectCover={handleCoverSelect}
+        onEditCover={handleCoverEdit}
+      />
 
       <div className="flex min-w-0 flex-1 flex-col gap-2">
         <div className="flex flex-wrap items-start justify-between gap-3">

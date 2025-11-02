@@ -1,14 +1,7 @@
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  type ChangeEvent,
-  type MouseEvent,
-} from "react";
-import { Menu, Notice, Platform, TFile, type EventRef } from "obsidian";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Notice, TFile, type EventRef } from "obsidian";
 import { Typography } from "@/components/ui/Typography";
+import { Cover } from "@/components/ui/Cover";
 import { Icon } from "@/components/ui/Icon";
 import Table from "@/components/ui/Table";
 import Button from "@/components/ui/Button";
@@ -96,9 +89,6 @@ export const VaultNotesView = () => {
   const [uploadingCoverPath, setUploadingCoverPath] = useState<string | null>(
     null
   );
-  const coverLibraryInputRef = useRef<HTMLInputElement | null>(null);
-  const coverCameraInputRef = useRef<HTMLInputElement | null>(null);
-  const coverTargetRef = useRef<TFile | null>(null);
 
   const collect = useCallback(async (): Promise<NoteRow[]> => {
     const markdownFiles = app.vault
@@ -219,61 +209,9 @@ export const VaultNotesView = () => {
     [app]
   );
 
-  const handleCoverPlaceholderClick = useCallback(
-    (event: MouseEvent<HTMLButtonElement>, file: TFile) => {
-      if (uploadingCoverPath && uploadingCoverPath !== file.path) {
-        return;
-      }
-
-      coverTargetRef.current = file;
-
-      if (Platform.isMobileApp) {
-        event.preventDefault();
-
-        const menu = new Menu();
-
-        menu.addItem((item) => {
-          item.setTitle("Select image or take a photo");
-          item.onClick(() => {
-            if (coverCameraInputRef.current) {
-              coverCameraInputRef.current.click();
-            } else {
-              coverLibraryInputRef.current?.click();
-            }
-          });
-        });
-
-        menu.addItem((item) => {
-          item.setTitle("Select image");
-          item.onClick(() => {
-            coverLibraryInputRef.current?.click();
-          });
-        });
-
-        menu.showAtMouseEvent(event.nativeEvent);
-        return;
-      }
-
-      coverLibraryInputRef.current?.click();
-    },
-    [uploadingCoverPath]
-  );
-
-  const handleCoverFileChange = useCallback(
-    async (event: ChangeEvent<HTMLInputElement>) => {
-      const input = event.target;
-      const selectedFile = input.files?.[0] ?? null;
-      input.value = "";
-
-      const targetFile = coverTargetRef.current;
-      coverTargetRef.current = null;
-
-      if (!selectedFile) {
-        return;
-      }
-
-      if (!targetFile) {
-        new Notice("Unable to determine the selected note.");
+  const handleSelectCover = useCallback(
+    async (targetFile: TFile, _filePath: string, selectedFile: File) => {
+      if (uploadingCoverPath && uploadingCoverPath !== targetFile.path) {
         return;
       }
 
@@ -323,7 +261,7 @@ export const VaultNotesView = () => {
         setUploadingCoverPath(null);
       }
     },
-    [app]
+    [app, uploadingCoverPath]
   );
 
   const handleCoverClick = useCallback(
@@ -355,21 +293,6 @@ export const VaultNotesView = () => {
       <div className="border-b border-[var(--background-modifier-border)] pb-3">
         <Typography variant="h1">Markdown Notes</Typography>
       </div>
-      <input
-        ref={coverLibraryInputRef}
-        type="file"
-        accept="image/*"
-        className="hidden"
-        onChange={handleCoverFileChange}
-      />
-      <input
-        ref={coverCameraInputRef}
-        type="file"
-        accept="image/*"
-        capture="environment"
-        className="hidden"
-        onChange={handleCoverFileChange}
-      />
       <div className="grid gap-3 sm:grid-cols-2">
         <div className="rounded-lg border border-[var(--background-modifier-border)] bg-[var(--background-secondary)] p-4">
           <div className="text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">
@@ -439,43 +362,37 @@ export const VaultNotesView = () => {
                   className="border-t border-[var(--background-modifier-border)]"
                 >
                   <Table.Cell className="p-3 align-middle">
-                    {row.cover ? (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          handleCoverClick(row.cover!);
-                        }}
-                        className="group flex h-12 w-12 items-center justify-center overflow-hidden rounded-md border border-[var(--background-modifier-border)] bg-[var(--background-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--interactive-accent)] focus-visible:ring-offset-0"
-                        aria-label={`Edit cover for ${row.displayName}`}
-                      >
-                        <img
-                          src={
-                            row.cover.kind === "vault"
-                              ? row.cover.resourcePath
-                              : row.cover.url
-                          }
-                          alt={row.displayName}
-                          className="h-full w-full object-cover transition-transform group-hover:scale-[1.02]"
-                        />
-                      </button>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={(event) => {
-                          handleCoverPlaceholderClick(event, row.file);
-                        }}
-                        className="flex h-12 w-12 items-center justify-center rounded-md border border-dashed border-[var(--background-modifier-border)] bg-[var(--background-primary)] text-[var(--text-muted)] transition hover:border-[var(--background-modifier-border-hover)] hover:text-[var(--text-normal)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--interactive-accent)] focus-visible:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-70"
-                        aria-label={`Select cover for ${row.displayName}`}
-                        disabled={isUploadingCover}
-                      >
-                        <Icon
-                          name={isUploadingCover ? "loader-2" : "image"}
-                          className={`h-5 w-5 ${
-                            isUploadingCover ? "animate-spin" : ""
-                          }`}
-                        />
-                      </button>
-                    )}
+                    <Cover
+                      src={
+                        row.cover
+                          ? row.cover.kind === "vault"
+                            ? row.cover.resourcePath
+                            : row.cover.url
+                          : undefined
+                      }
+                      alt={row.displayName}
+                      size={48}
+                      strategy="cover"
+                      placeholderIcon="image"
+                      placeholderIconClassName="h-5 w-5 text-[var(--text-muted)]"
+                      placeholderVariant="dashed"
+                      className="bg-[var(--background-primary)]"
+                      coverClassName="border border-[var(--background-modifier-border)]"
+                      isLoading={isUploadingCover}
+                      disabled={isUploadingCover}
+                      selectLabel={`Select cover for ${row.displayName}`}
+                      editLabel={`Edit cover for ${row.displayName}`}
+                      onSelectCover={(filePath, file) => {
+                        void handleSelectCover(row.file, filePath, file);
+                      }}
+                      onEditCover={
+                        row.cover
+                          ? () => {
+                              handleCoverClick(row.cover!);
+                            }
+                          : undefined
+                      }
+                    />
                   </Table.Cell>
                 <Table.Cell className="p-3 align-middle">
                   <div className="flex flex-col items-start gap-1">
