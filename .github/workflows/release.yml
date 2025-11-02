@@ -1,9 +1,13 @@
 name: Release Obsidian plugin
 
+# Commented out - use the manual "publish-release" workflow instead
+# on:
+#   push:
+#     tags:
+#       - "*"
+
 on:
-  push:
-    tags:
-      - "*"
+  workflow_dispatch:
 
 jobs:
   build:
@@ -12,24 +16,43 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v3
+        with:
+          ref: main
 
       - name: Use Node.js
         uses: actions/setup-node@v3
         with:
           node-version: "18.x"
 
-      - name: Build plugin
+      - name: Configure Git
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+
+      - name: Bump version (patch)
         run: |
           npm install
-          npm run build
+          npm version patch
+
+      - name: Build plugin
+        run: npm run build
+
+      - name: Push version bump
+        run: git push origin main
+
+      - name: Create tag
+        run: |
+          tag=$(node -p "require('./package.json').version")
+          git tag "$tag"
+          git push origin "$tag"
 
       - name: Create release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          tag="${GITHUB_REF#refs/tags/}"
-
+          tag=$(node -p "require('./package.json').version")
+          
           gh release create "$tag" \
             --title="$tag" \
-            --draft \
+            --target main \
             main.js manifest.json styles.css
