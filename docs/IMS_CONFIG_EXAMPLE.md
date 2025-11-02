@@ -1,10 +1,10 @@
-# CRM Configuration Example
+# IMS Configuration Example
 
-This guide shows a minimal `mondo-config.json` setup for a CRM-style workspace. The configuration declares four entity types — `person`, `fact`, `document`, and `idea` — and wires them together so that supporting notes can point back to a person by using a shared `reference` property. The person entity renders a single backlinks panel that merges all of those note types into one manually sortable list.
+This guide shows a minimal `mondo-config.json` setup for an IMS-style workspace. The configuration declares four entity types — `person`, `fact`, `document`, and `idea` — and wires them together so that supporting notes can point back to a person by using a shared `reference` property. The person entity renders a single backlinks panel that merges all of those note types into one manually sortable list.
 
 ## 1. Sample `mondo-config.json`
 
-> Paste the following JSON into the plugin settings (_Settings → Mondo CRM → Custom Mondo configuration (JSON)_). It can also live in `src/mondo-config.json` if you are shipping new defaults with the plugin.
+> Paste the following JSON into the plugin settings (_Settings → Mondo IMS → Custom Mondo configuration (JSON)_). It can also live in `src/mondo-config.json` if you are shipping new defaults with the plugin.
 
 ```jsonc
 {

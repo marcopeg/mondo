@@ -4,7 +4,7 @@ Use this project definition when setting up a ChatGPT project dedicated to the M
 
 ## Project vision
 
-Create a personal knowledge system inside Obsidian that behaves like a lightweight CRM/ERP. Mondo augments Markdown notes with:
+Create a personal knowledge system inside Obsidian that behaves like a lightweight IMS/ERP. Mondo augments Markdown notes with:
 
 - Configuration-driven entity types (people, projects, tasks, etc.).
 - Dashboard views for quick capture, navigation, and analytics.

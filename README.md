@@ -39,8 +39,8 @@ https://github.com/marcopeg/mondo
 Run the command `Open Mondo Dashboard` to open your vault's control center:
 
 - **Quick Tasks** let you create new task-notes on the fly by typing or dictating your thoughs.
-- **Relevant Notes** let you find your notes by frequency of utilization or history. And you can filter by _Entity Type (see the CRM feature)_-
-- **CRM Entities Wall** wall let you jump to the various entities lists. Think \_"Obsidian bases on steroid".
+- **Relevant Notes** let you find your notes by frequency of utilization or history. And you can filter by _Entity Type (see the IMS feature)_-
+- **IMS Entities Wall** wall let you jump to the various entities lists. Think \_"Obsidian bases on steroid".
 - **Stats** show some numbers about your valut and offer some file based views of your stuff. Not only notes, but also images, audio and generic attachments across the whole vault.
 
 # 🎤 Dictation
@@ -105,7 +105,7 @@ There you can **resize** and **crop** an image to improve your vault without lea
 
 # 👫 Mondo IMS
 
-Mondo ships a powerful _Information Management System_ in which you can define your own entities and their relations to bring to life your tailored ERP/CRM/CMS of sort.
+Mondo ships a powerful _Information Management System_ in which you can define your own entities and their relations to bring to life your tailored ERP/IMS/CMS of sort.
 
 ![Mondo IMS](./images/ims.png)
 

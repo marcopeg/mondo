@@ -95,12 +95,12 @@ export type MondoConfigPreset = {
 export const MONDO_CONFIG_PRESETS: MondoConfigPreset[] = [
   {
     key: "full",
-    description: "Full CRM",
+    description: "Full IMS",
     config: cloneConfig(mondoConfigFull) as MondoConfig,
   },
   {
     key: "mini",
-    description: "Mini CRM",
+    description: "Mini IMS",
     config: cloneConfig(mondoConfigMini) as MondoConfig,
   },
 ];
