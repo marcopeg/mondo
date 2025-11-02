@@ -290,10 +290,10 @@ export const useTimerBlock = (props: TimerBlockProps): TimerBlockController => {
   const stepSeconds = useMemo(() => {
     const raw = props.step;
     if (raw === undefined || raw === null) {
-      return 10;
+      return 0;
     }
     if (typeof raw === "string" && raw.trim() === "") {
-      return 10;
+      return 0;
     }
     const parsed = parseSeconds(raw);
     if (parsed > 0) {
@@ -305,7 +305,7 @@ export const useTimerBlock = (props: TimerBlockProps): TimerBlockController => {
     ) {
       return 0;
     }
-    return 10;
+    return 0;
   }, [props.step]);
 
   // Optional plan steps
