@@ -61,6 +61,9 @@ const context = await esbuild.context({
   ],
   bundle: true,
   jsx: "automatic",
+  loader: {
+    ".md": "text",
+  },
   external: [
     "obsidian",
     "electron",

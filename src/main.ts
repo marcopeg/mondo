@@ -73,6 +73,7 @@ import { recordToDaily } from "@/commands/daily.recordToDaily";
 import { journalMoveFactory } from "@/commands/journal.nav";
 import { insertTimestamp } from "@/commands/timestamp.insert";
 import { copyNoteText } from "@/commands/note.copyText";
+import { openEditWithAI } from "@/commands/note.editWithAI";
 import { sendToChatGPT } from "@/commands/chatgpt.send";
 import { openSelfPersonNote } from "@/commands/self.open";
 import { findActiveOrSelectedImageFile } from "@/commands/image.edit";
@@ -103,6 +104,10 @@ import {
   openEditImageModal,
 } from "@/utils/EditImageModal";
 import { sanitizeEntityTypeList } from "@/utils/sanitizeEntityTypeList";
+import {
+  DEFAULT_EDIT_WITH_AI_MODEL,
+  normalizeEditWithAIModel,
+} from "@/constants/openAIModels";
 
 const MONDO_ICON = "anchor";
 
@@ -125,6 +130,7 @@ export default class Mondo extends Plugin {
     openAIWhisperApiKey: "",
     openAIVoice: "",
     openAIModel: "gpt-5-nano",
+    editWithAIModel: DEFAULT_EDIT_WITH_AI_MODEL,
     openAITranscriptionPolishEnabled: true,
     voiceoverCachePath: "/voiceover",
     selfPersonPath: "",
@@ -235,6 +241,9 @@ export default class Mondo extends Plugin {
     this.settings.openAIWhisperApiKey = this.settings.openAIWhisperApiKey ?? "";
     this.settings.openAIVoice = this.settings.openAIVoice ?? "";
     this.settings.openAIModel = this.settings.openAIModel ?? "gpt-5-nano";
+    this.settings.editWithAIModel = normalizeEditWithAIModel(
+      this.settings.editWithAIModel
+    );
     this.settings.openAITranscriptionPolishEnabled =
       typeof this.settings.openAITranscriptionPolishEnabled === "boolean"
         ? this.settings.openAITranscriptionPolishEnabled
@@ -737,6 +746,24 @@ export default class Mondo extends Plugin {
             : this.app.workspace.getActiveViewOfType(MarkdownView);
 
         void copyNoteText(this.app, { editor, view: markdownView });
+      },
+    });
+
+    this.addCommand({
+      id: "edit-with-ai",
+      name: "Edit with AI",
+      editorCallback: (editor, context) => {
+        const markdownView =
+          context instanceof MarkdownView
+            ? context
+            : this.app.workspace.getActiveViewOfType(MarkdownView);
+
+        if (!markdownView) {
+          new Notice("Open a note to edit with AI.");
+          return;
+        }
+
+        void openEditWithAI(this, editor, markdownView);
       },
     });
 

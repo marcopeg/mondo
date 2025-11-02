@@ -2034,3 +2034,203 @@
     padding-top: 0.5rem;
   }
 }
+
+.mondo-edit-ai-modal .modal-content {
+  max-height: 80vh;
+}
+
+.mondo-edit-ai {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  max-height: 70vh;
+}
+
+.mondo-edit-ai__conversation {
+  flex: 1 1 auto;
+  min-height: 160px;
+  max-height: 360px;
+  overflow-y: auto;
+  padding: 0.5rem;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 0.5rem;
+  background-color: var(--background-secondary);
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.mondo-edit-ai__message {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  border-radius: 0.5rem;
+  padding: 0.75rem;
+  background-color: var(--background-primary);
+  box-shadow: inset 0 0 0 1px var(--background-modifier-border);
+  white-space: pre-wrap;
+}
+
+.mondo-edit-ai__message--user {
+  align-self: flex-end;
+  background-color: var(--interactive-accent);
+  color: var(--text-on-accent);
+  box-shadow: none;
+}
+
+.mondo-edit-ai__message--assistant {
+  align-self: flex-start;
+}
+
+.mondo-edit-ai__message--error {
+  align-self: flex-start;
+  background-color: rgba(217, 83, 79, 0.18);
+  color: var(--text-error, #ff6666);
+}
+
+.mondo-edit-ai__message-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  opacity: 0.7;
+}
+
+.mondo-edit-ai__message--user .mondo-edit-ai__message-label {
+  opacity: 0.9;
+}
+
+.mondo-edit-ai__message-text {
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.mondo-edit-ai__response-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.mondo-edit-ai__response-actions.is-hidden {
+  display: none;
+}
+
+.mondo-edit-ai__input {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.mondo-edit-ai__label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.mondo-edit-ai__textarea {
+  width: 100%;
+  min-height: 112px;
+  padding: 0.75rem;
+  border-radius: 0.5rem;
+  border: 1px solid var(--background-modifier-border);
+  background-color: var(--background-primary);
+  color: var(--text-normal);
+  resize: vertical;
+}
+
+.mondo-edit-ai__textarea:focus {
+  outline: none;
+  border-color: var(--interactive-accent);
+  box-shadow: 0 0 0 2px rgba(var(--interactive-accent-rgb, 68, 138, 255), 0.15);
+}
+
+.mondo-edit-ai__controls {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-end;
+  flex-wrap: wrap;
+}
+
+.mondo-edit-ai__model {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  max-width: 240px;
+}
+
+.mondo-edit-ai__select {
+  width: 100%;
+  min-width: 140px;
+  padding: 0.5rem 2.25rem 0.5rem 0.75rem;
+  border-radius: 0.5rem;
+  border: 1px solid var(--background-modifier-border-hover);
+  background-color: var(--background-primary-alt, var(--background-secondary));
+  color: var(--text-normal);
+  font-size: 0.875rem;
+  line-height: 1.4;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.08);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease,
+    background-color 0.15s ease;
+}
+
+.mondo-edit-ai__select:hover {
+  background-color: var(--background-modifier-hover);
+}
+
+.mondo-edit-ai__select:focus {
+  outline: none;
+  border-color: var(--interactive-accent);
+  box-shadow: 0 0 0 2px rgba(var(--interactive-accent-rgb, 68, 138, 255), 0.15);
+}
+
+.mondo-edit-ai__buttons {
+  display: flex;
+  gap: 0.5rem;
+  margin-left: auto;
+}
+
+.mondo-edit-ai__button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem 0.9rem;
+  border-radius: 0.5rem;
+  border: 1px solid var(--background-modifier-border);
+  background-color: var(--background-primary);
+  color: var(--text-normal);
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.mondo-edit-ai__button:hover:not([disabled]) {
+  background-color: var(--background-modifier-hover);
+}
+
+.mondo-edit-ai__button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.mondo-edit-ai__button--primary {
+  background-color: var(--interactive-accent);
+  border-color: var(--interactive-accent);
+  color: var(--text-on-accent);
+}
+
+.mondo-edit-ai__button--primary:hover:not([disabled]) {
+  filter: brightness(1.05);
+}
+
+.mondo-edit-ai__status {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  min-height: 1.25rem;
+}
+
+.mondo-edit-ai__status--error {
+  color: var(--text-error, #ff6666);
+}
