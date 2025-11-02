@@ -76,9 +76,6 @@ import { copyNoteText } from "@/commands/note.copyText";
 import { sendToChatGPT } from "@/commands/chatgpt.send";
 import { openSelfPersonNote } from "@/commands/self.open";
 import { findActiveOrSelectedImageFile } from "@/commands/image.edit";
-import { quickLog } from "@/commands/quick.log";
-import { quickDictation } from "@/commands/quick.dictation";
-import { quickRecording } from "@/commands/quick.recording";
 import { injectJournalNav } from "@/events/inject-journal-nav";
 import {
   injectMondoLinks,
@@ -718,24 +715,6 @@ export default class Mondo extends Plugin {
       id: "record-to-daily",
       name: "Record to Daily Note",
       callback: async () => recordToDaily(this.app, this),
-    });
-
-    this.addCommand({
-      id: "quick-log",
-      name: "Quick Log",
-      callback: async () => quickLog(this.app, this),
-    });
-
-    this.addCommand({
-      id: "quick-dictation",
-      name: "Quick Dictation",
-      callback: async () => quickDictation(this.app, this),
-    });
-
-    this.addCommand({
-      id: "quick-recording",
-      name: "Quick Recording",
-      callback: async () => quickRecording(this.app, this),
     });
 
     this.addCommand({
