@@ -269,10 +269,6 @@ export const useTimerBlock = (props: TimerBlockProps): TimerBlockController => {
 
   // Loop config
   const loopConfig = useMemo(() => parseLoop(props.loop), [props.loop]);
-  const hasFiniteLoops = loopConfig.mode === "finite";
-  const totalLoops = hasFiniteLoops
-    ? (loopConfig as Extract<LoopConfig, { mode: "finite" }>).total
-    : 0;
 
   // Heptic/audio mode
   const hepticMode: HepticMode = useMemo(() => {
@@ -317,6 +313,36 @@ export const useTimerBlock = (props: TimerBlockProps): TimerBlockController => {
   const hasPlan = planSteps.length > 0;
   const initialPlanDuration = hasPlan ? planSteps[0].durationSeconds : 0;
 
+  // If no timer options are provided (duration/interval/steps/loop),
+  // default to a single work phase of 25 minutes and a 5 minute rest.
+  const noTimerOptions =
+    props.duration == null &&
+    props.interval == null &&
+    props.steps == null &&
+    props.loop == null;
+
+  const effectiveBaseDurationSeconds = useMemo(() => {
+    if (hasPlan) return initialPlanDuration;
+    if (noTimerOptions) return 25 * 60; // 25 minutes
+    return baseDurationSeconds;
+  }, [hasPlan, initialPlanDuration, noTimerOptions, baseDurationSeconds]);
+
+  const effectiveBaseIntervalSeconds = useMemo(() => {
+    if (hasPlan) return 0;
+    if (noTimerOptions) return 5 * 60; // 5 minutes
+    return baseIntervalSeconds;
+  }, [hasPlan, noTimerOptions, baseIntervalSeconds]);
+
+  const effectiveLoopConfig = useMemo(() => {
+    if (noTimerOptions) return { mode: "none" } as const;
+    return loopConfig;
+  }, [noTimerOptions, loopConfig]);
+
+  const hasFiniteLoops = effectiveLoopConfig.mode === "finite";
+  const totalLoops = hasFiniteLoops
+    ? (effectiveLoopConfig as Extract<LoopConfig, { mode: "finite" }>).total
+    : 0;
+
   // Title
   const title = useMemo(() => {
     const raw = typeof props.title === "string" ? props.title.trim() : "";
@@ -330,14 +356,14 @@ export const useTimerBlock = (props: TimerBlockProps): TimerBlockController => {
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [currentLoop, setCurrentLoop] = useState(0);
   const [remainingSeconds, setRemainingSeconds] = useState(
-    hasPlan ? initialPlanDuration : baseDurationSeconds
+    hasPlan ? initialPlanDuration : effectiveBaseDurationSeconds
   );
   const [elapsedMilliseconds, setElapsedMilliseconds] = useState(0);
   const [progress, setProgress] = useState(1);
 
   // Refs for timing and feedback
   const phaseDurationRef = useRef(
-    Math.max((hasPlan ? initialPlanDuration : baseDurationSeconds) || 1, 1)
+    Math.max((hasPlan ? initialPlanDuration : effectiveBaseDurationSeconds) || 1, 1)
   );
   const phaseStartTimeRef = useRef<number | null>(null);
   const animationFrameRef = useRef<number | null>(null);
@@ -358,10 +384,10 @@ export const useTimerBlock = (props: TimerBlockProps): TimerBlockController => {
 
   const durationSeconds = hasPlan
     ? currentPlanStep?.durationSeconds ?? 0
-    : baseDurationSeconds;
+    : effectiveBaseDurationSeconds;
   const intervalSeconds = hasPlan
     ? currentPlanStep?.pauseSeconds ?? 0
-    : baseIntervalSeconds;
+    : effectiveBaseIntervalSeconds;
 
   const getNow = useCallback(() => {
     if (
@@ -461,10 +487,10 @@ export const useTimerBlock = (props: TimerBlockProps): TimerBlockController => {
   }, [isRunning]);
 
   // Start/Stop
-  const canStart = hasPlan ? initialPlanDuration > 0 : baseDurationSeconds > 0;
+  const canStart = hasPlan ? initialPlanDuration > 0 : effectiveBaseDurationSeconds > 0;
 
   const start = useCallback(() => {
-    const initial = hasPlan ? initialPlanDuration : baseDurationSeconds;
+    const initial = hasPlan ? initialPlanDuration : effectiveBaseDurationSeconds;
     if (initial <= 0) return;
     stepCountRef.current = 0;
     stopCurrentFeedback();
@@ -492,14 +518,14 @@ export const useTimerBlock = (props: TimerBlockProps): TimerBlockController => {
     setIsRunning(false);
     setPhase("work");
     setCurrentStepIndex(0);
-    setRemainingSeconds(hasPlan ? initialPlanDuration : baseDurationSeconds);
+    setRemainingSeconds(hasPlan ? initialPlanDuration : effectiveBaseDurationSeconds);
     setProgress(1);
     phaseStartTimeRef.current = null;
     stepCountRef.current = 0;
     stopCurrentFeedback();
     void releaseWakeLock();
   }, [
-    baseDurationSeconds,
+    effectiveBaseDurationSeconds,
     hasPlan,
     initialPlanDuration,
     releaseWakeLock,
