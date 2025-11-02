@@ -22,7 +22,7 @@ export type TimerBlockController = {
   formattedElapsed: string;
   formattedRemaining: string;
   hasFiniteLoops: boolean;
-  intervalSeconds: number;
+  pauseSeconds: number;
   isResting: boolean;
   isRunning: boolean;
   nextLabel?: string;
@@ -269,10 +269,11 @@ export const useTimerBlock = (props: TimerBlockProps): TimerBlockController => {
     () => parseSeconds(props.duration),
     [props.duration]
   );
-  const baseIntervalSeconds = useMemo(
-    () => parseSeconds(props.interval),
-    [props.interval]
-  );
+  const basePauseSeconds = useMemo(() => {
+    // New prop name: pause. Backward-compatible with legacy 'interval'.
+    const raw = props.pause ?? props.interval;
+    return parseSeconds(raw);
+  }, [props.pause, props.interval]);
 
   // Loop config
   const loopConfig = useMemo(() => parseLoop(props.loop), [props.loop]);
@@ -321,10 +322,11 @@ export const useTimerBlock = (props: TimerBlockProps): TimerBlockController => {
   const hasPlan = planSteps.length > 0;
   const initialPlanDuration = hasPlan ? planSteps[0].durationSeconds : 0;
 
-  // If no timer options are provided (duration/interval/steps/loop),
+  // If no timer options are provided (duration/pause/steps/loop),
   // default to a single work phase of 25 minutes and a 5 minute rest.
   const noTimerOptions =
     props.duration == null &&
+    props.pause == null &&
     props.interval == null &&
     props.steps == null &&
     props.loop == null;
@@ -335,11 +337,11 @@ export const useTimerBlock = (props: TimerBlockProps): TimerBlockController => {
     return baseDurationSeconds;
   }, [hasPlan, initialPlanDuration, noTimerOptions, baseDurationSeconds]);
 
-  const effectiveBaseIntervalSeconds = useMemo(() => {
+  const effectiveBasePauseSeconds = useMemo(() => {
     if (hasPlan) return 0;
     if (noTimerOptions) return 5 * 60; // 5 minutes
-    return baseIntervalSeconds;
-  }, [hasPlan, noTimerOptions, baseIntervalSeconds]);
+    return basePauseSeconds;
+  }, [hasPlan, noTimerOptions, basePauseSeconds]);
 
   const effectiveLoopConfig = useMemo(() => {
     if (noTimerOptions) return { mode: "none" } as const;
@@ -393,9 +395,9 @@ export const useTimerBlock = (props: TimerBlockProps): TimerBlockController => {
   const durationSeconds = hasPlan
     ? currentPlanStep?.durationSeconds ?? 0
     : effectiveBaseDurationSeconds;
-  const intervalSeconds = hasPlan
+  const pauseSeconds = hasPlan
     ? currentPlanStep?.pauseSeconds ?? 0
-    : effectiveBaseIntervalSeconds;
+    : effectiveBasePauseSeconds;
 
   const getNow = useCallback(() => {
     if (
@@ -631,10 +633,10 @@ export const useTimerBlock = (props: TimerBlockProps): TimerBlockController => {
 
       // Simple mode (no plan)
       if (phase === "work") {
-        if (intervalSeconds > 0) {
+        if (pauseSeconds > 0) {
           playRest();
           setPhase("rest");
-          setRemainingSeconds(intervalSeconds);
+          setRemainingSeconds(pauseSeconds);
           setProgress(1);
           phaseStartTimeRef.current = null;
           return;
@@ -689,7 +691,7 @@ export const useTimerBlock = (props: TimerBlockProps): TimerBlockController => {
     remainingSeconds,
     phase,
     durationSeconds,
-    intervalSeconds,
+  pauseSeconds,
     hasPlan,
     currentPlanStep?.pauseSeconds,
     planSteps,
@@ -707,9 +709,9 @@ export const useTimerBlock = (props: TimerBlockProps): TimerBlockController => {
   // Active phase duration used by timer computation
   const activePhaseDuration = useMemo(() => {
     if (phase === "rest")
-      return intervalSeconds > 0 ? intervalSeconds : durationSeconds || 1;
+      return pauseSeconds > 0 ? pauseSeconds : durationSeconds || 1;
     return durationSeconds || 1;
-  }, [durationSeconds, intervalSeconds, phase]);
+  }, [durationSeconds, pauseSeconds, phase]);
 
   // Reinitialize timing on phase or duration change
   useEffect(() => {
@@ -859,7 +861,7 @@ export const useTimerBlock = (props: TimerBlockProps): TimerBlockController => {
     formattedElapsed: formatChronograph(elapsedMilliseconds),
     formattedRemaining,
     hasFiniteLoops,
-    intervalSeconds,
+    pauseSeconds,
     isResting: phase === "rest",
     isRunning,
     nextLabel,

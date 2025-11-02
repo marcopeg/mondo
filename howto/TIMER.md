@@ -23,16 +23,16 @@ Click the play button to start.
 
 ## 2. Set Explicit Work and Rest Durations
 
-Control the work (`duration`) and rest (`interval`) phases by passing query parameters after `timer`. Both values are expressed in **seconds**:
+Control the work (`duration`) and rest (`pause`) phases by passing query parameters after `timer`. Both values are expressed in **seconds**:
 
 ````markdown
 ```mondo
-timer?duration=10&interval=5
+timer?duration=10&pause=5
 ```
 ````
 
 * `duration` is the work phase, here 10 seconds.
-* `interval` is the rest phase, here 5 seconds.
+* `pause` is the rest phase, here 5 seconds.
 
 ## 3. Add a Title, Color, and Loop Limit
 
@@ -40,7 +40,7 @@ Enhance the UI by setting optional props.
 
 ````markdown
 ```mondo
-timer?duration=10&interval=5&title=Deep%20Work&color=#55aaff&loop=3
+timer?duration=10&pause=5&title=Deep%20Work&color=#55aaff&loop=3
 ```
 ````
 
@@ -60,7 +60,7 @@ timer?color=tomato
 title: Focus Sprint
 loop: 3
 duration: 900
-interval: 180
+pause: 180
 step: 60
 heptic: audio
 ```
@@ -98,7 +98,7 @@ Each entry under `steps` represents a work phase:
 
 * `title` names the phase displayed inside the timer.
 * `duration` sets the work length in seconds and must be greater than zero.
-* `pause` or `rest` defines the recovery break after the phase.
+* `pause` defines the recovery break after the phase.
 
 The timer cycles through each step, follows the configured rests, and repeats the entire plan twice because `loop=2`.
 
@@ -114,10 +114,3 @@ The timer cycles through each step, follows the configured rests, and repeats th
 | `mute` | Both | Set to `true` to silence all audio cues while keeping vibration (if allowed). |
 
 > For a full parameter reference and behavioral details, see [`docs/TIMER.md`](../docs/TIMER.md).
-
-## 7. Troubleshooting
-
-* **Timer will not start:** Ensure `duration` > 0 for `timer` blocks and that the first `time-plan` step specifies a positive `duration`/`time` value.
-* **No sound or vibration:** Desktop browsers may require an initial click. Confirm `heptic` isn’t `none`, device sound is enabled, and permissions allow vibration.
-* **Template values render literally:** Check that the frontmatter keys match the template path (`{{mondo.timers...}}`). Re-open the note to force a re-render if you just updated frontmatter.
-* **Color looks muted:** The UI blends your color with the current theme. Choose a brighter shade or provide a valid hex code.
