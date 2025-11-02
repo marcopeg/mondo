@@ -139,9 +139,19 @@ Timers let you embed any kind of working timers in your notes.
 
 I find it particularly useful for my workouts in combination with the _Habits Tracker_ functionality.
 
+Try this snippet to quickly insert a Pomodoro timer:
+
+````markdown
+```mondo
+timer
+```
+````
+
+You should get this:
+
 ![Timer - single](./images/timer-single.png)
 
-![Timer - source](./images/timer-source.png)
+Follow the full tutorial for more information and options:
 
 👉 [How to Add and Configure Timers](./howto/TIMER.md)
 
