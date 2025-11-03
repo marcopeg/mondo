@@ -1,3 +1,9 @@
+import { task } from "./task";
+import { log } from "./log";
+import { fact } from "./fact";
+import { document } from "./document";
+import { idea } from "./idea";
+
 export const meeting = {
   name: "Meetings",
   icon: "calendar-clock",
@@ -15,6 +21,17 @@ export const meeting = {
       },
     },
     {
+      key: "log",
+      label: "Log",
+      icon: "file-plus",
+      panelKey: "logs",
+      create: {
+        attributes: {
+          type: "log",
+        },
+      },
+    },
+    {
       key: "fact",
       label: "Fact",
       icon: "bookmark-plus",
@@ -26,13 +43,26 @@ export const meeting = {
       },
     },
     {
-      key: "log",
-      label: "Log",
-      icon: "file-plus",
-      panelKey: "logs",
+      key: "document",
+      label: "Document",
+      icon: document.icon,
       create: {
+        title: "Untitled Document for {@this.show}",
         attributes: {
-          type: "log",
+          type: "document",
+          linksTo: ["{@this}"],
+        },
+      },
+    },
+    {
+      key: "idea",
+      label: "Idea",
+      icon: idea.icon,
+      create: {
+        title: "New Idea for {@this.show}",
+        attributes: {
+          type: "idea",
+          linksTo: ["{@this}"],
         },
       },
     },
@@ -47,48 +77,13 @@ export const meeting = {
   links: [
     {
       type: "backlinks",
-      key: "facts",
-      config: {
-        targetType: "fact",
-        properties: ["meeting"],
-        title: "Facts",
-        icon: "file-text",
-        sort: {
-          strategy: "manual",
-        },
-      },
-    },
-    {
-      type: "backlinks",
-      key: "logs",
-      config: {
-        targetType: "log",
-        properties: ["meeting"],
-        title: "Logs",
-        icon: "clipboard-list",
-      },
-    },
-    {
-      type: "backlinks",
-      key: "documents",
-      config: {
-        targetType: "document",
-        properties: ["meeting"],
-        title: "Documents",
-        icon: "paperclip",
-        sort: {
-          strategy: "manual",
-        },
-      },
-    },
-    {
-      type: "backlinks",
       key: "tasks",
       config: {
         targetType: "task",
         properties: ["meeting"],
         title: "Tasks",
-        icon: "check-square",
+        icon: task.icon,
+        visibility: "notEmpty",
         columns: [
           {
             type: "show",
@@ -104,6 +99,52 @@ export const meeting = {
         ],
         sort: {
           strategy: "manual",
+        },
+      },
+    },
+    {
+      type: "backlinks",
+      key: "logs",
+      config: {
+        targetType: "log",
+        properties: ["meeting"],
+        title: "Logs",
+        icon: log.icon,
+        visibility: "notEmpty",
+      },
+    },
+    {
+      type: "backlinks",
+      key: "links",
+      config: {
+        title: "Links",
+        icon: "layers",
+        visibility: "notEmpty",
+        find: {
+          query: [
+            {
+              steps: [
+                {
+                  notIn: {
+                    property: ["linksTo", "meeting"],
+                    type: ["log", "task"],
+                  },
+                },
+              ],
+            },
+          ],
+        },
+        columns: [
+          { type: "entityIcon" },
+          { type: "show" },
+          { type: "attribute", key: "type", label: "Type" },
+          { type: "date", align: "right" },
+        ],
+        sort: {
+          strategy: "manual",
+        },
+        createEntity: {
+          enabled: false,
         },
       },
     },

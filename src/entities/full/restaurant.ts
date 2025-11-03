@@ -3,6 +3,7 @@ import { log } from "./log";
 import { fact } from "./fact";
 import { document } from "./document";
 import { idea } from "./idea";
+import { recipe } from "./recipe";
 
 export const restaurant = {
   name: "Restaurants",
@@ -12,6 +13,18 @@ export const restaurant = {
     columns: ["cover", "show", "location"],
   },
   createRelated: [
+    {
+      key: "recipe",
+      label: "Recipe",
+      icon: recipe.icon,
+      create: {
+        title: "Untitled Recipe for {@this.show}",
+        attributes: {
+          type: "recipe",
+          restaurant: ["{@this}"],
+        },
+      },
+    },
     {
       key: "task",
       label: "Task",
@@ -82,6 +95,7 @@ export const restaurant = {
         properties: ["linksTo"],
         title: task.name,
         icon: task.icon,
+        visibility: "notEmpty",
         columns: [
           {
             type: "show",
@@ -111,6 +125,7 @@ export const restaurant = {
         properties: ["linksTo"],
         title: log.name,
         icon: log.icon,
+        visibility: "notEmpty",
         createEntity: {
           referenceCreate: "log",
         },
@@ -122,6 +137,7 @@ export const restaurant = {
       config: {
         title: "Links",
         icon: "layers",
+        visibility: "notEmpty",
         find: {
           query: [
             {
@@ -129,7 +145,7 @@ export const restaurant = {
               steps: [
                 {
                   notIn: {
-                    property: "linksTo",
+                    property: ["linksTo", "restaurant"],
                     type: ["log", "task"],
                   },
                 },

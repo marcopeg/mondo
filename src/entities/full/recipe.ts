@@ -83,6 +83,7 @@ export const recipe = {
         properties: ["linksTo"],
         title: task.name,
         icon: task.icon,
+        visibility: "notEmpty",
         columns: [
           {
             type: "show",
@@ -112,6 +113,7 @@ export const recipe = {
         properties: ["linksTo"],
         title: log.name,
         icon: log.icon,
+        visibility: "notEmpty",
         createEntity: {
           referenceCreate: "log",
         },
@@ -123,6 +125,7 @@ export const recipe = {
       config: {
         title: "Links",
         icon: "layers",
+        visibility: "notEmpty",
         find: {
           query: [
             {
@@ -130,7 +133,7 @@ export const recipe = {
               steps: [
                 {
                   notIn: {
-                    property: "linksTo",
+                    property: ["linksTo", "recipe"],
                     type: ["log", "task"],
                   },
                 },
