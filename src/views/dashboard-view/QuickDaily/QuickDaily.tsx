@@ -220,24 +220,24 @@ const QuickDailyCard = ({ collapsed, state }: QuickDailyCardProps) => {
                       aria-label={`Complete daily entry "${entry.displayText}"`}
                     />
                     <Stack direction="column" gap={1} className="flex-1 min-w-0">
-                      <div className="max-w-full overflow-x-auto">
+                      <div className="max-w-full overflow-x-auto flex items-center gap-2">
                         <Link
                           to={entry.filePath}
-                          className="block w-full whitespace-nowrap text-sm font-medium text-[var(--text-accent)] hover:underline"
+                          className="block whitespace-nowrap text-sm font-medium text-[var(--text-accent)] hover:underline"
                         >
                           {entry.displayText}
                         </Link>
+                        {extraHint && (
+                          <span className="text-xs text-[var(--text-muted)] truncate">
+                            {extraHint}
+                          </span>
+                        )}
                       </div>
                       <Typography
                         variant="body"
                         className="text-xs text-[var(--text-muted)]"
                       >
-                        <ReadableDate
-                          value={timestamp}
-                          fallback="—"
-                          extraHint={extraHint}
-                        />
-                        {entry.noteTitle && ` • ${entry.noteTitle}`}
+                        <ReadableDate value={timestamp} fallback="—" />
                       </Typography>
                     </Stack>
                   </Stack>

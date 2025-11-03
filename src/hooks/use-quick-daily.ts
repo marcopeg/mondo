@@ -494,18 +494,92 @@ export const useQuickDailyEntries = (): QuickDailyState => {
     [app]
   );
 
+  // Try to robustly locate the original quick-daily line in the current file,
+  // even if caching/edits shifted line numbers since the entry list was built.
+  const findCurrentLineIndex = useCallback(
+    (lines: string[], entry: QuickDailyEntry): number => {
+      const normalize = (s: string) => stripCheckboxFromLine(s).trim();
+      const target = normalize(entry.displayText);
+
+      const isMatch = (line: string) => {
+        const norm = normalize(line);
+        if (!norm) return false;
+        // exact or prefix match to be resilient to trailing text
+        return norm === target || norm.startsWith(target);
+      };
+
+      // 1) direct index
+      if (lines[entry.lineStart] && isMatch(lines[entry.lineStart])) {
+        return entry.lineStart;
+      }
+
+      // 2) search within a small window around the expected index
+      const start = Math.max(0, entry.lineStart - 20);
+      const end = Math.min(lines.length - 1, entry.lineStart + 20);
+      for (let i = start; i <= end; i++) {
+        if (isMatch(lines[i] ?? "")) {
+          return i;
+        }
+      }
+
+      // 3) if we know the heading, constrain search to section under that heading
+      if (entry.headingTitle) {
+        const headingRegex = new RegExp(
+          `^#{1,6}\\s*${escapeRegex(entry.headingTitle)}\\s*$`
+        );
+        let headingLine = -1;
+        for (let i = 0; i < lines.length; i++) {
+          if (headingRegex.test(lines[i] ?? "")) {
+            headingLine = i;
+            break;
+          }
+        }
+        if (headingLine !== -1) {
+          // find next heading of same or higher level
+          const nextHeadingIndex = (() => {
+            const level = (lines[headingLine]?.match(/^#+/)?.[0]?.length) ?? 1;
+            for (let i = headingLine + 1; i < lines.length; i++) {
+              const m = lines[i]?.match(/^#+/);
+              if (m && m[0].length <= level) {
+                return i;
+              }
+            }
+            return lines.length;
+          })();
+          for (let i = headingLine; i < nextHeadingIndex; i++) {
+            if (isMatch(lines[i] ?? "")) {
+              return i;
+            }
+          }
+        }
+      }
+
+      // 4) last resort: global search
+      for (let i = 0; i < lines.length; i++) {
+        if (isMatch(lines[i] ?? "")) {
+          return i;
+        }
+      }
+
+      // not found
+      return entry.lineStart; // fallback
+    },
+    []
+  );
+
   const markEntryDone = useCallback(
     async (entry: QuickDailyEntry) => {
       try {
         await modifyDailyNote(entry, (lines) => {
-          const target = lines[entry.lineStart];
+          const idx = findCurrentLineIndex(lines, entry);
+          const target = lines[idx];
           if (!target) {
             return lines;
           }
 
           const replaced = target.replace(CHECKBOX_STATUS_REGEX, "[x]");
           if (replaced !== target) {
-            lines[entry.lineStart] = replaced;
+            lines[idx] = replaced;
           }
 
           return lines;
@@ -516,7 +590,7 @@ export const useQuickDailyEntries = (): QuickDailyState => {
         new Notice("Failed to complete daily entry");
       }
     },
-    [modifyDailyNote, reload]
+    [modifyDailyNote, reload, findCurrentLineIndex]
   );
 
   const convertEntry = useCallback(
@@ -582,7 +656,8 @@ export const useQuickDailyEntries = (): QuickDailyState => {
 
         await modifyDailyNote(entry, (lines) => {
           const next = [...lines];
-          const targetLine = next[entry.lineStart] ?? "";
+          const idx = findCurrentLineIndex(next, entry);
+          const targetLine = next[idx] ?? "";
           const withCheckbox = targetLine.replace(
             CHECKBOX_STATUS_REGEX,
             "[x]"
@@ -590,9 +665,7 @@ export const useQuickDailyEntries = (): QuickDailyState => {
           const trimmedLine = withCheckbox.replace(/\s+$/u, "");
           const linkSuffix = `(Moved to: [[${created.basename}]])`;
           const hasLink = trimmedLine.includes(linkSuffix);
-          next[entry.lineStart] = hasLink
-            ? withCheckbox
-            : `${trimmedLine} ${linkSuffix}`;
+          next[idx] = hasLink ? withCheckbox : `${trimmedLine} ${linkSuffix}`;
           return next;
         });
 
@@ -602,7 +675,7 @@ export const useQuickDailyEntries = (): QuickDailyState => {
         new Notice("Failed to convert daily entry");
       }
     },
-    [app, modifyDailyNote, plugin, reload]
+    [app, modifyDailyNote, plugin, reload, findCurrentLineIndex]
   );
 
   return useMemo(
