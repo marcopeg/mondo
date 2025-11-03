@@ -148,6 +148,7 @@ export default class Mondo extends Plugin {
       relevantNotesMode: "hits",
       disableStats: true,
       quickSearchEntities: [],
+      quickTasksEntities: [],
     },
     ribbonIcons: {
       dashboard: true,
@@ -290,6 +291,7 @@ export default class Mondo extends Plugin {
     const disableStatsSetting = dashboardSettings.disableStats;
     const legacyEnableStats = dashboardSettings.enableStats;
     const quickSearchEntitiesSetting = dashboardSettings.quickSearchEntities;
+    const quickTasksEntitiesSetting = dashboardSettings.quickTasksEntities;
     const entityTilesSetting = dashboardSettings.entityTiles;
     const relevantNotesModeSetting = dashboardSettings.relevantNotesMode;
     const relevantNotesMode =
@@ -308,6 +310,10 @@ export default class Mondo extends Plugin {
       quickSearchEntitiesSetting,
       MONDO_ENTITY_TYPES
     );
+    const quickTasksEntities = sanitizeEntityTypeList(
+      quickTasksEntitiesSetting,
+      MONDO_ENTITY_TYPES
+    );
     const entityTiles = sanitizeEntityTypeList(
       entityTilesSetting,
       MONDO_ENTITY_TYPES
@@ -321,6 +327,7 @@ export default class Mondo extends Plugin {
       relevantNotesMode,
       disableStats,
       quickSearchEntities,
+      quickTasksEntities,
       entityTiles,
     };
 

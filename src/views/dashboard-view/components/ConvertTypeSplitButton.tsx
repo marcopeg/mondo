@@ -1,6 +1,8 @@
 import React from "react";
 import SplitButton from "@/components/ui/SplitButton";
 import { MONDO_ENTITIES, MONDO_ENTITY_TYPES, onMondoConfigChange } from "@/entities";
+import { useSetting } from "@/hooks/use-setting";
+import { sanitizeEntityTypeList } from "@/utils/sanitizeEntityTypeList";
 import {
   DAILY_NOTE_TYPE,
   LEGACY_DAILY_NOTE_TYPE,
@@ -36,7 +38,6 @@ const resolveTypeLabel = (type: MondoFileType) => {
 const resolveTypeIcon = (type: MondoFileType) => resolveTypeMeta(type)?.icon ?? "file-plus";
 
 const buildConvertTypesFrom = (availableTypes: string[]): MondoFileType[] => {
-  const preferred: MondoFileType[] = ["task", "note", "project", "log"] as MondoFileType[];
   const normalized = new Set<string>();
   const result: MondoFileType[] = [];
 
@@ -50,8 +51,19 @@ const buildConvertTypesFrom = (availableTypes: string[]): MondoFileType[] => {
     result.push(type as MondoFileType);
   };
 
-  preferred.forEach(pushType);
-  availableTypes.forEach(pushType);
+  // If availableTypes is from the setting (not the full list), preserve its order
+  // Otherwise, use the preferred order
+  const preferred: MondoFileType[] = ["task", "note", "project", "log"] as MondoFileType[];
+  const isCustomList = availableTypes.length < MONDO_ENTITY_TYPES.length;
+  
+  if (isCustomList) {
+    // Preserve the order from availableTypes (settings)
+    availableTypes.forEach(pushType);
+  } else {
+    // Use preferred order for the full list
+    preferred.forEach(pushType);
+    availableTypes.forEach(pushType);
+  }
 
   return result;
 };
@@ -66,18 +78,36 @@ export const ConvertTypeSplitButton = ({
   onPrimary,
   onSelectType,
 }: Props) => {
-  const [options, setOptions] = React.useState<MondoFileType[]>(() =>
-    buildConvertTypesFrom(MONDO_ENTITY_TYPES)
+  const quickTasksEntitiesOverride = useSetting<MondoFileType[]>(
+    "quickTasksEntities",
+    []
   );
 
+  const [options, setOptions] = React.useState<MondoFileType[]>(() => {
+    // If the setting is populated, use it; otherwise use the full list
+    if (quickTasksEntitiesOverride && quickTasksEntitiesOverride.length > 0) {
+      return buildConvertTypesFrom(quickTasksEntitiesOverride);
+    }
+    return buildConvertTypesFrom(MONDO_ENTITY_TYPES as any);
+  });
+
   React.useEffect(() => {
-    // initialize and subscribe to config changes so the list follows the current IMS configuration
-    setOptions(buildConvertTypesFrom(MONDO_ENTITY_TYPES));
+    // Initialize and subscribe to config changes so the list follows the current configuration
+    if (quickTasksEntitiesOverride && quickTasksEntitiesOverride.length > 0) {
+      setOptions(buildConvertTypesFrom(quickTasksEntitiesOverride));
+    } else {
+      setOptions(buildConvertTypesFrom(MONDO_ENTITY_TYPES as any));
+    }
+    
     const off = onMondoConfigChange(() => {
-      setOptions(buildConvertTypesFrom(MONDO_ENTITY_TYPES));
+      if (quickTasksEntitiesOverride && quickTasksEntitiesOverride.length > 0) {
+        setOptions(buildConvertTypesFrom(quickTasksEntitiesOverride));
+      } else {
+        setOptions(buildConvertTypesFrom(MONDO_ENTITY_TYPES as any));
+      }
     });
     return () => off();
-  }, []);
+  }, [quickTasksEntitiesOverride]);
 
   if (!options || options.length === 0) {
     // if there are no configured entity types, skip rendering
