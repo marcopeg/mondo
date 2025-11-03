@@ -654,6 +654,19 @@ export const useQuickDailyEntries = (): QuickDailyState => {
 
         const created = await app.vault.create(filePath, bodyLines.join("\n"));
 
+        // Open the newly created note in a new tab/leaf so the user can continue editing
+        try {
+          const leaf = app.workspace.getLeaf(true) || app.workspace.getLeaf(false);
+          if (leaf) {
+            // openFile is not a typed method on the WorkspaceLeaf in all versions
+            // so cast to any to avoid TS issues.
+            await (leaf as any).openFile(created);
+          }
+        } catch (err) {
+          // non-fatal — opening is best-effort
+          console.error("useQuickDailyEntries: failed to open created note", err);
+        }
+
         await modifyDailyNote(entry, (lines) => {
           const next = [...lines];
           const idx = findCurrentLineIndex(next, entry);
