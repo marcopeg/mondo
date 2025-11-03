@@ -384,8 +384,6 @@ Focus on the images tab from the stats area of the dashboard. Right now, that sh
 
 ---
 
-TODO:
-
 Review the codebase in search of any cover tile that shows the related item’s cover.
 
 Create a unique ui/Cover dumb component that can render both the placeholder and the cover.
@@ -401,3 +399,28 @@ Clicking on the cover should initiate the selection of a new media if there is n
 Replace any custom cover implementation with this centralized one.
 
 Cleanup the code and update docs and agents for cover usage
+
+---
+
+Focus on the QuickTasks component in the Dashboard.
+Build a sibling component called QuickDaily and add it to the Dashboard.
+Copy the visual structure from the QuickTasks but change the names.
+
+Logic when submitting a new "Quick daily" from the text box:
+- Find/create the daily note
+- identify/create the time paragraph as for the settings (see the command "Append to Daily note" where this logic is already in place)
+- add the new entry as a checkbox item 
+
+Logic to extract the entries for the list:
+- Find all daily notes type=daily
+- Extract checkboxes line that have not been checked yet
+- For each item, identify its time block + note date to correlate that entry with a full date + time
+
+Logic when converting an entry to a Mondo note:
+- check the entry in its daily note original source
+- create the new note using the entry's title
+  - use max 10 words for the note's title
+  - if the title contains any invalid character for an obsidian title, remove it
+  - put the full entry as body of the note only if it is different from the final assigned title
+  - add a link back to the daily entry at the end of the note as "(Imported from: {daily note title})" - put an empty line between the note's body and the link back
+- add a link to the new note in the daily note original source as "(Moved to: {note title})"
