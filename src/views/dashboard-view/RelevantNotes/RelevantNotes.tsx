@@ -18,6 +18,9 @@ import {
 import { getMondoEntityConfig, type MondoFileType } from "@/types/MondoFileType";
 import { useRelevantNotes } from "./useRelevantNotes";
 import { useRecentMondoNotes } from "@/hooks/use-recent-mondo-notes";
+import { useSetting } from "@/hooks/use-setting";
+import { useApp } from "@/hooks/use-app";
+import getMondoPlugin from "@/utils/getMondoPlugin";
 
 const formatReferenceCount = (count: number): string => {
   if (count === 1) {
@@ -59,8 +62,15 @@ const getTotalHits = (note: ReturnType<typeof useRelevantNotes>[number]) =>
   note.counts.created + note.counts.modified + note.counts.opened;
 
 export const RelevantNotes = ({ collapsed = false }: RelevantNotesProps) => {
+  const app = useApp();
   const [selectedType, setSelectedType] = useState<MondoFileType | null>(null);
-  const [mode, setMode] = useState<NotesMode>("hits");
+  const modeSetting = useSetting<NotesMode>(
+    "dashboard.relevantNotesMode",
+    "hits"
+  );
+  const sanitizedModeSetting: NotesMode =
+    modeSetting === "history" ? "history" : "hits";
+  const [mode, setMode] = useState<NotesMode>(sanitizedModeSetting);
   const [hitsVisibleCount, setHitsVisibleCount] = useState(5);
   const [historyLimit, setHistoryLimit] = useState(5);
   const hitsNotes = useRelevantNotes(25);
@@ -68,6 +78,9 @@ export const RelevantNotes = ({ collapsed = false }: RelevantNotesProps) => {
     historyLimit,
     selectedType
   );
+  useEffect(() => {
+    setMode(sanitizedModeSetting);
+  }, [sanitizedModeSetting]);
   const filteredHits = useMemo(() => {
     const scoped = selectedType
       ? hitsNotes.filter((note) => note.type === selectedType)
@@ -110,9 +123,56 @@ export const RelevantNotes = ({ collapsed = false }: RelevantNotesProps) => {
     setSelectedType((previous) => (previous === type ? null : type));
   }, []);
 
-  const handleModeChange = useCallback((checked: boolean) => {
-    setMode(checked ? "history" : "hits");
-  }, []);
+  const persistModeSetting = useCallback(
+    async (nextMode: NotesMode) => {
+      const plugin = getMondoPlugin(app);
+      if (!plugin) {
+        return;
+      }
+
+      const settings = plugin.settings ?? {};
+      const dashboardSettings = settings.dashboard ?? {};
+      if (dashboardSettings.relevantNotesMode === nextMode) {
+        return;
+      }
+
+      plugin.settings = {
+        ...settings,
+        dashboard: {
+          ...dashboardSettings,
+          relevantNotesMode: nextMode,
+        },
+      };
+
+      try {
+        await plugin.saveSettings?.();
+      } catch (error) {
+        console.debug(
+          "RelevantNotes: failed to persist mode setting",
+          error
+        );
+      }
+
+      try {
+        window.dispatchEvent(new CustomEvent("mondo:settings-updated"));
+      } catch (error) {
+        console.debug(
+          "RelevantNotes: failed to dispatch settings update event",
+          error
+        );
+      }
+    },
+    [app]
+  );
+
+  const handleModeChange = useCallback(
+    (checked: boolean) => {
+      const nextMode: NotesMode = checked ? "history" : "hits";
+      setMode(nextMode);
+      void persistModeSetting(nextMode);
+    },
+    [persistModeSetting]
+  );
 
   const handleLoadMore = useCallback(() => {
     if (mode === "history") {

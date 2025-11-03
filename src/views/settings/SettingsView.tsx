@@ -66,6 +66,9 @@ export class SettingsView extends PluginSettingTab {
     const legacyEnableStats = dashboardSettings.enableStats;
     const quickSearchEntitiesSetting = dashboardSettings.quickSearchEntities;
     const entityTilesSetting = dashboardSettings.entityTiles;
+    const relevantNotesModeSetting = dashboardSettings.relevantNotesMode;
+    const relevantNotesMode =
+      relevantNotesModeSetting === "history" ? "history" : "hits";
     const disableStats =
       disableStatsSetting === true
         ? true
@@ -90,6 +93,7 @@ export class SettingsView extends PluginSettingTab {
       enableQuickTasks: dashboardSettings.enableQuickTasks !== false,
       enableRelevantNotes:
         dashboardSettings.enableRelevantNotes !== false,
+      relevantNotesMode,
       disableStats,
       quickSearchEntities,
       entityTiles,

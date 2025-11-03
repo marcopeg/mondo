@@ -144,6 +144,7 @@ export default class Mondo extends Plugin {
       forceTab: false,
       enableQuickTasks: true,
       enableRelevantNotes: true,
+      relevantNotesMode: "hits",
       disableStats: true,
       quickSearchEntities: [],
     },
@@ -289,6 +290,9 @@ export default class Mondo extends Plugin {
     const legacyEnableStats = dashboardSettings.enableStats;
     const quickSearchEntitiesSetting = dashboardSettings.quickSearchEntities;
     const entityTilesSetting = dashboardSettings.entityTiles;
+    const relevantNotesModeSetting = dashboardSettings.relevantNotesMode;
+    const relevantNotesMode =
+      relevantNotesModeSetting === "history" ? "history" : "hits";
     const disableStats =
       disableStatsSetting === true
         ? true
@@ -312,6 +316,7 @@ export default class Mondo extends Plugin {
       forceTab: dashboardSettings.forceTab === true,
       enableQuickTasks: dashboardSettings.enableQuickTasks !== false,
       enableRelevantNotes: dashboardSettings.enableRelevantNotes !== false,
+      relevantNotesMode,
       disableStats,
       quickSearchEntities,
       entityTiles,
