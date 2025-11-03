@@ -4,12 +4,37 @@ import { fact } from "./fact";
 import { document } from "./document";
 import { idea } from "./idea";
 import { meeting } from "./meeting";
+import { project } from "./project";
 
 export const team = {
   name: "Teams",
   icon: "users",
   template: "\ndate: {{date}}\ncompany: []\nlocation: []\n---\n",
   createRelated: [
+    {
+      key: "meeting",
+      label: "Meeting",
+      icon: meeting.icon,
+      create: {
+        title: "{YY}-{MM}-{DD} Meeting for {@this.show}",
+        attributes: {
+          type: "meeting",
+          linksTo: ["{@this}"],
+        },
+      },
+    },
+    {
+      key: "project",
+      label: "Project",
+      icon: project.icon,
+      create: {
+        title: "New Project for {@this.show}",
+        attributes: {
+          type: "project",
+          team: ["{@this}"],
+        },
+      },
+    },
     {
       key: "task",
       label: "Task",
@@ -71,14 +96,14 @@ export const team = {
       },
     },
     {
-      key: "meeting",
-      label: "Meeting",
-      icon: meeting.icon,
+      key: "member",
+      label: "Member",
+      icon: 'user',
       create: {
-        title: "{YY}-{MM}-{DD} Meeting for {@this.show}",
+        title: "New Member for {@this.show}",
         attributes: {
-          type: "meeting",
-          linksTo: ["{@this}"],
+          type: "person",
+          team: ["{@this}"],
         },
       },
     },
@@ -95,6 +120,7 @@ export const team = {
         properties: ["team"],
         title: meeting.name,
         icon: meeting.icon,
+        visibility: "notEmpty",
         columns: [
           {
             type: "show",
@@ -116,6 +142,33 @@ export const team = {
         },
       },
     },
+     {
+      type: "backlinks",
+      key: "projects",
+      config: {
+        targetType: "project",
+        properties: ["team"],
+        title: "Projects",
+        icon: "folder-git-2",
+        visibility: "notEmpty",
+        columns: [
+          {
+            type: "show",
+          },
+          {
+            type: "attribute",
+            key: "status",
+          },
+          {
+            type: "date",
+            align: "right",
+          },
+        ],
+        sort: {
+          strategy: "manual",
+        },
+      },
+    },
     {
       type: "backlinks",
       key: "people",
@@ -124,7 +177,7 @@ export const team = {
         properties: ["team"],
         title: "People",
         icon: "users",
-        collapsed: false,
+        visibility: "notEmpty",
         sort: {
           strategy: "column",
           column: "show",
@@ -150,38 +203,13 @@ export const team = {
     },
     {
       type: "backlinks",
-      key: "projects",
-      config: {
-        targetType: "project",
-        properties: ["team"],
-        title: "Projects",
-        icon: "folder-git-2",
-        columns: [
-          {
-            type: "show",
-          },
-          {
-            type: "attribute",
-            key: "status",
-          },
-          {
-            type: "date",
-            align: "right",
-          },
-        ],
-        sort: {
-          strategy: "manual",
-        },
-      },
-    },
-    {
-      type: "backlinks",
       key: "tasks",
       config: {
         targetType: "task",
         properties: ["linksTo"],
         title: task.name,
         icon: task.icon,
+        visibility: "notEmpty",
         columns: [
           {
             type: "show",
@@ -211,6 +239,7 @@ export const team = {
         properties: ["linksTo"],
         title: log.name,
         icon: log.icon,
+        visibility: "notEmpty",
         createEntity: {
           referenceCreate: "log",
         },
@@ -222,19 +251,19 @@ export const team = {
       config: {
         title: "Links",
         icon: "layers",
+        visibility: "notEmpty",
         find: {
           query: [
             {
-              description: "Notes referencing this team",
               steps: [
                 {
                   notIn: {
-                    property: "linksTo",
-                    type: ["log", "task"],
+                    property: ["linksTo", "team"],
+                    type: ["log", "task", "person", "project", "meeting"],
                   },
                 },
               ],
-            }
+            },
           ],
         },
         columns: [
