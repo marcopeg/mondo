@@ -1,5 +1,10 @@
 import type { App, TFile } from "obsidian";
-import { getMondoEntityConfig, isMondoEntityType } from "@/types/MondoFileType";
+import {
+  getMondoEntityConfig,
+  isDailyNoteType,
+  isJournalType,
+  isMondoEntityType,
+} from "@/types/MondoFileType";
 import type { MondoFileType } from "@/types/MondoFileType";
 
 export type DailyNoteReference = {
@@ -64,7 +69,11 @@ const resolveLinkTarget = (
 const resolveFileType = (
   file: TFile,
   app: App
-): { type: MondoFileType | null; icon: string } => {
+): {
+  type: MondoFileType | null;
+  icon: string;
+  shouldExclude: boolean;
+} => {
   const cache = app.metadataCache.getFileCache(file);
   const rawType = cache?.frontmatter?.type;
   if (typeof rawType === "string") {
@@ -74,11 +83,20 @@ const resolveFileType = (
       return {
         type: normalized,
         icon: config?.icon ?? DEFAULT_ICON,
+        shouldExclude: false,
+      };
+    }
+
+    if (isDailyNoteType(normalized) || isJournalType(normalized)) {
+      return {
+        type: null,
+        icon: DEFAULT_ICON,
+        shouldExclude: true,
       };
     }
   }
 
-  return { type: null, icon: DEFAULT_ICON };
+  return { type: null, icon: DEFAULT_ICON, shouldExclude: false };
 };
 
 const getDisplayLabel = (
@@ -121,7 +139,10 @@ export const extractDailyLinkReferences = (
     }
     seen.add(file.path);
 
-    const { type, icon } = resolveFileType(file, app);
+    const { type, icon, shouldExclude } = resolveFileType(file, app);
+    if (shouldExclude) {
+      return;
+    }
     const label = getDisplayLabel(file, alias, app, sourcePath);
 
     entries.push({
@@ -184,7 +205,10 @@ export const extractDailyOpenedReferences = (
 
     seen.add(file.path);
 
-    const { type, icon } = resolveFileType(file, app);
+    const { type, icon, shouldExclude } = resolveFileType(file, app);
+    if (shouldExclude) {
+      return;
+    }
     const label = getDisplayLabel(file, alias, app, sourcePath);
 
     entries.push({

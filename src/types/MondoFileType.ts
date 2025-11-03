@@ -8,11 +8,12 @@ import {
 
 export const DAILY_NOTE_TYPE = "daily" as const;
 export const LEGACY_DAILY_NOTE_TYPE = "log" as const;
+export const JOURNAL_TYPE = "journal" as const;
 
 const SPECIAL_MONDO_TYPES = [
   DAILY_NOTE_TYPE,
   LEGACY_DAILY_NOTE_TYPE,
-  "journal",
+  JOURNAL_TYPE,
 ] as const;
 
 /**
@@ -92,6 +93,11 @@ export const isDailyNoteType = (
   type: string | null | undefined
 ): type is DailyNoteType =>
   typeof type === "string" && DAILY_NOTE_TYPE_SET.has(type as DailyNoteType);
+
+export const isJournalType = (
+  type: string | null | undefined
+): type is typeof JOURNAL_TYPE =>
+  typeof type === "string" && type.trim().toLowerCase() === JOURNAL_TYPE;
 
 /**
  * Check if a type is any recognized Mondo type (entity or special)

@@ -5,7 +5,9 @@ import {
   type MondoFilesChangedEvent,
 } from "@/utils/MondoFileManager";
 import {
+  JOURNAL_TYPE,
   MONDO_FILE_TYPES,
+  isDailyNoteType,
   type MondoFileType,
 } from "@/types/MondoFileType";
 import type { TCachedFile } from "@/types/TCachedFile";
@@ -68,7 +70,12 @@ const collectRecentNotes = (
   limit: number,
   type?: MondoFileType | null
 ): RecentMondoNotesResult => {
-  const types = type ? [type] : MONDO_FILE_TYPES;
+  const types = type
+    ? [type]
+    : MONDO_FILE_TYPES.filter(
+        (entryType) =>
+          !isDailyNoteType(entryType) && entryType !== JOURNAL_TYPE
+      );
   const entries = types.flatMap((entryType) =>
     manager
       .getFiles(entryType)
