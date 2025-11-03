@@ -1,6 +1,6 @@
 import React from "react";
 import SplitButton from "@/components/ui/SplitButton";
-import { MONDO_ENTITIES, MONDO_ENTITY_TYPES } from "@/entities";
+import { MONDO_ENTITIES, MONDO_ENTITY_TYPES, onMondoConfigChange } from "@/entities";
 import {
   DAILY_NOTE_TYPE,
   LEGACY_DAILY_NOTE_TYPE,
@@ -35,7 +35,7 @@ const resolveTypeLabel = (type: MondoFileType) => {
 };
 const resolveTypeIcon = (type: MondoFileType) => resolveTypeMeta(type)?.icon ?? "file-plus";
 
-const buildConvertTypes = (): MondoFileType[] => {
+const buildConvertTypesFrom = (availableTypes: string[]): MondoFileType[] => {
   const preferred: MondoFileType[] = ["task", "note", "project", "log"] as MondoFileType[];
   const normalized = new Set<string>();
   const result: MondoFileType[] = [];
@@ -44,14 +44,16 @@ const buildConvertTypes = (): MondoFileType[] => {
     if (!raw) return;
     const type = raw.trim().toLowerCase();
     if (!type || normalized.has(type) || type === DAILY_NOTE_TYPE || type === LEGACY_DAILY_NOTE_TYPE) return;
+    // only include types that are present in the provided availableTypes
+    if (!availableTypes.includes(type)) return;
     normalized.add(type);
     result.push(type as MondoFileType);
   };
 
   preferred.forEach(pushType);
-  MONDO_ENTITY_TYPES.forEach(pushType);
+  availableTypes.forEach(pushType);
 
-  return result.length > 0 ? result : (["note"] as MondoFileType[]);
+  return result;
 };
 
 export const ConvertTypeSplitButton = ({
@@ -64,7 +66,24 @@ export const ConvertTypeSplitButton = ({
   onPrimary,
   onSelectType,
 }: Props) => {
-  const options = React.useMemo(buildConvertTypes, []);
+  const [options, setOptions] = React.useState<MondoFileType[]>(() =>
+    buildConvertTypesFrom(MONDO_ENTITY_TYPES)
+  );
+
+  React.useEffect(() => {
+    // initialize and subscribe to config changes so the list follows the current IMS configuration
+    setOptions(buildConvertTypesFrom(MONDO_ENTITY_TYPES));
+    const off = onMondoConfigChange(() => {
+      setOptions(buildConvertTypesFrom(MONDO_ENTITY_TYPES));
+    });
+    return () => off();
+  }, []);
+
+  if (!options || options.length === 0) {
+    // if there are no configured entity types, skip rendering
+    return null;
+  }
+
   const primaryType = options[0];
   const secondaryTypes = primaryType ? options.slice(1) : [];
 
