@@ -60,6 +60,18 @@ export const task = {
         },
       },
     },
+    {
+      key: "idea",
+      label: "Idea",
+      icon: 'lightbulb',
+      create: {
+        title: "Untitled Idea for {@this.show}",
+        attributes: {
+          type: "idea",
+          linksTo: ["{@this}"],
+        },
+      },
+    },
   ],
   links: [
     {
@@ -70,6 +82,7 @@ export const task = {
         properties: ["task"],
         title: "Tasks",
         icon: "check-square",
+        visibility: "notEmpty",
         columns: [
           {
             type: "show",
@@ -99,6 +112,7 @@ export const task = {
         properties: ["linksTo"],
         title: fact.name,
         icon: fact.icon,
+        visibility: "notEmpty",
         sort: {
           strategy: "manual",
         },
@@ -115,6 +129,7 @@ export const task = {
         properties: ["linksTo"],
         title: log.name,
         icon: log.icon,
+        visibility: "notEmpty",
         createEntity: {
           referenceCreate: "log",
         },
@@ -126,13 +141,14 @@ export const task = {
       config: {
         title: "Links",
         icon: "layers",
+        visibility: "notEmpty",
         find: {
           query: [
             {
               steps: [
                 {
                   notIn: {
-                    property: "linksTo",
+                    property: ["linksTo", "task"],
                     type: ["task", "log", "fact"],
                   },
                 },
