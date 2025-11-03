@@ -223,10 +223,10 @@ export const useInboxTasks = () => {
   );
 
   const promoteTask = useCallback(
-    async (target: InboxTask, targetType: PromoteTargetType) => {
+    async (target: InboxTask, targetType: PromoteTargetType): Promise<TFile | null> => {
       if (targetType === "task") {
         await assignTaskToSelf(target);
-        return;
+        return target.file;
       }
 
       try {
@@ -241,12 +241,11 @@ export const useInboxTasks = () => {
           }
         });
 
-        const leaf = app.workspace.getLeaf(true);
-        if (leaf) {
-          await (leaf as any).openFile(target.file);
-        }
+        // return the modified file to the caller so they can open it if desired
+        return target.file;
       } catch (error) {
         console.error("useInboxTasks: failed to promote quick task", error);
+        return null;
       }
     },
     [app, assignTaskToSelf]

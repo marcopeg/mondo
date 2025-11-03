@@ -1,4 +1,5 @@
 import { useCallback, useMemo, useState } from "react";
+import { useApp } from "@/hooks/use-app";
 import { Card } from "@/components/ui/Card";
 import { Stack } from "@/components/ui/Stack";
 import { Typography } from "@/components/ui/Typography";
@@ -32,6 +33,7 @@ const QuickTasksCard = ({ collapsed, state }: QuickTasksCardProps) => {
     promoteTask,
     canAssignToSelf = false,
   } = state;
+  const app = useApp();
   const [visible, setVisible] = useState(5);
   const [pending, setPending] = useState<Record<string, boolean>>({});
   const visibleTasks = tasks.slice(0, visible);
@@ -56,13 +58,20 @@ const QuickTasksCard = ({ collapsed, state }: QuickTasksCardProps) => {
       }
       setPendingState(task.id, true);
       try {
-        // promoteTask accepts the target type; cast as any if signature differs
-        await promoteTask(task, target as any);
+        // promoteTask now returns the file that was promoted/modified
+        const created = await promoteTask(task, target as any);
+        if (created) {
+          // open the created/modified note in a new leaf
+          const leaf = app.workspace.getLeaf(true) || app.workspace.getLeaf(false);
+          if (leaf) {
+            await (leaf as any).openFile(created);
+          }
+        }
       } finally {
         setPendingState(task.id, false);
       }
     },
-    [canAssignToSelf, promoteTask, setPendingState]
+    [app, canAssignToSelf, promoteTask, setPendingState]
   );
 
   const convertTypeOptions = useMemo(() => {
