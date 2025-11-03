@@ -3,6 +3,7 @@ import { log } from "./log";
 import { fact } from "./fact";
 import { document } from "./document";
 import { idea } from "./idea";
+import { meeting } from "./meeting";
 
 export const team = {
   name: "Teams",
@@ -69,11 +70,52 @@ export const team = {
         },
       },
     },
+    {
+      key: "meeting",
+      label: "Meeting",
+      icon: meeting.icon,
+      create: {
+        title: "{YY}-{MM}-{DD} Meeting for {@this.show}",
+        attributes: {
+          type: "meeting",
+          linksTo: ["{@this}"],
+        },
+      },
+    },
   ],
   list: {
     columns: ["show", "company", "area"],
   },
   links: [
+    {
+      type: "backlinks",
+      key: "meetings",
+      config: {
+        targetType: "meeting",
+        properties: ["team"],
+        title: meeting.name,
+        icon: meeting.icon,
+        columns: [
+          {
+            type: "show",
+          },
+          {
+            type: "attribute",
+            key: "participants",
+          },
+          {
+            type: "date",
+            align: "right",
+          },
+        ],
+        sort: {
+          strategy: "manual",
+        },
+        createEntity: {
+          referenceCreate: "meeting",
+        },
+      },
+    },
     {
       type: "backlinks",
       key: "people",
@@ -192,7 +234,7 @@ export const team = {
                   },
                 },
               ],
-            },
+            }
           ],
         },
         columns: [
