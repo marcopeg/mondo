@@ -2,7 +2,7 @@ import { useCallback, useMemo } from "react";
 import { useApp } from "@/hooks/use-app";
 import { useFiles } from "@/hooks/use-files";
 import { getEntityDisplayName } from "@/utils/getEntityDisplayName";
-import { MondoFileType } from "@/types/MondoFileType";
+import { isMondoEntityType, MondoFileType, type MondoFileType as TMondoFileType } from "@/types/MondoFileType";
 import type { TCachedFile } from "@/types/TCachedFile";
 import { resolveSelfPerson } from "@/utils/selfPerson";
 import {
@@ -14,7 +14,7 @@ import type { App, TFile } from "obsidian";
 const DATE_TITLE_REGEX = /(\d{4})[-/](\d{2})[-/](\d{2})/;
 const TIME_REGEX = /\b(\d{1,2}):(\d{2})\b/;
 
-type PromoteTargetType = "task" | "project" | "log";
+// Using full MondoFileType so callers can promote to any configured entity type.
 
 export type InboxTask = {
   id: string;
@@ -223,19 +223,23 @@ export const useInboxTasks = () => {
   );
 
   const promoteTask = useCallback(
-    async (target: InboxTask, targetType: PromoteTargetType): Promise<TFile | null> => {
+    async (target: InboxTask, targetType: TMondoFileType): Promise<TFile | null> => {
+      // Assign to self when staying as a task
       if (targetType === "task") {
         await assignTaskToSelf(target);
         return target.file;
       }
 
       try {
-        const nextType =
-          targetType === "project" ? MondoFileType.PROJECT : MondoFileType.LOG;
-
         await app.fileManager.processFrontMatter(target.file, (frontmatter) => {
           const fm = frontmatter as Record<string, unknown>;
-          fm.type = nextType;
+          // Honor the selected target type when it's a valid entity type
+          if (typeof targetType === "string" && isMondoEntityType(targetType)) {
+            (fm as Record<string, unknown>).type = targetType;
+          } else {
+            // If an unsupported/special type slips through, keep existing type unchanged
+            // and avoid forcing it to legacy types like "log".
+          }
           if ("status" in fm) {
             delete (fm as Record<string, unknown>).status;
           }
