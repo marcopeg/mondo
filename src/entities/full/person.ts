@@ -20,6 +20,18 @@ export const person = {
   },
   createRelated: [
     {
+      key: "1o1s",
+      label: "1:1 Meeting",
+      icon: meeting.icon,
+      create: {
+        title: "{YY}-{MM}-{DD} {hh}.{mm} 1-1 with {@this.show}",
+        attributes: {
+          type: "meeting",
+          participants: ["{@this}"],
+        },
+      },
+    },
+    {
       key: "fact",
       label: "Fact",
       icon: fact.icon,
@@ -39,6 +51,18 @@ export const person = {
         title: "{YY}-{MM}-{DD} {hh}.{mm} Log for {@this.show}",
         attributes: {
           type: "log",
+          linksTo: ["{@this}"],
+        },
+      },
+    },
+    {
+      key: "task",
+      label: "Task",
+      icon: task.icon,
+      create: {
+        title: "Untitled Task for {@this.show}",
+        attributes: {
+          type: "task",
           linksTo: ["{@this}"],
         },
       },
@@ -68,20 +92,6 @@ export const person = {
       },
     },
     {
-      key: "report",
-      label: "Report",
-      icon: "user",
-      create: {
-        title: "New Report for {@this.show}",
-        attributes: {
-          type: "person",
-          reportsTo: ["{@this}"],
-          company: ["{@this.company}"],
-          area: ["{@this.area}"],
-        },
-      },
-    },
-    {
       key: "teammate",
       label: "Teammate",
       icon: team.icon,
@@ -96,29 +106,21 @@ export const person = {
       },
     },
     {
-      key: "1o1s",
-      label: "1:1 Meeting",
-      icon: meeting.icon,
+      key: "report",
+      label: "Report",
+      icon: "user",
       create: {
-        title: "{YY}-{MM}-{DD} {hh}.{mm} 1-1 with {@this.show}",
+        title: "New Report for {@this.show}",
         attributes: {
-          type: "meeting",
-          participants: ["{@this}"],
+          type: "person",
+          reportsTo: ["{@this}"],
+          company: ["{@this.company}"],
+          area: ["{@this.area}"],
         },
       },
     },
-    {
-      key: "task",
-      label: "Task",
-      icon: task.icon,
-      create: {
-        title: "Untitled Task for {@this.show}",
-        attributes: {
-          type: "task",
-          linksTo: ["{@this}"],
-        },
-      },
-    },
+    
+    
   ],
   links: [
     {
@@ -172,6 +174,7 @@ export const person = {
         targetType: "person",
         title: "Teammates",
         icon: "users",
+        visibility: "notEmpty",
         find: {
           query: [
             {
@@ -232,6 +235,7 @@ export const person = {
         targetType: "meeting",
         title: "1:1s",
         icon: meeting.icon,
+        visibility: "notEmpty",
         find: {
           query: [
             {
@@ -277,6 +281,7 @@ export const person = {
       config: {
         title: "Meetings",
         icon: meeting.icon,
+        visibility: "notEmpty",
         find: {
           query: [
             {
@@ -356,6 +361,7 @@ export const person = {
       config: {
         title: project.name,
         icon: project.icon,
+        visibility: "notEmpty",
         find: {
           query: [
             {
@@ -417,6 +423,7 @@ export const person = {
         properties: ["linksTo", "participants"],
         title: fact.name,
         icon: fact.icon,
+        visibility: "notEmpty",
         sort: {
           strategy: "manual",
         },
@@ -433,6 +440,7 @@ export const person = {
         properties: ["linksTo", "participants"],
         title: log.name,
         icon: log.icon,
+        visibility: "notEmpty",
         createEntity: {
           referenceCreate: "log",
         },
@@ -446,6 +454,7 @@ export const person = {
         properties: ["linksTo", "participants"],
         title: document.name,
         icon: document.icon,
+        visibility: "notEmpty",
         sort: {
           strategy: "manual",
         },
@@ -462,6 +471,7 @@ export const person = {
         properties: ["linksTo", "participants"],
         title: task.name,
         icon: task.icon,
+        visibility: "notEmpty",
         columns: [
           {
             type: "show",
@@ -489,6 +499,7 @@ export const person = {
       config: {
         title: "Links",
         icon: "layers",
+        visibility: "notEmpty",
         find: {
           query: [
             {
@@ -496,7 +507,7 @@ export const person = {
                 {
                   notIn: {
                     property: "linksTo",
-                    type: ["meeting", "log", "project", "person"],
+                    type: ["meeting", "log", "project", "person", "fact", "document", "task"],
                   },
                 },
               ],
