@@ -17,7 +17,6 @@ import {
 } from "@/entities";
 import { getMondoEntityConfig, type MondoFileType } from "@/types/MondoFileType";
 import { useRelevantNotes } from "./useRelevantNotes";
-import { useRecentMondoNotes } from "@/hooks/use-recent-mondo-notes";
 import { useSetting } from "@/hooks/use-setting";
 import { useApp } from "@/hooks/use-app";
 import getMondoPlugin from "@/utils/getMondoPlugin";
@@ -61,6 +60,35 @@ type RelevantNotesProps = {
 const getTotalHits = (note: ReturnType<typeof useRelevantNotes>[number]) =>
   note.counts.created + note.counts.modified + note.counts.opened;
 
+const parseDateValue = (value: string | null): number | null => {
+  if (!value) {
+    return null;
+  }
+
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return null;
+  }
+
+  const parsed = Date.parse(trimmed);
+  if (Number.isNaN(parsed)) {
+    return null;
+  }
+
+  return parsed;
+};
+
+type HistoryCategory = keyof ReturnType<typeof useRelevantNotes>[number]["counts"];
+
+type HistoryEntry = {
+  note: ReturnType<typeof useRelevantNotes>[number];
+  lastActivity: {
+    category: HistoryCategory;
+    value: string;
+    timestamp: number;
+  };
+};
+
 export const RelevantNotes = ({ collapsed = false }: RelevantNotesProps) => {
   const app = useApp();
   const [selectedType, setSelectedType] = useState<MondoFileType | null>(null);
@@ -74,19 +102,19 @@ export const RelevantNotes = ({ collapsed = false }: RelevantNotesProps) => {
   const [hitsVisibleCount, setHitsVisibleCount] = useState(5);
   const [historyLimit, setHistoryLimit] = useState(5);
   const hitsNotes = useRelevantNotes(25);
-  const { notes: historyNotes, hasMore: historyHasMore } = useRecentMondoNotes(
-    historyLimit,
-    selectedType
-  );
   useEffect(() => {
     setMode(sanitizedModeSetting);
   }, [sanitizedModeSetting]);
-  const filteredHits = useMemo(() => {
-    const scoped = selectedType
-      ? hitsNotes.filter((note) => note.type === selectedType)
-      : hitsNotes;
+  const scopedNotes = useMemo(
+    () =>
+      selectedType
+        ? hitsNotes.filter((note) => note.type === selectedType)
+        : hitsNotes,
+    [hitsNotes, selectedType]
+  );
 
-    const sorted = [...scoped];
+  const filteredHits = useMemo(() => {
+    const sorted = [...scopedNotes];
     sorted.sort((left, right) => {
       const rightCount = getTotalHits(right);
       const leftCount = getTotalHits(left);
@@ -97,7 +125,7 @@ export const RelevantNotes = ({ collapsed = false }: RelevantNotesProps) => {
     });
 
     return sorted;
-  }, [hitsNotes, selectedType]);
+  }, [scopedNotes]);
 
   const visibleHits = useMemo(
     () => filteredHits.slice(0, hitsVisibleCount),
@@ -105,6 +133,63 @@ export const RelevantNotes = ({ collapsed = false }: RelevantNotesProps) => {
   );
 
   const hitsHasMore = filteredHits.length > hitsVisibleCount;
+
+  const historyEntries = useMemo(() => {
+    const entries: HistoryEntry[] = [];
+
+    scopedNotes.forEach((note) => {
+      const candidates: Array<{
+        category: HistoryCategory;
+        value: string | null;
+      }> = [
+        { category: "opened", value: note.lastOpened },
+        { category: "modified", value: note.lastModified },
+        { category: "created", value: note.lastCreated },
+      ];
+
+      const validCandidates = candidates
+        .map((candidate) => ({
+          category: candidate.category,
+          value: candidate.value,
+          timestamp: parseDateValue(candidate.value),
+        }))
+        .filter(
+          (
+            candidate
+          ): candidate is {
+            category: HistoryCategory;
+            value: string;
+            timestamp: number;
+          } => candidate.timestamp !== null && candidate.value !== null
+        );
+
+      if (validCandidates.length === 0) {
+        return;
+      }
+
+      const lastActivity = validCandidates.reduce((latest, candidate) =>
+        candidate.timestamp > latest.timestamp ? candidate : latest
+      );
+
+      entries.push({
+        note,
+        lastActivity,
+      });
+    });
+
+    entries.sort(
+      (left, right) => right.lastActivity.timestamp - left.lastActivity.timestamp
+    );
+
+    return entries;
+  }, [scopedNotes]);
+
+  const historyNotes = useMemo(
+    () => historyEntries.slice(0, historyLimit),
+    [historyEntries, historyLimit]
+  );
+
+  const historyHasMore = historyEntries.length > historyLimit;
 
   useEffect(() => {
     setHitsVisibleCount(5);
@@ -256,7 +341,7 @@ export const RelevantNotes = ({ collapsed = false }: RelevantNotesProps) => {
         </Stack>
         {(
           mode === "history"
-            ? historyNotes.length === 0
+            ? historyEntries.length === 0
             : filteredHits.length === 0
         ) ? (
           <Typography
@@ -267,10 +352,18 @@ export const RelevantNotes = ({ collapsed = false }: RelevantNotesProps) => {
           </Typography>
         ) : mode === "history" ? (
           <>
-            {historyNotes.map((note) => {
-              const config = getMondoEntityConfig(note.type);
-              const entityName = config?.name ?? note.type;
+            {historyNotes.map(({ note, lastActivity }) => {
+              const config = note.type
+                ? getMondoEntityConfig(note.type)
+                : null;
+              const entityName = config?.name ?? note.type ?? "note";
               const iconName = config?.icon;
+              const activityLabel =
+                lastActivity.category === "opened"
+                  ? "Last opened"
+                  : lastActivity.category === "modified"
+                    ? "Last modified"
+                    : "Created";
               return (
                 <div
                   key={note.path}
@@ -291,8 +384,8 @@ export const RelevantNotes = ({ collapsed = false }: RelevantNotesProps) => {
                     </span>
                   </Stack>
                   <span className="text-xs text-[var(--text-muted)]">
-                    Last updated {" "}
-                    <ReadableDate value={note.modified} fallback="—" />
+                    {activityLabel} {" "}
+                    <ReadableDate value={lastActivity.value} fallback="—" />
                   </span>
                 </div>
               );
