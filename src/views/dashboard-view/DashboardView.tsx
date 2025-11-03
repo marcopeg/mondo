@@ -18,7 +18,10 @@ export const DashboardView = () => {
     true
   );
 
-  const quickDailyEnabled = true;
+  const quickDailyEnabled = useSetting<boolean>(
+    "dashboard.enableQuickDaily",
+    false
+  );
   const shouldShowProductivity =
     quickDailyEnabled || quickTasksEnabled || relevantNotesEnabled;
 

@@ -131,6 +131,17 @@ export const renderDashboardSection = (
 
   dashboardSection
     .createSetting()
+    .setName("Enable Quick Daily")
+    .setDesc("Show the Quick Daily list on the dashboard.")
+    .addToggle((toggle) => {
+      const current = dashboardSettings.enableQuickDaily === true ? true : false;
+      toggle.setValue(current).onChange(async (value) => {
+        await persistDashboardSetting(plugin, "enableQuickDaily", value);
+      });
+    });
+
+  dashboardSection
+    .createSetting()
     .setName("Enable Quick Tasks")
     .setDesc("Show the Quick Tasks list on the dashboard.")
     .addToggle((toggle) => {

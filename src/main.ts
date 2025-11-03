@@ -142,6 +142,7 @@ export default class Mondo extends Plugin {
     dashboard: {
       openAtBoot: false,
       forceTab: false,
+      enableQuickDaily: false,
       enableQuickTasks: true,
       enableRelevantNotes: true,
       relevantNotesMode: "hits",
@@ -314,6 +315,7 @@ export default class Mondo extends Plugin {
     this.settings.dashboard = {
       openAtBoot: dashboardSettings.openAtBoot === true,
       forceTab: dashboardSettings.forceTab === true,
+      enableQuickDaily: dashboardSettings.enableQuickDaily === true,
       enableQuickTasks: dashboardSettings.enableQuickTasks !== false,
       enableRelevantNotes: dashboardSettings.enableRelevantNotes !== false,
       relevantNotesMode,
