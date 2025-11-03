@@ -7,6 +7,7 @@ import Button from "@/components/ui/Button";
 import { Separator } from "@/components/ui/Separator";
 import { ReadableDate } from "@/components/ui/ReadableDate";
 import SplitButton from "@/components/ui/SplitButton";
+import ConvertTypeSplitButton from "../components/ConvertTypeSplitButton";
 import QuickDailyEntry from "../QuickDailyEntry";
 import useQuickDailyEntries, {
   type QuickDailyState,
@@ -241,41 +242,21 @@ const QuickDailyCard = ({ collapsed, state }: QuickDailyCardProps) => {
                       </Typography>
                     </Stack>
                   </Stack>
-                  <Stack direction="row" gap={1} className="shrink-0">
-                    {primaryType ? (
-                      <SplitButton
-                        type="button"
+                    <Stack direction="row" gap={1} className="shrink-0">
+                      <ConvertTypeSplitButton
+                        disabled={isBusy}
+                        canAssignToSelf={true}
                         className="text-xs px-2 py-1"
                         toggleClassName="text-xs px-1 py-1"
-                        icon={resolveTypeIcon(primaryType)}
-                        disabled={isBusy}
-                        onClick={() => {
-                          if (isBusy) return;
-                          void handleConvert(entry.id, primaryType);
-                        }}
                         menuAriaLabel="Choose note type for daily entry"
-                        secondaryActions={secondaryTypes.map((type) => ({
-                          label: resolveTypeLabel(type),
-                          icon: resolveTypeIcon(type),
-                          disabled: isBusy,
-                          onSelect: () => {
-                            if (isBusy) return;
-                            void handleConvert(entry.id, type);
-                          },
-                        }))}
-                      >
-                        {resolveTypeLabel(primaryType)}
-                      </SplitButton>
-                    ) : (
-                      <Button
-                        type="button"
-                        className="text-xs px-2 py-1"
-                        disabled
-                      >
-                        convert
-                      </Button>
-                    )}
-                  </Stack>
+                        onPrimary={(type: MondoFileType) => {
+                          void handleConvert(entry.id, type);
+                        }}
+                        onSelectType={(type: MondoFileType) => {
+                          void handleConvert(entry.id, type);
+                        }}
+                      />
+                    </Stack>
                 </Stack>
               </div>
             );

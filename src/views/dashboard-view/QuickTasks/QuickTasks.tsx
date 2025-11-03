@@ -9,6 +9,7 @@ import SplitButton from "@/components/ui/SplitButton";
 import { Separator } from "@/components/ui/Separator";
 import QuickTask from "../QuickTaskEntry";
 import { ReadableDate } from "@/components/ui/ReadableDate";
+import ConvertTypeSplitButton from "../components/ConvertTypeSplitButton";
 import { MONDO_ENTITIES, MONDO_ENTITY_TYPES } from "@/entities";
 import {
   DAILY_NOTE_TYPE,
@@ -195,43 +196,20 @@ const QuickTasksCard = ({ collapsed, state }: QuickTasksCardProps) => {
                     </Stack>
                   </Stack>
                     <Stack direction="row" gap={1} className="shrink-0">
-                      {convertTypeOptions.length > 0 ? (
-                        (() => {
-                          const primaryType = convertTypeOptions[0];
-                          const secondaryTypes = primaryType ? convertTypeOptions.slice(1) : [];
-                          return (
-                            <SplitButton
-                              type="button"
-                              className="text-xs px-2 py-1"
-                              toggleClassName="text-xs px-1 py-1"
-                              disabled={isBusy}
-                              onClick={() => {
-                                if (isBusy) return;
-                                if (primaryType === "task" && !canAssignToSelf) return;
-                                void handlePromote(task, primaryType);
-                              }}
-                              icon={resolveTypeIcon(primaryType)}
-                              menuAriaLabel="Promote inbox task"
-                              primaryOpensMenu={!canAssignToSelf}
-                              secondaryActions={secondaryTypes.map((type) => ({
-                                label: resolveTypeLabel(type),
-                                icon: resolveTypeIcon(type),
-                                disabled: isBusy,
-                                onSelect: () => {
-                                  if (isBusy) return;
-                                  void handlePromote(task, type);
-                                },
-                              }))}
-                            >
-                              {canAssignToSelf ? resolveTypeLabel(primaryType) : "convert"}
-                            </SplitButton>
-                          );
-                        })()
-                      ) : (
-                        <Button type="button" className="text-xs px-2 py-1" disabled>
-                          convert
-                        </Button>
-                      )}
+                      <ConvertTypeSplitButton
+                        disabled={isBusy}
+                        canAssignToSelf={canAssignToSelf}
+                        className="text-xs px-2 py-1"
+                        toggleClassName="text-xs px-1 py-1"
+                        menuAriaLabel="Promote inbox task"
+                        labelWhenNoAssign="convert"
+                        onPrimary={(type: MondoFileType) => {
+                          void handlePromote(task, type);
+                        }}
+                        onSelectType={(type: MondoFileType) => {
+                          void handlePromote(task, type);
+                        }}
+                      />
                     </Stack>
                 </Stack>
               </div>
