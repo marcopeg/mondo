@@ -1,7 +1,7 @@
 {
 	"id": "mondo",
 	"name": "Mondo",
-	"version": "0.0.38",
+	"version": "0.0.39",
 	"minAppVersion": "0.15.0",
 	"description": "Build a personal Mondo workspace",
 	"author": "Marco Pegoraro",
