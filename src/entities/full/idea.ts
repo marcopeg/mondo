@@ -69,6 +69,7 @@ export const idea = {
         properties: ["linksTo"],
         title: task.name,
         icon: task.icon,
+        visibility: "notEmpty",
         columns: [
           {
             type: "show",
@@ -98,6 +99,7 @@ export const idea = {
         properties: ["linksTo"],
         title: log.name,
         icon: log.icon,
+        visibility: "notEmpty",
         createEntity: {
           referenceCreate: "log",
         },
@@ -109,6 +111,7 @@ export const idea = {
       config: {
         title: "Links",
         icon: "layers",
+        visibility: "notEmpty",
         find: {
           query: [
             {
@@ -116,7 +119,7 @@ export const idea = {
               steps: [
                 {
                   notIn: {
-                    property: "linksTo",
+                    property: ["linksTo", "idea"],
                     type: ["log", "task"],
                   },
                 },

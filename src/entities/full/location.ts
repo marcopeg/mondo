@@ -29,6 +29,30 @@ export const location = {
       },
     },
     {
+      key: "person",
+      label: "Person",
+      icon: "user",
+      create: {
+        title: "New Person for {@this.show}",
+        attributes: {
+          type: "person",
+          location: ["{@this}"],
+        },
+      },
+    },
+    {
+      key: "gear",
+      label: "Gear",
+      icon: gear.icon,
+      create: {
+        title: "New Gear for {@this.show}",
+        attributes: {
+          type: "gear",
+          location: ["{@this}"],
+        },
+      },
+    },
+    {
       key: "company",
       label: "Company",
       icon: company.icon,
@@ -48,18 +72,6 @@ export const location = {
         title: "New Team for {@this.show}",
         attributes: {
           type: "team",
-          location: ["{@this}"],
-        },
-      },
-    },
-    {
-      key: "gear",
-      label: "Gear",
-      icon: gear.icon,
-      create: {
-        title: "New Gear for {@this.show}",
-        attributes: {
-          type: "gear",
           location: ["{@this}"],
         },
       },
@@ -135,6 +147,7 @@ export const location = {
         properties: ["location"],
         title: "People",
         icon: "user",
+        visibility: "notEmpty",
         columns: [
           {
             type: "cover",
@@ -167,6 +180,7 @@ export const location = {
         properties: ["location"],
         title: "Restaurants",
         icon: restaurant.icon,
+        visibility: "notEmpty",
         columns: [
           {
             type: "show",
@@ -195,6 +209,7 @@ export const location = {
         properties: ["location"],
         title: "Companies",
         icon: "building-2",
+        visibility: "notEmpty",
         columns: [
           {
             type: "show",
@@ -219,6 +234,7 @@ export const location = {
         properties: ["location"],
         title: "Teams",
         icon: "layers",
+        visibility: "notEmpty",
         columns: [
           {
             type: "show",
@@ -243,6 +259,7 @@ export const location = {
         properties: ["location"],
         title: "Gears",
         icon: "settings",
+        visibility: "notEmpty",
         columns: [
           {
             type: "show",
@@ -264,39 +281,13 @@ export const location = {
     },
     {
       type: "backlinks",
-      key: "projects",
-      desc: "Projects linked to this location via role",
-      config: {
-        targetType: "project",
-        properties: ["location"],
-        title: "Projects",
-        icon: "folder-git-2",
-        columns: [
-          {
-            type: "show",
-          },
-          {
-            type: "attribute",
-            key: "status",
-          },
-          {
-            type: "date",
-            align: "right",
-          },
-        ],
-        sort: {
-          strategy: "manual",
-        },
-      },
-    },
-    {
-      type: "backlinks",
       key: "tasks",
       config: {
         targetType: "task",
         properties: ["linksTo"],
         title: task.name,
         icon: task.icon,
+        visibility: "notEmpty",
         columns: [
           {
             type: "show",
@@ -326,6 +317,7 @@ export const location = {
         properties: ["linksTo"],
         title: log.name,
         icon: log.icon,
+        visibility: "notEmpty",
         createEntity: {
           referenceCreate: "log",
         },
@@ -337,6 +329,7 @@ export const location = {
       config: {
         title: "Links",
         icon: "layers",
+        visibility: "notEmpty",
         find: {
           query: [
             {
@@ -344,7 +337,7 @@ export const location = {
               steps: [
                 {
                   notIn: {
-                    property: "linksTo",
+                    property: ["linksTo"],
                     type: ["log", "task"],
                   },
                 },

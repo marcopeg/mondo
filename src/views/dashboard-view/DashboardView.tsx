@@ -6,6 +6,7 @@ import QuickTasksSection from "./components/QuickTasksSection";
 import RelevantNotesSection from "./components/RelevantNotesSection";
 import ImsButtons from "./components/ImsButtons";
 import VaultStatsSection from "./components/VaultStatsSection";
+import QuickDaily from "./QuickDaily";
 
 export const DashboardView = () => {
   const quickTasksEnabled = useSetting<boolean>(
@@ -17,7 +18,12 @@ export const DashboardView = () => {
     true
   );
 
-  const shouldShowProductivity = quickTasksEnabled || relevantNotesEnabled;
+  const quickDailyEnabled = useSetting<boolean>(
+    "dashboard.enableQuickDaily",
+    false
+  );
+  const shouldShowProductivity =
+    quickDailyEnabled || quickTasksEnabled || relevantNotesEnabled;
 
   return (
     <div className="p-4 space-y-6">
@@ -25,6 +31,7 @@ export const DashboardView = () => {
       <QuickButtons />
       {shouldShowProductivity && (
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 lg:items-start">
+          {quickDailyEnabled && <QuickDaily collapsed={false} />}
           <QuickTasksSection enabled={quickTasksEnabled} />
           <RelevantNotesSection enabled={relevantNotesEnabled} />
         </div>

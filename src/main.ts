@@ -142,11 +142,13 @@ export default class Mondo extends Plugin {
     dashboard: {
       openAtBoot: false,
       forceTab: false,
+      enableQuickDaily: false,
       enableQuickTasks: true,
       enableRelevantNotes: true,
       relevantNotesMode: "hits",
       disableStats: true,
       quickSearchEntities: [],
+      quickTasksEntities: [],
     },
     ribbonIcons: {
       dashboard: true,
@@ -286,9 +288,39 @@ export default class Mondo extends Plugin {
     );
 
     const dashboardSettings = this.settings.dashboard ?? {};
+    let didMigrate = false;
+
+    // Migrations: move legacy keys into dashboard if present
+    const legacyQuickTasks = (this.settings as any).quickTasksEntities;
+    if (
+      Array.isArray(legacyQuickTasks) &&
+      (!Array.isArray((dashboardSettings as any).quickTasksEntities) ||
+        ((dashboardSettings as any).quickTasksEntities as unknown[]).length === 0)
+    ) {
+      (dashboardSettings as any).quickTasksEntities = legacyQuickTasks;
+      didMigrate = true;
+    }
+    const legacyEnableQuickDaily = (this.settings as any).enableQuickDaily;
+    if (
+      typeof legacyEnableQuickDaily === "boolean" &&
+      typeof (dashboardSettings as any).enableQuickDaily !== "boolean"
+    ) {
+      (dashboardSettings as any).enableQuickDaily = legacyEnableQuickDaily;
+      didMigrate = true;
+    }
+    // Always clean up legacy root keys so they don't repopulate on next load
+    if (Object.prototype.hasOwnProperty.call(this.settings as any, "quickTasksEntities")) {
+      delete (this.settings as any).quickTasksEntities;
+      didMigrate = true;
+    }
+    if (Object.prototype.hasOwnProperty.call(this.settings as any, "enableQuickDaily")) {
+      delete (this.settings as any).enableQuickDaily;
+      didMigrate = true;
+    }
     const disableStatsSetting = dashboardSettings.disableStats;
     const legacyEnableStats = dashboardSettings.enableStats;
     const quickSearchEntitiesSetting = dashboardSettings.quickSearchEntities;
+    const quickTasksEntitiesSetting = dashboardSettings.quickTasksEntities;
     const entityTilesSetting = dashboardSettings.entityTiles;
     const relevantNotesModeSetting = dashboardSettings.relevantNotesMode;
     const relevantNotesMode =
@@ -307,6 +339,10 @@ export default class Mondo extends Plugin {
       quickSearchEntitiesSetting,
       MONDO_ENTITY_TYPES
     );
+    const quickTasksEntities = sanitizeEntityTypeList(
+      quickTasksEntitiesSetting,
+      MONDO_ENTITY_TYPES
+    );
     const entityTiles = sanitizeEntityTypeList(
       entityTilesSetting,
       MONDO_ENTITY_TYPES
@@ -314,13 +350,20 @@ export default class Mondo extends Plugin {
     this.settings.dashboard = {
       openAtBoot: dashboardSettings.openAtBoot === true,
       forceTab: dashboardSettings.forceTab === true,
+      enableQuickDaily: dashboardSettings.enableQuickDaily === true,
       enableQuickTasks: dashboardSettings.enableQuickTasks !== false,
       enableRelevantNotes: dashboardSettings.enableRelevantNotes !== false,
       relevantNotesMode,
       disableStats,
       quickSearchEntities,
+      quickTasksEntities,
       entityTiles,
     };
+
+    // If we migrated legacy keys, persist the normalized settings immediately
+    if (didMigrate) {
+      await this.saveSettings();
+    }
 
     const ribbonSettings = this.settings.ribbonIcons ?? {};
     this.settings.ribbonIcons = {
@@ -700,13 +743,13 @@ export default class Mondo extends Plugin {
 
     this.addCommand({
       id: "open-today",
-      name: "Open Daily note",
+      name: "Open Daily Note",
       callback: async () => openDailyNote(this.app, this),
     });
 
     this.addCommand({
       id: "open-self-person",
-      name: "Open myself",
+      name: "Open Myself",
       callback: () => {
         void openSelfPersonNote(this.app, this);
       },
@@ -714,7 +757,7 @@ export default class Mondo extends Plugin {
 
     this.addCommand({
       id: "add-log",
-      name: "Append to Daily note",
+      name: "Append to Daily Note",
       hotkeys: [{ modifiers: ["Mod", "Shift"], key: "l" }],
       callback: async () => addDailyLog(this.app, this),
     });

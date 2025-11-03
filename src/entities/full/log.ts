@@ -16,14 +16,15 @@ export const log = {
       config: {
         title: "Links",
         icon: "layers",
+        visibility: "notEmpty",
         find: {
           query: [
             {
               steps: [
                 {
                   notIn: {
-                    property: "linksTo",
-                    type: [],
+                    property: ["linksTo", "log"],
+                    // type: ["log"],
                   },
                 },
               ],

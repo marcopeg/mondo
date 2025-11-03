@@ -82,6 +82,7 @@ export const newsletter = {
         properties: ["linksTo"],
         title: task.name,
         icon: task.icon,
+        visibility: "notEmpty",
         columns: [
           {
             type: "show",
@@ -111,6 +112,7 @@ export const newsletter = {
         properties: ["linksTo"],
         title: log.name,
         icon: log.icon,
+        visibility: "notEmpty",
         createEntity: {
           referenceCreate: "log",
         },
@@ -122,6 +124,7 @@ export const newsletter = {
       config: {
         title: "Links",
         icon: "layers",
+        visibility: "notEmpty",
         find: {
           query: [
             {
@@ -129,7 +132,7 @@ export const newsletter = {
               steps: [
                 {
                   notIn: {
-                    property: "linksTo",
+                    property: ["linksTo", "newsletter"],
                     type: ["log", "task"],
                   },
                 },

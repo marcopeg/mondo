@@ -93,6 +93,11 @@ export const renderDashboardSection = (
     dashboardSettings.quickSearchEntities,
     MONDO_ENTITY_TYPES
   );
+  // Do NOT filter by MONDO_ENTITY_TYPES here to ensure values prefill even if
+  // the entity config hasn't been applied yet at render time.
+  const quickTasksEntities = sanitizeEntityTypeList(
+    dashboardSettings.quickTasksEntities
+  );
   const entityTiles = sanitizeEntityTypeList(
     dashboardSettings.entityTiles,
     MONDO_ENTITY_TYPES
@@ -127,6 +132,17 @@ export const renderDashboardSection = (
         .onChange(async (value) => {
           await persistDashboardSetting(plugin, "forceTab", value);
         });
+    });
+
+  dashboardSection
+    .createSetting()
+    .setName("Enable Quick Daily")
+    .setDesc("Show the Quick Daily list on the dashboard.")
+    .addToggle((toggle) => {
+      const current = dashboardSettings.enableQuickDaily === true ? true : false;
+      toggle.setValue(current).onChange(async (value) => {
+        await persistDashboardSetting(plugin, "enableQuickDaily", value);
+      });
     });
 
   dashboardSection
@@ -395,6 +411,23 @@ export const renderDashboardSection = (
 
     renderTags();
   };
+
+  const quickTasksSetting = dashboardSection
+    .createSetting()
+    .setName("IMS Quick Tasks Entities")
+    .setDesc("Choose which entities appear in the Convert Type menu.");
+
+  const persistQuickTasksState = async (next: MondoEntityType[]) => {
+    await persistDashboardSetting(plugin, "quickTasksEntities", next);
+  };
+
+  renderEntityListControl({
+    setting: quickTasksSetting,
+    initialState: quickTasksEntities,
+    persist: persistQuickTasksState,
+    addButtonAriaLabel: "Add quick tasks entity",
+    removeButtonAriaLabel: (type) => `Remove ${type} from quick tasks`,
+  });
 
   const quickSearchSetting = dashboardSection
     .createSetting()

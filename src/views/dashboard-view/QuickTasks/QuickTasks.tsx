@@ -1,4 +1,5 @@
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
+import { useApp } from "@/hooks/use-app";
 import { Card } from "@/components/ui/Card";
 import { Stack } from "@/components/ui/Stack";
 import { Typography } from "@/components/ui/Typography";
@@ -9,6 +10,13 @@ import SplitButton from "@/components/ui/SplitButton";
 import { Separator } from "@/components/ui/Separator";
 import QuickTask from "../QuickTaskEntry";
 import { ReadableDate } from "@/components/ui/ReadableDate";
+import ConvertTypeSplitButton from "../components/ConvertTypeSplitButton";
+import { MONDO_ENTITIES, MONDO_ENTITY_TYPES } from "@/entities";
+import {
+  DAILY_NOTE_TYPE,
+  LEGACY_DAILY_NOTE_TYPE,
+  type MondoFileType,
+} from "@/types/MondoFileType";
 
 type UseInboxTasksState = ReturnType<typeof useInboxTasks>;
 
@@ -25,6 +33,7 @@ const QuickTasksCard = ({ collapsed, state }: QuickTasksCardProps) => {
     promoteTask,
     canAssignToSelf = false,
   } = state;
+  const app = useApp();
   const [visible, setVisible] = useState(5);
   const [pending, setPending] = useState<Record<string, boolean>>({});
   const visibleTasks = tasks.slice(0, visible);
@@ -43,19 +52,62 @@ const QuickTasksCard = ({ collapsed, state }: QuickTasksCardProps) => {
   }, []);
 
   const handlePromote = useCallback(
-    async (task: InboxTask, target: "task" | "project" | "log") => {
+    async (task: InboxTask, target: MondoFileType) => {
       if (target === "task" && !canAssignToSelf) {
         return;
       }
       setPendingState(task.id, true);
       try {
-        await promoteTask(task, target);
+        // promoteTask now returns the file that was promoted/modified
+        const created = await promoteTask(task, target as any);
+        if (created) {
+          // open the created/modified note in a new leaf
+          const leaf = app.workspace.getLeaf(true) || app.workspace.getLeaf(false);
+          if (leaf) {
+            await (leaf as any).openFile(created);
+          }
+        }
       } finally {
         setPendingState(task.id, false);
       }
     },
-    [canAssignToSelf, promoteTask, setPendingState]
+    [app, canAssignToSelf, promoteTask, setPendingState]
   );
+
+  const convertTypeOptions = useMemo(() => {
+    const preferred: MondoFileType[] = ["task", "note", "project", "log"] as MondoFileType[];
+    const normalized = new Set<string>();
+    const result: MondoFileType[] = [];
+
+    const pushType = (raw: string | null | undefined) => {
+      if (!raw) return;
+      const type = raw.trim().toLowerCase();
+      if (!type || normalized.has(type) || type === DAILY_NOTE_TYPE || type === LEGACY_DAILY_NOTE_TYPE) return;
+      normalized.add(type);
+      result.push(type as MondoFileType);
+    };
+
+    preferred.forEach(pushType);
+    MONDO_ENTITY_TYPES.forEach(pushType);
+
+    return result.length > 0 ? result : (["note"] as MondoFileType[]);
+  }, []);
+
+  const resolveTypeMeta = (type: MondoFileType) => MONDO_ENTITIES[type as keyof typeof MONDO_ENTITIES];
+  const toTitleCase = (value: string) => {
+    if (!value) return "";
+    return value
+      .split(/[-_\s]+/)
+      .filter(Boolean)
+      .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+      .join(" ");
+  };
+  const resolveTypeLabel = (type: MondoFileType) => {
+    const meta = resolveTypeMeta(type);
+    if (meta?.name) return meta.name;
+    return toTitleCase(type);
+  };
+  const resolveTypeIcon = (type: MondoFileType) => resolveTypeMeta(type)?.icon ?? "file-plus";
 
   // header shows only the quick task input; no counter badge
 
@@ -152,47 +204,22 @@ const QuickTasksCard = ({ collapsed, state }: QuickTasksCardProps) => {
                       </Typography>
                     </Stack>
                   </Stack>
-                  <Stack direction="row" gap={1} className="shrink-0">
-                    <SplitButton
-                      type="button"
-                      className="text-xs px-2 py-1"
-                      toggleClassName="text-xs px-1 py-1"
-                      disabled={isBusy}
-                      onClick={
-                        canAssignToSelf
-                          ? () => {
-                              if (isBusy) return;
-                              void handlePromote(task, "task");
-                            }
-                          : undefined
-                      }
-                      icon="check-square"
-                      menuAriaLabel="Promote inbox task"
-                      primaryOpensMenu={!canAssignToSelf}
-                      secondaryActions={[
-                        {
-                          label: "project",
-                          icon: "folder-git-2",
-                          disabled: isBusy,
-                          onSelect: () => {
-                            if (isBusy) return;
-                            void handlePromote(task, "project");
-                          },
-                        },
-                        {
-                          label: "log",
-                          icon: "file-clock",
-                          disabled: isBusy,
-                          onSelect: () => {
-                            if (isBusy) return;
-                            void handlePromote(task, "log");
-                          },
-                        },
-                      ]}
-                    >
-                      {canAssignToSelf ? "task" : "convert"}
-                    </SplitButton>
-                  </Stack>
+                    <Stack direction="row" gap={1} className="shrink-0">
+                      <ConvertTypeSplitButton
+                        disabled={isBusy}
+                        canAssignToSelf={canAssignToSelf}
+                        className="text-xs px-2 py-1"
+                        toggleClassName="text-xs px-1 py-1"
+                        menuAriaLabel="Promote inbox task"
+                        labelWhenNoAssign="convert"
+                        onPrimary={(type: MondoFileType) => {
+                          void handlePromote(task, type);
+                        }}
+                        onSelectType={(type: MondoFileType) => {
+                          void handlePromote(task, type);
+                        }}
+                      />
+                    </Stack>
                 </Stack>
               </div>
             );
