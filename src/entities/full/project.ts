@@ -97,6 +97,7 @@ export const project = {
         properties: ["project"],
         title: task.name,
         icon: task.icon,
+        visibility: "notEmpty",
         columns: [
           {
             type: "show",
@@ -126,6 +127,7 @@ export const project = {
         properties: ["project"],
         title: fact.name,
         icon: fact.icon,
+        visibility: "notEmpty",
         sort: {
           strategy: "manual",
         },
@@ -142,6 +144,7 @@ export const project = {
         properties: ["project"],
         title: log.name,
         icon: log.icon,
+        visibility: "notEmpty",
         createEntity: {
           referenceCreate: "log",
         },
@@ -155,6 +158,7 @@ export const project = {
         properties: ["project"],
         title: document.name,
         icon: document.icon,
+        visibility: "notEmpty",
         sort: {
           strategy: "manual",
         },
@@ -169,6 +173,7 @@ export const project = {
       config: {
         title: meeting.name,
         icon: meeting.icon,
+        visibility: "notEmpty",
         targetType: "meeting",
         properties: ["project"],
         filter: {
@@ -214,13 +219,14 @@ export const project = {
       config: {
         title: "Links",
         icon: "layers",
+        visibility: "notEmpty",
         find: {
           query: [
             {
               steps: [
                 {
                   notIn: {
-                    property: "linksTo",
+                    property: ["linksTo", "project"],
                     type: ["fact", "task", "log", "document", "meeting"],
                   },
                 },
