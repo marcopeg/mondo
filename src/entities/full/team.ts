@@ -16,10 +16,10 @@ export const team = {
       label: "Meeting",
       icon: meeting.icon,
       create: {
-        title: "{YY}-{MM}-{DD} Meeting for {@this.show}",
+        title: "{YY}-{MM}-{DD} {hh}.{mm} on {@this.show}",
         attributes: {
           type: "meeting",
-          linksTo: ["{@this}"],
+          team: ["{@this}"],
         },
       },
     },

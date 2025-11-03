@@ -10,7 +10,11 @@ export const project = {
   icon: "folder-git-2",
   template:
     "\ndate: {{date}}\ncompany: []\nteam: []\nparticipants: []\nstatus: draft\n---\n",
-  createRelated: [
+  
+  list: {
+    columns: ["show"],
+  },
+    createRelated: [
     {
       key: "task",
       label: "Task",
@@ -85,9 +89,6 @@ export const project = {
       },
     },
   ],
-  list: {
-    columns: ["show"],
-  },
   links: [
     {
       type: "backlinks",

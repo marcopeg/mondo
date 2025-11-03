@@ -7,6 +7,7 @@ import { log } from "./log";
 import { gear } from "./gear";
 import { idea } from "./idea";
 import { document } from "./document";
+import { meeting } from "./meeting";
 
 export const company = {
   name: "Companies",
@@ -16,6 +17,18 @@ export const company = {
     columns: ["cover", "show", "location"],
   },
   createRelated: [
+    {
+      key: "meeting",
+      label: "Meeting",
+      icon: meeting.icon,
+      create: {
+        title: "{YY}-{MM}-{DD} {hh}.{mm} on {@this.show}",
+        attributes: {
+          type: "meeting",
+          company: ["{@this}"],
+        },
+      },
+    },
     {
       key: "employee",
       label: "Person",
@@ -136,6 +149,7 @@ export const company = {
         properties: ["company"],
         title: "Employees",
         icon: person.icon,
+        visibility: "notEmpty",
         sort: {
           strategy: "column",
           column: "show",
@@ -170,6 +184,7 @@ export const company = {
         properties: ["company"],
         title: "Teams",
         icon: team.icon,
+        visibility: "notEmpty",
         columns: [
           {
             type: "show",
@@ -192,6 +207,7 @@ export const company = {
         targetType: "project",
         title: "Projects",
         icon: project.icon,
+        visibility: "notEmpty",
         find: {
           query: [
             {
@@ -265,6 +281,7 @@ export const company = {
         properties: ["company"],
         title: "Facts",
         icon: fact.icon,
+        visibility: "notEmpty",
         sort: {
           strategy: "manual",
         },
@@ -281,6 +298,7 @@ export const company = {
         properties: ["company"],
         title: "Logs",
         icon: log.icon,
+        visibility: "notEmpty",
         createEntity: {
           referenceCreate: "log",
         },
@@ -294,6 +312,7 @@ export const company = {
         properties: ["company"],
         title: "Documents",
         icon: document.icon,
+        visibility: "notEmpty",
         sort: {
           strategy: "manual",
         },
@@ -310,6 +329,7 @@ export const company = {
         properties: ["company"],
         title: "Tasks",
         icon: task.icon,
+        visibility: "notEmpty",
         columns: [
           {
             type: "show",
@@ -328,6 +348,36 @@ export const company = {
         },
         createEntity: {
           referenceCreate: "task",
+        },
+      },
+    },
+    {
+      type: "backlinks",
+      key: "meetings",
+      config: {
+        targetType: "meeting",
+        properties: ["company"],
+        title: meeting.name,
+        icon: meeting.icon,
+        visibility: "notEmpty",
+        columns: [
+          {
+            type: "show",
+          },
+          {
+            type: "attribute",
+            key: "participants",
+          },
+          {
+            type: "date",
+            align: "right",
+          },
+        ],
+        sort: {
+          strategy: "manual",
+        },
+        createEntity: {
+          referenceCreate: "meeting",
         },
       },
     },
