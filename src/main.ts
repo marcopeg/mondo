@@ -700,13 +700,13 @@ export default class Mondo extends Plugin {
 
     this.addCommand({
       id: "open-today",
-      name: "Open Daily note",
+      name: "Open Daily Note",
       callback: async () => openDailyNote(this.app, this),
     });
 
     this.addCommand({
       id: "open-self-person",
-      name: "Open myself",
+      name: "Open Myself",
       callback: () => {
         void openSelfPersonNote(this.app, this);
       },
@@ -714,7 +714,7 @@ export default class Mondo extends Plugin {
 
     this.addCommand({
       id: "add-log",
-      name: "Append to Daily note",
+      name: "Append to Daily Note",
       hotkeys: [{ modifiers: ["Mod", "Shift"], key: "l" }],
       callback: async () => addDailyLog(this.app, this),
     });
