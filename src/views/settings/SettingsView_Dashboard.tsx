@@ -93,9 +93,10 @@ export const renderDashboardSection = (
     dashboardSettings.quickSearchEntities,
     MONDO_ENTITY_TYPES
   );
+  // Do NOT filter by MONDO_ENTITY_TYPES here to ensure values prefill even if
+  // the entity config hasn't been applied yet at render time.
   const quickTasksEntities = sanitizeEntityTypeList(
-    dashboardSettings.quickTasksEntities,
-    MONDO_ENTITY_TYPES
+    dashboardSettings.quickTasksEntities
   );
   const entityTiles = sanitizeEntityTypeList(
     dashboardSettings.entityTiles,

@@ -2,7 +2,6 @@ import React from "react";
 import SplitButton from "@/components/ui/SplitButton";
 import { MONDO_ENTITIES, MONDO_ENTITY_TYPES, onMondoConfigChange } from "@/entities";
 import { useSetting } from "@/hooks/use-setting";
-import { sanitizeEntityTypeList } from "@/utils/sanitizeEntityTypeList";
 import {
   DAILY_NOTE_TYPE,
   LEGACY_DAILY_NOTE_TYPE,
@@ -51,19 +50,10 @@ const buildConvertTypesFrom = (availableTypes: string[]): MondoFileType[] => {
     result.push(type as MondoFileType);
   };
 
-  // If availableTypes is from the setting (not the full list), preserve its order
-  // Otherwise, use the preferred order
+  // Use preferred order for default behavior
   const preferred: MondoFileType[] = ["task", "note", "project", "log"] as MondoFileType[];
-  const isCustomList = availableTypes.length < MONDO_ENTITY_TYPES.length;
-  
-  if (isCustomList) {
-    // Preserve the order from availableTypes (settings)
-    availableTypes.forEach(pushType);
-  } else {
-    // Use preferred order for the full list
-    preferred.forEach(pushType);
-    availableTypes.forEach(pushType);
-  }
+  preferred.forEach(pushType);
+  availableTypes.forEach(pushType);
 
   return result;
 };
@@ -78,30 +68,32 @@ export const ConvertTypeSplitButton = ({
   onPrimary,
   onSelectType,
 }: Props) => {
-  const quickTasksEntitiesOverride = useSetting<MondoFileType[]>(
-    "quickTasksEntities",
+  const quickTasksEntitiesOverride = useSetting<readonly string[]>(
+    "dashboard.quickTasksEntities",
     []
   );
 
   const [options, setOptions] = React.useState<MondoFileType[]>(() => {
-    // If the setting is populated, use it; otherwise use the full list
+    // If the setting is populated (non-empty), use only those types
+    // Otherwise, use the full list of available types
     if (quickTasksEntitiesOverride && quickTasksEntitiesOverride.length > 0) {
-      return buildConvertTypesFrom(quickTasksEntitiesOverride);
+      return buildConvertTypesFrom(Array.from(quickTasksEntitiesOverride));
     }
     return buildConvertTypesFrom(MONDO_ENTITY_TYPES as any);
   });
 
   React.useEffect(() => {
-    // Initialize and subscribe to config changes so the list follows the current configuration
+    // Update options based on the setting value
+    // If setting is empty, use full list; if populated, use only the configured types
     if (quickTasksEntitiesOverride && quickTasksEntitiesOverride.length > 0) {
-      setOptions(buildConvertTypesFrom(quickTasksEntitiesOverride));
+      setOptions(buildConvertTypesFrom(Array.from(quickTasksEntitiesOverride)));
     } else {
       setOptions(buildConvertTypesFrom(MONDO_ENTITY_TYPES as any));
     }
     
     const off = onMondoConfigChange(() => {
       if (quickTasksEntitiesOverride && quickTasksEntitiesOverride.length > 0) {
-        setOptions(buildConvertTypesFrom(quickTasksEntitiesOverride));
+        setOptions(buildConvertTypesFrom(Array.from(quickTasksEntitiesOverride)));
       } else {
         setOptions(buildConvertTypesFrom(MONDO_ENTITY_TYPES as any));
       }
