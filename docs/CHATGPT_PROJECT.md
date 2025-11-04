@@ -15,7 +15,7 @@ Create a personal knowledge system inside Obsidian that behaves like a lightweig
 
 ### 1. Entity Management System (EMS)
 - JSON configuration stored in `mondoConfig` defines entity types, templates, link panels, and creation flows.
-- Notes with matching `type` frontmatter gain custom headers, cover thumbnails, related-note buttons, and dynamic link panels.
+- Notes with matching `mondoType` frontmatter gain custom headers, cover thumbnails, related-note buttons, and dynamic link panels.
 - Dashboard tiles, relevant-note filters, and Quick Search widgets are derived from the same configuration, ensuring a consistent experience.
 
 ### 2. Dashboard & views

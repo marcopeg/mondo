@@ -153,7 +153,10 @@ export const BacklinksLinks = ({
 }: BacklinksLinksProps) => {
   const app = useApp();
   const hostFile = file.file;
-  const hostType = (file.cache?.frontmatter?.type || "") as string;
+  const hostFrontmatter = (file.cache?.frontmatter as any) ?? {};
+  const hostType = String(
+    hostFrontmatter.mondoType ?? hostFrontmatter.type ?? ""
+  );
 
   if (!hostFile || !hostType) {
     return (
@@ -333,7 +336,8 @@ export const BacklinksLinks = ({
   }, []);
 
   const getType = useCallback((e: TCachedFile | null | undefined): string => {
-    return String((e?.cache?.frontmatter as any)?.type || "").trim();
+    const frontmatter = (e?.cache?.frontmatter as any) ?? {};
+    return String(frontmatter.mondoType ?? frontmatter.type ?? "").trim();
   }, []);
 
   const resolveWikiOrPathToFile = useCallback(
@@ -1116,9 +1120,11 @@ export const BacklinksLinks = ({
             const path = entry.file!.path;
             const show = getEntityDisplayName(entry);
             const date = getFrontmatterString(entry, "date");
+            const entryFrontmatter =
+              (entry.cache?.frontmatter as Record<string, unknown> | undefined) ??
+              {};
             const entryTypeRaw = String(
-              (entry.cache?.frontmatter as Record<string, unknown> | undefined)
-                ?.type ?? ""
+              entryFrontmatter.mondoType ?? entryFrontmatter.type ?? ""
             ).trim();
             const entryTypeLower = entryTypeRaw.toLowerCase();
             const entryTypeIcon = isMondoEntityType(entryTypeLower)

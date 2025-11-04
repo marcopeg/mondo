@@ -21,7 +21,7 @@ This guide shows a minimal `mondo-config.json` setup for an IMS-style workspace.
       "type": "person",
       "name": "People",
       "icon": "user",
-      "template": "---\ntype: person\nshow: {{title}}\nrole: []\ncompany: []\n---\n",
+      "template": "---\nmondoType: person\nshow: {{title}}\nrole: []\ncompany: []\n---\n",
       "links": [
         {
           "type": "backlinks",
@@ -53,7 +53,7 @@ This guide shows a minimal `mondo-config.json` setup for an IMS-style workspace.
             },
             "columns": [
               { "type": "show" },
-              { "type": "attribute", "key": "type", "label": "Kind" },
+              { "type": "attribute", "key": "mondoType", "label": "Kind" },
               { "type": "date", "label": "Date", "align": "right" }
             ],
             "sort": { "strategy": "manual" },
@@ -71,19 +71,19 @@ This guide shows a minimal `mondo-config.json` setup for an IMS-style workspace.
       "type": "fact",
       "name": "Facts",
       "icon": "info",
-      "template": "---\ntype: fact\nshow: {{title}}\ndate: {{date}}\nreference: []\n---\n"
+      "template": "---\nmondoType: fact\nshow: {{title}}\ndate: {{date}}\nreference: []\n---\n"
     },
     "document": {
       "type": "document",
       "name": "Documents",
       "icon": "file-text",
-      "template": "---\ntype: document\nshow: {{title}}\ndate: {{date}}\nreference: []\n---\n"
+      "template": "---\nmondoType: document\nshow: {{title}}\ndate: {{date}}\nreference: []\n---\n"
     },
     "idea": {
       "type": "idea",
       "name": "Ideas",
       "icon": "sparkles",
-      "template": "---\ntype: idea\nshow: {{title}}\nstatus: draft\nreference: []\n---\n"
+      "template": "---\nmondoType: idea\nshow: {{title}}\nstatus: draft\nreference: []\n---\n"
     }
   }
 }
@@ -95,7 +95,7 @@ Key points:
 - The backlinks panel on the person entity uses a `find` query with `combine: "union"` so that facts, documents, and ideas all appear in one list.
 - Using a single `in` step with `type: ["fact", "document", "idea"]` keeps the DSL concise while covering every note that should surface here.
 - `sort.strategy` is set to `"manual"`, enabling drag-and-drop reordering directly inside Obsidian. The persisted order is stored per person note.
-- A `type` column is added so you can quickly tell which kind of note each entry represents.
+- A `mondoType` column is added so you can quickly tell which kind of note each entry represents.
 
 ## 2. Frontmatter examples
 
@@ -103,7 +103,7 @@ Create notes from the entity templates and update the `reference` array to point
 
 ```markdown
 ---
-type: person
+mondoType: person
 show: Ada Lovelace
 role:
   - Analytical Engine Researcher
@@ -114,7 +114,7 @@ company:
 
 ```markdown
 ---
-type: fact
+mondoType: fact
 show: Favorite coffee order
 date: 2024-03-18
 reference:
@@ -125,7 +125,7 @@ Ada prefers a flat white before morning stand-ups.
 
 ```markdown
 ---
-type: document
+mondoType: document
 show: Quarterly planning deck
 date: 2024-03-01
 reference:
@@ -136,7 +136,7 @@ Link to the exported PDF lives here.
 
 ```markdown
 ---
-type: idea
+mondoType: idea
 show: Async status updates
 status: draft
 reference:

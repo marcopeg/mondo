@@ -47,27 +47,29 @@ export const createLogForEntity = async ({
   };
 
   const displayName = getEntityDisplayName(entityFile);
-  const hostType = (entityFile.cache?.frontmatter as any)?.type as
-    | string
-    | undefined;
+  const hostFrontmatter = (entityFile.cache?.frontmatter as any) ?? {};
+  const hostTypeRaw =
+    (hostFrontmatter.mondoType as string | undefined) ??
+    (hostFrontmatter.type as string | undefined);
+  const normalizedHostType = (hostTypeRaw ?? "").trim().toLowerCase();
 
   const isEditableHost =
-    hostType === MondoFileType.PERSON ||
-    hostType === "person" ||
-    hostType === MondoFileType.MEETING ||
-    hostType === "meeting" ||
-    hostType === MondoFileType.PROJECT ||
-    hostType === "project" ||
-    hostType === MondoFileType.TASK ||
-    hostType === "task" ||
-    hostType === MondoFileType.FACT ||
-    hostType === "fact" ||
-    hostType === MondoFileType.COMPANY ||
-    hostType === "company" ||
-    hostType === MondoFileType.TEAM ||
-    hostType === "team" ||
-    hostType === MondoFileType.LOG ||
-    hostType === "log";
+    normalizedHostType === MondoFileType.PERSON ||
+    normalizedHostType === "person" ||
+    normalizedHostType === MondoFileType.MEETING ||
+    normalizedHostType === "meeting" ||
+    normalizedHostType === MondoFileType.PROJECT ||
+    normalizedHostType === "project" ||
+    normalizedHostType === MondoFileType.TASK ||
+    normalizedHostType === "task" ||
+    normalizedHostType === MondoFileType.FACT ||
+    normalizedHostType === "fact" ||
+    normalizedHostType === MondoFileType.COMPANY ||
+    normalizedHostType === "company" ||
+    normalizedHostType === MondoFileType.TEAM ||
+    normalizedHostType === "team" ||
+    normalizedHostType === MondoFileType.LOG ||
+    normalizedHostType === "log";
 
   const rootPathSetting = settings.rootPaths?.[MondoFileType.LOG] ?? "/";
   const normalizedFolder = normalizeFolderPath(rootPathSetting);
@@ -122,6 +124,7 @@ export const createLogForEntity = async ({
 
     const rendered = renderTemplate(templateSource, {
       title: safeTitle,
+      mondoType: String(MondoFileType.LOG),
       type: String(MondoFileType.LOG),
       filename: fileName,
       slug,
@@ -142,6 +145,12 @@ export const createLogForEntity = async ({
 
   await app.fileManager.processFrontMatter(logFile, (frontmatter) => {
     frontmatter.date = isoTimestamp;
+    if (typeof frontmatter.mondoType !== "string" || !frontmatter.mondoType) {
+      frontmatter.mondoType = String(MondoFileType.LOG);
+    }
+    if (Object.prototype.hasOwnProperty.call(frontmatter, "type")) {
+      delete (frontmatter as Record<string, unknown>).type;
+    }
     if (Object.prototype.hasOwnProperty.call(frontmatter, "time")) {
       delete (frontmatter as any).time;
     }

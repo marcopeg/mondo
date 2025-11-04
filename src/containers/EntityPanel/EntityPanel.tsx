@@ -27,7 +27,9 @@ export const EntityPanel = () => {
     const frontmatter = (file?.cache?.frontmatter ?? {}) as
       | Record<string, unknown>
       | undefined;
-    const normalized = normalizeType(frontmatter?.type);
+    const normalized = normalizeType(
+      frontmatter?.mondoType ?? frontmatter?.type
+    );
 
     if (!normalized) {
       return {

@@ -158,6 +158,7 @@ export const createEntityForEntity = async ({
 
   const rendered = renderTemplate(templateSource, {
     title: safeTitle,
+    mondoType: normalizedTarget,
     type: normalizedTarget,
     filename,
     slug: slugify(filenameBase),
@@ -178,7 +179,11 @@ export const createEntityForEntity = async ({
   // Default link properties: do NOT include a generic "related" key by default.
   // Use only the host entity type (e.g. 'person', 'company') if available.
   const defaultLinkProps = (() => {
-    const hostType = String((hostEntity.cache?.frontmatter as any)?.type || "")
+    const hostType = String(
+      (hostEntity.cache?.frontmatter as any)?.mondoType ||
+        (hostEntity.cache?.frontmatter as any)?.type ||
+        ""
+    )
       .trim()
       .toLowerCase();
     const props: string[] = [];
@@ -206,7 +211,10 @@ export const createEntityForEntity = async ({
   // Persist frontmatter: add links and attributes
   await app.fileManager.processFrontMatter(created, (frontmatter) => {
     // Ensure type is set (template already did, but keep consistent)
-    (frontmatter as any).type = normalizedTarget;
+    (frontmatter as any).mondoType = normalizedTarget;
+    if (Object.prototype.hasOwnProperty.call(frontmatter, "type")) {
+      delete (frontmatter as Record<string, unknown>).type;
+    }
 
     // Link back to host
     const wiki = buildWikiLink({

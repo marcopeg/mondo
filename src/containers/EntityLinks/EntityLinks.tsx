@@ -31,7 +31,7 @@ export const EntityLinks = () => {
     return null;
   }
 
-  const rawEntityType = frontmatter?.type;
+  const rawEntityType = frontmatter?.mondoType ?? frontmatter?.type;
   if (!rawEntityType) {
     return renderMissingConfigError(
       "current file is missing a frontmatter type"

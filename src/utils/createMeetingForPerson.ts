@@ -202,11 +202,15 @@ export const createMeetingForEntity = async ({
   };
 
   const displayName = getEntityDisplayName(entityFile);
-  const isPersonHost =
-    (entityFile.cache?.frontmatter as any)?.type === "person";
-  const isProjectHost =
-    (entityFile.cache?.frontmatter as any)?.type === "project";
-  const isTeamHost = (entityFile.cache?.frontmatter as any)?.type === "team";
+  const hostFrontmatter = (entityFile.cache?.frontmatter as any) ?? {};
+  const rawHostType =
+    (hostFrontmatter.mondoType as string | undefined) ??
+    (hostFrontmatter.type as string | undefined) ??
+    "";
+  const normalizedHostType = rawHostType.trim().toLowerCase();
+  const isPersonHost = normalizedHostType === "person";
+  const isProjectHost = normalizedHostType === "project";
+  const isTeamHost = normalizedHostType === "team";
   const rootPathSetting = settings.rootPaths?.[MondoFileType.MEETING] ?? "/";
   const normalizedFolder = normalizeFolderPath(rootPathSetting);
 
@@ -249,6 +253,7 @@ export const createMeetingForEntity = async ({
 
     const rendered = renderTemplate(templateSource, {
       title: safeTitle,
+      mondoType: String(MondoFileType.MEETING),
       type: String(MondoFileType.MEETING),
       filename: fileName,
       slug,
@@ -265,6 +270,13 @@ export const createMeetingForEntity = async ({
 
     meetingFile = await app.vault.create(filePath, contentWithLinks);
     didCreate = true;
+
+    await app.fileManager.processFrontMatter(meetingFile, (frontmatter) => {
+      frontmatter.mondoType = String(MondoFileType.MEETING);
+      if (Object.prototype.hasOwnProperty.call(frontmatter, "type")) {
+        delete (frontmatter as Record<string, unknown>).type;
+      }
+    });
   }
 
   if (meetingFile && openAfterCreate) {

@@ -47,9 +47,10 @@ export const createFactForEntity = async ({
   };
 
   const displayName = getEntityDisplayName(entityFile);
-  const hostType = (entityFile.cache?.frontmatter as any)?.type as
-    | string
-    | undefined;
+  const hostFrontmatter = (entityFile.cache?.frontmatter as any) ?? {};
+  const hostType =
+    (hostFrontmatter.mondoType as string | undefined) ??
+    (hostFrontmatter.type as string | undefined);
   // Treat person, project, task, fact, company, team, and meeting hosts as editable targets where we prefer a
   // simple default title (so user can immediately rename it)
   const isEditableHost =
@@ -112,6 +113,7 @@ export const createFactForEntity = async ({
 
     const rendered = renderTemplate(templateSource, {
       title: safeTitle,
+      mondoType: String(MondoFileType.FACT),
       type: String(MondoFileType.FACT),
       filename: fileName,
       slug,
@@ -132,6 +134,12 @@ export const createFactForEntity = async ({
 
   await app.fileManager.processFrontMatter(factFile, (frontmatter) => {
     frontmatter.date = isoTimestamp;
+    if (typeof frontmatter.mondoType !== "string" || !frontmatter.mondoType) {
+      frontmatter.mondoType = String(MondoFileType.FACT);
+    }
+    if (Object.prototype.hasOwnProperty.call(frontmatter, "type")) {
+      delete (frontmatter as Record<string, unknown>).type;
+    }
     if (Object.prototype.hasOwnProperty.call(frontmatter, "time")) {
       delete (frontmatter as any).time;
     }

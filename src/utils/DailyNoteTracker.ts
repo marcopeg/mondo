@@ -170,7 +170,8 @@ export class DailyNoteTracker {
   private readFrontmatterType = (
     cache: CachedMetadata | null | undefined
   ): string | null => {
-    const raw = cache?.frontmatter?.type;
+    const raw =
+      cache?.frontmatter?.mondoType ?? cache?.frontmatter?.type;
     if (typeof raw === "string" && raw.trim()) {
       return raw.trim().toLowerCase();
     }
@@ -383,7 +384,10 @@ export class DailyNoteTracker {
     frontmatter: Record<string, unknown>,
     dateKey: string
   ) => {
-    frontmatter.type = DAILY_NOTE_TYPE;
+    frontmatter.mondoType = DAILY_NOTE_TYPE;
+    if (Object.prototype.hasOwnProperty.call(frontmatter, "type")) {
+      delete (frontmatter as Record<string, unknown>).type;
+    }
     frontmatter.date = dateKey;
   };
 

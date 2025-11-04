@@ -202,6 +202,66 @@
   color: var(--color-green, #2f9e44);
 }
 
+.mondo-magic-paste {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  min-width: 28rem;
+}
+
+.mondo-magic-paste__description {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+.mondo-magic-paste__textarea {
+  width: 100%;
+  min-height: 14rem;
+  resize: vertical;
+}
+
+.mondo-magic-paste__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+.mondo-magic-paste__button {
+  padding: 0.45rem 0.9rem;
+  border-radius: 0.4rem;
+  border: 1px solid var(--background-modifier-border);
+  background: var(--background-primary);
+  color: var(--text-normal);
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.mondo-magic-paste__button:hover {
+  background: var(--background-secondary);
+}
+
+.mondo-magic-paste__button:focus-visible {
+  outline: 2px solid var(--interactive-accent);
+  outline-offset: 2px;
+}
+
+.mondo-magic-paste__button--primary {
+  background: var(--interactive-accent);
+  border-color: var(--interactive-accent);
+  color: var(--text-on-accent);
+}
+
+.mondo-magic-paste__button--primary:hover {
+  filter: brightness(1.05);
+}
+
+.mondo-magic-paste__button--primary:disabled,
+.mondo-magic-paste__button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
 .mondo-button--pressed,
 .mondo-button[data-pressed="true"] {
   background-color: var(--interactive-accent);
@@ -1977,6 +2037,125 @@
   flex: 1 1 auto;
   min-height: 0;
   margin-bottom: 0.5rem;
+}
+
+/* Focus mode: hide Mondo UI and common properties/dictation controls */
+/* When the `focus-mode` class is present on <body> we visually remove
+   Mondo panels, the voice/dictation FAB and the Obsidian properties/frontmatter
+   view so the editor is distraction-free. Use conservative selectors to
+   avoid interfering with note content. */
+/* Hide any top-level Mondo views/containers */
+body.focus-mode .mondo,
+body.focus-mode [class*="mondo-"]:not(.mondo-journal-close-btn) {
+  display: none !important;
+}
+
+/* Hide the floating dictation / voice FAB specifically */
+body.focus-mode .mondo-voice-fab-container,
+body.focus-mode .mondo-voice-fab,
+body.focus-mode .mondo-voice-fab--visible {
+  display: none !important;
+}
+
+/* Attempt to hide Obsidian's Properties / Frontmatter side view if present.
+   These selectors cover common cases across Obsidian versions and community
+   plugins. They are intentionally broad but scoped under body.focus-mode. */
+body.focus-mode .view[data-type="properties"],
+body.focus-mode .view[data-type="frontmatter"],
+body.focus-mode .frontmatter,
+body.focus-mode .file-properties,
+body.focus-mode .metadata-view,
+body.focus-mode .metadata-container,
+body.focus-mode .metadata-properties,
+body.focus-mode .metadata-property,
+body.focus-mode .yaml-frontmatter {
+  display: none !important;
+}
+
+/* Focus mode: hide common breadcrumb trails injected above titles by
+   core or community plugins (e.g., Breadcrumbs). Keep this scoped and
+   conservative: match typical names that include "breadcrumb". */
+body.focus-mode .breadcrumbs,
+body.focus-mode .breadcrumbs-container,
+body.focus-mode .BC-trail,
+body.focus-mode [id*="breadcrumb" i],
+body.focus-mode [class*="breadcrumb" i] {
+  display: none !important;
+}
+
+/* Focus mode: hide the Obsidian left ribbon (icon bar) and remove its spacing */
+body.focus-mode {
+  /* Most themes/layouts use this CSS variable for ribbon width */
+  --ribbon-width: 0px;
+}
+body.focus-mode .workspace-ribbon,
+body.focus-mode .side-dock-ribbon,
+body.focus-mode .workspace-ribbon.mod-left,
+body.focus-mode .side-dock-ribbon.mod-left {
+  display: none !important;
+}
+
+/* Focus mode: hide only the top tab header bar (file switcher), not the editor */
+body.focus-mode .workspace-tab-header-container {
+  display: none !important;
+}
+
+/* Focus mode: hide top-right controls (More options menu, action buttons) */
+body.focus-mode .view-actions,
+body.focus-mode .view-header-nav-buttons,
+body.focus-mode .more-options-button {
+  display: none !important;
+}
+
+/* Focus mode: hide the file name/title at the top */
+body.focus-mode .view-header-title,
+body.focus-mode .view-header-title-input,
+body.focus-mode .markdown-preview-view .view-header {
+  display: none !important;
+}
+
+/* Focus-mode exit/journal button: match bottom-right status controls style */
+
+/* Default/fallback style when not inside status bar */
+.mondo-journal-close-btn {
+  position: fixed;
+  left: calc(0.5rem + env(safe-area-inset-left, 0px));
+  bottom: calc(0.25rem + env(safe-area-inset-bottom, 0px));
+  z-index: var(--layer-status-bar, 10);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0;
+  margin: 0;
+  border: none !important;            /* text-only */
+  background: transparent !important; /* text-only */
+  color: var(--text-muted) !important;
+  font-size: var(--font-ui-smaller, var(--font-smaller, 0.8rem));
+  line-height: 1.4;
+  cursor: pointer;
+  box-shadow: none !important;
+}
+
+.mondo-journal-close-btn:hover {
+  color: var(--text-normal) !important;
+}
+
+.mondo-journal-close-btn:active {
+  transform: translateY(1px);
+}
+
+.mondo-journal-close-btn svg {
+  width: 1rem;
+  height: 1rem;
+  stroke-width: 2;
+}
+
+/* Respect focus visibility similar to clickable status items */
+.mondo-journal-close-btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--background-modifier-border),
+    0 0 0 4px color-mix(in oklab, var(--interactive-accent) 60%, transparent);
+  border-radius: 6px;
 }
 
 .mondo-crop-modal--mobile .mondo-crop-modal__image-container {

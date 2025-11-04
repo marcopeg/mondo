@@ -61,6 +61,13 @@ export const activateFocusMode = (app: App, source: FocusModeSource) => {
 
   collapseWorkspaceSplits(app);
   applyFocusModeClass();
+  try {
+    // Notify listeners that focus mode is now active
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (app.workspace as any).trigger?.("mondo:focus-mode-changed", { active: true, source });
+  } catch (_error) {
+    // ignore notification failures
+  }
 };
 
 export const deactivateFocusMode = (app: App, source: FocusModeSource) => {
@@ -76,6 +83,13 @@ export const deactivateFocusMode = (app: App, source: FocusModeSource) => {
 
   removeFocusModeClass();
   expandWorkspaceSplits(app);
+  try {
+    // Notify listeners that focus mode is now inactive
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (app.workspace as any).trigger?.("mondo:focus-mode-changed", { active: false, source });
+  } catch (_error) {
+    // ignore notification failures
+  }
 };
 
 export const isFocusModeActive = () => activeSources.size > 0;
@@ -92,4 +106,10 @@ export const resetFocusMode = (app: App) => {
   activeSources.clear();
   removeFocusModeClass();
   expandWorkspaceSplits(app);
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (app.workspace as any).trigger?.("mondo:focus-mode-changed", { active: false, source: "reset" });
+  } catch (_error) {
+    // ignore notification failures
+  }
 };

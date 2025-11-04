@@ -1,6 +1,6 @@
 # Dynamic Links Panels — How to Add Custom Components
 
-This guide explains how to add custom panels to Mondo entity notes using the EntityLinks system. These panels show up inline when viewing a note with a Mondo entity `type` in frontmatter, e.g. `type: person`.
+This guide explains how to add custom panels to Mondo entity notes using the EntityLinks system. These panels show up inline when viewing a note with a Mondo entity `mondoType` in frontmatter, e.g. `mondoType: person`.
 
 - Injected area is created by the plugin when opening a Markdown file: see `src/events/inject-mondo-links.tsx`.
 - For Mondo entity types, it renders `EntityLinks`: `src/containers/EntityLinks/EntityLinks.tsx`.
@@ -13,7 +13,7 @@ If you want to add a new panel, you’ll create a component, register it in a ce
 ## Architecture Overview
 
 - Rendering entrypoint: `inject-mondo-links.tsx`
-  - Determines the current file and its frontmatter `type`.
+  - Determines the current file and its frontmatter `mondoType`.
   - For Mondo types, renders `<EntityLinks />` within React providers (`AppProvider` + `EntityFileProvider`).
 - Dynamic renderer: `src/containers/EntityLinks/EntityLinks.tsx`
   - Reads the focused file via `useEntityFile()`.
@@ -166,9 +166,9 @@ Repeat for other entities if you want the same panel elsewhere. Because the JSON
 ## Troubleshooting
 
 - "EntityLinks: current file is missing a frontmatter type"
-  - Add `type: <entity>` to the file’s frontmatter.
+  - Add `mondoType: <entity>` to the file’s frontmatter.
 - "EntityLinks: unknown entity type"
-  - The `type` in frontmatter must match one of `MONDO_ENTITY_TYPES` (see `src/entities/index.ts`).
+  - The `mondoType` in frontmatter must match one of `MONDO_ENTITY_TYPES` (see `src/entities/index.ts`).
 - "EntityLinks: no renderer registered for link type \"<x>\""
   - You added a `{ type: "<x>" }` to `links` but didn’t register it in `entityMap`.
 - "EntityLinks: no link configuration defined for \"<entity>\""
@@ -185,7 +185,7 @@ yarn install
 yarn dev
 ```
 
-- Open a note with the target `type:` to see your panel.
+- Open a note with the target `mondoType:` to see your panel.
 - Reordering panels: change the order of entries in the entity’s `links` array.
 
 ## Reference: Important Files & APIs

@@ -95,6 +95,7 @@ export const QuickEntity = ({ type, placeholder }: QuickEntityProps) => {
           const isoTimestamp = now.toISOString();
           const content = renderTemplate(templateSource, {
             title: base,
+            mondoType: String(entityType),
             type: String(entityType),
             filename: fileName,
             slug,
@@ -103,6 +104,13 @@ export const QuickEntity = ({ type, placeholder }: QuickEntityProps) => {
 
           tfile = await app.vault.create(filePath, content);
           createdFile = tfile;
+
+          await app.fileManager.processFrontMatter(tfile, (frontmatter) => {
+            frontmatter.mondoType = String(entityType);
+            if (Object.prototype.hasOwnProperty.call(frontmatter, "type")) {
+              delete (frontmatter as Record<string, unknown>).type;
+            }
+          });
         }
 
         if (createdFile && entityType === MondoFileType.TASK) {

@@ -150,6 +150,7 @@ const createEntityFile = async ({
   const templateSource = await getTemplateForType(app, templates, entityType);
   const content = renderTemplate(templateSource ?? "", {
     title: baseTitle,
+    mondoType: String(entityType),
     type: String(entityType),
     filename: fileName,
     slug,
@@ -157,6 +158,13 @@ const createEntityFile = async ({
   });
 
   const createdFile = await app.vault.create(filePath, content);
+
+  await app.fileManager.processFrontMatter(createdFile, (frontmatter) => {
+    frontmatter.mondoType = String(entityType);
+    if (Object.prototype.hasOwnProperty.call(frontmatter, "type")) {
+      delete (frontmatter as Record<string, unknown>).type;
+    }
+  });
 
   if (entityType === MondoFileType.TASK) {
     try {

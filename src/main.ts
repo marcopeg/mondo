@@ -9,7 +9,7 @@ import {
   TFile,
   type ViewState,
   type WorkspaceLeaf,
-  WorkspaceTabs,
+  
 } from "obsidian";
 import {
   MondoDashboardViewWrapper,
@@ -74,6 +74,7 @@ import { journalMoveFactory } from "@/commands/journal.nav";
 import { insertTimestamp } from "@/commands/timestamp.insert";
 import { copyNoteText } from "@/commands/note.copyText";
 import { openEditWithAI } from "@/commands/note.editWithAI";
+import { openMagicPaste } from "@/commands/note.magicPaste";
 import { sendToChatGPT } from "@/commands/chatgpt.send";
 import { openSelfPersonNote } from "@/commands/self.open";
 import { findActiveOrSelectedImageFile } from "@/commands/image.edit";
@@ -82,6 +83,10 @@ import {
   injectMondoLinks,
   disposeMondoLinkInjections,
 } from "@/events/inject-mondo-links";
+import {
+  injectJournalCloseButton,
+  disposeJournalCloseButton,
+} from "@/events/inject-journal-close-btn";
 import { requestGeolocation } from "@/utils/geolocation";
 import { buildVoiceoverText } from "@/utils/buildVoiceoverText";
 import {
@@ -90,6 +95,7 @@ import {
   isFocusModeActive,
   resetFocusMode,
 } from "@/utils/focusMode";
+import { createJournalFocusModeHandler, isJournalNote } from "@/utils/journalFocusMode";
 import DailyNoteTracker from "@/utils/DailyNoteTracker";
 import { TimestampToolbarManager } from "@/utils/TimestampToolbarManager";
 import { CopyNoteToolbarManager } from "@/utils/CopyNoteToolbarManager";
@@ -111,11 +117,10 @@ import {
 
 const MONDO_ICON = "anchor";
 
-type PanelOpenOptions = {
-  state?: Record<string, unknown>;
-  reuseMatching?: (leaf: WorkspaceLeaf) => boolean;
-  ensureFirstInTabGroup?: boolean;
-};
+  type PanelOpenOptions = {
+    state?: Record<string, unknown>;
+    reuseMatching?: (leaf: WorkspaceLeaf) => boolean;
+  };
 
 export default class Mondo extends Plugin {
   // Settings shape and defaults
@@ -618,10 +623,7 @@ export default class Mondo extends Plugin {
       id: "open-dashboard",
       name: "Open Mondo dashboard",
       hotkeys: [{ modifiers: ["Mod", "Shift"], key: "m" }], // Cmd/Ctrl+Shift+M (user can change later)
-      callback: () =>
-        this.showPanel(DASHBOARD_VIEW, "main", {
-          ensureFirstInTabGroup: true,
-        }),
+        callback: () => this.showPanel(DASHBOARD_VIEW, "main"),
     });
 
     this.addCommand({
@@ -713,31 +715,38 @@ export default class Mondo extends Plugin {
     });
 
     this.addCommand({
-      id: "open-journal",
-      name: "Open Journal",
+      id: "toggle-journaling",
+      name: "Toggle Journaling",
+      hotkeys: [{ modifiers: ["Mod", "Shift"], key: "j" }],
       callback: async () => {
         try {
-          console.log("Opening journal...");
-          await openJournal(this.app, this);
+          const activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
+          const activeFile = activeView?.file ?? null;
+          
+          if (isJournalNote(activeFile, this)) {
+            // Currently viewing journal, close it
+            await this.showPanel(DASHBOARD_VIEW, "main");
+          } else {
+            // Not viewing journal, open it
+            console.log("Opening journal...");
+            await openJournal(this.app, this);
+          }
         } catch (e) {
-          console.error("Mondo: Failed to open journal:", e);
+          console.error("Mondo: Failed to toggle journaling:", e);
         }
       },
     });
 
+    
     this.addCommand({
-      id: "focus-mode-start",
-      name: "Start focus mode",
+      id: "focus-mode-toggle",
+      name: "Toggle focus mode",
       callback: () => {
-        activateFocusMode(this.app, "manual");
-      },
-    });
-
-    this.addCommand({
-      id: "focus-mode-stop",
-      name: "Stop focus mode",
-      callback: () => {
-        deactivateFocusMode(this.app, "manual");
+        if (isFocusModeActive()) {
+          deactivateFocusMode(this.app, "manual");
+        } else {
+          activateFocusMode(this.app, "manual");
+        }
       },
     });
 
@@ -794,6 +803,26 @@ export default class Mondo extends Plugin {
             : this.app.workspace.getActiveViewOfType(MarkdownView);
 
         void copyNoteText(this.app, { editor, view: markdownView });
+      },
+    });
+
+    this.addCommand({
+      id: "magic-paste",
+      name: "Magic paste",
+      icon: "clipboard-paste",
+      editorCallback: (editor, context) => {
+        const markdownView =
+          context instanceof MarkdownView
+            ? context
+            : this.app.workspace.getActiveViewOfType(MarkdownView);
+
+        void openMagicPaste(this.app, this, {
+          editor,
+          view: markdownView ?? undefined,
+        });
+      },
+      callback: () => {
+        void openMagicPaste(this.app, this);
       },
     });
 
@@ -1005,34 +1034,48 @@ export default class Mondo extends Plugin {
 
     this.refreshRibbonIcons();
 
-    // Auto open/close panels based on context (debounced)
-    this.app.workspace.onLayoutReady(async () => {
-      await this.focusDashboardOnStartup();
-      await this.syncPanels();
-    });
+    // Note: removed automatic side-panel/tab control. The plugin no longer
+    // open/close or reorder side panels. Keep daily tracker behavior.
     this.registerEvent(
       this.app.workspace.on("file-open", (file) => {
         this.dailyNoteTracker?.handleFileOpened(file);
-        void this.syncPanels();
+        void this.ensureDashboardIfEmpty();
       })
     );
+
+    // Ensure dashboard is opened when no notes are present and the user
+    // has enabled the "forceTab" dashboard setting. This is intentionally
+    // minimal: it opens the dashboard in a main leaf and does not change
+    // splits or reorder tabs.
+    this.app.workspace.onLayoutReady(() => {
+      void this.ensureDashboardIfEmpty();
+    });
     this.registerEvent(
       this.app.workspace.on("active-leaf-change", () => {
-        void this.syncPanels();
+        void this.ensureDashboardIfEmpty();
       })
     );
-    this.registerEvent(
-      this.app.workspace.on("layout-change", () => {
-        void this.syncPanels();
-      })
-    );
-    this.registerDomEvent(window, "focus", () => {
-      void this.syncPanels();
-    });
 
     // Inject journal navigational components (pass plugin so handler can read settings)
     this.registerEvent(
       this.app.workspace.on("active-leaf-change", injectJournalNav(this))
+    );
+
+    // Automatically toggle focus mode for journal notes
+    const journalFocusModeHandler = createJournalFocusModeHandler(this);
+    this.registerEvent(
+      this.app.workspace.on("active-leaf-change", journalFocusModeHandler)
+    );
+
+    // Inject close button for journal notes
+    const journalCloseButtonHandler = injectJournalCloseButton(this);
+    this.registerEvent(
+      this.app.workspace.on("active-leaf-change", journalCloseButtonHandler)
+    );
+    // Also react immediately to focus-mode changes (manual/journal toggles)
+    this.registerEvent(
+      // @ts-ignore - custom event name
+      this.app.workspace.on("mondo:focus-mode-changed", journalCloseButtonHandler)
     );
 
     // Inject a small "Hello World" div for Mondo-type notes (company/person/project/team)
@@ -1083,6 +1126,7 @@ export default class Mondo extends Plugin {
     this.mondoConfigManager = null;
 
     resetFocusMode(this.app);
+    disposeJournalCloseButton();
 
     // Cleanup the Mondo file manager
     const fileManager = MondoFileManager.getInstance(this.app);
@@ -1286,6 +1330,7 @@ export default class Mondo extends Plugin {
 
       const content = renderTemplate(templateSource, {
         title: displayTitle,
+        mondoType: String(entityType),
         type: String(entityType),
         filename,
         slug: slugValue,
@@ -1294,6 +1339,13 @@ export default class Mondo extends Plugin {
       });
 
       const created = (await this.app.vault.create(filePath, content)) as TFile;
+
+      await this.app.fileManager.processFrontMatter(created, (frontmatter) => {
+        frontmatter.mondoType = String(entityType);
+        if (Object.prototype.hasOwnProperty.call(frontmatter, "type")) {
+          delete (frontmatter as Record<string, unknown>).type;
+        }
+      });
 
       const leaf = this.app.workspace.getLeaf(true);
       if (leaf) {
@@ -1354,11 +1406,9 @@ export default class Mondo extends Plugin {
         case "current":
           leaf = workspace.getLeaf(false);
           break;
-        case "left":
-          leaf = workspace.getLeftLeaf(false);
-          break;
-        case "right":
-          leaf = workspace.getRightLeaf(false) ?? workspace.getRightLeaf(true);
+        default:
+          // Left/right placement no longer requests side leaves. Fall back to a main leaf.
+          leaf = workspace.getLeaf(true);
           break;
       }
     }
@@ -1372,139 +1422,32 @@ export default class Mondo extends Plugin {
       : { type: viewType, active: true };
 
     await leaf.setViewState(viewState);
-    if (options?.ensureFirstInTabGroup) {
-      this.ensureLeafIsFirstInMainTabs(leaf);
-    }
+    // Do not reorder or force tab positions. Reveal the leaf and stop.
     workspace.revealLeaf(leaf);
   }
 
-  private ensureLeafIsFirstInMainTabs(leaf: WorkspaceLeaf) {
-    const { workspace } = this.app;
-    const rootSplit = workspace.rootSplit;
-    if (!rootSplit) {
-      return;
-    }
+  // Note: side-panel/tab reordering behaviour was removed. The plugin no
+  // longer manipulates main tab ordering or forces leaves into the first
+  // position. Focus mode logic remains handled elsewhere.
 
-    const root = leaf.getRoot();
-    if (root !== rootSplit) {
-      return;
-    }
+  // Automatic side-panel control (open/close/reorder) removed. Focus
+  // mode is still managed elsewhere based on journal context.
 
-    const parent = leaf.parent;
-    if (!(parent instanceof WorkspaceTabs)) {
-      return;
-    }
-
-    const tabs = parent as WorkspaceTabs & {
-      children?: WorkspaceLeaf[];
-      containerEl?: HTMLElement;
-      tabHeaderEl?: HTMLElement;
-      selectTab?: (leaf: WorkspaceLeaf) => void;
-      getTabInfo?: (target: WorkspaceLeaf) => { tabEl?: HTMLElement } | null;
-    };
-
-    const { children } = tabs;
-    if (!Array.isArray(children)) {
-      return;
-    }
-
-    const currentIndex = children.indexOf(leaf);
-    if (currentIndex <= 0) {
-      return;
-    }
-
-    children.splice(currentIndex, 1);
-    children.unshift(leaf);
-
-    const contentContainer = tabs.containerEl;
-    const viewContainer =
-      (leaf as unknown as { containerEl?: HTMLElement }).containerEl ??
-      leaf.view.containerEl;
-    if (contentContainer && viewContainer && contentContainer.firstElementChild !== viewContainer) {
-      contentContainer.insertBefore(
-        viewContainer,
-        contentContainer.firstElementChild ?? null
-      );
-    }
-
-    const headerContainer = tabs.tabHeaderEl;
-    const tabEl =
-      tabs.getTabInfo?.(leaf)?.tabEl ??
-      (leaf as unknown as { tabHeaderEl?: HTMLElement }).tabHeaderEl ??
-      null;
-    if (headerContainer && tabEl && headerContainer.firstElementChild !== tabEl) {
-      headerContainer.insertBefore(tabEl, headerContainer.firstElementChild ?? null);
-    }
-
-    tabs.selectTab?.(leaf);
-  }
-
-  private async syncPanels() {
-    const ws = this.app.workspace;
-
-    const hasAnyNote = ws.getLeavesOfType("markdown").length > 0;
-    const forceDashboardTab = Boolean(this.settings?.dashboard?.forceTab);
-
-    if (!hasAnyNote) {
-      deactivateFocusMode(this.app, "journal");
-
-      if (!forceDashboardTab) {
-        return;
-      }
+  private async ensureDashboardIfEmpty() {
+    try {
+      if (!this.settings?.dashboard?.forceTab) return;
+      const ws = this.app.workspace;
+      const hasAnyNote = ws.getLeavesOfType("markdown").length > 0;
+      if (hasAnyNote) return;
 
       const dashboardOpen = ws.getLeavesOfType(DASHBOARD_VIEW).length > 0;
       if (!dashboardOpen) {
-        await this.showPanel(DASHBOARD_VIEW, "main", {
-          ensureFirstInTabGroup: true,
-        });
+        // Open the dashboard in a regular main leaf. Do not manipulate splits or tabs.
+        await this.showPanel(DASHBOARD_VIEW, "main");
       }
-
-      if (!isFocusModeActive() && !Platform.isMobileApp) {
-        ws.leftSplit?.expand?.();
-      }
-      ws.rightSplit?.collapse?.();
-      return;
+    } catch (e) {
+      console.warn("Mondo: failed to ensure dashboard when empty", e);
     }
-
-    const activeLeaf = ws.activeLeaf ?? null;
-    const focusedTab =
-      activeLeaf?.view?.getViewType?.() ??
-      activeLeaf?.getViewState?.()?.type ??
-      null;
-
-    if (focusedTab === "dashboard-view") {
-      ws.rightSplit?.collapse?.();
-    }
-
-    const normalize = (value?: string) =>
-      (value ?? "").replace(/^\/+|\/+$/g, "");
-    const journalRoot = normalize(
-      this.settings?.journal?.root ?? DEFAULT_MONDO_JOURNAL_SETTINGS.root
-    );
-    const activeFile = this.app.workspace.getActiveFile();
-    const activePath = normalize(activeFile?.path);
-    const isJournal =
-      activePath.startsWith(journalRoot) && activePath.length > 0;
-
-    if (isJournal) {
-      activateFocusMode(this.app, "journal");
-      return;
-    }
-
-    deactivateFocusMode(this.app, "journal");
-
-    if (!isFocusModeActive() && !Platform.isMobileApp) {
-      ws.leftSplit?.expand?.();
-    }
-  }
-
-  private async focusDashboardOnStartup() {
-    if (!this.settings?.dashboard?.openAtBoot) return;
-    if (this.hasFocusedDashboardOnStartup) return;
-    this.hasFocusedDashboardOnStartup = true;
-    await this.showPanel(DASHBOARD_VIEW, "main", {
-      ensureFirstInTabGroup: true,
-    });
   }
 
   getVoiceoverManager = () => this.voiceoverManager;
