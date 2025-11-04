@@ -2040,6 +2040,13 @@ body.focus-mode .workspace-tab-header-container {
   display: none !important;
 }
 
+/* Focus mode: hide top-right controls (More options menu, action buttons) */
+body.focus-mode .view-actions,
+body.focus-mode .view-header-nav-buttons,
+body.focus-mode .more-options-button {
+  display: none !important;
+}
+
 .mondo-crop-modal--mobile .mondo-crop-modal__image-container {
   width: 100%;
   height: 100%;
