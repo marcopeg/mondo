@@ -74,6 +74,7 @@ import { journalMoveFactory } from "@/commands/journal.nav";
 import { insertTimestamp } from "@/commands/timestamp.insert";
 import { copyNoteText } from "@/commands/note.copyText";
 import { openEditWithAI } from "@/commands/note.editWithAI";
+import { openMagicPaste } from "@/commands/note.magicPaste";
 import { sendToChatGPT } from "@/commands/chatgpt.send";
 import { openSelfPersonNote } from "@/commands/self.open";
 import { findActiveOrSelectedImageFile } from "@/commands/image.edit";
@@ -802,6 +803,26 @@ export default class Mondo extends Plugin {
             : this.app.workspace.getActiveViewOfType(MarkdownView);
 
         void copyNoteText(this.app, { editor, view: markdownView });
+      },
+    });
+
+    this.addCommand({
+      id: "magic-paste",
+      name: "Magic paste",
+      icon: "clipboard-paste",
+      editorCallback: (editor, context) => {
+        const markdownView =
+          context instanceof MarkdownView
+            ? context
+            : this.app.workspace.getActiveViewOfType(MarkdownView);
+
+        void openMagicPaste(this.app, this, {
+          editor,
+          view: markdownView ?? undefined,
+        });
+      },
+      callback: () => {
+        void openMagicPaste(this.app, this);
       },
     });
 

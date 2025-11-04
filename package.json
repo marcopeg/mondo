@@ -38,6 +38,7 @@
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
     "@radix-ui/themes": "^3.2.1",
+    "clean-text-utils": "^1.1.17",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
     "yaml": "^2.6.0"
