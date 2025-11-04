@@ -29,8 +29,10 @@ export const injectJournalCloseButton = (plugin: Mondo) => {
     const isJournal = isJournalNote(file ?? null, plugin);
 
     // Create and inject the focus/journal exit button
-    const btn = document.createElement("button");
-    btn.className = CLOSE_BTN_CLASS;
+  const btn = document.createElement("button");
+  // Keep our own minimalist class; we'll place it inside the status bar so it aligns,
+  // but avoid inheriting pill/badge styles from theme status items.
+  btn.className = CLOSE_BTN_CLASS;
     const label = isJournal
       ? "I'm done journaling for today"
       : "Exit Focus Mode";
@@ -44,13 +46,8 @@ export const injectJournalCloseButton = (plugin: Mondo) => {
         ? "Close journal (Cmd/Ctrl+Shift+J)"
         : "Exit focus mode (use the command again to toggle)"
     );
-    btn.innerHTML = `
-      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <line x1="19" y1="12" x2="5" y2="12"></line>
-        <polyline points="12 19 5 12 12 5"></polyline>
-      </svg>
-      <span>${label}</span>
-    `;
+    // Text-only label to match status items
+    btn.textContent = label;
 
     btn.addEventListener("click", () => {
       const commands = (plugin.app as any).commands;
@@ -62,6 +59,8 @@ export const injectJournalCloseButton = (plugin: Mondo) => {
       }
     });
 
+    // Inject into body with fixed positioning so it can align to the left edge
+    // of the viewport independent of the status bar.
     document.body.appendChild(btn);
   };
 };
