@@ -424,3 +424,8 @@ Logic when converting an entry to a Mondo note:
   - put the full entry as body of the note only if it is different from the final assigned title
   - add a link back to the daily entry at the end of the note as "(Imported from: {daily note title})" - put an empty line between the note's body and the link back
 - add a link to the new note in the daily note original source as "(Moved to: {note title})"
+
+---
+
+
+there is a bug connected with the control of the side panels. if i close the side panel and then click on a mondo tab, it gets re-opened. start looking into #file:main.ts searching for code connected to controlling the side panels and remove it completely. mondo plugin doesn't control side panels anymore except for the focus mode.
