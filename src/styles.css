@@ -2012,6 +2012,29 @@ body.focus-mode .yaml-frontmatter {
   display: none !important;
 }
 
+/* Focus mode: hide common breadcrumb trails injected above titles by
+   core or community plugins (e.g., Breadcrumbs). Keep this scoped and
+   conservative: match typical names that include "breadcrumb". */
+body.focus-mode .breadcrumbs,
+body.focus-mode .breadcrumbs-container,
+body.focus-mode .BC-trail,
+body.focus-mode [id*="breadcrumb" i],
+body.focus-mode [class*="breadcrumb" i] {
+  display: none !important;
+}
+
+/* Focus mode: hide the Obsidian left ribbon (icon bar) and remove its spacing */
+body.focus-mode {
+  /* Most themes/layouts use this CSS variable for ribbon width */
+  --ribbon-width: 0px;
+}
+body.focus-mode .workspace-ribbon,
+body.focus-mode .side-dock-ribbon,
+body.focus-mode .workspace-ribbon.mod-left,
+body.focus-mode .side-dock-ribbon.mod-left {
+  display: none !important;
+}
+
 .mondo-crop-modal--mobile .mondo-crop-modal__image-container {
   width: 100%;
   height: 100%;
