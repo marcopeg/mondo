@@ -4,7 +4,14 @@ import { getDefaultTemplate } from "@/templates";
 
 export interface TemplateContext {
   title: string;
-  type: string;
+  /**
+   * Deprecated: legacy frontmatter key. Use `mondoType`.
+   */
+  type?: string;
+  /**
+   * Preferred frontmatter key replacing `type`.
+   */
+  mondoType?: string;
   filename: string;
   slug: string;
   date: string;
@@ -77,7 +84,15 @@ const getTemplateReplacement = (
 
 const TEMPLATE_REPLACEMENTS = [
   getTemplateReplacement(/{{\s*title\s*}}/gi, (context) => context.title),
-  getTemplateReplacement(/{{\s*type\s*}}/gi, (context) => context.type),
+  // Support both legacy {{type}} and new {{mondoType}} variables
+  getTemplateReplacement(
+    /{{\s*type\s*}}/gi,
+    (context) => context.mondoType ?? context.type ?? ""
+  ),
+  getTemplateReplacement(
+    /{{\s*mondoType\s*}}/gi,
+    (context) => context.mondoType ?? context.type ?? ""
+  ),
   getTemplateReplacement(/{{\s*filename\s*}}/gi, (context) => context.filename),
   getTemplateReplacement(/{{\s*slug\s*}}/gi, (context) => context.slug),
   getTemplateReplacement(/{{\s*date\s*}}/gi, (context) => context.date),
@@ -192,7 +207,8 @@ const sanitizeFrontmatter = (fm: string): string => {
 
     if (!key) return true;
 
-    if (key === "type" || key === "show") {
+    // Remove keys we will inject ourselves to avoid duplicates
+    if (key === "type" || key === "mondotype" || key === "show") {
       return false;
     }
 
@@ -219,7 +235,8 @@ export const renderTemplate = (
   const { fm, body } = extractFrontmatter(templateWithFence);
   const cleanFrontmatter = sanitizeFrontmatter(fm);
 
-  const header = ["---", `type: {{type}}`]
+  // Always inject mondoType in the header; {{type}} remains supported for legacy templates
+  const header = ["---", `mondoType: {{mondoType}}`]
     .concat(cleanFrontmatter ? [cleanFrontmatter] : [])
     .concat("---")
     .join("\n");
@@ -257,7 +274,8 @@ export const renderTemplate = (
   const { fm: renderedFm, body: renderedBody } = extractFrontmatter(output);
   const finalFrontmatter = sanitizeFrontmatter(renderedFm);
 
-  const headerLines = ["---", `type: ${context.type}`];
+  const mondoTypeValue = context.mondoType ?? context.type ?? "";
+  const headerLines = ["---", `mondoType: ${mondoTypeValue}`];
 
   if (finalFrontmatter) {
     headerLines.push(...finalFrontmatter.split(/\r?\n/));
