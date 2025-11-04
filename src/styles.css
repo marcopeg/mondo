@@ -1979,6 +1979,36 @@
   margin-bottom: 0.5rem;
 }
 
+/* Focus mode: hide Mondo UI and common properties/dictation controls */
+/* When the `focus-mode` class is present on <body> we visually remove
+   Mondo panels, the voice/dictation FAB and the Obsidian properties/frontmatter
+   view so the editor is distraction-free. Use conservative selectors to
+   avoid interfering with note content. */
+/* Hide any top-level Mondo views/containers */
+body.focus-mode .mondo,
+body.focus-mode [class*="mondo-"] {
+  display: none !important;
+}
+
+/* Hide the floating dictation / voice FAB specifically */
+body.focus-mode .mondo-voice-fab-container,
+body.focus-mode .mondo-voice-fab,
+body.focus-mode .mondo-voice-fab--visible {
+  display: none !important;
+}
+
+/* Attempt to hide Obsidian's Properties / Frontmatter side view if present.
+   These selectors cover common cases across Obsidian versions and community
+   plugins. They are intentionally broad but scoped under body.focus-mode. */
+body.focus-mode .view[data-type="properties"],
+body.focus-mode .view[data-type="frontmatter"],
+body.focus-mode .frontmatter,
+body.focus-mode .file-properties,
+body.focus-mode .metadata-view,
+body.focus-mode .yaml-frontmatter {
+  display: none !important;
+}
+
 .mondo-crop-modal--mobile .mondo-crop-modal__image-container {
   width: 100%;
   height: 100%;
