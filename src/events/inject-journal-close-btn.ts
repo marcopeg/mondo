@@ -45,7 +45,7 @@ export const injectJournalCloseButton = (plugin: Mondo) => {
     btn.addEventListener("click", () => {
       const commands = (plugin.app as any).commands;
       if (commands?.executeCommandById) {
-        void commands.executeCommandById("mondo:close-journal");
+        void commands.executeCommandById("mondo:toggle-journaling");
       }
     });
 

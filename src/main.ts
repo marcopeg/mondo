@@ -736,18 +736,7 @@ export default class Mondo extends Plugin {
       },
     });
 
-    this.addCommand({
-      id: "close-journal",
-      name: "Close Journal",
-      callback: async () => {
-        try {
-          await this.showPanel(DASHBOARD_VIEW, "main");
-        } catch (e) {
-          console.error("Mondo: Failed to close journal:", e);
-        }
-      },
-    });
-
+    
     this.addCommand({
       id: "focus-mode-toggle",
       name: "Toggle focus mode",
