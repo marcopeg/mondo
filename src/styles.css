@@ -2047,6 +2047,13 @@ body.focus-mode .more-options-button {
   display: none !important;
 }
 
+/* Focus mode: hide the file name/title at the top */
+body.focus-mode .view-header-title,
+body.focus-mode .view-header-title-input,
+body.focus-mode .markdown-preview-view .view-header {
+  display: none !important;
+}
+
 .mondo-crop-modal--mobile .mondo-crop-modal__image-container {
   width: 100%;
   height: 100%;
