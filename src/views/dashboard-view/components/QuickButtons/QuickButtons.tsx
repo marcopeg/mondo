@@ -24,7 +24,9 @@ export const QuickButtons = () => {
   }, [executeCommand]);
 
   const onOpenJournal = useCallback(() => {
-    executeCommand("mondo:open-journal");
+    // Use the consolidated Toggle Journaling command so the button
+    // opens or closes the journal depending on current state.
+    executeCommand("mondo:toggle-journaling");
   }, [executeCommand]);
 
   const onOpenMe = useCallback(async () => {
