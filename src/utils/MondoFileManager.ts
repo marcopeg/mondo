@@ -182,7 +182,7 @@ export class MondoFileManager {
           continue;
         }
 
-        const fileType = cache?.frontmatter?.type;
+        const fileType = cache?.frontmatter?.mondoType ?? cache?.frontmatter?.type;
 
         // Check if this is a Mondo file
         if (fileType && isMondoFileType(fileType)) {
@@ -265,7 +265,7 @@ export class MondoFileManager {
       const cache = this.app.metadataCache.getFileCache(file);
 
       if (cache) {
-        const fileType = cache?.frontmatter?.type;
+        const fileType = cache?.frontmatter?.mondoType ?? cache?.frontmatter?.type;
 
         if (fileType && isMondoFileType(fileType)) {
           const wasAdded = this.addFileToCache(fileType, file, cache);

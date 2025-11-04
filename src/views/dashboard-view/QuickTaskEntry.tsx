@@ -128,6 +128,7 @@ const QuickTask = ({ iconOnly = false }: QuickTaskProps) => {
 
       let content = renderTemplate(templateSource ?? "", {
         title: baseTitle,
+        mondoType: MondoFileType.TASK,
         type: MondoFileType.TASK,
         filename: fileName,
         slug,
@@ -149,7 +150,10 @@ const QuickTask = ({ iconOnly = false }: QuickTaskProps) => {
 
       await app.fileManager.processFrontMatter(created, (frontmatter) => {
         const fm = frontmatter as Record<string, unknown>;
-        fm.type = MondoFileType.TASK;
+        fm.mondoType = MondoFileType.TASK;
+        if (Object.prototype.hasOwnProperty.call(fm, "type")) {
+          delete fm.type;
+        }
         fm.status = "quick";
         fm.participants = [];
         fm.date = iso;

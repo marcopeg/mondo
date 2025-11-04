@@ -124,6 +124,7 @@ export const createDocumentForEntity = async ({
 
   const rendered = renderTemplate(templateSource, {
     title: baseTitle,
+    mondoType: String(MondoFileType.DOCUMENT),
     type: String(MondoFileType.DOCUMENT),
     filename: fileName,
     slug,
@@ -142,6 +143,15 @@ export const createDocumentForEntity = async ({
 
   if (validTargets.length > 0) {
     await app.fileManager.processFrontMatter(documentFile, (frontmatter) => {
+      if (
+        typeof frontmatter.mondoType !== "string" ||
+        !frontmatter.mondoType
+      ) {
+        frontmatter.mondoType = String(MondoFileType.DOCUMENT);
+      }
+      if (Object.prototype.hasOwnProperty.call(frontmatter, "type")) {
+        delete (frontmatter as Record<string, unknown>).type;
+      }
       validTargets.forEach(({ property, mode, target }) => {
         const propertyKey = property.trim();
         const targetFile = target.file;

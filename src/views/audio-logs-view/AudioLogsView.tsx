@@ -207,9 +207,12 @@ export const AudioLogsView = ({ plugin }: AudioLogsViewProps) => {
     markdownFiles.forEach((file) => {
       const cache = app.metadataCache.getFileCache(file);
       const frontmatter = cache?.frontmatter ?? {};
-      const type = typeof frontmatter?.type === "string"
-        ? frontmatter.type.trim().toLowerCase()
-        : "";
+      const type =
+        typeof frontmatter?.mondoType === "string"
+          ? frontmatter.mondoType.trim().toLowerCase()
+          : typeof frontmatter?.type === "string"
+          ? frontmatter.type.trim().toLowerCase()
+          : "";
 
       if (isTranscriptionFile(file) || type === "transcription") {
         transcriptions.push(file);

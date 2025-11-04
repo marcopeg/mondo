@@ -57,11 +57,18 @@ const injectShowFrontmatter = (content: string, showValue: string): string => {
   const rest = lines.slice(closingIndex + 1);
 
   const frontmatterLines = headerLines.slice(1);
-  const typeIndex = frontmatterLines.findIndex((line) =>
+  const mondoTypeIndex = frontmatterLines.findIndex((line) =>
+    line.trim().toLowerCase().startsWith("mondotype:")
+  );
+  const legacyTypeIndex = frontmatterLines.findIndex((line) =>
     line.trim().toLowerCase().startsWith("type:")
   );
   const insertIndex =
-    typeIndex >= 0 ? typeIndex + 1 : frontmatterLines.length;
+    mondoTypeIndex >= 0
+      ? mondoTypeIndex + 1
+      : legacyTypeIndex >= 0
+      ? legacyTypeIndex + 1
+      : frontmatterLines.length;
 
   const escapedShow = sanitizedShow
     .replace(/\\/g, "\\\\")
@@ -156,6 +163,7 @@ export const createEntityNoteFromInput = async ({
   );
   const rendered = renderTemplate(templateSource, {
     title: displayTitle,
+    mondoType: String(typeKey),
     type: String(typeKey),
     filename: `${chosenBase}.md`,
     slug: slugValue,
@@ -169,7 +177,16 @@ export const createEntityNoteFromInput = async ({
     ? injectShowFrontmatter(rendered, trimmedInput)
     : rendered;
 
-  return (await app.vault.create(filePath, content)) as TFile;
+  const created = (await app.vault.create(filePath, content)) as TFile;
+
+  await app.fileManager.processFrontMatter(created, (frontmatter) => {
+    frontmatter.mondoType = String(typeKey);
+    if (Object.prototype.hasOwnProperty.call(frontmatter, "type")) {
+      delete (frontmatter as Record<string, unknown>).type;
+    }
+  });
+
+  return created;
 };
 
 export default createEntityNoteFromInput;

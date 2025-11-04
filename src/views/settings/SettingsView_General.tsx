@@ -29,7 +29,9 @@ const collectPersonEntries = (app: App): PersonEntry[] => {
         | Record<string, unknown>
         | undefined;
       const type =
-        typeof frontmatter?.type === "string"
+        typeof frontmatter?.mondoType === "string"
+          ? frontmatter.mondoType.trim().toLowerCase()
+          : typeof frontmatter?.type === "string"
           ? frontmatter.type.trim().toLowerCase()
           : "";
       if (type !== "person") {

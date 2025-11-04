@@ -95,9 +95,15 @@ export const EntityHeaderUnknown = () => {
       }
 
       try {
-        await app.fileManager.processFrontMatter(cachedFile.file, (frontmatter) => {
-          frontmatter.type = nextType;
-        });
+        await app.fileManager.processFrontMatter(
+          cachedFile.file,
+          (frontmatter) => {
+            frontmatter.mondoType = nextType;
+            if (Object.prototype.hasOwnProperty.call(frontmatter, "type")) {
+              delete (frontmatter as Record<string, unknown>).type;
+            }
+          }
+        );
       } catch (error) {
         console.error("EntityHeaderUnknown: failed to assign Mondo type", error);
         new Notice("Failed to update the note type.");

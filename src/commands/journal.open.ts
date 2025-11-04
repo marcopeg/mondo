@@ -78,7 +78,9 @@ export async function openJournal(
   ).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
 
   const makeFrontmatter = (dateStr: string) => {
-    return `---\n` + `type: journal\n` + `date: ${dateStr}\n` + `---\n`;
+    return (
+      `---\n` + `mondoType: journal\n` + `date: ${dateStr}\n` + `---\n`
+    );
   };
 
   if (!tfile) {
@@ -99,7 +101,7 @@ export async function openJournal(
 
       if (fmMatch) {
         const existingFm = fmMatch[1] || "";
-        const hasTypeJournal = /(^|\n)\s*type\s*:\s*journal(\s|$)/i.test(
+        const hasTypeJournal = /(^|\n)\s*(mondoType|type)\s*:\s*journal(\s|$)/i.test(
           existingFm
         );
         const hasTodayDate =

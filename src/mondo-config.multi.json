@@ -12,7 +12,7 @@
       "type": "person",
       "name": "People",
       "icon": "user",
-      "template": "---\ntype: person\nshow: {{title}}\nrole: []\ncompany: []\n---\n",
+      "template": "---\nmondoType: person\nshow: {{title}}\nrole: []\ncompany: []\n---\n",
       "links": [
         {
           "type": "backlinks",
@@ -45,7 +45,7 @@
             "columns": [
               { "type": "entityIcon" },
               { "type": "show" },
-              { "type": "attribute", "key": "type", "label": "Kind" },
+              { "type": "attribute", "key": "mondoType", "label": "Kind" },
               { "type": "date", "label": "Date", "align": "right" }
             ],
             "sort": { "strategy": "manual" },
@@ -63,19 +63,19 @@
       "type": "fact",
       "name": "Facts",
       "icon": "info",
-      "template": "---\ntype: fact\nshow: {{title}}\ndate: {{date}}\nreference: []\n---\n"
+      "template": "---\nmondoType: fact\nshow: {{title}}\ndate: {{date}}\nreference: []\n---\n"
     },
     "document": {
       "type": "document",
       "name": "Documents",
       "icon": "file-text",
-      "template": "---\ntype: document\nshow: {{title}}\ndate: {{date}}\nreference: []\n---\n"
+      "template": "---\nmondoType: document\nshow: {{title}}\ndate: {{date}}\nreference: []\n---\n"
     },
     "idea": {
       "type": "idea",
       "name": "Ideas",
       "icon": "sparkles",
-      "template": "---\ntype: idea\nshow: {{title}}\nstatus: draft\nreference: []\n---\n"
+      "template": "---\nmondoType: idea\nshow: {{title}}\nstatus: draft\nreference: []\n---\n"
     }
   }
 }

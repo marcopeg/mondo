@@ -1330,6 +1330,7 @@ export default class Mondo extends Plugin {
 
       const content = renderTemplate(templateSource, {
         title: displayTitle,
+        mondoType: String(entityType),
         type: String(entityType),
         filename,
         slug: slugValue,
@@ -1338,6 +1339,13 @@ export default class Mondo extends Plugin {
       });
 
       const created = (await this.app.vault.create(filePath, content)) as TFile;
+
+      await this.app.fileManager.processFrontMatter(created, (frontmatter) => {
+        frontmatter.mondoType = String(entityType);
+        if (Object.prototype.hasOwnProperty.call(frontmatter, "type")) {
+          delete (frontmatter as Record<string, unknown>).type;
+        }
+      });
 
       const leaf = this.app.workspace.getLeaf(true);
       if (leaf) {

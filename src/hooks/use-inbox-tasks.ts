@@ -235,7 +235,10 @@ export const useInboxTasks = () => {
           const fm = frontmatter as Record<string, unknown>;
           // Honor the selected target type when it's a valid entity type
           if (typeof targetType === "string" && isMondoEntityType(targetType)) {
-            (fm as Record<string, unknown>).type = targetType;
+            (fm as Record<string, unknown>).mondoType = targetType;
+            if (Object.prototype.hasOwnProperty.call(fm, "type")) {
+              delete (fm as Record<string, unknown>).type;
+            }
           } else {
             // If an unsupported/special type slips through, keep existing type unchanged
             // and avoid forcing it to legacy types like "log".

@@ -81,7 +81,10 @@ export const DailyNoteLinks = () => {
     | undefined;
 
   // Ensure these panels are shown only for true daily notes
-  const type = (frontmatter?.type as string | undefined) ?? null;
+  const type =
+    (frontmatter?.mondoType as string | undefined) ??
+    (frontmatter?.type as string | undefined) ??
+    null;
   if (type !== DAILY_NOTE_TYPE) {
     return null;
   }

@@ -129,7 +129,8 @@ export class AudioTranscriptionManager {
 
     for (const note of markdownFiles) {
       const cache = this.plugin.app.metadataCache.getFileCache(note);
-      const type = cache?.frontmatter?.type;
+      const type =
+        cache?.frontmatter?.mondoType ?? cache?.frontmatter?.type;
 
       if (typeof type !== "string" || type.trim().toLowerCase() !== "transcription") {
         continue;

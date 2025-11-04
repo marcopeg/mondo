@@ -29,7 +29,12 @@ const readSelfPathFromSettings = (app: App): string => {
 
 const isPersonType = (cache: any): boolean => {
   const frontmatter = cache?.frontmatter as Record<string, unknown> | undefined;
-  const type = typeof frontmatter?.type === "string" ? frontmatter.type.trim().toLowerCase() : "";
+  const type =
+    typeof frontmatter?.mondoType === "string"
+      ? frontmatter.mondoType.trim().toLowerCase()
+      : typeof frontmatter?.type === "string"
+      ? frontmatter.type.trim().toLowerCase()
+      : "";
   return type === MondoFileType.PERSON;
 };
 

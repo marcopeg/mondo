@@ -39,7 +39,8 @@ const getFrontmatterType = (
   if (!file || !(file instanceof TFile)) return null;
   const cache = plugin.app.metadataCache.getFileCache(file);
   const fm = cache?.frontmatter as Record<string, unknown> | undefined;
-  return (fm?.type as string | undefined) ?? null;
+  const mondoType = fm?.mondoType ?? fm?.type;
+  return (mondoType as string | undefined) ?? null;
 };
 
 const getCachedFile = (
@@ -569,7 +570,9 @@ const updateCoverThumbnail = (record: InjectionRecord, plugin: Plugin) => {
   const typeRaw = (cached.cache?.frontmatter ?? {}) as
     | Record<string, unknown>
     | undefined;
-  const normalizedType = normalizeTypeValue(typeRaw?.type);
+  const normalizedType = normalizeTypeValue(
+    typeRaw?.mondoType ?? typeRaw?.type
+  );
   if (!normalizedType || !isMondoEntityType(normalizedType)) {
     existingButtons.forEach((button) => removeCoverButton(button));
     return;

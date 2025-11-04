@@ -964,7 +964,7 @@ entities:
     icon: briefcase
     template: |
       ---
-      type: {{type}}
+      mondoType: {{type}}
       date: {{date}}
       ---
 
@@ -1064,7 +1064,7 @@ entities:
     icon: map-pin
     template: |
       ---
-      type: {{type}}
+      mondoType: {{type}}
       date: {{date}}
       ---
 

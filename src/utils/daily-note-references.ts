@@ -75,7 +75,8 @@ const resolveFileType = (
   shouldExclude: boolean;
 } => {
   const cache = app.metadataCache.getFileCache(file);
-  const rawType = cache?.frontmatter?.type;
+  const rawType =
+    cache?.frontmatter?.mondoType ?? cache?.frontmatter?.type;
   if (typeof rawType === "string") {
     const normalized = rawType.trim().toLowerCase();
     if (isMondoEntityType(normalized)) {

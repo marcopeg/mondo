@@ -113,7 +113,11 @@ export const VaultNotesView = () => {
         ? parentPath
         : "/";
       const rawType =
-        typeof frontmatter.type === "string" ? frontmatter.type.trim() : "";
+        typeof frontmatter.mondoType === "string"
+          ? frontmatter.mondoType.trim()
+          : typeof frontmatter.type === "string"
+          ? frontmatter.type.trim()
+          : "";
       const normalizedType = rawType.toLowerCase();
       let typeLabel = rawType || "Markdown";
       let typeIcon = "file-text";

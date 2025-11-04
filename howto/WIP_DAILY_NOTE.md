@@ -15,7 +15,7 @@ Daily Notes not only creates the correct file for the day, it also maintains tim
 ## 2. Append a new Log entry
 
 1. Open the command palette and run:  `Append to Daily Note`
-2. Mondo ensures the file exists and injects a frontmatter block containing `type: daily-note` and today’s ISO `date`. Existing notes with the legacy type are upgraded automatically.
+2. Mondo ensures the file exists and injects a frontmatter block containing `mondoType: daily-note` and today’s ISO `date`. Existing notes with the legacy type are upgraded automatically.
 3. The plugin looks for today’s time heading (default format `## HH:MM`). If it finds one it places the cursor on the first blank line after it; if not, it creates the heading for you.
 4. By default the cursor is positioned on a bullet (`- `) ready for typing. Toggle bullets off in the settings if you prefer plain paragraphs.
 5. Start typing your update. When you press Enter, the editor stays inside the section so you can continue the log.
