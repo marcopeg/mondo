@@ -722,18 +722,14 @@ export default class Mondo extends Plugin {
     });
 
     this.addCommand({
-      id: "focus-mode-start",
-      name: "Start focus mode",
+      id: "focus-mode-toggle",
+      name: "Toggle focus mode",
       callback: () => {
-        activateFocusMode(this.app, "manual");
-      },
-    });
-
-    this.addCommand({
-      id: "focus-mode-stop",
-      name: "Stop focus mode",
-      callback: () => {
-        deactivateFocusMode(this.app, "manual");
+        if (isFocusModeActive()) {
+          deactivateFocusMode(this.app, "manual");
+        } else {
+          activateFocusMode(this.app, "manual");
+        }
       },
     });
 
