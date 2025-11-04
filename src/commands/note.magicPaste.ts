@@ -141,8 +141,14 @@ class MagicPasteModal extends Modal {
     this.insertButtonEl = insertButton;
 
     window.setTimeout(() => {
-      textarea.focus();
-      textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+      const hasText = this.textareaEl && this.textareaEl.value.trim().length > 0;
+      if (hasText) {
+        // If there's initial text, focus the Insert button so Enter activates it immediately.
+        this.insertButtonEl?.focus();
+      } else if (this.textareaEl) {
+        this.textareaEl.focus();
+        this.textareaEl.setSelectionRange(this.textareaEl.value.length, this.textareaEl.value.length);
+      }
     }, 0);
   }
 
