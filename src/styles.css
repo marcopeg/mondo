@@ -1986,7 +1986,7 @@
    avoid interfering with note content. */
 /* Hide any top-level Mondo views/containers */
 body.focus-mode .mondo,
-body.focus-mode [class*="mondo-"] {
+body.focus-mode [class*="mondo-"]:not(.mondo-journal-close-btn) {
   display: none !important;
 }
 
@@ -2054,45 +2054,39 @@ body.focus-mode .markdown-preview-view .view-header {
   display: none !important;
 }
 
-/* Journal close button in focus mode */
+/* Focus-mode exit/journal button: match bottom-right status controls style */
 .mondo-journal-close-btn {
   position: fixed;
-  bottom: 2rem;
-  left: 2rem;
-  z-index: 200;
+  left: calc(0.75rem + env(safe-area-inset-left, 0px));
+  bottom: calc(0.5rem + env(safe-area-inset-bottom, 0px));
+  z-index: var(--layer-notice, 100);
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem;
-  padding: 0.6rem 1rem;
-  border: 1px solid var(--background-modifier-border);
-  border-radius: 0.4rem;
-  background: var(--background-secondary);
-  color: var(--text-normal);
+  gap: 0.4rem;
+  padding: 0;
+  margin: 0;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: var(--font-smaller, 0.8rem);
+  line-height: 1;
   cursor: pointer;
-  font-size: 0.9rem;
-  font-weight: 500;
-  transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
-  -webkit-appearance: none;
-  -moz-appearance: none;
-  appearance: none;
   pointer-events: auto;
 }
 
 .mondo-journal-close-btn:hover {
-  background: var(--background-modifier-hover);
-  border-color: var(--interactive-accent);
-  color: var(--interactive-accent);
-  transform: translateY(-2px);
+  color: var(--text-normal);
+  text-decoration: underline;
 }
 
 .mondo-journal-close-btn:active {
-  transform: translateY(0);
+  transform: translateY(1px);
 }
 
 .mondo-journal-close-btn svg {
-  width: 1.1rem;
-  height: 1.1rem;
+  width: 1rem;
+  height: 1rem;
   stroke-width: 2;
 }
 

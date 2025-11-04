@@ -1051,6 +1051,11 @@ export default class Mondo extends Plugin {
     this.registerEvent(
       this.app.workspace.on("active-leaf-change", journalCloseButtonHandler)
     );
+    // Also react immediately to focus-mode changes (manual/journal toggles)
+    this.registerEvent(
+      // @ts-ignore - custom event name
+      this.app.workspace.on("mondo:focus-mode-changed", journalCloseButtonHandler)
+    );
 
     // Inject a small "Hello World" div for Mondo-type notes (company/person/project/team)
     this.registerEvent(

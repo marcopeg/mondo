@@ -1,8 +1,9 @@
-import { WorkspaceLeaf, MarkdownView, Plugin, App } from "obsidian";
+import { MarkdownView } from "obsidian";
 import { isJournalNote } from "@/utils/journalFocusMode";
+import { isFocusModeActive } from "@/utils/focusMode";
 import type Mondo from "@/main";
 
-const CLOSE_BTN_CLASS = "mondo-journal-close-btn";
+const CLOSE_BTN_CLASS = "mondo-journal-close-btn"; // also used for generic focus exit
 
 /**
  * Injects a close button in the top-right corner for journal notes in focus mode.
@@ -11,41 +12,53 @@ const CLOSE_BTN_CLASS = "mondo-journal-close-btn";
 export const injectJournalCloseButton = (plugin: Mondo) => {
   return () => {
     const leaf = plugin.app.workspace.activeLeaf;
-    if (!leaf || !(leaf.view instanceof MarkdownView)) {
-      // Remove button if not in a markdown view
-      document.querySelectorAll(`.${CLOSE_BTN_CLASS}`).forEach((el) => el.remove());
+    const isMarkdown = !!(leaf && leaf.view instanceof MarkdownView);
+    const focusActive = isFocusModeActive();
+
+    // Always clear any existing button first
+    document
+      .querySelectorAll(`.${CLOSE_BTN_CLASS}`)
+      .forEach((el) => el.remove());
+
+    if (!focusActive || !isMarkdown) {
+      // Only show button in focus mode inside markdown views
       return;
     }
 
-    const file = leaf.view.file;
-    if (!isJournalNote(file, plugin)) {
-      // Remove button if not a journal note
-      document.querySelectorAll(`.${CLOSE_BTN_CLASS}`).forEach((el) => el.remove());
-      return;
-    }
+    const file = (leaf!.view as MarkdownView).file;
+    const isJournal = isJournalNote(file ?? null, plugin);
 
-    // Check if button already exists
-    if (document.querySelector(`.${CLOSE_BTN_CLASS}`)) {
-      return;
-    }
-
-    // Create and inject the close button
+    // Create and inject the focus/journal exit button
     const btn = document.createElement("button");
     btn.className = CLOSE_BTN_CLASS;
-    btn.setAttribute("aria-label", "I'm done journaling for today");
-    btn.setAttribute("title", "Close journal (Cmd/Ctrl+Shift+J)");
+    const label = isJournal
+      ? "I'm done journaling for today"
+      : "Exit Focus Mode";
+    btn.setAttribute(
+      "aria-label",
+      isJournal ? "I'm done journaling for today" : "Exit Focus Mode"
+    );
+    btn.setAttribute(
+      "title",
+      isJournal
+        ? "Close journal (Cmd/Ctrl+Shift+J)"
+        : "Exit focus mode (use the command again to toggle)"
+    );
     btn.innerHTML = `
       <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <line x1="19" y1="12" x2="5" y2="12"></line>
         <polyline points="12 19 5 12 12 5"></polyline>
       </svg>
-      <span>I'm done journaling for today</span>
+      <span>${label}</span>
     `;
 
     btn.addEventListener("click", () => {
       const commands = (plugin.app as any).commands;
       if (commands?.executeCommandById) {
-        void commands.executeCommandById("mondo:toggle-journaling");
+        const id = isJournal
+          ? "mondo:toggle-journaling"
+          : "mondo:focus-mode-toggle";
+        void commands.executeCommandById(id);
       }
     });
 
