@@ -90,6 +90,7 @@ import {
   isFocusModeActive,
   resetFocusMode,
 } from "@/utils/focusMode";
+import { createJournalFocusModeHandler } from "@/utils/journalFocusMode";
 import DailyNoteTracker from "@/utils/DailyNoteTracker";
 import { TimestampToolbarManager } from "@/utils/TimestampToolbarManager";
 import { CopyNoteToolbarManager } from "@/utils/CopyNoteToolbarManager";
@@ -1022,6 +1023,12 @@ export default class Mondo extends Plugin {
     // Inject journal navigational components (pass plugin so handler can read settings)
     this.registerEvent(
       this.app.workspace.on("active-leaf-change", injectJournalNav(this))
+    );
+
+    // Automatically toggle focus mode for journal notes
+    const journalFocusModeHandler = createJournalFocusModeHandler(this);
+    this.registerEvent(
+      this.app.workspace.on("active-leaf-change", journalFocusModeHandler)
     );
 
     // Inject a small "Hello World" div for Mondo-type notes (company/person/project/team)
