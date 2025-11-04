@@ -82,6 +82,10 @@ import {
   injectMondoLinks,
   disposeMondoLinkInjections,
 } from "@/events/inject-mondo-links";
+import {
+  injectJournalCloseButton,
+  disposeJournalCloseButton,
+} from "@/events/inject-journal-close-btn";
 import { requestGeolocation } from "@/utils/geolocation";
 import { buildVoiceoverText } from "@/utils/buildVoiceoverText";
 import {
@@ -90,7 +94,7 @@ import {
   isFocusModeActive,
   resetFocusMode,
 } from "@/utils/focusMode";
-import { createJournalFocusModeHandler } from "@/utils/journalFocusMode";
+import { createJournalFocusModeHandler, isJournalNote } from "@/utils/journalFocusMode";
 import DailyNoteTracker from "@/utils/DailyNoteTracker";
 import { TimestampToolbarManager } from "@/utils/TimestampToolbarManager";
 import { CopyNoteToolbarManager } from "@/utils/CopyNoteToolbarManager";
@@ -710,14 +714,36 @@ export default class Mondo extends Plugin {
     });
 
     this.addCommand({
-      id: "open-journal",
-      name: "Open Journal",
+      id: "toggle-journaling",
+      name: "Toggle Journaling",
+      hotkeys: [{ modifiers: ["Mod", "Shift"], key: "j" }],
       callback: async () => {
         try {
-          console.log("Opening journal...");
-          await openJournal(this.app, this);
+          const activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
+          const activeFile = activeView?.file ?? null;
+          
+          if (isJournalNote(activeFile, this)) {
+            // Currently viewing journal, close it
+            await this.showPanel(DASHBOARD_VIEW, "main");
+          } else {
+            // Not viewing journal, open it
+            console.log("Opening journal...");
+            await openJournal(this.app, this);
+          }
         } catch (e) {
-          console.error("Mondo: Failed to open journal:", e);
+          console.error("Mondo: Failed to toggle journaling:", e);
+        }
+      },
+    });
+
+    this.addCommand({
+      id: "close-journal",
+      name: "Close Journal",
+      callback: async () => {
+        try {
+          await this.showPanel(DASHBOARD_VIEW, "main");
+        } catch (e) {
+          console.error("Mondo: Failed to close journal:", e);
         }
       },
     });
@@ -1031,6 +1057,12 @@ export default class Mondo extends Plugin {
       this.app.workspace.on("active-leaf-change", journalFocusModeHandler)
     );
 
+    // Inject close button for journal notes
+    const journalCloseButtonHandler = injectJournalCloseButton(this);
+    this.registerEvent(
+      this.app.workspace.on("active-leaf-change", journalCloseButtonHandler)
+    );
+
     // Inject a small "Hello World" div for Mondo-type notes (company/person/project/team)
     this.registerEvent(
       this.app.workspace.on("active-leaf-change", injectMondoLinks(this))
@@ -1079,6 +1111,7 @@ export default class Mondo extends Plugin {
     this.mondoConfigManager = null;
 
     resetFocusMode(this.app);
+    disposeJournalCloseButton();
 
     // Cleanup the Mondo file manager
     const fileManager = MondoFileManager.getInstance(this.app);
