@@ -127,6 +127,7 @@ class ImageEditModal extends Modal {
   private imageResizeObserver: ResizeObserver | null = null;
   private mobileMediaQuery: MediaQueryList | null = null;
   private isMobileLayout = false;
+  private imageBlobUrl: string | null = null;
 
   constructor(app: App, file: TFile) {
     super(app);
@@ -204,8 +205,10 @@ class ImageEditModal extends Modal {
     image.alt = this.file.name;
     image.addEventListener("load", this.handleImageLoaded);
     image.addEventListener("error", this.handleImageError);
-    image.src = this.app.vault.getResourcePath(this.file);
     this.imageEl = image;
+
+    // Load image data as Blob to avoid canvas tainting issues on mobile
+    void this.loadImageFromFile();
 
     if (typeof ResizeObserver !== "undefined") {
       this.imageResizeObserver = new ResizeObserver(() => {
@@ -439,10 +442,31 @@ class ImageEditModal extends Modal {
       window.clearTimeout(this.previewUpdateTimer);
       this.previewUpdateTimer = null;
     }
+    if (this.imageBlobUrl) {
+      URL.revokeObjectURL(this.imageBlobUrl);
+      this.imageBlobUrl = null;
+    }
     this.closeButtonEl = null;
     this.deleteButtonEl = null;
     this.saveButtonEl = null;
   }
+
+  private loadImageFromFile = async () => {
+    if (!this.imageEl) {
+      return;
+    }
+
+    try {
+      const arrayBuffer = await this.app.vault.readBinary(this.file);
+      const mimeType = this.getMimeType();
+      const blob = new Blob([arrayBuffer], { type: mimeType });
+      this.imageBlobUrl = URL.createObjectURL(blob);
+      this.imageEl.src = this.imageBlobUrl;
+    } catch (error) {
+      console.error("Mondo: Failed to load image file", error);
+      this.handleImageError();
+    }
+  };
 
   private handleImageLoaded = () => {
     if (!this.imageEl || !this.selectionEl) {
