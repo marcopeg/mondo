@@ -21,7 +21,8 @@
       "show",
       "newsletter",
       "document",
-      "article"
+      "article",
+      "link"
     ]
   },
   "relevantNotes": {
@@ -47,7 +48,8 @@
         "show",
         "newsletter",
         "document",
-        "article"
+        "article",
+        "link"
       ]
     }
   },
@@ -2460,6 +2462,98 @@
               "query": [
                 {
                   "description": "Notes referencing this article",
+                  "steps": [
+                    {
+                      "notIn": {
+                        "property": "linksTo",
+                        "type": ["log", "task"]
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            "columns": [
+              {
+                "type": "entityIcon"
+              },
+              {
+                "type": "show"
+              },
+              {
+                "type": "attribute",
+                "key": "type",
+                "label": "Type"
+              },
+              {
+                "type": "date",
+                "align": "right"
+              }
+            ],
+            "sort": {
+              "strategy": "manual"
+            },
+            "createEntity": {
+              "enabled": false
+            }
+          }
+        }
+      ]
+    },
+    "link": {
+      "name": "Links",
+      "icon": "link",
+      "template": "\ndate: {{date}}\nurl:\n---\n",
+      "list": {
+        "columns": ["show", "url", "date"]
+      },
+      "links": [
+        {
+          "type": "backlinks",
+          "key": "tasks",
+          "config": {
+            "targetType": "task",
+            "properties": ["linksTo"],
+            "title": "Tasks",
+            "icon": "check-square",
+            "columns": [
+              {
+                "type": "show"
+              },
+              {
+                "type": "attribute",
+                "key": "status"
+              },
+              {
+                "type": "date",
+                "align": "right"
+              }
+            ],
+            "sort": {
+              "strategy": "manual"
+            }
+          }
+        },
+        {
+          "type": "backlinks",
+          "key": "logs",
+          "config": {
+            "targetType": "log",
+            "properties": ["linksTo"],
+            "title": "Logs",
+            "icon": "clipboard-list"
+          }
+        },
+        {
+          "type": "backlinks",
+          "key": "related",
+          "config": {
+            "title": "Related",
+            "icon": "layers",
+            "find": {
+              "query": [
+                {
+                  "description": "Notes referencing this link",
                   "steps": [
                     {
                       "notIn": {

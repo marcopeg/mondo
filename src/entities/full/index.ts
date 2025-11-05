@@ -19,6 +19,7 @@ import { show } from "./show";
 import { newsletter } from "./newsletter";
 import { document } from "./document";
 import { article } from "./article";
+import { link } from "./link";
 
 export const mondoConfigFull = {
   titles: {
@@ -44,6 +45,7 @@ export const mondoConfigFull = {
       "newsletter",
       "document",
       "article",
+      "link",
     ],
   },
   relevantNotes: {
@@ -70,6 +72,7 @@ export const mondoConfigFull = {
         "newsletter",
         "document",
         "article",
+        "link",
       ],
     },
   },
@@ -98,5 +101,6 @@ export const mondoConfigFull = {
     newsletter,
     document,
     article,
+    link,
   },
 };
