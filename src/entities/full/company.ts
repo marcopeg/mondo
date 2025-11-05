@@ -8,6 +8,7 @@ import { gear } from "./gear";
 import { idea } from "./idea";
 import { document } from "./document";
 import { meeting } from "./meeting";
+import { link } from "./link";
 
 export const company = {
   name: "Companies",
@@ -136,6 +137,18 @@ export const company = {
       create: {
         title: "Untitled Document for {@this.show}",
         attributes: {
+          company: ["{@this}"],
+        },
+      },
+    },
+    {
+      key: "link",
+      label: "Link",
+      icon: link.icon,
+      create: {
+        title: "New Link for {@this.show}",
+        attributes: {
+          type: "link",
           company: ["{@this}"],
         },
       },
@@ -379,6 +392,36 @@ export const company = {
         },
         createEntity: {
           referenceCreate: "meeting",
+        },
+      },
+    },
+    {
+      type: "backlinks",
+      key: "links",
+      config: {
+        targetType: "link",
+        properties: ["company"],
+        title: link.name,
+        icon: link.icon,
+        visibility: "notEmpty",
+        columns: [
+          {
+            type: "show",
+          },
+          {
+            type: "attribute",
+            key: "url",
+          },
+          {
+            type: "date",
+            align: "right",
+          },
+        ],
+        sort: {
+          strategy: "manual",
+        },
+        createEntity: {
+          referenceCreate: "link",
         },
       },
     },

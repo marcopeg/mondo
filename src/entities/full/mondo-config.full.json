@@ -1132,6 +1132,33 @@
               "strategy": "manual"
             }
           }
+        },
+        {
+          "type": "backlinks",
+          "key": "links",
+          "config": {
+            "targetType": "link",
+            "properties": ["company"],
+            "title": "Links",
+            "icon": "link",
+            "visibility": "notEmpty",
+            "columns": [
+              {
+                "type": "show"
+              },
+              {
+                "type": "attribute",
+                "key": "url"
+              },
+              {
+                "type": "date",
+                "align": "right"
+              }
+            ],
+            "sort": {
+              "strategy": "manual"
+            }
+          }
         }
       ]
     },
