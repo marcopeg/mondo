@@ -44,6 +44,7 @@ const isInFolder = (path: string, folder: string): boolean => {
 type LinkRecord = {
   raw: string;
   canonical: string;
+  timestamp?: number;
 };
 
 const DATE_IN_TITLE_REGEX = /(\d{4})[-/](\d{2})[-/](\d{2})/;
@@ -548,28 +549,38 @@ export class DailyNoteTracker {
     sourcePath: string
   ): { records: LinkRecord[]; set: Set<string> } => {
     const raw = frontmatter[key];
-    const values: string[] = [];
+    const entries: Array<{ value: string; timestamp?: number }> = [];
 
     if (Array.isArray(raw)) {
-      raw.forEach((value) => {
-        if (typeof value === "string" && value.trim()) {
-          values.push(value.trim());
+      raw.forEach((item) => {
+        // New format: { link: "[[Note]]", timestamp: 123456789 }
+        if (item && typeof item === "object" && !Array.isArray(item)) {
+          const obj = item as Record<string, unknown>;
+          const link = obj.link ?? obj.raw ?? obj.value;
+          if (typeof link === "string" && link.trim()) {
+            const timestamp = typeof obj.timestamp === "number" ? obj.timestamp : undefined;
+            entries.push({ value: link.trim(), timestamp });
+          }
+        }
+        // Legacy format: string values
+        else if (typeof item === "string" && item.trim()) {
+          entries.push({ value: item.trim() });
         }
       });
     } else if (typeof raw === "string" && raw.trim()) {
-      values.push(raw.trim());
+      entries.push({ value: raw.trim() });
     }
 
     const records: LinkRecord[] = [];
     const seen = new Set<string>();
 
-    values.forEach((value) => {
+    entries.forEach(({ value, timestamp }) => {
       const canonical = this.resolveLinkCanonical(value, sourcePath);
       if (!canonical || seen.has(canonical)) {
         return;
       }
       seen.add(canonical);
-      records.push({ raw: value, canonical });
+      records.push({ raw: value, canonical, timestamp });
     });
 
     return { records, set: seen };
@@ -598,6 +609,7 @@ export class DailyNoteTracker {
 
     values.forEach((value) => {
       let link: string | null = null;
+      let timestamp: number | undefined = undefined;
 
       if (typeof value === "string") {
         const trimmed = value.trim();
@@ -613,6 +625,10 @@ export class DailyNoteTracker {
             link = trimmed;
           }
         }
+        // Extract timestamp if present
+        if (typeof objectValue.timestamp === "number") {
+          timestamp = objectValue.timestamp;
+        }
       }
 
       if (!link) {
@@ -625,7 +641,7 @@ export class DailyNoteTracker {
       }
 
       set.add(canonical);
-      records.push({ raw: link, canonical });
+      records.push({ raw: link, canonical, timestamp });
     });
 
     return { records, set };
@@ -713,6 +729,7 @@ export class DailyNoteTracker {
 
       const sourcePath = dailyNote.path;
       const wikiLink = this.buildWikiLink(file, sourcePath);
+      const timestamp = Date.now();
 
       await this.withSuppressedModify(sourcePath, async () => {
         await this.app.fileManager.processFrontMatter(
@@ -733,7 +750,7 @@ export class DailyNoteTracker {
             );
 
             if (!created.set.has(file.path)) {
-              created.records.push({ raw: wikiLink, canonical: file.path });
+              created.records.push({ raw: wikiLink, canonical: file.path, timestamp });
               created.set.add(file.path);
             }
 
@@ -741,9 +758,11 @@ export class DailyNoteTracker {
               (record) => record.canonical !== file.path
             );
 
-            state.created = created.records.map((record) => record.raw);
-            state.changed = filteredChanged.map(
-              (record) => record.raw
+            state.created = created.records.map((record) => 
+              record.timestamp ? { link: record.raw, timestamp: record.timestamp } : record.raw
+            );
+            state.changed = filteredChanged.map((record) => 
+              record.timestamp ? { link: record.raw, timestamp: record.timestamp } : record.raw
             );
           }
         );
@@ -765,6 +784,7 @@ export class DailyNoteTracker {
 
       const sourcePath = dailyNote.path;
       const wikiLink = this.buildWikiLink(file, sourcePath);
+      const timestamp = Date.now();
 
       await this.withSuppressedModify(sourcePath, async () => {
         await this.app.fileManager.processFrontMatter(
@@ -785,21 +805,27 @@ export class DailyNoteTracker {
             );
 
             if (created.set.has(file.path)) {
-              state.created = created.records.map((record) => record.raw);
+              state.created = created.records.map((record) => 
+                record.timestamp ? { link: record.raw, timestamp: record.timestamp } : record.raw
+              );
               state.changed = changed.records
                 .filter((record) => record.canonical !== file.path)
-                .map((record) => record.raw);
+                .map((record) => 
+                  record.timestamp ? { link: record.raw, timestamp: record.timestamp } : record.raw
+                );
               return;
             }
 
             if (!changed.set.has(file.path)) {
-              changed.records.push({ raw: wikiLink, canonical: file.path });
+              changed.records.push({ raw: wikiLink, canonical: file.path, timestamp });
               changed.set.add(file.path);
             }
 
-            state.created = created.records.map((record) => record.raw);
-            state.changed = changed.records.map(
-              (record) => record.raw
+            state.created = created.records.map((record) => 
+              record.timestamp ? { link: record.raw, timestamp: record.timestamp } : record.raw
+            );
+            state.changed = changed.records.map((record) => 
+              record.timestamp ? { link: record.raw, timestamp: record.timestamp } : record.raw
             );
           }
         );
@@ -821,6 +847,7 @@ export class DailyNoteTracker {
 
       const sourcePath = dailyNote.path;
       const wikiLink = this.buildWikiLink(file, sourcePath);
+      const timestamp = Date.now();
 
       await this.withSuppressedModify(sourcePath, async () => {
         await this.app.fileManager.processFrontMatter(
@@ -836,11 +863,13 @@ export class DailyNoteTracker {
             );
 
             if (!opened.set.has(file.path)) {
-              opened.records.push({ raw: wikiLink, canonical: file.path });
+              opened.records.push({ raw: wikiLink, canonical: file.path, timestamp });
               opened.set.add(file.path);
             }
 
-            state.opened = opened.records.map((record) => record.raw);
+            state.opened = opened.records.map((record) => 
+              record.timestamp ? { link: record.raw, timestamp: record.timestamp } : record.raw
+            );
           }
         );
       });

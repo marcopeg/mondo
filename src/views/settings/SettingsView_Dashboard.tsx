@@ -171,6 +171,23 @@ export const renderDashboardSection = (
 
   dashboardSection
     .createSetting()
+    .setName("Relevant Notes History Days")
+    .setDesc("Number of days to look back for relevant notes history (default: 20).")
+    .addText((text) => {
+      const current = dashboardSettings.relevantNotesHistoryDays ?? 20;
+      text
+        .setPlaceholder("20")
+        .setValue(String(current))
+        .onChange(async (value) => {
+          const parsed = Number.parseInt(value, 10);
+          if (!Number.isNaN(parsed) && parsed > 0) {
+            await persistDashboardSetting(plugin, "relevantNotesHistoryDays", parsed);
+          }
+        });
+    });
+
+  dashboardSection
+    .createSetting()
     .setName("Disable Stats Block")
     .setDesc("Hide the stats block on the dashboard.")
     .addToggle((toggle) => {

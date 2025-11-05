@@ -27,6 +27,9 @@ export type RelevantNote = {
   lastCreated: string | null;
   lastModified: string | null;
   lastOpened: string | null;
+  lastCreatedTimestamp: number | null;
+  lastModifiedTimestamp: number | null;
+  lastOpenedTimestamp: number | null;
 };
 
 const resolveTimestamp = (cached: TCachedFile): number => {
@@ -95,6 +98,16 @@ const updateLastDate = (current: string | null, next: string | null): string | n
   return next > current ? next : current;
 };
 
+const updateLastTimestamp = (current: number | null, next: number | null): number | null => {
+  if (!next) {
+    return current;
+  }
+  if (!current) {
+    return next;
+  }
+  return next > current ? next : current;
+};
+
 const ensureNote = (
   aggregated: Map<string, RelevantNote>,
   reference: DailyNoteReference
@@ -117,6 +130,9 @@ const ensureNote = (
     lastCreated: null,
     lastModified: null,
     lastOpened: null,
+    lastCreatedTimestamp: null,
+    lastModifiedTimestamp: null,
+    lastOpenedTimestamp: null,
   };
 
   aggregated.set(reference.path, created);
@@ -127,22 +143,26 @@ const addReference = (
   aggregated: Map<string, RelevantNote>,
   reference: DailyNoteReference,
   category: ReferenceCategory,
-  date: string | null
+  date: string | null,
+  timestamp: number | null
 ) => {
   const target = ensureNote(aggregated, reference);
   target.counts[category] += reference.count;
 
   if (category === "created") {
     target.lastCreated = updateLastDate(target.lastCreated, date);
+    target.lastCreatedTimestamp = updateLastTimestamp(target.lastCreatedTimestamp, timestamp);
     return;
   }
 
   if (category === "modified") {
     target.lastModified = updateLastDate(target.lastModified, date);
+    target.lastModifiedTimestamp = updateLastTimestamp(target.lastModifiedTimestamp, timestamp);
     return;
   }
 
   target.lastOpened = updateLastDate(target.lastOpened, date);
+  target.lastOpenedTimestamp = updateLastTimestamp(target.lastOpenedTimestamp, timestamp);
 };
 
 export const useRelevantNotes = (logLimit = 10): RelevantNote[] => {
@@ -229,21 +249,22 @@ export const useRelevantNotes = (logLimit = 10): RelevantNote[] => {
       const seenOnThisDay = new Set<string>();
 
       created.forEach((entry) => {
-        addReference(aggregated, entry, "created", noteDate);
+        addReference(aggregated, entry, "created", noteDate, entry.timestamp ?? null);
         seenOnThisDay.add(entry.path);
       });
       modified.forEach((entry) => {
-        addReference(aggregated, entry, "modified", noteDate);
+        addReference(aggregated, entry, "modified", noteDate, entry.timestamp ?? null);
         seenOnThisDay.add(entry.path);
       });
       opened.forEach((entry) => {
         // Only count opened if not already counted as created or modified on this day
         if (!seenOnThisDay.has(entry.path)) {
-          addReference(aggregated, entry, "opened", noteDate);
+          addReference(aggregated, entry, "opened", noteDate, entry.timestamp ?? null);
         } else {
-          // Still update lastOpened date even if we don't increment the count
+          // Still update lastOpened date and timestamp even if we don't increment the count
           const target = ensureNote(aggregated, entry);
           target.lastOpened = updateLastDate(target.lastOpened, noteDate);
+          target.lastOpenedTimestamp = updateLastTimestamp(target.lastOpenedTimestamp, entry.timestamp ?? null);
         }
       });
     });

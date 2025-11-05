@@ -13,22 +13,36 @@ export type DailyNoteReference = {
   icon: string;
   type: MondoFileType | null;
   count: number;
+  timestamp?: number;
 };
 
 const DEFAULT_ICON = "file-text";
 
-const normalizeLinkValues = (raw: unknown): string[] => {
+const normalizeLinkValues = (raw: unknown): Array<{ value: string; timestamp?: number }> => {
   if (Array.isArray(raw)) {
-    return raw
-      .filter((value): value is string => typeof value === "string")
-      .map((value) => value.trim())
-      .filter((value) => value.length > 0);
+    const entries: Array<{ value: string; timestamp?: number }> = [];
+    raw.forEach((item) => {
+      // New format: { link: "[[Note]]", timestamp: 123456789 }
+      if (item && typeof item === "object" && !Array.isArray(item)) {
+        const obj = item as Record<string, unknown>;
+        const link = obj.link ?? obj.raw ?? obj.value;
+        if (typeof link === "string" && link.trim().length > 0) {
+          const timestamp = typeof obj.timestamp === "number" ? obj.timestamp : undefined;
+          entries.push({ value: link.trim(), timestamp });
+        }
+      }
+      // Legacy format: string values
+      else if (typeof item === "string" && item.trim().length > 0) {
+        entries.push({ value: item.trim() });
+      }
+    });
+    return entries;
   }
 
   if (typeof raw === "string") {
     const trimmed = raw.trim();
     if (trimmed.length > 0) {
-      return [trimmed];
+      return [{ value: trimmed }];
     }
   }
 
@@ -130,7 +144,7 @@ export const extractDailyLinkReferences = (
   const seen = new Set<string>();
   const entries: DailyNoteReference[] = [];
 
-  values.forEach((value) => {
+  values.forEach(({ value, timestamp }) => {
     const { file, alias } = resolveLinkTarget(value, app, sourcePath);
     if (!file) {
       return;
@@ -152,6 +166,7 @@ export const extractDailyLinkReferences = (
       icon,
       type,
       count: 1,
+      timestamp,
     });
   });
 
@@ -174,6 +189,7 @@ export const extractDailyOpenedReferences = (
 
   values.forEach((value) => {
     let link: string | null = null;
+    let timestamp: number | undefined = undefined;
 
     if (typeof value === "string") {
       const trimmed = value.trim();
@@ -189,6 +205,10 @@ export const extractDailyOpenedReferences = (
         if (trimmed.length > 0) {
           link = trimmed;
         }
+      }
+      // Extract timestamp if present
+      if (typeof objectValue.timestamp === "number") {
+        timestamp = objectValue.timestamp;
       }
     }
 
@@ -218,6 +238,7 @@ export const extractDailyOpenedReferences = (
       icon,
       type,
       count: 1,
+      timestamp,
     });
   });
 

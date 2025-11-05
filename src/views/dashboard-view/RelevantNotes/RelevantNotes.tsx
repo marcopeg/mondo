@@ -98,10 +98,17 @@ export const RelevantNotes = ({ collapsed = false }: RelevantNotesProps) => {
   );
   const sanitizedModeSetting: NotesMode =
     modeSetting === "history" ? "history" : "hits";
+  const historyDaysSetting = useSetting<number>(
+    "dashboard.relevantNotesHistoryDays",
+    20
+  );
+  const historyDays = typeof historyDaysSetting === "number" && historyDaysSetting > 0 
+    ? historyDaysSetting 
+    : 20;
   const [mode, setMode] = useState<NotesMode>(sanitizedModeSetting);
   const [hitsVisibleCount, setHitsVisibleCount] = useState(5);
   const [historyLimit, setHistoryLimit] = useState(5);
-  const hitsNotes = useRelevantNotes(25);
+  const hitsNotes = useRelevantNotes(historyDays);
   useEffect(() => {
     setMode(sanitizedModeSetting);
   }, [sanitizedModeSetting]);
@@ -141,17 +148,31 @@ export const RelevantNotes = ({ collapsed = false }: RelevantNotesProps) => {
       const candidates: Array<{
         category: HistoryCategory;
         value: string | null;
+        timestamp: number | null;
       }> = [
-        { category: "opened", value: note.lastOpened },
-        { category: "modified", value: note.lastModified },
-        { category: "created", value: note.lastCreated },
+        { 
+          category: "opened", 
+          value: note.lastOpened,
+          timestamp: note.lastOpenedTimestamp,
+        },
+        { 
+          category: "modified", 
+          value: note.lastModified,
+          timestamp: note.lastModifiedTimestamp,
+        },
+        { 
+          category: "created", 
+          value: note.lastCreated,
+          timestamp: note.lastCreatedTimestamp,
+        },
       ];
 
       const validCandidates = candidates
         .map((candidate) => ({
           category: candidate.category,
           value: candidate.value,
-          timestamp: parseDateValue(candidate.value),
+          // Prefer the actual timestamp, fall back to parsing the date value
+          timestamp: candidate.timestamp ?? parseDateValue(candidate.value),
         }))
         .filter(
           (
