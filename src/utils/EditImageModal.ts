@@ -207,7 +207,9 @@ class ImageEditModal extends Modal {
     image.addEventListener("error", this.handleImageError);
     this.imageEl = image;
 
-    // Load image data as Blob to avoid canvas tainting issues on mobile
+    // Load image data as Blob to avoid canvas tainting issues on mobile.
+    // Using vault.readBinary + Blob URL prevents cross-origin restrictions
+    // that would cause canvas.toBlob() to fail when processing the image.
     void this.loadImageFromFile();
 
     if (typeof ResizeObserver !== "undefined") {
@@ -460,8 +462,14 @@ class ImageEditModal extends Modal {
       const arrayBuffer = await this.app.vault.readBinary(this.file);
       const mimeType = this.getMimeType();
       const blob = new Blob([arrayBuffer], { type: mimeType });
-      this.imageBlobUrl = URL.createObjectURL(blob);
-      this.imageEl.src = this.imageBlobUrl;
+      
+      try {
+        this.imageBlobUrl = URL.createObjectURL(blob);
+        this.imageEl.src = this.imageBlobUrl;
+      } catch (blobError) {
+        console.error("Mondo: Failed to create blob URL", blobError);
+        throw blobError;
+      }
     } catch (error) {
       console.error("Mondo: Failed to load image file", error);
       this.handleImageError();
