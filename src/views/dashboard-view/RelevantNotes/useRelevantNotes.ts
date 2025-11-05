@@ -221,15 +221,27 @@ export const useRelevantNotes = (logLimit = 10): RelevantNote[] => {
         baseExcluded
       );
 
-      created.forEach((entry) =>
-        addReference(aggregated, entry, "created", noteDate)
-      );
-      modified.forEach((entry) =>
-        addReference(aggregated, entry, "modified", noteDate)
-      );
-      opened.forEach((entry) =>
-        addReference(aggregated, entry, "opened", noteDate)
-      );
+      // Track files seen on this day across all categories to avoid double-counting
+      const seenOnThisDay = new Set<string>();
+
+      created.forEach((entry) => {
+        addReference(aggregated, entry, "created", noteDate);
+        seenOnThisDay.add(entry.path);
+      });
+      modified.forEach((entry) => {
+        addReference(aggregated, entry, "modified", noteDate);
+        seenOnThisDay.add(entry.path);
+      });
+      opened.forEach((entry) => {
+        // Only count opened if not already counted as created or modified on this day
+        if (!seenOnThisDay.has(entry.path)) {
+          addReference(aggregated, entry, "opened", noteDate);
+        } else {
+          // Still update lastOpened date even if we don't increment the count
+          const target = ensureNote(aggregated, entry);
+          target.lastOpened = updateLastDate(target.lastOpened, noteDate);
+        }
+      });
     });
 
     const result = Array.from(aggregated.values());
