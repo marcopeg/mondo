@@ -214,6 +214,8 @@ export const useRelevantNotes = (logLimit = 10): RelevantNote[] => {
         modifiedExcluded
       );
 
+      // Extract opened references without excluding created/modified files
+      // because we still need to track lastOpened dates even if we don't count them
       const opened = extractDailyOpenedReferences(
         dailyState.opened,
         app,
@@ -221,7 +223,9 @@ export const useRelevantNotes = (logLimit = 10): RelevantNote[] => {
         baseExcluded
       );
 
-      // Track files seen on this day across all categories to avoid double-counting
+      // Track files seen on this day across all categories to avoid double-counting.
+      // A file should only contribute one "hit" per day, regardless of how many
+      // actions (created/modified/opened) occurred.
       const seenOnThisDay = new Set<string>();
 
       created.forEach((entry) => {
