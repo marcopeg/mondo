@@ -88,6 +88,8 @@ const normalizeDateValue = (value: unknown): string | null => {
   return null;
 };
 
+// Keep track of last date strings for backward compatibility with legacy data
+// that doesn't have timestamps. This is used as a fallback display value.
 const updateLastDate = (current: string | null, next: string | null): string | null => {
   if (!next) {
     return current;

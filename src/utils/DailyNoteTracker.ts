@@ -47,6 +47,13 @@ type LinkRecord = {
   timestamp?: number;
 };
 
+// Helper to convert LinkRecord to the appropriate storage format:
+// - New format with timestamp: { link: "[[Note]]", timestamp: 123456789 }
+// - Legacy format without timestamp: "[[Note]]"
+const serializeLinkRecord = (record: LinkRecord): string | { link: string; timestamp: number } => {
+  return record.timestamp ? { link: record.raw, timestamp: record.timestamp } : record.raw;
+};
+
 const DATE_IN_TITLE_REGEX = /(\d{4})[-/](\d{2})[-/](\d{2})/;
 
 export class DailyNoteTracker {
@@ -758,12 +765,8 @@ export class DailyNoteTracker {
               (record) => record.canonical !== file.path
             );
 
-            state.created = created.records.map((record) => 
-              record.timestamp ? { link: record.raw, timestamp: record.timestamp } : record.raw
-            );
-            state.changed = filteredChanged.map((record) => 
-              record.timestamp ? { link: record.raw, timestamp: record.timestamp } : record.raw
-            );
+            state.created = created.records.map(serializeLinkRecord);
+            state.changed = filteredChanged.map(serializeLinkRecord);
           }
         );
       });
@@ -805,14 +808,10 @@ export class DailyNoteTracker {
             );
 
             if (created.set.has(file.path)) {
-              state.created = created.records.map((record) => 
-                record.timestamp ? { link: record.raw, timestamp: record.timestamp } : record.raw
-              );
+              state.created = created.records.map(serializeLinkRecord);
               state.changed = changed.records
                 .filter((record) => record.canonical !== file.path)
-                .map((record) => 
-                  record.timestamp ? { link: record.raw, timestamp: record.timestamp } : record.raw
-                );
+                .map(serializeLinkRecord);
               return;
             }
 
@@ -821,12 +820,8 @@ export class DailyNoteTracker {
               changed.set.add(file.path);
             }
 
-            state.created = created.records.map((record) => 
-              record.timestamp ? { link: record.raw, timestamp: record.timestamp } : record.raw
-            );
-            state.changed = changed.records.map((record) => 
-              record.timestamp ? { link: record.raw, timestamp: record.timestamp } : record.raw
-            );
+            state.created = created.records.map(serializeLinkRecord);
+            state.changed = changed.records.map(serializeLinkRecord);
           }
         );
       });
@@ -867,9 +862,7 @@ export class DailyNoteTracker {
               opened.set.add(file.path);
             }
 
-            state.opened = opened.records.map((record) => 
-              record.timestamp ? { link: record.raw, timestamp: record.timestamp } : record.raw
-            );
+            state.opened = opened.records.map(serializeLinkRecord);
           }
         );
       });

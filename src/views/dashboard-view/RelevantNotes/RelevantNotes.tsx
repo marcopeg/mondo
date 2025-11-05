@@ -21,6 +21,9 @@ import { useSetting } from "@/hooks/use-setting";
 import { useApp } from "@/hooks/use-app";
 import getMondoPlugin from "@/utils/getMondoPlugin";
 
+// Default number of days to look back for relevant notes history
+const DEFAULT_HISTORY_DAYS = 20;
+
 const formatReferenceCount = (count: number): string => {
   if (count === 1) {
     return "references 1 time";
@@ -100,11 +103,11 @@ export const RelevantNotes = ({ collapsed = false }: RelevantNotesProps) => {
     modeSetting === "history" ? "history" : "hits";
   const historyDaysSetting = useSetting<number>(
     "dashboard.relevantNotesHistoryDays",
-    20
+    DEFAULT_HISTORY_DAYS
   );
   const historyDays = typeof historyDaysSetting === "number" && historyDaysSetting > 0 
     ? historyDaysSetting 
-    : 20;
+    : DEFAULT_HISTORY_DAYS;
   const [mode, setMode] = useState<NotesMode>(sanitizedModeSetting);
   const [hitsVisibleCount, setHitsVisibleCount] = useState(5);
   const [historyLimit, setHistoryLimit] = useState(5);
