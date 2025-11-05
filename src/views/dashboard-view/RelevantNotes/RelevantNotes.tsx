@@ -21,6 +21,9 @@ import { useSetting } from "@/hooks/use-setting";
 import { useApp } from "@/hooks/use-app";
 import getMondoPlugin from "@/utils/getMondoPlugin";
 
+// Default number of days to look back for relevant notes history
+const DEFAULT_HISTORY_DAYS = 20;
+
 const formatReferenceCount = (count: number): string => {
   if (count === 1) {
     return "references 1 time";
@@ -98,10 +101,17 @@ export const RelevantNotes = ({ collapsed = false }: RelevantNotesProps) => {
   );
   const sanitizedModeSetting: NotesMode =
     modeSetting === "history" ? "history" : "hits";
+  const historyDaysSetting = useSetting<number>(
+    "dashboard.relevantNotesHistoryDays",
+    DEFAULT_HISTORY_DAYS
+  );
+  const historyDays = typeof historyDaysSetting === "number" && historyDaysSetting > 0 
+    ? historyDaysSetting 
+    : DEFAULT_HISTORY_DAYS;
   const [mode, setMode] = useState<NotesMode>(sanitizedModeSetting);
   const [hitsVisibleCount, setHitsVisibleCount] = useState(5);
   const [historyLimit, setHistoryLimit] = useState(5);
-  const hitsNotes = useRelevantNotes(25);
+  const hitsNotes = useRelevantNotes(historyDays);
   useEffect(() => {
     setMode(sanitizedModeSetting);
   }, [sanitizedModeSetting]);
@@ -141,17 +151,31 @@ export const RelevantNotes = ({ collapsed = false }: RelevantNotesProps) => {
       const candidates: Array<{
         category: HistoryCategory;
         value: string | null;
+        timestamp: number | null;
       }> = [
-        { category: "opened", value: note.lastOpened },
-        { category: "modified", value: note.lastModified },
-        { category: "created", value: note.lastCreated },
+        { 
+          category: "opened", 
+          value: note.lastOpened,
+          timestamp: note.lastOpenedTimestamp,
+        },
+        { 
+          category: "modified", 
+          value: note.lastModified,
+          timestamp: note.lastModifiedTimestamp,
+        },
+        { 
+          category: "created", 
+          value: note.lastCreated,
+          timestamp: note.lastCreatedTimestamp,
+        },
       ];
 
       const validCandidates = candidates
         .map((candidate) => ({
           category: candidate.category,
           value: candidate.value,
-          timestamp: parseDateValue(candidate.value),
+          // Prefer the actual timestamp, fall back to parsing the date value
+          timestamp: candidate.timestamp ?? parseDateValue(candidate.value),
         }))
         .filter(
           (
@@ -385,7 +409,7 @@ export const RelevantNotes = ({ collapsed = false }: RelevantNotesProps) => {
                   </Stack>
                   <span className="text-xs text-[var(--text-muted)]">
                     {activityLabel} {" "}
-                    <ReadableDate value={lastActivity.value} fallback="—" />
+                    <ReadableDate value={lastActivity.timestamp} fallback="—" />
                   </span>
                 </div>
               );
