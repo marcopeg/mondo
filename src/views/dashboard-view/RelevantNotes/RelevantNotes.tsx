@@ -406,7 +406,7 @@ export const RelevantNotes = ({ collapsed = false }: RelevantNotesProps) => {
                   </Stack>
                   <span className="text-xs text-[var(--text-muted)]">
                     {activityLabel} {" "}
-                    <ReadableDate value={lastActivity.value} fallback="—" />
+                    <ReadableDate value={lastActivity.timestamp} fallback="—" />
                   </span>
                 </div>
               );
