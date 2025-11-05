@@ -99,6 +99,7 @@ import { createJournalFocusModeHandler, isJournalNote } from "@/utils/journalFoc
 import DailyNoteTracker from "@/utils/DailyNoteTracker";
 import { TimestampToolbarManager } from "@/utils/TimestampToolbarManager";
 import { CopyNoteToolbarManager } from "@/utils/CopyNoteToolbarManager";
+import { MagicPasteToolbarManager } from "@/utils/MagicPasteToolbarManager";
 import {
   DEFAULT_TIMESTAMP_SETTINGS,
   normalizeTimestampSettings,
@@ -174,6 +175,7 @@ export default class Mondo extends Plugin {
   private noteDictationManager: NoteDictationManager | null = null;
   private timestampToolbarManager: TimestampToolbarManager | null = null;
   private copyNoteToolbarManager: CopyNoteToolbarManager | null = null;
+  private magicPasteToolbarManager: MagicPasteToolbarManager | null = null;
   private dailyNoteTracker: DailyNoteTracker | null = null;
   private geolocationAbortController: AbortController | null = null;
   private mondoConfigManager: null = null;
@@ -585,12 +587,17 @@ export default class Mondo extends Plugin {
     this.copyNoteToolbarManager.initialize();
     this.copyNoteToolbarManager.activateMobileToolbar();
 
+    this.magicPasteToolbarManager = new MagicPasteToolbarManager(this);
+    this.magicPasteToolbarManager.initialize();
+    this.magicPasteToolbarManager.activateMobileToolbar();
+
     this.dailyNoteTracker = new DailyNoteTracker(this);
 
     this.app.workspace.onLayoutReady(() => {
       this.noteDictationManager?.activateMobileToolbar();
       this.timestampToolbarManager?.activateMobileToolbar();
       this.copyNoteToolbarManager?.activateMobileToolbar();
+      this.magicPasteToolbarManager?.activateMobileToolbar();
     });
 
     // Initialize the Mondo file manager in the background (non-blocking)
@@ -1169,6 +1176,9 @@ export default class Mondo extends Plugin {
 
     this.copyNoteToolbarManager?.dispose();
     this.copyNoteToolbarManager = null;
+
+    this.magicPasteToolbarManager?.dispose();
+    this.magicPasteToolbarManager = null;
   }
 
   getAudioTranscriptionManager(): AudioTranscriptionManager | null {
