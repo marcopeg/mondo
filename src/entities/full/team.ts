@@ -192,11 +192,11 @@ export const team = {
           },
           {
             type: "attribute",
-            key: "company",
+            key: "role",
           },
           {
             type: "attribute",
-            key: "team",
+            key: "location",
           },
         ],
       },
