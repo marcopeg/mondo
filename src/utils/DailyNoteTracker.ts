@@ -897,6 +897,11 @@ export class DailyNoteTracker {
       return;
     }
 
+    const activeFile = this.app.workspace.getActiveFile();
+    if (!activeFile || activeFile.path !== file.path) {
+      return;
+    }
+
     if (this.isDailyNoteFile(file)) {
       return;
     }
