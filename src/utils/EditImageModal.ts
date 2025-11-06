@@ -135,9 +135,23 @@ class ImageEditModal extends Modal {
   }
 
   onOpen() {
+    const titleText = `Edit ${this.file.name}`;
+    const resourcePath = this.app.vault.getResourcePath(this.file);
+
     this.modalEl.addClass("mondo-crop-modal");
     this.contentEl.addClass("mondo-crop-modal__content");
-    this.titleEl.setText(`Edit ${this.file.name}`);
+    this.titleEl.empty();
+    const titleLink = this.titleEl.createEl("a", {
+      cls: "mondo-crop-modal__title-link",
+      text: titleText,
+      href: resourcePath,
+    });
+    titleLink.setAttr("target", "_blank");
+    titleLink.setAttr("rel", "noopener noreferrer");
+    titleLink.setAttr(
+      "aria-label",
+      `Open ${this.file.name} in a new tab`
+    );
 
     this.modalEl
       .querySelectorAll(".modal-close-button, .modal-close-x")
