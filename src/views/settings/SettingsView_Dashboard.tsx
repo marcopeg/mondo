@@ -18,8 +18,6 @@ interface SettingsDashboardProps {
   containerEl: HTMLElement;
 }
 
-export const DEFAULT_RELEVANT_NOTES_HISTORY_DAYS = 20;
-
 const getDashboardSettings = (plugin: Mondo) => {
   (plugin as any).settings = (plugin as any).settings ?? {};
   (plugin as any).settings.dashboard = (plugin as any).settings.dashboard ?? {};
@@ -169,27 +167,6 @@ export const renderDashboardSection = (
       toggle.setValue(current).onChange(async (value) => {
         await persistDashboardSetting(plugin, "enableRelevantNotes", value);
       });
-    });
-
-  dashboardSection
-    .createSetting()
-    .setName("Relevant Notes History Days")
-    .setDesc(
-      `Number of days to look back for relevant notes history (default: ${DEFAULT_RELEVANT_NOTES_HISTORY_DAYS}).`
-    )
-    .addText((text) => {
-      const current =
-        dashboardSettings.relevantNotesHistoryDays ??
-        DEFAULT_RELEVANT_NOTES_HISTORY_DAYS;
-      text
-        .setPlaceholder(String(DEFAULT_RELEVANT_NOTES_HISTORY_DAYS))
-        .setValue(String(current))
-        .onChange(async (value) => {
-          const parsed = Number.parseInt(value, 10);
-          if (!Number.isNaN(parsed) && parsed > 0) {
-            await persistDashboardSetting(plugin, "relevantNotesHistoryDays", parsed);
-          }
-        });
     });
 
   dashboardSection
