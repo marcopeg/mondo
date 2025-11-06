@@ -1,5 +1,6 @@
 export const log = {
   name: "Logs",
+  singular: "Log",
   icon: "file-clock",
   template: "\ndate: {{date}}\n---\n",
   list: {

@@ -6,6 +6,7 @@ import { idea } from "./idea";
 
 export const meeting = {
   name: "Meetings",
+  singular: "Meeting",
   icon: "calendar-clock",
   template: "\ndate: {{date}}\nparticipants: []\nlocation: []\n---\n",
   createRelated: [

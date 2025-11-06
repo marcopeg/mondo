@@ -6,6 +6,7 @@ import { idea } from "./idea";
 
 export const newsletter = {
   name: "Newsletters",
+  singular: "Newsletter",
   icon: "send",
   template: "\ndate: {{date}}\nfrequency:\ncategory: []\nauthor: []\n---\n",
   list: {

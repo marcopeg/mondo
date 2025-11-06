@@ -8,6 +8,7 @@ import { project } from "./project";
 
 export const team = {
   name: "Teams",
+  singular: "Team",
   icon: "users",
   template: "\ndate: {{date}}\ncompany: []\nlocation: []\n---\n",
   createRelated: [

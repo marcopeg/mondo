@@ -4,6 +4,7 @@ import { document } from "./document";
 
 export const task = {
   name: "Tasks",
+  singular: "Task",
   icon: "check-square",
   template: "\ndate: {{date}}\nstatus: todo\n---\n",
   list: {

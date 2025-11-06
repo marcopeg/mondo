@@ -11,6 +11,7 @@ import { meeting } from "./meeting";
 
 export const company = {
   name: "Companies",
+  singular: "Company",
   icon: "building-2",
   template: "\ndate: {{date}}\nlocation: []\n---\n",
   list: {

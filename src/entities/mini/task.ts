@@ -1,5 +1,6 @@
 export const task = {
   name: "Tasks",
+  singular: "Task",
   icon: "check-square",
   createRelated: [
     {

@@ -6,6 +6,7 @@ import { idea } from "./idea";
 
 export const article = {
   name: "Articles",
+  singular: "Article",
   icon: "newspaper",
   template: "\ndate: {{date}}\nstatus: draft\n---\n",
   list: {

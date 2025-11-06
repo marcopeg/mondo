@@ -6,6 +6,7 @@ import { idea } from "./idea";
 
 export const ingredient = {
   name: "Ingredients",
+  singular: "Ingredient",
   icon: "carrot",
   template: "\ncategory: []\nsupplier: []\n---\n",
   list: {

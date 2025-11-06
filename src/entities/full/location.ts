@@ -10,6 +10,7 @@ import { gear } from "./gear";
 
 export const location = {
   name: "Locations",
+  singular: "Location",
   icon: "map-pin",
   template: "---\ntype: {{type}}\ndate: {{date}}\n---\n",
   list: {

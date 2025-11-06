@@ -6,6 +6,7 @@ import { idea } from "./idea";
 
 export const book = {
   name: "Books",
+  singular: "Book",
   icon: "book",
   template: "\ndate: {{date}}\n---\n",
   list: {

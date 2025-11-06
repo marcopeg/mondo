@@ -8,6 +8,7 @@ import { task } from "./task";
 
 export const person = {
   name: "People",
+  singular: "Person",
   icon: "user",
   template:
     "\ndate: {{date}}\nlocation: []\ncompany: []\nrole: []\nteam: []\n---\n",

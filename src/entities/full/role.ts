@@ -6,6 +6,7 @@ import { idea } from "./idea";
 
 export const role = {
   name: "Roles",
+  singular: "Role",
   icon: "briefcase",
   template: "---\ntype: {{type}}\ndate: {{date}}\n---\n",
   list: {

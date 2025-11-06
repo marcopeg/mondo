@@ -6,6 +6,7 @@ import { idea } from "./idea";
 
 export const tool = {
   name: "Tools",
+  singular: "Tool",
   icon: "hammer",
   template: "\ndate: {{date}}\n---\n",
   list: {

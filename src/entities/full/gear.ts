@@ -9,6 +9,7 @@ import { document } from "./document";
 
 export const gear = {
   name: "Gear",
+  singular: "Gear",
   icon: "settings",
   template: "\ndate: {{date}}\nowner: []\nlocation: []\n---\n",
   list: {

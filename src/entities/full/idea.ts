@@ -5,6 +5,7 @@ import { document } from "./document";
 
 export const idea = {
   name: "Ideas",
+  singular: "Idea",
   icon: "lightbulb",
   template: "\ndate: {{date}}\nstatus: draft\n---\n",
   list: {

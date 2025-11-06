@@ -1,5 +1,6 @@
 export const person = {
   name: "People",
+  singular: "Person",
   icon: "user",
   createRelated: [
     {

@@ -7,6 +7,7 @@ import { recipe } from "./recipe";
 
 export const restaurant = {
   name: "Restaurants",
+  singular: "Restaurant",
   icon: "utensils",
   template: "\ndate: {{date}}\nlocation: []\n---\n",
   list: {

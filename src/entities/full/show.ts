@@ -6,6 +6,7 @@ import { idea } from "./idea";
 
 export const show = {
   name: "Shows",
+  singular: "Show",
   icon: "clapperboard",
   template: "\ndate: {{date}}\nformat: movie\ngenre: []\n---\n",
   list: {

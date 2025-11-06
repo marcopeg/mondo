@@ -1,5 +1,6 @@
 export const company = {
   name: "Company",
+  singular: "Company",
   icon: "gear",
   createRelated: [
     {
