@@ -1,0 +1,47 @@
+name: Beta Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_branch:
+        description: "Branch to release from"
+        required: true
+        default: main
+        type: string
+
+jobs:
+  beta-release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Check out selected branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.target_branch }}
+          fetch-depth: 0
+
+      - name: Use Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: "18.x"
+
+      - name: Install dependencies (no lockfile)
+        run: npm install --no-package-lock
+
+      - name: Build plugin
+        run: npm run build
+
+      - name: Create beta release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BUILD_NR: ${{ github.run_number }}
+          TARGET_BRANCH: ${{ github.event.inputs.target_branch }}
+        run: |
+          tag="beta-${BUILD_NR}"
+
+          gh release create "$tag" \
+            --title="$tag" \
+            --prerelease \
+            --target "$TARGET_BRANCH" \
+            main.js manifest.json styles.css
