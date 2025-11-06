@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Icon } from "@/components/ui/Icon";
 import { Cover } from "@/components/ui/Cover";
 import { EntityLinksTable } from "@/components/EntityLinksTable";
+import { ReadableDate } from "@/components/ui/ReadableDate";
 import { useFiles } from "@/hooks/use-files";
 import { useEntityLinkOrdering } from "@/hooks/use-entity-link-ordering";
 import { useApp } from "@/hooks/use-app";
@@ -1192,16 +1193,27 @@ export const BacklinksLinks = ({
                     );
                   }
                   if (col.type === "date") {
-                    const label = col.label ? `${col.label} ` : "";
+                    const justifyClass =
+                      col.align === "right"
+                        ? "justify-end"
+                        : col.align === "center"
+                        ? "justify-center"
+                        : "justify-start";
                     return (
                       <Table.Cell
                         key={`c-${idx}`}
                         className={`px-2 py-2 align-middle ${alignClass}`}
                       >
                         {date ? (
-                          <span className="text-xs text-[var(--text-muted)]">
-                            {label}
-                            {date}
+                          <span
+                            className={`inline-flex w-full items-center gap-1 text-xs text-[var(--text-muted)] ${justifyClass}`}
+                          >
+                            {col.label ? <span>{col.label}</span> : null}
+                            <ReadableDate
+                              value={date}
+                              fallback={date}
+                              className="text-xs text-[var(--text-muted)]"
+                            />
                           </span>
                         ) : (
                           <span className="text-xs text-[var(--text-muted)]">
