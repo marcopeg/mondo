@@ -866,6 +866,33 @@
               "strategy": "manual"
             }
           }
+        },
+        {
+          "type": "backlinks",
+          "key": "linked_links",
+          "config": {
+            "targetType": "link",
+            "properties": ["project"],
+            "title": "Links",
+            "icon": "link",
+            "visibility": "notEmpty",
+            "columns": [
+              {
+                "type": "show"
+              },
+              {
+                "type": "attribute",
+                "key": "url"
+              },
+              {
+                "type": "date",
+                "align": "right"
+              }
+            ],
+            "sort": {
+              "strategy": "manual"
+            }
+          }
         }
       ]
     },
@@ -928,6 +955,33 @@
               {
                 "type": "attribute",
                 "key": "status"
+              },
+              {
+                "type": "date",
+                "align": "right"
+              }
+            ],
+            "sort": {
+              "strategy": "manual"
+            }
+          }
+        },
+        {
+          "type": "backlinks",
+          "key": "linked_links",
+          "config": {
+            "targetType": "link",
+            "properties": ["idea"],
+            "title": "Links",
+            "icon": "link",
+            "visibility": "notEmpty",
+            "columns": [
+              {
+                "type": "show"
+              },
+              {
+                "type": "attribute",
+                "key": "url"
               },
               {
                 "type": "date",
@@ -1279,6 +1333,33 @@
               {
                 "type": "attribute",
                 "key": "status"
+              },
+              {
+                "type": "date",
+                "align": "right"
+              }
+            ],
+            "sort": {
+              "strategy": "manual"
+            }
+          }
+        },
+        {
+          "type": "backlinks",
+          "key": "linked_links",
+          "config": {
+            "targetType": "link",
+            "properties": ["team"],
+            "title": "Links",
+            "icon": "link",
+            "visibility": "notEmpty",
+            "columns": [
+              {
+                "type": "show"
+              },
+              {
+                "type": "attribute",
+                "key": "url"
               },
               {
                 "type": "date",

@@ -1,9 +1,11 @@
+import { person } from "./person";
+import { task } from "./task";
+import { meeting } from "./meeting";
 import { fact } from "./fact";
 import { log } from "./log";
 import { document } from "./document";
-import { task } from "./task";
 import { idea } from "./idea";
-import { meeting } from "./meeting";
+import { link } from "./link";
 
 export const project = {
   name: "Projects",
@@ -84,6 +86,17 @@ export const project = {
       targetType: "idea",
       create: {
         title: "New Idea for {@this.show}",
+        attributes: {
+          project: ["{@this}"],
+        },
+      },
+    },
+    {
+      key: "link",
+      label: "Link",
+      icon: link.icon,
+      create: {
+        title: "New Link for {@this.show}",
         attributes: {
           project: ["{@this}"],
         },
@@ -257,6 +270,36 @@ export const project = {
         ],
         createEntity: {
           enabled: false,
+        },
+      },
+    },
+    {
+      type: "backlinks",
+      key: "linked_links",
+      config: {
+        targetType: "link",
+        properties: ["project"],
+        title: link.name,
+        icon: link.icon,
+        visibility: "notEmpty",
+        columns: [
+          {
+            type: "show",
+          },
+          {
+            type: "attribute",
+            key: "url",
+          },
+          {
+            type: "date",
+            align: "right",
+          },
+        ],
+        sort: {
+          strategy: "manual",
+        },
+        createEntity: {
+          referenceCreate: "link",
         },
       },
     },

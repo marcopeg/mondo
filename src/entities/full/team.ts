@@ -5,6 +5,7 @@ import { document } from "./document";
 import { idea } from "./idea";
 import { meeting } from "./meeting";
 import { project } from "./project";
+import { link } from "./link";
 
 export const team = {
   name: "Teams",
@@ -103,6 +104,17 @@ export const team = {
       targetType: "person",
       create: {
         title: "New Member for {@this.show}",
+        attributes: {
+          team: ["{@this}"],
+        },
+      },
+    },
+    {
+      key: "link",
+      label: "Link",
+      icon: link.icon,
+      create: {
+        title: "New Link for {@this.show}",
         attributes: {
           team: ["{@this}"],
         },
@@ -278,6 +290,36 @@ export const team = {
         },
         createEntity: {
           enabled: false,
+        },
+      },
+    },
+    {
+      type: "backlinks",
+      key: "linked_links",
+      config: {
+        targetType: "link",
+        properties: ["team"],
+        title: link.name,
+        icon: link.icon,
+        visibility: "notEmpty",
+        columns: [
+          {
+            type: "show",
+          },
+          {
+            type: "attribute",
+            key: "url",
+          },
+          {
+            type: "date",
+            align: "right",
+          },
+        ],
+        sort: {
+          strategy: "manual",
+        },
+        createEntity: {
+          referenceCreate: "link",
         },
       },
     },

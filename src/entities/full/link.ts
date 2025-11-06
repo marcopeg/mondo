@@ -1,9 +1,3 @@
-import { task } from "./task";
-import { log } from "./log";
-import { fact } from "./fact";
-import { document } from "./document";
-import { idea } from "./idea";
-
 export const link = {
   name: "Links",
   icon: "link",
@@ -15,7 +9,7 @@ export const link = {
     {
       key: "task",
       label: "Task",
-      icon: task.icon,
+      icon: "check-square",
       create: {
         title: "New Task for {@this.show}",
         attributes: {
@@ -27,7 +21,7 @@ export const link = {
     {
       key: "log",
       label: "Log",
-      icon: log.icon,
+      icon: "file-clock",
       create: {
         title: "{YY}-{MM}-{DD} {hh}.{mm} Log for {@this.show}",
         attributes: {
@@ -39,7 +33,7 @@ export const link = {
     {
       key: "fact",
       label: "Fact",
-      icon: fact.icon,
+      icon: "bookmark",
       create: {
         title: "New Fact for {@this.show}",
         attributes: {
@@ -51,23 +45,11 @@ export const link = {
     {
       key: "document",
       label: "Document",
-      icon: document.icon,
+      icon: "file-text",
       create: {
         title: "Untitled Document for {@this.show}",
         attributes: {
           type: "document",
-          linksTo: ["{@this}"],
-        },
-      },
-    },
-    {
-      key: "idea",
-      label: "Idea",
-      icon: idea.icon,
-      create: {
-        title: "New Idea for {@this.show}",
-        attributes: {
-          type: "idea",
           linksTo: ["{@this}"],
         },
       },
@@ -80,8 +62,8 @@ export const link = {
       config: {
         targetType: "task",
         properties: ["linksTo"],
-        title: task.name,
-        icon: task.icon,
+        title: "Tasks",
+        icon: "check-square",
         columns: [
           {
             type: "show",
@@ -109,8 +91,8 @@ export const link = {
       config: {
         targetType: "log",
         properties: ["linksTo"],
-        title: log.name,
-        icon: log.icon,
+        title: "Logs",
+        icon: "file-clock",
         createEntity: {
           referenceCreate: "log",
         },

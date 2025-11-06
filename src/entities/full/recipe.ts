@@ -3,6 +3,7 @@ import { log } from "./log";
 import { fact } from "./fact";
 import { document } from "./document";
 import { idea } from "./idea";
+import { link } from "./link";
 
 export const recipe = {
   name: "Cooking Book",
@@ -69,6 +70,17 @@ export const recipe = {
       targetType: "idea",
       create: {
         title: "New Idea for {@this.show}",
+        attributes: {
+          linksTo: ["{@this}"],
+        },
+      },
+    },
+    {
+      key: "link",
+      label: "Link",
+      icon: link.icon,
+      create: {
+        title: "New Link for {@this.show}",
         attributes: {
           linksTo: ["{@this}"],
         },
@@ -153,6 +165,36 @@ export const recipe = {
         },
         createEntity: {
           enabled: false,
+        },
+      },
+    },
+    {
+      type: "backlinks",
+      key: "linked_links",
+      config: {
+        targetType: "link",
+        properties: ["linksTo"],
+        title: link.name,
+        icon: link.icon,
+        visibility: "notEmpty",
+        columns: [
+          {
+            type: "show",
+          },
+          {
+            type: "attribute",
+            key: "url",
+          },
+          {
+            type: "date",
+            align: "right",
+          },
+        ],
+        sort: {
+          strategy: "manual",
+        },
+        createEntity: {
+          referenceCreate: "link",
         },
       },
     },

@@ -2,6 +2,7 @@ import { task } from "./task";
 import { log } from "./log";
 import { fact } from "./fact";
 import { document } from "./document";
+import { link } from "./link";
 
 export const idea = {
   name: "Ideas",
@@ -60,6 +61,18 @@ export const idea = {
         },
       },
     },
+    {
+      key: "link",
+      label: "Link",
+      icon: link.icon,
+      create: {
+        title: "New Link for {@this.show}",
+        attributes: {
+          type: "link",
+          idea: ["{@this}"],
+        },
+      },
+    },
   ],
   links: [
     {
@@ -108,37 +121,28 @@ export const idea = {
     },
     {
       type: "backlinks",
-      key: "links",
+      key: "linked_links",
       config: {
-        title: "Links",
-        icon: "layers",
+        targetType: "link",
+        properties: ["idea"],
+        title: link.name,
+        icon: link.icon,
         visibility: "notEmpty",
-        find: {
-          query: [
-            {
-              description: "Notes referencing this idea",
-              steps: [
-                {
-                  notIn: {
-                    property: ["linksTo", "idea"],
-                    type: ["log", "task"],
-                  },
-                },
-              ],
-            },
-          ],
-        },
         columns: [
-          { type: "entityIcon" },
-          { type: "show" },
-          { type: "attribute", key: "type", label: "Type" },
-          { type: "date", align: "right" },
+          {
+            type: "show",
+          },
+          {
+            type: "attribute",
+            key: "url",
+          },
+          {
+            type: "date",
+            align: "right",
+          },
         ],
         sort: {
           strategy: "manual",
-        },
-        createEntity: {
-          enabled: false,
         },
       },
     },
