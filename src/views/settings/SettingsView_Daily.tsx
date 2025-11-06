@@ -19,8 +19,8 @@ export const renderDailySection = (props: SettingsDailyProps): void => {
 
   const dailySettingsSection = createSettingsSection(
     containerEl,
-    "Daily Logs",
-    "Settings for Daily Logs"
+    "Daily Notes",
+    "Settings for Daily Notes"
   );
 
   addFolderSetting(

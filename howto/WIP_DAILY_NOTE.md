@@ -4,7 +4,7 @@ Mondo's Daily Note tooling gives you a single rolling log that is always ready f
 
 Daily Notes not only creates the correct file for the day, it also maintains time-stamped sections, lets you speak or record entries hands‑free, and automatically tracks which notes you touched. Follow this guide to master every command and setting involved in the workflow.
 
-## 1. Launch the daily note for today
+## 1. Launch the Daily Note for today
 
 1. Open the command palette and run: `Open Daily Note`
 2. Mondo creates the note if it is missing, using the configured folder (defaults to `Daily/`) and filename format (defaults to `YYYY-MM-DD.md`).
@@ -15,7 +15,7 @@ Daily Notes not only creates the correct file for the day, it also maintains tim
 ## 2. Append a new Log entry
 
 1. Open the command palette and run:  `Append to Daily Note`
-2. Mondo ensures the file exists and injects a frontmatter block containing `mondoType: daily-note` and today’s ISO `date`. Existing notes with the legacy type are upgraded automatically.
+2. Mondo ensures the file exists and injects a frontmatter block containing `mondoType: daily-note` and today’s ISO `date`.
 3. The plugin looks for today’s time heading (default format `## HH:MM`). If it finds one it places the cursor on the first blank line after it; if not, it creates the heading for you.
 4. By default the cursor is positioned on a bullet (`- `) ready for typing. Toggle bullets off in the settings if you prefer plain paragraphs.
 5. Start typing your update. When you press Enter, the editor stays inside the section so you can continue the log.
@@ -34,7 +34,7 @@ Both voice commands require microphone access. Dictation also needs your OpenAI 
 
 ## 4. Configure where notes live and how they look
 
-Open **Settings → Community Plugins → Mondo → Daily Logs** to tailor the workflow:
+Open **Settings → Community Plugins → Mondo → Daily Notes** to tailor the workflow:
 
 | Setting | What it controls |
 | --- | --- |
@@ -55,11 +55,3 @@ Every time you create, modify, or open any other note, Mondo logs it back into t
 - Links are deduplicated automatically, and files that live outside of the daily note folder are included as long as they are not daily or journal notes themselves.
 
 This audit trail makes it easy to reconstruct your day or find work-in-progress files later.
-
-## 6. Troubleshooting and pro tips
-
-- **Nothing happens when appending.** Confirm the active pane is a Markdown editor—canvas and non-note views cannot receive text.
-- **Headings do not match my schedule.** Update the **Section Level** and **Section Title** settings; the command will retrofit the next entry.
-- **Need multiple captures per minute.** Run **Append to Daily note** again; Mondo reuses the same heading and adds another bullet beneath it.
-- **Migrating existing notes.** Running any daily command on a legacy note rewrites the frontmatter to the new format without touching the rest of the content.
-- **Keep the folder tidy.** Because the commands auto-create the root folder and files, you can archive or rename past notes manually without breaking the workflow—Mondo will recreate the structure on demand.
