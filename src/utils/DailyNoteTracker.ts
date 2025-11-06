@@ -84,7 +84,7 @@ export class DailyNoteTracker {
     }
 
     const dateKey = this.resolveCreationDate(file);
-    if (!dateKey) {
+    if (!dateKey || !this.shouldTrackDate(dateKey)) {
       return;
     }
 
@@ -102,7 +102,7 @@ export class DailyNoteTracker {
     }
 
     const dateKey = this.resolveModificationDate(file);
-    if (!dateKey) {
+    if (!dateKey || !this.shouldTrackDate(dateKey)) {
       return;
     }
 
@@ -257,6 +257,11 @@ export class DailyNoteTracker {
     const day = `${date.getDate()}`.padStart(2, "0");
     return `${year}-${month}-${day}`;
   };
+
+  private getTodayKey = (): string => this.formatDateKey(new Date());
+
+  private shouldTrackDate = (dateKey: string): boolean =>
+    dateKey === this.getTodayKey();
 
   private getDailyRoot = (): string =>
     normalizeFolder((this.plugin as any).settings?.daily?.root ?? "Daily");
