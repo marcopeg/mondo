@@ -54,6 +54,7 @@ import {
   MondoFileType,
   MONDO_FILE_TYPES,
   getMondoEntityConfig,
+  isJournalType,
 } from "@/types/MondoFileType";
 import {
   MONDO_CONFIG_PRESETS,
@@ -967,17 +968,54 @@ export default class Mondo extends Plugin {
 
     // Journal navigation (previous / next)
     const journalMove = journalMoveFactory(this.app, this);
+    const canMoveBetweenJournalEntries = () => {
+      const file = this.app.workspace.getActiveFile();
+      if (!file || file.extension !== "md") {
+        return false;
+      }
+
+      const frontmatter =
+        this.app.metadataCache.getFileCache(file)?.frontmatter ?? null;
+      const typeValue =
+        typeof frontmatter?.mondoType === "string"
+          ? frontmatter.mondoType
+          : typeof frontmatter?.type === "string"
+          ? frontmatter.type
+          : null;
+
+      return typeof typeValue === "string" && isJournalType(typeValue);
+    };
 
     this.addCommand({
       id: "journal-prev",
       name: "Move to Previous Journal Entry",
-      callback: () => journalMove("prev"),
+      checkCallback: (checking) => {
+        if (!canMoveBetweenJournalEntries()) {
+          return false;
+        }
+
+        if (!checking) {
+          void journalMove("prev");
+        }
+
+        return true;
+      },
     });
 
     this.addCommand({
       id: "journal-next",
       name: "Move to Next Journal Entry",
-      callback: () => journalMove("next"),
+      checkCallback: (checking) => {
+        if (!canMoveBetweenJournalEntries()) {
+          return false;
+        }
+
+        if (!checking) {
+          void journalMove("next");
+        }
+
+        return true;
+      },
     });
 
     this.addCommand({
