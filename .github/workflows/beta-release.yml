@@ -32,6 +32,23 @@ jobs:
       - name: Build plugin
         run: npm run build
 
+      - name: Update manifest with beta version
+        env:
+          BUILD_NR: ${{ github.run_number }}
+        run: |
+          node <<'NODE'
+          const { readFileSync, writeFileSync } = require("fs");
+
+          const pkg = JSON.parse(readFileSync("package.json", "utf8"));
+          const manifestPath = "manifest.json";
+          const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
+          const betaVersion = `${pkg.version}-beta-${process.env.BUILD_NR}`;
+
+          manifest.version = betaVersion;
+          writeFileSync(manifestPath, `${JSON.stringify(manifest, null, "\t")}\n`);
+          console.log(`Updated manifest.json version to ${betaVersion}`);
+          NODE
+
       - name: Create beta release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
