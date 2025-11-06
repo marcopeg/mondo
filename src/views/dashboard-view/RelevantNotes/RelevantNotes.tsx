@@ -112,7 +112,11 @@ export const RelevantNotes = ({
   const historyDays = typeof historyDaysSetting === "number" && historyDaysSetting > 0 
     ? historyDaysSetting 
     : DEFAULT_HISTORY_DAYS;
-  const entityTilesOverride = useSetting<MondoEntityType[]>(
+  const quickSearchEntities = useSetting<MondoEntityType[]>(
+    "dashboard.quickSearchEntities",
+    []
+  );
+  const entityTiles = useSetting<MondoEntityType[]>(
     "dashboard.entityTiles",
     []
   );
@@ -303,10 +307,33 @@ export const RelevantNotes = ({
 
   const filterButtons = useMemo(() => {
     const order = MONDO_UI_CONFIG?.relevantNotes?.filter?.order ?? [];
-    const source =
-      Array.isArray(entityTilesOverride) && entityTilesOverride.length > 0
-        ? entityTilesOverride
-        : order;
+    
+    // Merge quickSearchEntities and entityTiles, keeping only first appearance
+    const mergedList: MondoEntityType[] = [];
+    const seen = new Set<MondoEntityType>();
+    
+    const quickSearch = Array.isArray(quickSearchEntities) ? quickSearchEntities : [];
+    const tiles = Array.isArray(entityTiles) ? entityTiles : [];
+    
+    // Add items from quickSearchEntities first
+    for (const type of quickSearch) {
+      if (!seen.has(type)) {
+        mergedList.push(type);
+        seen.add(type);
+      }
+    }
+    
+    // Add items from entityTiles (skipping duplicates)
+    for (const type of tiles) {
+      if (!seen.has(type)) {
+        mergedList.push(type);
+        seen.add(type);
+      }
+    }
+    
+    // Use merged list if not empty, otherwise fall back to config order
+    const source = mergedList.length > 0 ? mergedList : order;
+    
     return source
       .map((type) => {
         const config = MONDO_ENTITIES[type];
@@ -324,7 +351,7 @@ export const RelevantNotes = ({
       icon: string;
       label: string;
     }>;
-  }, [entityTilesOverride]);
+  }, [quickSearchEntities, entityTiles]);
 
   const emptyStateMessage =
     mode === "history"
