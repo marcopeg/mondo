@@ -402,7 +402,7 @@ export const renderEntityConfigurationSection = async (
   const entityDefinitions = MONDO_ENTITY_CONFIG_LIST.map((cfg) => ({
     type: cfg.type,
     label: cfg.name ?? cfg.type,
-  }));
+  })).sort((a, b) => a.label.localeCompare(b.label));
 
   if (entityDefinitions.length > 0) {
     const entitiesToggleContainer = containerEl.createDiv(
