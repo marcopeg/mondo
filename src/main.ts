@@ -1133,6 +1133,7 @@ export default class Mondo extends Plugin {
     // splits or reorder tabs.
     this.app.workspace.onLayoutReady(() => {
       void this.ensureDashboardIfEmpty();
+      void cleanupDailyHistory(this.app, this, { silent: true });
     });
     this.registerEvent(
       this.app.workspace.on("active-leaf-change", () => {
