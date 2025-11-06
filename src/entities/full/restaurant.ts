@@ -4,6 +4,7 @@ import { fact } from "./fact";
 import { document } from "./document";
 import { idea } from "./idea";
 import { recipe } from "./recipe";
+import { link } from "./link";
 
 export const restaurant = {
   name: "Restaurants",
@@ -86,6 +87,18 @@ export const restaurant = {
         },
       },
     },
+    {
+      key: "link",
+      label: "Link",
+      icon: link.icon,
+      create: {
+        title: "New Link for {@this.show}",
+        attributes: {
+          type: "link",
+          restaurant: ["{@this}"],
+        },
+      },
+    },
   ],
   links: [
     {
@@ -134,37 +147,28 @@ export const restaurant = {
     },
     {
       type: "backlinks",
-      key: "links",
+      key: "linked_links",
       config: {
-        title: "Links",
-        icon: "layers",
+        targetType: "link",
+        properties: ["restaurant"],
+        title: link.name,
+        icon: link.icon,
         visibility: "notEmpty",
-        find: {
-          query: [
-            {
-              description: "Notes referencing this restaurant",
-              steps: [
-                {
-                  notIn: {
-                    property: ["linksTo", "restaurant"],
-                    type: ["log", "task"],
-                  },
-                },
-              ],
-            },
-          ],
-        },
         columns: [
-          { type: "entityIcon" },
-          { type: "show" },
-          { type: "attribute", key: "type", label: "Type" },
-          { type: "date", align: "right" },
+          {
+            type: "show",
+          },
+          {
+            type: "attribute",
+            key: "url",
+          },
+          {
+            type: "date",
+            align: "right",
+          },
         ],
         sort: {
           strategy: "manual",
-        },
-        createEntity: {
-          enabled: false,
         },
       },
     },

@@ -1,26 +1,19 @@
-import { task } from "./task";
-import { log } from "./log";
-import { fact } from "./fact";
-import { document } from "./document";
-import { link } from "./link";
-
-export const idea = {
-  name: "Ideas",
-  singular: "Idea",
-  icon: "lightbulb",
-  template: "\ndate: {{date}}\nstatus: draft\n---\n",
+export const link = {
+  name: "Links",
+  icon: "link",
+  template: "\ndate: {{date}}\nurl:\n---\n",
   list: {
-    columns: ["show", "status"],
+    columns: ["show", "url", "date"],
   },
   createRelated: [
     {
       key: "task",
       label: "Task",
-      icon: task.icon,
-      targetType: "task",
+      icon: "check-square",
       create: {
         title: "New Task for {@this.show}",
         attributes: {
+          type: "task",
           linksTo: ["{@this}"],
         },
       },
@@ -28,11 +21,11 @@ export const idea = {
     {
       key: "log",
       label: "Log",
-      icon: log.icon,
-      targetType: "log",
+      icon: "file-clock",
       create: {
         title: "{YY}-{MM}-{DD} {hh}.{mm} Log for {@this.show}",
         attributes: {
+          type: "log",
           linksTo: ["{@this}"],
         },
       },
@@ -40,11 +33,11 @@ export const idea = {
     {
       key: "fact",
       label: "Fact",
-      icon: fact.icon,
-      targetType: "fact",
+      icon: "bookmark",
       create: {
         title: "New Fact for {@this.show}",
         attributes: {
+          type: "fact",
           linksTo: ["{@this}"],
         },
       },
@@ -52,24 +45,12 @@ export const idea = {
     {
       key: "document",
       label: "Document",
-      icon: document.icon,
-      targetType: "document",
+      icon: "file-text",
       create: {
         title: "Untitled Document for {@this.show}",
         attributes: {
+          type: "document",
           linksTo: ["{@this}"],
-        },
-      },
-    },
-    {
-      key: "link",
-      label: "Link",
-      icon: link.icon,
-      create: {
-        title: "New Link for {@this.show}",
-        attributes: {
-          type: "link",
-          idea: ["{@this}"],
         },
       },
     },
@@ -81,9 +62,8 @@ export const idea = {
       config: {
         targetType: "task",
         properties: ["linksTo"],
-        title: task.name,
-        icon: task.icon,
-        visibility: "notEmpty",
+        title: "Tasks",
+        icon: "check-square",
         columns: [
           {
             type: "show",
@@ -111,9 +91,8 @@ export const idea = {
       config: {
         targetType: "log",
         properties: ["linksTo"],
-        title: log.name,
-        icon: log.icon,
-        visibility: "notEmpty",
+        title: "Logs",
+        icon: "file-clock",
         createEntity: {
           referenceCreate: "log",
         },
@@ -121,28 +100,36 @@ export const idea = {
     },
     {
       type: "backlinks",
-      key: "linked_links",
+      key: "related",
       config: {
-        targetType: "link",
-        properties: ["idea"],
-        title: link.name,
-        icon: link.icon,
-        visibility: "notEmpty",
+        title: "Related",
+        icon: "layers",
+        find: {
+          query: [
+            {
+              description: "Notes referencing this link",
+              steps: [
+                {
+                  notIn: {
+                    property: "linksTo",
+                    type: ["log", "task"],
+                  },
+                },
+              ],
+            },
+          ],
+        },
         columns: [
-          {
-            type: "show",
-          },
-          {
-            type: "attribute",
-            key: "url",
-          },
-          {
-            type: "date",
-            align: "right",
-          },
+          { type: "entityIcon" },
+          { type: "show" },
+          { type: "attribute", key: "type", label: "Type" },
+          { type: "date", align: "right" },
         ],
         sort: {
           strategy: "manual",
+        },
+        createEntity: {
+          enabled: false,
         },
       },
     },

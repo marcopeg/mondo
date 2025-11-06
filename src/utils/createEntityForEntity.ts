@@ -265,6 +265,12 @@ export const createEntityForEntity = async ({
       };
       Object.entries(attributeTemplates as Record<string, unknown>).forEach(
         ([k, v]) => {
+          // Do not carry legacy `type` into frontmatter; Mondo uses `mondoType` only
+          const key = String(k).trim();
+          if (key.toLowerCase() === "type" || key.toLowerCase() === "mondotype") {
+            // Ignore any provided `type`/`mondoType` override and rely on normalizedTarget
+            return;
+          }
           // Helper to process a single template value into a concrete value
           const processValue = (val: unknown): unknown => {
             if (typeof val === "string") {
@@ -322,23 +328,23 @@ export const createEntityForEntity = async ({
           const processed = processValue(v);
           if (processed === undefined) return;
           // Avoid overwriting linkProps arrays if the same key is used and default linking is active
-          if (linkKeys.has(k)) {
+          if (linkKeys.has(key)) {
             // If processed is an array, merge ensuring uniqueness
-            const existing = (frontmatter as any)[k];
+            const existing = (frontmatter as any)[key];
             if (Array.isArray(existing) && Array.isArray(processed)) {
               const set = new Set(existing.map((e: unknown) => String(e)));
               for (const item of processed) {
                 const s = String(item);
                 if (!set.has(s)) existing.push(item);
               }
-              (frontmatter as any)[k] = existing;
+              (frontmatter as any)[key] = existing;
               return;
             }
             // Otherwise, let attributes take precedence over default linking
-            (frontmatter as any)[k] = processed;
+            (frontmatter as any)[key] = processed;
             return;
           }
-          (frontmatter as any)[k] = processed;
+          (frontmatter as any)[key] = processed;
         }
       );
     }

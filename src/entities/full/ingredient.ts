@@ -3,6 +3,7 @@ import { log } from "./log";
 import { fact } from "./fact";
 import { document } from "./document";
 import { idea } from "./idea";
+import { link } from "./link";
 
 export const ingredient = {
   name: "Ingredients",
@@ -73,6 +74,18 @@ export const ingredient = {
         },
       },
     },
+    {
+      key: "link",
+      label: "Link",
+      icon: link.icon,
+      create: {
+        title: "New Link for {@this.show}",
+        attributes: {
+          type: "link",
+          ingredient: ["{@this}"],
+        },
+      },
+    },
   ],
   links: [
     {
@@ -140,36 +153,28 @@ export const ingredient = {
     },
     {
       type: "backlinks",
-      key: "links",
+      key: "linked_links",
       config: {
-        title: "Links",
-        icon: "layers",
-        find: {
-          query: [
-            {
-              description: "Notes referencing this ingredient",
-              steps: [
-                {
-                  notIn: {
-                    property: "linksTo",
-                    type: ["log", "task"],
-                  },
-                },
-              ],
-            },
-          ],
-        },
+        targetType: "link",
+        properties: ["ingredient"],
+        title: link.name,
+        icon: link.icon,
+        visibility: "notEmpty",
         columns: [
-          { type: "entityIcon" },
-          { type: "show" },
-          { type: "attribute", key: "type", label: "Type" },
-          { type: "date", align: "right" },
+          {
+            type: "show",
+          },
+          {
+            type: "attribute",
+            key: "url",
+          },
+          {
+            type: "date",
+            align: "right",
+          },
         ],
         sort: {
           strategy: "manual",
-        },
-        createEntity: {
-          enabled: false,
         },
       },
     },

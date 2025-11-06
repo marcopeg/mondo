@@ -3,6 +3,7 @@ import { log } from "./log";
 import { fact } from "./fact";
 import { document } from "./document";
 import { idea } from "./idea";
+import { link } from "./link";
 
 export const meeting = {
   name: "Meetings",
@@ -64,6 +65,18 @@ export const meeting = {
         },
       },
     },
+    {
+      key: "link",
+      label: "Link",
+      icon: link.icon,
+      create: {
+        title: "New Link for {@this.show}",
+        attributes: {
+          type: "link",
+          meeting: ["{@this}"],
+        },
+      },
+    },
   ],
   list: {
     columns: ["date_time", "participants"],
@@ -113,36 +126,28 @@ export const meeting = {
     },
     {
       type: "backlinks",
-      key: "links",
+      key: "linked_links",
       config: {
-        title: "Links",
-        icon: "layers",
+        targetType: "link",
+        properties: ["meeting"],
+        title: link.name,
+        icon: link.icon,
         visibility: "notEmpty",
-        find: {
-          query: [
-            {
-              steps: [
-                {
-                  notIn: {
-                    property: ["linksTo", "meeting"],
-                    type: ["log", "task"],
-                  },
-                },
-              ],
-            },
-          ],
-        },
         columns: [
-          { type: "entityIcon" },
-          { type: "show" },
-          { type: "attribute", key: "type", label: "Type" },
-          { type: "date", align: "right" },
+          {
+            type: "show",
+          },
+          {
+            type: "attribute",
+            key: "url",
+          },
+          {
+            type: "date",
+            align: "right",
+          },
         ],
         sort: {
           strategy: "manual",
-        },
-        createEntity: {
-          enabled: false,
         },
       },
     },

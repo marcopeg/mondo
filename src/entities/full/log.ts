@@ -13,46 +13,28 @@ export const log = {
   links: [
     {
       type: "backlinks",
-      key: "link",
+      key: "linked_links",
       config: {
+        targetType: "link",
+        properties: ["log"],
         title: "Links",
-        icon: "layers",
+        icon: "link",
         visibility: "notEmpty",
-        find: {
-          query: [
-            {
-              steps: [
-                {
-                  notIn: {
-                    property: ["linksTo", "log"],
-                    // type: ["log"],
-                  },
-                },
-              ],
-            },
-          ],
-        },
-        sort: {
-          strategy: "manual",
-        },
         columns: [
-          {
-            type: "entityIcon",
-          },
           {
             type: "show",
           },
           {
-            type: "cover",
-            align: "right",
+            type: "attribute",
+            key: "url",
           },
           {
             type: "date",
             align: "right",
           },
         ],
-        createEntity: {
-          enabled: false,
+        sort: {
+          strategy: "manual",
         },
       },
     },

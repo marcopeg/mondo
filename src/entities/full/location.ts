@@ -7,6 +7,7 @@ import { restaurant } from "./restaurant";
 import { team } from "./team";
 import { company } from "./company";
 import { gear } from "./gear";
+import { link } from "./link";
 
 export const location = {
   name: "Locations",
@@ -357,6 +358,36 @@ export const location = {
         },
         createEntity: {
           enabled: false,
+        },
+      },
+    },
+    {
+      type: "backlinks",
+      key: "linked_links",
+      config: {
+        targetType: "link",
+        properties: ["location"],
+        title: link.name,
+        icon: link.icon,
+        visibility: "notEmpty",
+        columns: [
+          {
+            type: "show",
+          },
+          {
+            type: "attribute",
+            key: "url",
+          },
+          {
+            type: "date",
+            align: "right",
+          },
+        ],
+        sort: {
+          strategy: "manual",
+        },
+        createEntity: {
+          referenceCreate: "link",
         },
       },
     },

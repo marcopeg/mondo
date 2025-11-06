@@ -4,6 +4,7 @@ import { project } from "./project";
 import { task } from "./task";
 import { fact } from "./fact";
 import { log } from "./log";
+import { link } from "./link";
 import { idea } from "./idea";
 import { document } from "./document";
 
@@ -146,6 +147,33 @@ export const gear = {
         },
         createEntity: {
           enabled: false,
+        },
+      },
+    },
+    {
+      type: "backlinks",
+      key: "linked_links",
+      config: {
+        targetType: "link",
+        properties: ["gear"],
+        title: link.name,
+        icon: link.icon,
+        visibility: "notEmpty",
+        columns: [
+          {
+            type: "show",
+          },
+          {
+            type: "attribute",
+            key: "url",
+          },
+          {
+            type: "date",
+            align: "right",
+          },
+        ],
+        sort: {
+          strategy: "manual",
         },
       },
     },

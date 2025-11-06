@@ -3,6 +3,7 @@ import { log } from "./log";
 import { fact } from "./fact";
 import { document } from "./document";
 import { idea } from "./idea";
+import { link } from "./link";
 
 export const show = {
   name: "Shows",
@@ -73,6 +74,18 @@ export const show = {
         },
       },
     },
+    {
+      key: "link",
+      label: "Link",
+      icon: link.icon,
+      create: {
+        title: "New Link for {@this.show}",
+        attributes: {
+          type: "link",
+          show: ["{@this}"],
+        },
+      },
+    },
   ],
   links: [
     {
@@ -121,37 +134,28 @@ export const show = {
     },
     {
       type: "backlinks",
-      key: "links",
+      key: "linked_links",
       config: {
-        title: "Links",
-        icon: "layers",
+        targetType: "link",
+        properties: ["show"],
+        title: link.name,
+        icon: link.icon,
         visibility: "notEmpty",
-        find: {
-          query: [
-            {
-              description: "Notes referencing this show",
-              steps: [
-                {
-                  notIn: {
-                    property: ["linksTo", "show"],
-                    type: ["log", "task"],
-                  },
-                },
-              ],
-            },
-          ],
-        },
         columns: [
-          { type: "entityIcon" },
-          { type: "show" },
-          { type: "attribute", key: "type", label: "Type" },
-          { type: "date", align: "right" },
+          {
+            type: "show",
+          },
+          {
+            type: "attribute",
+            key: "url",
+          },
+          {
+            type: "date",
+            align: "right",
+          },
         ],
         sort: {
           strategy: "manual",
-        },
-        createEntity: {
-          enabled: false,
         },
       },
     },

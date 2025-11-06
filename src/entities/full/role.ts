@@ -3,6 +3,7 @@ import { log } from "./log";
 import { fact } from "./fact";
 import { document } from "./document";
 import { idea } from "./idea";
+import { link } from "./link";
 
 export const role = {
   name: "Roles",
@@ -70,6 +71,18 @@ export const role = {
         title: "New Idea for {@this.show}",
         attributes: {
           linksTo: ["{@this}"],
+        },
+      },
+    },
+    {
+      key: "link",
+      label: "Link",
+      icon: link.icon,
+      create: {
+        title: "New Link for {@this.show}",
+        attributes: {
+          type: "link",
+          role: ["{@this}"],
         },
       },
     },
@@ -178,36 +191,28 @@ export const role = {
     },
     {
       type: "backlinks",
-      key: "links",
+      key: "linked_links",
       config: {
-        title: "Links",
-        icon: "layers",
-        find: {
-          query: [
-            {
-              description: "Notes referencing this role",
-              steps: [
-                {
-                  notIn: {
-                    property: "linksTo",
-                    type: ["log", "task"],
-                  },
-                },
-              ],
-            },
-          ],
-        },
+        targetType: "link",
+        properties: ["role"],
+        title: link.name,
+        icon: link.icon,
+        visibility: "notEmpty",
         columns: [
-          { type: "entityIcon" },
-          { type: "show" },
-          { type: "attribute", key: "type", label: "Type" },
-          { type: "date", align: "right" },
+          {
+            type: "show",
+          },
+          {
+            type: "attribute",
+            key: "url",
+          },
+          {
+            type: "date",
+            align: "right",
+          },
         ],
         sort: {
           strategy: "manual",
-        },
-        createEntity: {
-          enabled: false,
         },
       },
     },

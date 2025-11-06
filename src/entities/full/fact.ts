@@ -55,5 +55,32 @@ export const fact = {
         },
       },
     },
+    {
+      type: "backlinks",
+      key: "linked_links",
+      config: {
+        targetType: "link",
+        properties: ["fact"],
+        title: "Links",
+        icon: "link",
+        visibility: "notEmpty",
+        columns: [
+          {
+            type: "show",
+          },
+          {
+            type: "attribute",
+            key: "url",
+          },
+          {
+            type: "date",
+            align: "right",
+          },
+        ],
+        sort: {
+          strategy: "manual",
+        },
+      },
+    },
   ],
 } as const;
