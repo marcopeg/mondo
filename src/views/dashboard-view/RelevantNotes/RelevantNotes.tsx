@@ -112,6 +112,10 @@ export const RelevantNotes = ({
   const historyDays = typeof historyDaysSetting === "number" && historyDaysSetting > 0 
     ? historyDaysSetting 
     : DEFAULT_HISTORY_DAYS;
+  const entityTilesOverride = useSetting<MondoEntityType[]>(
+    "dashboard.entityTiles",
+    []
+  );
   const [mode, setMode] = useState<NotesMode>(sanitizedModeSetting);
   const [hitsVisibleCount, setHitsVisibleCount] = useState(5);
   const [historyLimit, setHistoryLimit] = useState(5);
@@ -298,7 +302,12 @@ export const RelevantNotes = ({
   const hasMore = mode === "history" ? historyHasMore : hitsHasMore;
 
   const filterButtons = useMemo(() => {
-    return MONDO_UI_CONFIG.relevantNotes.filter.order
+    const order = MONDO_UI_CONFIG?.relevantNotes?.filter?.order ?? [];
+    const source =
+      Array.isArray(entityTilesOverride) && entityTilesOverride.length > 0
+        ? entityTilesOverride
+        : order;
+    return source
       .map((type) => {
         const config = MONDO_ENTITIES[type];
         if (!config) {
@@ -315,7 +324,7 @@ export const RelevantNotes = ({
       icon: string;
       label: string;
     }>;
-  }, []);
+  }, [entityTilesOverride]);
 
   const emptyStateMessage =
     mode === "history"
