@@ -132,30 +132,45 @@ const shouldVibrate = (mode: HepticMode) =>
 const shouldPlayAudio = (mode: HepticMode) =>
   mode === "audio" || mode === "both";
 
+let sharedAudioContext: AudioContext | null = null;
+
+const acquireAudioContext = (): AudioContext | null => {
+  const Ctor = getAudioContextConstructor();
+  if (!Ctor) return null;
+  try {
+    if (!sharedAudioContext || sharedAudioContext.state === "closed") {
+      sharedAudioContext = new Ctor();
+    }
+    return sharedAudioContext;
+  } catch {
+    sharedAudioContext = null;
+    return null;
+  }
+};
+
 const withAudioContext = (mode: HepticMode, run: (ctx: AudioContext) => void) => {
   if (!shouldPlayAudio(mode)) return;
-  const Ctor = getAudioContextConstructor();
-  if (!Ctor) return;
+  const ctx = acquireAudioContext();
+  if (!ctx) return;
+  const schedule = () => {
+    try {
+      run(ctx);
+    } catch {
+      // ignore playback errors
+    }
+  };
   try {
-    const ctx = new Ctor();
-    const schedule = () => {
-      try {
-        run(ctx);
-      } catch {
-        void ctx.close().catch(() => undefined);
-      }
-    };
     if (typeof ctx.resume === "function" && ctx.state === "suspended") {
       ctx
         .resume()
         .then(schedule)
         .catch(schedule);
-    } else {
-      schedule();
+      return;
     }
   } catch {
-    // ignore
+    // resume errors fall back to immediate playback attempt
   }
+  schedule();
 };
 
 const triggerVibration = (pattern: number | number[], mode: HepticMode) => {
@@ -184,14 +199,22 @@ const triggerShortBeep = (mode: HepticMode) => {
     osc.start(start);
     gain.gain.exponentialRampToValueAtTime(0.0001, stopAt);
     osc.stop(stopAt);
+    const cleanup = () => {
+      try {
+        osc.disconnect();
+      } catch {
+        // ignore
+      }
+      try {
+        gain.disconnect();
+      } catch {
+        // ignore
+      }
+    };
     if (typeof osc.addEventListener === "function") {
-      osc.addEventListener("ended", () =>
-        ctx.close().catch(() => undefined)
-      );
+      osc.addEventListener("ended", cleanup);
     } else {
-      osc.onended = () => {
-        void ctx.close().catch(() => undefined);
-      };
+      osc.onended = cleanup;
     }
   });
 };
@@ -212,14 +235,22 @@ const triggerHappyChime = (mode: HepticMode) => {
     osc.start(now);
     gain.gain.exponentialRampToValueAtTime(0.0001, stopAt);
     osc.stop(stopAt);
+    const cleanup = () => {
+      try {
+        osc.disconnect();
+      } catch {
+        // ignore
+      }
+      try {
+        gain.disconnect();
+      } catch {
+        // ignore
+      }
+    };
     if (typeof osc.addEventListener === "function") {
-      osc.addEventListener("ended", () =>
-        ctx.close().catch(() => undefined)
-      );
+      osc.addEventListener("ended", cleanup);
     } else {
-      osc.onended = () => {
-        void ctx.close().catch(() => undefined);
-      };
+      osc.onended = cleanup;
     }
   });
 };
@@ -240,14 +271,22 @@ const triggerRestCue = (mode: HepticMode) => {
     osc.start(now);
     gain.gain.exponentialRampToValueAtTime(0.0001, stopAt);
     osc.stop(stopAt);
+    const cleanup = () => {
+      try {
+        osc.disconnect();
+      } catch {
+        // ignore
+      }
+      try {
+        gain.disconnect();
+      } catch {
+        // ignore
+      }
+    };
     if (typeof osc.addEventListener === "function") {
-      osc.addEventListener("ended", () =>
-        ctx.close().catch(() => undefined)
-      );
+      osc.addEventListener("ended", cleanup);
     } else {
-      osc.onended = () => {
-        void ctx.close().catch(() => undefined);
-      };
+      osc.onended = cleanup;
     }
   });
 };
@@ -571,6 +610,7 @@ export const useTimerBlock = (props: TimerBlockProps): TimerBlockController => {
           if (nextIdx < planSteps.length) {
             playChime();
             setCurrentStepIndex(nextIdx);
+            stepCountRef.current = 0;
             setPhase("work");
             setProgress(1);
             phaseStartTimeRef.current = null;
@@ -589,6 +629,7 @@ export const useTimerBlock = (props: TimerBlockProps): TimerBlockController => {
           }
           playChime();
           setCurrentStepIndex(0);
+          stepCountRef.current = 0;
           setPhase("work");
           setProgress(1);
           phaseStartTimeRef.current = null;
@@ -604,6 +645,7 @@ export const useTimerBlock = (props: TimerBlockProps): TimerBlockController => {
         if (nextIdx < planSteps.length) {
           playChime();
           setCurrentStepIndex(nextIdx);
+          stepCountRef.current = 0;
           setPhase("work");
           setProgress(1);
           phaseStartTimeRef.current = null;
@@ -622,6 +664,7 @@ export const useTimerBlock = (props: TimerBlockProps): TimerBlockController => {
         }
         playChime();
         setCurrentStepIndex(0);
+        stepCountRef.current = 0;
         setPhase("work");
         setProgress(1);
         phaseStartTimeRef.current = null;
@@ -653,6 +696,7 @@ export const useTimerBlock = (props: TimerBlockProps): TimerBlockController => {
           return;
         }
         playChime();
+        stepCountRef.current = 0;
         setPhase("work");
         setRemainingSeconds(durationSeconds);
         setProgress(1);
@@ -673,6 +717,7 @@ export const useTimerBlock = (props: TimerBlockProps): TimerBlockController => {
         return;
       }
       playChime();
+      stepCountRef.current = 0;
       setPhase("work");
       setRemainingSeconds(durationSeconds);
       setProgress(1);
@@ -692,7 +737,7 @@ export const useTimerBlock = (props: TimerBlockProps): TimerBlockController => {
     remainingSeconds,
     phase,
     durationSeconds,
-  pauseSeconds,
+    pauseSeconds,
     hasPlan,
     currentPlanStep?.pauseSeconds,
     planSteps,

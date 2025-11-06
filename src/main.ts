@@ -155,6 +155,7 @@ export default class Mondo extends Plugin {
       disableStats: true,
       quickSearchEntities: [],
       quickTasksEntities: [],
+      collapsedPanels: {},
     },
     ribbonIcons: {
       dashboard: true,
@@ -354,6 +355,17 @@ export default class Mondo extends Plugin {
       entityTilesSetting,
       MONDO_ENTITY_TYPES
     );
+    const collapsedPanelsSetting = dashboardSettings.collapsedPanels;
+    const collapsedPanels: Record<string, boolean> = {};
+    if (collapsedPanelsSetting && typeof collapsedPanelsSetting === "object") {
+      for (const [key, value] of Object.entries(
+        collapsedPanelsSetting as Record<string, unknown>
+      )) {
+        if (typeof value === "boolean") {
+          collapsedPanels[key] = value;
+        }
+      }
+    }
     this.settings.dashboard = {
       openAtBoot: dashboardSettings.openAtBoot === true,
       forceTab: dashboardSettings.forceTab === true,
@@ -365,6 +377,7 @@ export default class Mondo extends Plugin {
       quickSearchEntities,
       quickTasksEntities,
       entityTiles,
+      collapsedPanels,
     };
 
     // If we migrated legacy keys, persist the normalized settings immediately
@@ -434,7 +447,7 @@ export default class Mondo extends Plugin {
       this.dashboardRibbonEl,
       isEnabled("dashboard"),
       DASHBOARD_ICON,
-      "Open Mondo Dashboard",
+      "List Mondo Dashboard",
       () => {
         void this.showPanel(DASHBOARD_VIEW, "main");
       }
@@ -444,7 +457,7 @@ export default class Mondo extends Plugin {
       this.audioLogsRibbonEl,
       isEnabled("audioLogs"),
       AUDIO_LOGS_ICON,
-      "Open Audio Notes",
+      "List Audio Notes",
       () => {
         void this.showPanel(AUDIO_LOGS_VIEW, "main");
       }
@@ -454,7 +467,7 @@ export default class Mondo extends Plugin {
       this.vaultImagesRibbonEl,
       isEnabled("vaultImages"),
       VAULT_IMAGES_ICON,
-      "Open Images",
+      "List Images",
       () => {
         void this.showPanel(VAULT_IMAGES_VIEW, "main");
       }
@@ -464,7 +477,7 @@ export default class Mondo extends Plugin {
       this.vaultFilesRibbonEl,
       isEnabled("vaultFiles"),
       VAULT_FILES_ICON,
-      "Open Files",
+      "List Files",
       () => {
         void this.showPanel(VAULT_FILES_VIEW, "main");
       }
@@ -474,7 +487,7 @@ export default class Mondo extends Plugin {
       this.vaultNotesRibbonEl,
       isEnabled("vaultNotes"),
       VAULT_NOTES_ICON,
-      "Open Markdown Notes",
+      "List Markdown Notes",
       () => {
         void this.showPanel(VAULT_NOTES_VIEW, "main");
       }
@@ -628,32 +641,32 @@ export default class Mondo extends Plugin {
 
     this.addCommand({
       id: "open-dashboard",
-      name: "Open Mondo dashboard",
+      name: "List Mondo dashboard",
       hotkeys: [{ modifiers: ["Mod", "Shift"], key: "m" }], // Cmd/Ctrl+Shift+M (user can change later)
         callback: () => this.showPanel(DASHBOARD_VIEW, "main"),
     });
 
     this.addCommand({
       id: "open-audio-notes",
-      name: "Open Audio Notes",
+      name: "List Audio Notes",
       callback: () => this.showPanel(AUDIO_LOGS_VIEW, "main"),
     });
 
     this.addCommand({
       id: "open-vault-images",
-      name: "Open Images",
+      name: "List Images",
       callback: () => this.showPanel(VAULT_IMAGES_VIEW, "main"),
     });
 
     this.addCommand({
       id: "open-vault-files",
-      name: "Open Files",
+      name: "List Files",
       callback: () => this.showPanel(VAULT_FILES_VIEW, "main"),
     });
 
     this.addCommand({
       id: "open-vault-notes",
-      name: "Open Markdown Notes",
+      name: "List Markdown Notes",
       callback: () => this.showPanel(VAULT_NOTES_VIEW, "main"),
     });
 
@@ -759,13 +772,13 @@ export default class Mondo extends Plugin {
 
     this.addCommand({
       id: "open-today",
-      name: "Open Daily Note",
+      name: "List Daily Note",
       callback: async () => openDailyNote(this.app, this),
     });
 
     this.addCommand({
       id: "open-self-person",
-      name: "Open Myself",
+      name: "List Myself",
       callback: () => {
         void openSelfPersonNote(this.app, this);
       },
@@ -949,16 +962,17 @@ export default class Mondo extends Plugin {
     MONDO_ENTITY_TYPES.forEach((fileType) => {
       const config = getMondoEntityConfig(fileType);
       const label = config?.name ?? fileType;
+      const singularLabel = (config as any)?.singular ?? label;
       this.addCommand({
         id: `open-${fileType}`,
-        name: `Open ${label}`,
+        name: `List ${label}`,
         callback: () => {
           void this.openEntityPanel(fileType);
         },
       });
       this.addCommand({
         id: `new-${fileType}`,
-        name: `New ${label}`,
+        name: `New ${singularLabel}`,
         callback: () => {
           void this.createEntityNote(fileType);
         },
@@ -982,7 +996,7 @@ export default class Mondo extends Plugin {
 
     this.addCommand({
       id: "open-mondo-settings",
-      name: "Open Mondo settings",
+      name: "List Mondo settings",
       callback: () => {
         (this.app as any).setting.open();
         (this.app as any).setting.openTabById(this.manifest.id);
@@ -1279,6 +1293,7 @@ export default class Mondo extends Plugin {
   ): Promise<TFile | null> {
     const config = getMondoEntityConfig(entityType);
     const label = config?.name ?? entityType;
+    const singularLabel = (config as any)?.singular ?? label;
 
     const sanitizeFileBase = (value: string): string =>
       value
@@ -1305,7 +1320,7 @@ export default class Mondo extends Plugin {
       }
 
       const displayBase =
-        `Untitled ${label}`.replace(/\s+/g, " ").trim() || "Untitled";
+        `Untitled ${singularLabel}`.replace(/\s+/g, " ").trim() || "Untitled";
       const fileBaseRoot =
         sanitizeFileBase(displayBase) || `untitled-${Date.now()}`;
 
@@ -1363,11 +1378,11 @@ export default class Mondo extends Plugin {
         focusAndSelectTitle(leaf);
       }
 
-      new Notice(`Created new ${label} note.`);
+      new Notice(`Created new ${singularLabel} note.`);
       return created;
     } catch (error) {
-      console.error(`Mondo: failed to create ${label} note`, error);
-      new Notice(`Failed to create ${label} note.`);
+      console.error(`Mondo: failed to create ${singularLabel} note`, error);
+      new Notice(`Failed to create ${singularLabel} note.`);
       return null;
     }
   }

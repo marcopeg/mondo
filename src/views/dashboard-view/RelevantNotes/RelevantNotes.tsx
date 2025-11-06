@@ -58,6 +58,7 @@ type NotesMode = "hits" | "history";
 
 type RelevantNotesProps = {
   collapsed?: boolean;
+  onCollapseChange?: (collapsed: boolean) => void;
 };
 
 const getTotalHits = (note: ReturnType<typeof useRelevantNotes>[number]) =>
@@ -92,7 +93,10 @@ type HistoryEntry = {
   };
 };
 
-export const RelevantNotes = ({ collapsed = false }: RelevantNotesProps) => {
+export const RelevantNotes = ({
+  collapsed = false,
+  onCollapseChange,
+}: RelevantNotesProps) => {
   const app = useApp();
   const [selectedType, setSelectedType] = useState<MondoFileType | null>(null);
   const modeSetting = useSetting<NotesMode>(
@@ -325,6 +329,7 @@ export const RelevantNotes = ({ collapsed = false }: RelevantNotesProps) => {
       collapsible
       collapsed={collapsed}
       collapseOnHeaderClick
+      onCollapseChange={onCollapseChange}
       actions={[
         {
           key: "mode-toggle",

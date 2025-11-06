@@ -1,5 +1,6 @@
 export const fact = {
   name: "Facts",
+  singular: "Fact",
   icon: "bookmark",
   template: "\ndate: {{date}}\n---\n",
   list: {

@@ -9,6 +9,7 @@ import { document } from "./document";
 
 export const gear = {
   name: "Gear",
+  singular: "Gear",
   icon: "settings",
   template: "\ndate: {{date}}\nowner: []\nlocation: []\n---\n",
   list: {
@@ -19,10 +20,10 @@ export const gear = {
       key: "task",
       label: "Task",
       icon: task.icon,
+      targetType: "task",
       create: {
         title: "New Task for {@this.show}",
         attributes: {
-          type: "task",
           linksTo: ["{@this}"],
         },
       },
@@ -31,10 +32,10 @@ export const gear = {
       key: "fact",
       label: "Fact",
       icon: fact.icon,
+      targetType: "fact",
       create: {
         title: "New Fact for {@this.show}",
         attributes: {
-          type: "fact",
           linksTo: ["{@this}"],
         },
       },
@@ -43,10 +44,10 @@ export const gear = {
       key: "log",
       label: "Log",
       icon: log.icon,
+      targetType: "log",
       create: {
         title: "{YY}-{MM}-{DD} {hh}.{mm} Log for {@this.show}",
         attributes: {
-          type: "log",
           linksTo: ["{@this}"],
         },
       },
@@ -55,10 +56,10 @@ export const gear = {
       key: "document",
       label: "Document",
       icon: document.icon,
+      targetType: "document",
       create: {
         title: "Untitled Document for {@this.show}",
         attributes: {
-          type: "document",
           linksTo: ["{@this}"],
         },
       },

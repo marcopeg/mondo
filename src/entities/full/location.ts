@@ -10,6 +10,7 @@ import { gear } from "./gear";
 
 export const location = {
   name: "Locations",
+  singular: "Location",
   icon: "map-pin",
   template: "---\ntype: {{type}}\ndate: {{date}}\n---\n",
   list: {
@@ -20,10 +21,10 @@ export const location = {
       key: "restaurant",
       label: "Restaurant",
       icon: restaurant.icon,
+      targetType: "restaurant",
       create: {
         title: "New Restaurant for {@this.show}",
         attributes: {
-          type: "restaurant",
           location: ["{@this}"],
         },
       },
@@ -32,10 +33,10 @@ export const location = {
       key: "person",
       label: "Person",
       icon: "user",
+      targetType: "person",
       create: {
         title: "New Person for {@this.show}",
         attributes: {
-          type: "person",
           location: ["{@this}"],
         },
       },
@@ -44,10 +45,10 @@ export const location = {
       key: "gear",
       label: "Gear",
       icon: gear.icon,
+      targetType: "gear",
       create: {
         title: "New Gear for {@this.show}",
         attributes: {
-          type: "gear",
           location: ["{@this}"],
         },
       },
@@ -56,10 +57,10 @@ export const location = {
       key: "company",
       label: "Company",
       icon: company.icon,
+      targetType: "company",
       create: {
         title: "New Company for {@this.show}",
         attributes: {
-          type: "company",
           location: ["{@this}"],
         },
       },
@@ -68,10 +69,10 @@ export const location = {
       key: "team",
       label: "Team",
       icon: team.icon,
+      targetType: "team",
       create: {
         title: "New Team for {@this.show}",
         attributes: {
-          type: "team",
           location: ["{@this}"],
         },
       },
@@ -80,10 +81,10 @@ export const location = {
       key: "task",
       label: "Task",
       icon: task.icon,
+      targetType: "task",
       create: {
         title: "New Task for {@this.show}",
         attributes: {
-          type: "task",
           linksTo: ["{@this}"],
         },
       },
@@ -92,10 +93,10 @@ export const location = {
       key: "log",
       label: "Log",
       icon: log.icon,
+      targetType: "log",
       create: {
         title: "{YY}-{MM}-{DD} {hh}.{mm} Log for {@this.show}",
         attributes: {
-          type: "log",
           linksTo: ["{@this}"],
         },
       },
@@ -104,10 +105,10 @@ export const location = {
       key: "fact",
       label: "Fact",
       icon: fact.icon,
+      targetType: "fact",
       create: {
         title: "New Fact for {@this.show}",
         attributes: {
-          type: "fact",
           linksTo: ["{@this}"],
         },
       },
@@ -116,10 +117,10 @@ export const location = {
       key: "document",
       label: "Document",
       icon: document.icon,
+      targetType: "document",
       create: {
         title: "Untitled Document for {@this.show}",
         attributes: {
-          type: "document",
           linksTo: ["{@this}"],
         },
       },
@@ -128,10 +129,10 @@ export const location = {
       key: "idea",
       label: "Idea",
       icon: idea.icon,
+      targetType: "idea",
       create: {
         title: "New Idea for {@this.show}",
         attributes: {
-          type: "idea",
           linksTo: ["{@this}"],
         },
       },

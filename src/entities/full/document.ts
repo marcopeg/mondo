@@ -1,5 +1,6 @@
 export const document = {
   name: "Documents",
+  singular: "Document",
   icon: "file-text",
   template: "\ndate: {{date}}\nfile:\n---\n",
   list: {

@@ -150,6 +150,8 @@ export const createEntityForEntity = async ({
     ? `${normalizedFolder}/${filename}`
     : filename;
 
+  // Fetch and render the target entity's template
+  // This template will include base frontmatter keys (e.g., "status: todo" for tasks)
   const templateSource = await getTemplateForType(
     app,
     settings.templates,
@@ -171,6 +173,11 @@ export const createEntityForEntity = async ({
   if (!created) {
     created = await app.vault.create(filePath, rendered);
   }
+
+  // Note: The template frontmatter is now in the created file.
+  // The processFrontMatter call below will merge attributeTemplates into it,
+  // allowing both template values and createRelated attributes to coexist.
+  // If both define the same key, attributeTemplates takes precedence (override).
   if (!(created instanceof TFile)) {
     return null;
   }
@@ -243,7 +250,10 @@ export const createEntityForEntity = async ({
       }
     });
 
-    // Attribute overrides
+    // Attribute overrides: Apply createRelated.create.attributes
+    // These values are merged with (and can override) any template frontmatter keys.
+    // Example: Task template has "status: todo", but createRelated.attributes can override it
+    // or add new keys like "project: [host-link]".
     if (attributeTemplates && typeof attributeTemplates === "object") {
       const hostFM = (hostEntity.cache?.frontmatter as any) ?? {};
       const deepClone = (val: unknown) => {

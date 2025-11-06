@@ -151,6 +151,8 @@ export interface MondoEntityConfig<
 > {
   type: TType;
   name: string;
+  /** Optional singular form of the entity name (e.g., name: "Projects" -> singular: "Project"). */
+  singular?: string;
   icon: string;
   template: string;
   list?: MondoEntityListConfig;

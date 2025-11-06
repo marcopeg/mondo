@@ -22,10 +22,15 @@ type UseInboxTasksState = ReturnType<typeof useInboxTasks>;
 
 type QuickTasksCardProps = {
   collapsed: boolean;
+  onCollapseChange?: (collapsed: boolean) => void;
   state: UseInboxTasksState;
 };
 
-const QuickTasksCard = ({ collapsed, state }: QuickTasksCardProps) => {
+const QuickTasksCard = ({
+  collapsed,
+  onCollapseChange,
+  state,
+}: QuickTasksCardProps) => {
   const {
     tasks,
     isLoading,
@@ -117,6 +122,7 @@ const QuickTasksCard = ({ collapsed, state }: QuickTasksCardProps) => {
       collapsible
       collapsed={collapsed}
       collapseOnHeaderClick
+      onCollapseChange={onCollapseChange}
       actions={[
         {
           // Render the quick task creator inline in the title area
@@ -249,14 +255,31 @@ const QuickTasksCard = ({ collapsed, state }: QuickTasksCardProps) => {
 
 type QuickTasksProps = {
   collapsed?: boolean;
+  onCollapseChange?: (collapsed: boolean) => void;
   state?: UseInboxTasksState;
 };
 
-export const QuickTasks = ({ collapsed = false, state }: QuickTasksProps) => {
+export const QuickTasks = ({
+  collapsed = false,
+  onCollapseChange,
+  state,
+}: QuickTasksProps) => {
   if (state) {
-    return <QuickTasksCard collapsed={collapsed} state={state} />;
+    return (
+      <QuickTasksCard
+        collapsed={collapsed}
+        onCollapseChange={onCollapseChange}
+        state={state}
+      />
+    );
   }
 
   const hookState = useInboxTasks();
-  return <QuickTasksCard collapsed={collapsed} state={hookState} />;
+  return (
+    <QuickTasksCard
+      collapsed={collapsed}
+      onCollapseChange={onCollapseChange}
+      state={hookState}
+    />
+  );
 };

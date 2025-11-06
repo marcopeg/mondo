@@ -6,6 +6,7 @@ import { idea } from "./idea";
 
 export const meeting = {
   name: "Meetings",
+  singular: "Meeting",
   icon: "calendar-clock",
   template: "\ndate: {{date}}\nparticipants: []\nlocation: []\n---\n",
   createRelated: [
@@ -14,10 +15,9 @@ export const meeting = {
       label: "Task",
       icon: "check-square",
       panelKey: "tasks",
+      targetType: "task",
       create: {
-        attributes: {
-          type: "task",
-        },
+        attributes: {},
       },
     },
     {
@@ -25,10 +25,9 @@ export const meeting = {
       label: "Log",
       icon: "file-plus",
       panelKey: "logs",
+      targetType: "log",
       create: {
-        attributes: {
-          type: "log",
-        },
+        attributes: {},
       },
     },
     {
@@ -36,20 +35,19 @@ export const meeting = {
       label: "Fact",
       icon: "bookmark-plus",
       panelKey: "facts",
+      targetType: "fact",
       create: {
-        attributes: {
-          type: "fact",
-        },
+        attributes: {},
       },
     },
     {
       key: "document",
       label: "Document",
       icon: document.icon,
+      targetType: "document",
       create: {
         title: "Untitled Document for {@this.show}",
         attributes: {
-          type: "document",
           linksTo: ["{@this}"],
         },
       },
@@ -58,10 +56,10 @@ export const meeting = {
       key: "idea",
       label: "Idea",
       icon: idea.icon,
+      targetType: "idea",
       create: {
         title: "New Idea for {@this.show}",
         attributes: {
-          type: "idea",
           linksTo: ["{@this}"],
         },
       },

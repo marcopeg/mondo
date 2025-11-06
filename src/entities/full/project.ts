@@ -7,6 +7,7 @@ import { meeting } from "./meeting";
 
 export const project = {
   name: "Projects",
+  singular: "Project",
   icon: "folder-git-2",
   template:
     "\ndate: {{date}}\ncompany: []\nteam: []\nparticipants: []\nstatus: draft\n---\n",
@@ -19,10 +20,10 @@ export const project = {
       key: "task",
       label: "Task",
       icon: task.icon,
+      targetType: "task",
       create: {
         title: "New Task for {@this.show}",
         attributes: {
-          type: "task",
           project: ["{@this}"],
         },
       },
@@ -31,10 +32,10 @@ export const project = {
       key: "fact",
       label: "Fact",
       icon: fact.icon,
+      targetType: "fact",
       create: {
         title: "New Fact for {@this.show}",
         attributes: {
-          type: "fact",
           project: ["{@this}"],
         },
       },
@@ -43,10 +44,10 @@ export const project = {
       key: "log",
       label: "Log",
       icon: log.icon,
+      targetType: "log",
       create: {
         title: "{YY}-{MM}-{DD} {hh}.{mm} Log for {@this.show}",
         attributes: {
-          type: "log",
           project: ["{@this}"],
         },
       },
@@ -55,10 +56,10 @@ export const project = {
       key: "meeting",
       label: "Meeting",
       icon: meeting.icon,
+      targetType: "meeting",
       create: {
         title: "{YY}-{MM}-{DD} {hh}.{mm} with {@this.show}",
         attributes: {
-          type: "meeting",
           project: ["{@this}"],
           participants: ["{@this.participants}"],
         },
@@ -68,10 +69,10 @@ export const project = {
       key: "document",
       label: "Document",
       icon: document.icon,
+      targetType: "document",
       create: {
         title: "Untitled Document for {@this.show}",
         attributes: {
-          type: "document",
           project: ["{@this}"],
         },
       },
@@ -80,10 +81,10 @@ export const project = {
       key: "idea",
       label: "Idea",
       icon: idea.icon,
+      targetType: "idea",
       create: {
         title: "New Idea for {@this.show}",
         attributes: {
-          type: "idea",
           project: ["{@this}"],
         },
       },
