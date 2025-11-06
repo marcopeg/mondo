@@ -282,7 +282,9 @@ export const openMagicPaste = async (
     const latestEditor = latestView?.editor ?? editor;
 
     if (latestEditor) {
-      insertIntoEditor(latestEditor, value, savedCursor);
+      // Only use saved cursor if we're still in the same editor
+      const cursorToUse = latestEditor === editor ? savedCursor : null;
+      insertIntoEditor(latestEditor, value, cursorToUse);
       new Notice("Cleaned text inserted.");
       return;
     }
