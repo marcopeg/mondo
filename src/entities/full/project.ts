@@ -7,6 +7,7 @@ import { meeting } from "./meeting";
 
 export const project = {
   name: "Projects",
+  singular: "Project",
   icon: "folder-git-2",
   template:
     "\ndate: {{date}}\ncompany: []\nteam: []\nparticipants: []\nstatus: draft\n---\n",

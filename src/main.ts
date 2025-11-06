@@ -962,6 +962,7 @@ export default class Mondo extends Plugin {
     MONDO_ENTITY_TYPES.forEach((fileType) => {
       const config = getMondoEntityConfig(fileType);
       const label = config?.name ?? fileType;
+      const singularLabel = (config as any)?.singular ?? label;
       this.addCommand({
         id: `open-${fileType}`,
         name: `List ${label}`,
@@ -971,7 +972,7 @@ export default class Mondo extends Plugin {
       });
       this.addCommand({
         id: `new-${fileType}`,
-        name: `New ${label}`,
+        name: `New ${singularLabel}`,
         callback: () => {
           void this.createEntityNote(fileType);
         },
@@ -1292,6 +1293,7 @@ export default class Mondo extends Plugin {
   ): Promise<TFile | null> {
     const config = getMondoEntityConfig(entityType);
     const label = config?.name ?? entityType;
+    const singularLabel = (config as any)?.singular ?? label;
 
     const sanitizeFileBase = (value: string): string =>
       value
@@ -1318,7 +1320,7 @@ export default class Mondo extends Plugin {
       }
 
       const displayBase =
-        `Untitled ${label}`.replace(/\s+/g, " ").trim() || "Untitled";
+        `Untitled ${singularLabel}`.replace(/\s+/g, " ").trim() || "Untitled";
       const fileBaseRoot =
         sanitizeFileBase(displayBase) || `untitled-${Date.now()}`;
 
@@ -1376,11 +1378,11 @@ export default class Mondo extends Plugin {
         focusAndSelectTitle(leaf);
       }
 
-      new Notice(`Created new ${label} note.`);
+      new Notice(`Created new ${singularLabel} note.`);
       return created;
     } catch (error) {
-      console.error(`Mondo: failed to create ${label} note`, error);
-      new Notice(`Failed to create ${label} note.`);
+      console.error(`Mondo: failed to create ${singularLabel} note`, error);
+      new Notice(`Failed to create ${singularLabel} note.`);
       return null;
     }
   }
