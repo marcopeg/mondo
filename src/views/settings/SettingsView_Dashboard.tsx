@@ -169,25 +169,6 @@ export const renderDashboardSection = (
       });
     });
 
-  const DEFAULT_HISTORY_DAYS = 20;
-  
-  dashboardSection
-    .createSetting()
-    .setName("Relevant Notes History Days")
-    .setDesc(`Number of days to look back for relevant notes history (default: ${DEFAULT_HISTORY_DAYS}).`)
-    .addText((text) => {
-      const current = dashboardSettings.relevantNotesHistoryDays ?? DEFAULT_HISTORY_DAYS;
-      text
-        .setPlaceholder(String(DEFAULT_HISTORY_DAYS))
-        .setValue(String(current))
-        .onChange(async (value) => {
-          const parsed = Number.parseInt(value, 10);
-          if (!Number.isNaN(parsed) && parsed > 0) {
-            await persistDashboardSetting(plugin, "relevantNotesHistoryDays", parsed);
-          }
-        });
-    });
-
   dashboardSection
     .createSetting()
     .setName("Disable Stats Block")
