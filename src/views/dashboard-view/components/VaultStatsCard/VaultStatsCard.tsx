@@ -97,7 +97,7 @@ export const VaultStatsCard = () => {
           >
             <Icon
               name={item.icon}
-              className="h-12 w-12 text-[var(--text-muted)]"
+              className="h-36 w-36 text-[var(--text-muted)]"
             />
             <div className="flex flex-col items-center gap-1">
               <Typography
