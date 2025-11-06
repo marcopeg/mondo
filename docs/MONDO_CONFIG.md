@@ -78,9 +78,45 @@ Each object in `entities` must comply with `MondoEntityConfig` (`src/types/Mondo
 - `list` configures default table columns and sorting for entity list views rendered by `EntityView` (`src/views/entity-panel-view/EntityView.tsx`). Columns accept custom strings; the view renders matching metadata or falls back to `show`/frontmatter values.
 - `createRelated` defines reusable creation flows surfaced by entity headers and link panels. Supported keys inside `create`:
   - `title`: string with templating tokens.
-  - `attributes`: object of frontmatter values to prefill (strings, numbers, booleans, arrays, nested objects).
+  - `attributes`: object of frontmatter values to prefill (strings, numbers, booleans, arrays, nested objects). These are **merged with the target entity's template frontmatter**. If both the template and `attributes` define the same key, the `attributes` value takes precedence (override).
   - `linkProperties`: single property name or array; the helper links the new note back to the host using these keys.
   - `openAfterCreate`: optional boolean to open the created note immediately.
+
+#### Template and Attributes Merging
+
+When creating a linked entity via `createRelated`, the new note's frontmatter is composed by:
+
+1. **Rendering the target entity's template** – applies values like `status: todo` from the target type's `template`.
+2. **Merging `createRelated.create.attributes`** – adds or overrides frontmatter keys defined in `attributes`.
+
+**Example:** Creating a Task from a Project
+
+```jsonc
+// Task entity template
+"template": "\ndate: {{date}}\nstatus: todo\n---\n"
+
+// Project's createRelated rule for tasks
+{
+  "key": "task",
+  "label": "Task",
+  "create": {
+    "title": "New Task for {@this.show}",
+    "attributes": {
+      "project": ["{@this}"]
+    }
+  }
+}
+
+// Result: New task note has both status (from template) and project (from attributes)
+// ---
+// mondoType: task
+// date: 2025-11-06
+// status: todo
+// project: [[Project Name]]
+// ---
+```
+
+If `attributes` redefines a key (e.g., `"status": "done"`), it overrides the template value.
 - `links` enumerates the panels rendered inside the injected entity sidebar (`src/events/inject-mondo-links.tsx`). Built-in `type: "backlinks"` uses the schema documented in `MondoEntityBacklinksLinkConfig`. Custom types map to React components registered in `src/containers/EntityLinks/EntityLinks.tsx`.
 
 ### Validation and defaults
