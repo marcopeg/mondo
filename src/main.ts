@@ -155,6 +155,7 @@ export default class Mondo extends Plugin {
       disableStats: true,
       quickSearchEntities: [],
       quickTasksEntities: [],
+      collapsedPanels: {},
     },
     ribbonIcons: {
       dashboard: true,
@@ -354,6 +355,17 @@ export default class Mondo extends Plugin {
       entityTilesSetting,
       MONDO_ENTITY_TYPES
     );
+    const collapsedPanelsSetting = dashboardSettings.collapsedPanels;
+    const collapsedPanels: Record<string, boolean> = {};
+    if (collapsedPanelsSetting && typeof collapsedPanelsSetting === "object") {
+      for (const [key, value] of Object.entries(
+        collapsedPanelsSetting as Record<string, unknown>
+      )) {
+        if (typeof value === "boolean") {
+          collapsedPanels[key] = value;
+        }
+      }
+    }
     this.settings.dashboard = {
       openAtBoot: dashboardSettings.openAtBoot === true,
       forceTab: dashboardSettings.forceTab === true,
@@ -365,6 +377,7 @@ export default class Mondo extends Plugin {
       quickSearchEntities,
       quickTasksEntities,
       entityTiles,
+      collapsedPanels,
     };
 
     // If we migrated legacy keys, persist the normalized settings immediately

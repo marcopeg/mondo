@@ -7,6 +7,7 @@ import RelevantNotesSection from "./components/RelevantNotesSection";
 import ImsButtons from "./components/ImsButtons";
 import VaultStatsSection from "./components/VaultStatsSection";
 import QuickDaily from "./QuickDaily";
+import { useDashboardPanelCollapsed } from "./hooks/useDashboardPanelCollapsed";
 
 export const DashboardView = () => {
   const quickTasksEnabled = useSetting<boolean>(
@@ -25,13 +26,21 @@ export const DashboardView = () => {
   const shouldShowProductivity =
     quickDailyEnabled || quickTasksEnabled || relevantNotesEnabled;
 
+  const [quickDailyCollapsed, setQuickDailyCollapsed] =
+    useDashboardPanelCollapsed("quickDaily", false);
+
   return (
     <div className="p-4 space-y-6">
       <Typography variant="h1">Mondo Dashboard</Typography>
       <QuickButtons />
       {shouldShowProductivity && (
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 lg:items-start">
-          {quickDailyEnabled && <QuickDaily collapsed={false} />}
+          {quickDailyEnabled && (
+            <QuickDaily
+              collapsed={quickDailyCollapsed}
+              onCollapseChange={setQuickDailyCollapsed}
+            />
+          )}
           <QuickTasksSection enabled={quickTasksEnabled} />
           <RelevantNotesSection enabled={relevantNotesEnabled} />
         </div>

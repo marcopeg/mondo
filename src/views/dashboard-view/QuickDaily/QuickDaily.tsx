@@ -21,10 +21,15 @@ import {
 
 type QuickDailyCardProps = {
   collapsed: boolean;
+  onCollapseChange?: (collapsed: boolean) => void;
   state: QuickDailyState;
 };
 
-const QuickDailyCard = ({ collapsed, state }: QuickDailyCardProps) => {
+const QuickDailyCard = ({
+  collapsed,
+  onCollapseChange,
+  state,
+}: QuickDailyCardProps) => {
   const { entries, isLoading, addEntry, markEntryDone, convertEntry } = state;
   const [visible, setVisible] = useState(5);
   const [pending, setPending] = useState<Record<string, boolean>>({});
@@ -150,6 +155,7 @@ const QuickDailyCard = ({ collapsed, state }: QuickDailyCardProps) => {
       collapsible
       collapsed={collapsed}
       collapseOnHeaderClick
+      onCollapseChange={onCollapseChange}
       actions={[
         {
           content: (
@@ -286,16 +292,33 @@ const QuickDailyCard = ({ collapsed, state }: QuickDailyCardProps) => {
 
 type QuickDailyProps = {
   collapsed?: boolean;
+  onCollapseChange?: (collapsed: boolean) => void;
   state?: QuickDailyState;
 };
 
-export const QuickDaily = ({ collapsed = false, state }: QuickDailyProps) => {
+export const QuickDaily = ({
+  collapsed = false,
+  onCollapseChange,
+  state,
+}: QuickDailyProps) => {
   if (state) {
-    return <QuickDailyCard collapsed={collapsed} state={state} />;
+    return (
+      <QuickDailyCard
+        collapsed={collapsed}
+        onCollapseChange={onCollapseChange}
+        state={state}
+      />
+    );
   }
 
   const hookState = useQuickDailyEntries();
-  return <QuickDailyCard collapsed={collapsed} state={hookState} />;
+  return (
+    <QuickDailyCard
+      collapsed={collapsed}
+      onCollapseChange={onCollapseChange}
+      state={hookState}
+    />
+  );
 };
 
 export default QuickDaily;
