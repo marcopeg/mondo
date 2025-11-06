@@ -99,7 +99,11 @@ const removeFrontmatter = (content: string): string => {
 
 const isBodyEmpty = (content: string): boolean => removeFrontmatter(content).trim().length === 0;
 
-export const cleanupDailyHistory = async (app: App, plugin: Mondo) => {
+export const cleanupDailyHistory = async (
+  app: App,
+  plugin: Mondo,
+  options?: { silent?: boolean }
+) => {
   await plugin.loadSettings();
 
   const dailySettings = ((plugin as any).settings?.daily ?? {}) as {
@@ -114,7 +118,9 @@ export const cleanupDailyHistory = async (app: App, plugin: Mondo) => {
   );
 
   if (Number.isNaN(retentionSetting) || retentionSetting <= 0) {
-    new Notice("Daily history retention is not configured.");
+    if (!options?.silent) {
+      new Notice("Daily history retention is not configured.");
+    }
     return;
   }
 
@@ -150,7 +156,9 @@ export const cleanupDailyHistory = async (app: App, plugin: Mondo) => {
   }
 
   if (candidates.length === 0) {
-    new Notice("No daily notes exceeded the retention period.");
+    if (!options?.silent) {
+      new Notice("No daily notes exceeded the retention period.");
+    }
     return;
   }
 
@@ -199,11 +207,13 @@ export const cleanupDailyHistory = async (app: App, plugin: Mondo) => {
     summaryParts.push(`${deletedCount} empty note${deletedCount === 1 ? "" : "s"} deleted`);
   }
 
-  const message =
-    summaryParts.length > 0
-      ? `Cleanup Daily History: ${summaryParts.join(", ")}.`
-      : "Cleanup Daily History completed.";
-  new Notice(message);
+  if (!options?.silent) {
+    const message =
+      summaryParts.length > 0
+        ? `Cleanup Daily History: ${summaryParts.join(", ")}.`
+        : "Cleanup Daily History completed.";
+    new Notice(message);
+  }
 };
 
 export default cleanupDailyHistory;
