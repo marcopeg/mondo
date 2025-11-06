@@ -154,7 +154,10 @@ class ImageEditModal extends Modal {
     );
     titleLink.addEventListener("click", (event) => {
       event.preventDefault();
-      window.open(resourcePath, "_blank", "noopener,noreferrer");
+      const leaf = this.app.workspace.getLeaf(true);
+      if (leaf) {
+        void leaf.openFile(this.file);
+      }
     });
 
     this.modalEl
