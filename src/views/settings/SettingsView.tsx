@@ -18,7 +18,10 @@ import { renderTimestampsSection } from "./SettingsView_Timestamps";
 import { renderAudioSection } from "./SettingsView_Audio";
 import { renderDailySection } from "./SettingsView_Daily";
 import { renderJournalSection } from "./SettingsView_Journal";
-import { renderDashboardSection } from "./SettingsView_Dashboard";
+import {
+  renderDashboardSection,
+  DEFAULT_RELEVANT_NOTES_HISTORY_DAYS,
+} from "./SettingsView_Dashboard";
 import { sanitizeEntityTypeList } from "@/utils/sanitizeEntityTypeList";
 
 // Settings view for Mondo plugin
@@ -81,6 +84,8 @@ export class SettingsView extends PluginSettingTab {
     const quickTasksEntitiesSetting = dashboardSettings.quickTasksEntities;
     const entityTilesSetting = dashboardSettings.entityTiles;
     const relevantNotesModeSetting = dashboardSettings.relevantNotesMode;
+    const relevantNotesHistoryDaysSetting =
+      dashboardSettings.relevantNotesHistoryDays;
     const relevantNotesMode =
       relevantNotesModeSetting === "history" ? "history" : "hits";
     const disableStats =
@@ -105,6 +110,15 @@ export class SettingsView extends PluginSettingTab {
       entityTilesSetting,
       MONDO_ENTITY_TYPES
     );
+    const parsedRelevantNotesHistoryDays = Number.parseInt(
+      String(relevantNotesHistoryDaysSetting ?? ""),
+      10
+    );
+    const relevantNotesHistoryDays =
+      !Number.isNaN(parsedRelevantNotesHistoryDays) &&
+      parsedRelevantNotesHistoryDays > 0
+        ? parsedRelevantNotesHistoryDays
+        : DEFAULT_RELEVANT_NOTES_HISTORY_DAYS;
     (this.plugin as any).settings.dashboard = {
       openAtBoot: dashboardSettings.openAtBoot === true,
       forceTab: dashboardSettings.forceTab === true,
@@ -117,6 +131,7 @@ export class SettingsView extends PluginSettingTab {
       quickSearchEntities,
       quickTasksEntities,
       entityTiles,
+      relevantNotesHistoryDays,
     };
 
     const ribbonSettings = (this.plugin as any).settings.ribbonIcons ?? {};
