@@ -152,6 +152,10 @@ class ImageEditModal extends Modal {
       "aria-label",
       `Open ${this.file.name} in a new tab`
     );
+    titleLink.addEventListener("click", (event) => {
+      event.preventDefault();
+      window.open(resourcePath, "_blank", "noopener,noreferrer");
+    });
 
     this.modalEl
       .querySelectorAll(".modal-close-button, .modal-close-x")
