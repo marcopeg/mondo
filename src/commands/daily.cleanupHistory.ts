@@ -1,7 +1,9 @@
-import { App, Notice, TFile, type CachedMetadata } from "obsidian";
+import { App, Notice, TFile, type CachedMetadata, moment } from "obsidian";
+import type momentModule from "moment";
 import type Mondo from "@/main";
 import { isDailyNoteType } from "@/types/MondoFileType";
 import { normalizeFolderPath } from "@/utils/normalizeFolderPath";
+import { DEFAULT_MONDO_DAILY_SETTINGS } from "@/types/MondoOtherPaths";
 
 const isInFolder = (path: string, folder: string): boolean => {
   if (!folder) {
@@ -18,27 +20,70 @@ const readFrontmatterType = (cache: CachedMetadata | null | undefined): string |
   return null;
 };
 
-const parseDateKey = (value: unknown): Date | null => {
+const getMoment = (): typeof momentModule => moment as unknown as typeof momentModule;
+
+const toStartOfDay = (date: Date): Date => {
+  const clone = new Date(date.getTime());
+  clone.setHours(0, 0, 0, 0);
+  return clone;
+};
+
+const parseDateValue = (value: unknown, entryFormat: string): Date | null => {
+  const momentFactory = getMoment();
+
+  if (value instanceof Date) {
+    if (Number.isNaN(value.getTime())) {
+      return null;
+    }
+    return toStartOfDay(value);
+  }
+
   if (typeof value !== "string") {
     return null;
   }
+
   const trimmed = value.trim();
   if (!trimmed) {
     return null;
   }
-  const match = trimmed.match(/^(\d{4})-(\d{2})-(\d{2})$/);
-  if (!match) {
-    return null;
+
+  const isoAttempt = momentFactory(trimmed, momentFactory.ISO_8601, true);
+  if (isoAttempt.isValid()) {
+    return toStartOfDay(isoAttempt.toDate());
   }
-  const [, yearText, monthText, dayText] = match;
-  const year = Number.parseInt(yearText, 10);
-  const month = Number.parseInt(monthText, 10) - 1;
-  const day = Number.parseInt(dayText, 10);
-  if ([year, month, day].some((part) => Number.isNaN(part))) {
-    return null;
+
+  const normalizedFormat = entryFormat.trim();
+  if (normalizedFormat) {
+    const formattedAttempt = momentFactory(trimmed, normalizedFormat, true);
+    if (formattedAttempt.isValid()) {
+      return toStartOfDay(formattedAttempt.toDate());
+    }
   }
-  const date = new Date(year, month, day);
-  return Number.isNaN(date.getTime()) ? null : date;
+
+  return null;
+};
+
+const resolveDailyNoteDate = (
+  file: TFile,
+  cache: CachedMetadata | null | undefined,
+  entryFormat: string
+): Date | null => {
+  const frontmatterDate = parseDateValue(cache?.frontmatter?.date, entryFormat);
+  if (frontmatterDate) {
+    return frontmatterDate;
+  }
+
+  const titleDate = parseDateValue(file.basename, entryFormat);
+  if (titleDate) {
+    return titleDate;
+  }
+
+  const created = file.stat?.ctime;
+  if (typeof created === "number" && !Number.isNaN(created)) {
+    return toStartOfDay(new Date(created));
+  }
+
+  return null;
 };
 
 const removeFrontmatter = (content: string): string => {
@@ -55,8 +100,16 @@ const removeFrontmatter = (content: string): string => {
 const isBodyEmpty = (content: string): boolean => removeFrontmatter(content).trim().length === 0;
 
 export const cleanupDailyHistory = async (app: App, plugin: Mondo) => {
+  await plugin.loadSettings();
+
+  const dailySettings = ((plugin as any).settings?.daily ?? {}) as {
+    historyRetentionDays?: number;
+    entry?: string;
+    root?: string;
+  };
+
   const retentionSetting = Number.parseInt(
-    String((plugin as any).settings?.daily?.historyRetentionDays ?? ""),
+    String(dailySettings.historyRetentionDays ?? ""),
     10
   );
 
@@ -69,7 +122,13 @@ export const cleanupDailyHistory = async (app: App, plugin: Mondo) => {
   cutoff.setHours(0, 0, 0, 0);
   cutoff.setDate(cutoff.getDate() - retentionSetting);
 
-  const dailyRoot = normalizeFolderPath((plugin as any).settings?.daily?.root ?? "Daily");
+  const dailyRoot = normalizeFolderPath(
+    dailySettings.root ?? DEFAULT_MONDO_DAILY_SETTINGS.root
+  );
+  const entryFormat =
+    typeof dailySettings.entry === "string" && dailySettings.entry.trim()
+      ? dailySettings.entry
+      : DEFAULT_MONDO_DAILY_SETTINGS.entry;
   const candidates: TFile[] = [];
 
   for (const file of app.vault.getMarkdownFiles()) {
@@ -81,7 +140,7 @@ export const cleanupDailyHistory = async (app: App, plugin: Mondo) => {
     if (!isDailyNoteType(type)) {
       continue;
     }
-    const date = parseDateKey(cache?.frontmatter?.date);
+    const date = resolveDailyNoteDate(file, cache, entryFormat);
     if (!date) {
       continue;
     }
