@@ -50,8 +50,12 @@ type LinkRecord = {
 // Helper to convert LinkRecord to the appropriate storage format:
 // - New format with timestamp: { link: "[[Note]]", timestamp: 123456789 }
 // - Legacy format without timestamp: "[[Note]]"
-const serializeLinkRecord = (record: LinkRecord): string | { link: string; timestamp: number } => {
-  return record.timestamp ? { link: record.raw, timestamp: record.timestamp } : record.raw;
+const serializeLinkRecord = (
+  record: LinkRecord
+): string | { link: string; timestamp: number } => {
+  return typeof record.timestamp === "number"
+    ? { link: record.raw, timestamp: record.timestamp }
+    : record.raw;
 };
 
 const DATE_IN_TITLE_REGEX = /(\d{4})[-/](\d{2})[-/](\d{2})/;
@@ -517,13 +521,15 @@ export class DailyNoteTracker {
     return state as DailyNoteState;
   };
 
-  private normalizeLinkArray = (value: unknown): string[] => {
+  private normalizeLinkArray = (
+    value: unknown
+  ): Array<string | { link: string; timestamp?: number }> => {
     if (value === undefined) {
       return [];
     }
 
     const rawValues = Array.isArray(value) ? value : [value];
-    const normalized: string[] = [];
+    const normalized: Array<string | { link: string; timestamp?: number }> = [];
 
     rawValues.forEach((entry) => {
       if (typeof entry === "string") {
@@ -541,7 +547,17 @@ export class DailyNoteTracker {
         if (typeof maybeLink === "string") {
           const trimmed = maybeLink.trim();
           if (trimmed) {
-            normalized.push(trimmed);
+            const hasTimestamp =
+              typeof objectValue.timestamp === "number" &&
+              !Number.isNaN(objectValue.timestamp);
+            if (hasTimestamp) {
+              normalized.push({
+                link: trimmed,
+                timestamp: objectValue.timestamp as number,
+              });
+            } else {
+              normalized.push(trimmed);
+            }
           }
         }
       }
