@@ -12,6 +12,7 @@ export interface MondoDailySettings {
   note: string; // note filename/time format inside a daily note (e.g. HH:MM)
   section?: string; // heading level for daily notes (h1..h6)
   useBullets?: boolean; // whether to prefix new daily entries with a bullet
+  historyRetentionDays?: number; // number of days of daily notes to keep when cleaning history
 }
 
 /** Defaults for journal settings */
@@ -27,4 +28,5 @@ export const DEFAULT_MONDO_DAILY_SETTINGS: MondoDailySettings = {
   note: "HH:MM",
   section: "h2",
   useBullets: true,
+  historyRetentionDays: 30,
 };

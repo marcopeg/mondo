@@ -46,8 +46,21 @@ export class SettingsView extends PluginSettingTab {
       (this.plugin as any).settings.inbox ?? "Inbox";
     (this.plugin as any).settings.journal = (this.plugin as any).settings
       .journal ?? { root: "Journal", entry: "YYYY-MM-DD" };
-    (this.plugin as any).settings.daily = (this.plugin as any).settings
-      .daily ?? { root: "Daily", entry: "YYYY-MM-DD", note: "HH:MM" };
+    (this.plugin as any).settings.daily = (this.plugin as any).settings.daily ?? {
+      root: "Daily",
+      entry: "YYYY-MM-DD",
+      note: "HH:MM",
+      historyRetentionDays: 30,
+    };
+    const dailySettings = (this.plugin as any).settings.daily;
+    const historyRetention = Number.parseInt(
+      String(dailySettings.historyRetentionDays ?? ""),
+      10
+    );
+    dailySettings.historyRetentionDays =
+      Number.isFinite(historyRetention) && historyRetention > 0
+        ? historyRetention
+        : 30;
     (this.plugin as any).settings.templates =
       (this.plugin as any).settings.templates ??
       Object.fromEntries(

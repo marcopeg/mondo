@@ -71,6 +71,7 @@ import { openDailyNote } from "@/commands/daily.open";
 import { addDailyLog } from "@/commands/daily.addLog";
 import { talkToDaily } from "@/commands/daily.talkToDaily";
 import { recordToDaily } from "@/commands/daily.recordToDaily";
+import { cleanupDailyHistory } from "@/commands/daily.cleanupHistory";
 import { journalMoveFactory } from "@/commands/journal.nav";
 import { insertTimestamp } from "@/commands/timestamp.insert";
 import { copyNoteText } from "@/commands/note.copyText";
@@ -295,6 +296,22 @@ export default class Mondo extends Plugin {
     this.settings.timestamp = normalizeTimestampSettings(
       this.settings.timestamp
     );
+
+    const rawDailySettings = this.settings.daily ?? {};
+    const normalizedDailySettings = Object.assign(
+      {},
+      DEFAULT_MONDO_DAILY_SETTINGS,
+      rawDailySettings
+    );
+    const parsedRetention = Number.parseInt(
+      String(rawDailySettings.historyRetentionDays ?? ""),
+      10
+    );
+    normalizedDailySettings.historyRetentionDays =
+      !Number.isNaN(parsedRetention) && parsedRetention > 0
+        ? parsedRetention
+        : DEFAULT_MONDO_DAILY_SETTINGS.historyRetentionDays;
+    this.settings.daily = normalizedDailySettings;
 
     const dashboardSettings = this.settings.dashboard ?? {};
     let didMigrate = false;
@@ -802,6 +819,14 @@ export default class Mondo extends Plugin {
       id: "record-to-daily",
       name: "Record to Daily Note",
       callback: async () => recordToDaily(this.app, this),
+    });
+
+    this.addCommand({
+      id: "cleanup-daily-history",
+      name: "Cleanup Daily History",
+      callback: () => {
+        void cleanupDailyHistory(this.app, this);
+      },
     });
 
     this.addCommand({
