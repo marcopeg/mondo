@@ -64,7 +64,11 @@ const appendToBottom = (editor: Editor, value: string) => {
   editor.focus();
 };
 
-const insertIntoEditor = (editor: Editor, value: string) => {
+const insertIntoEditor = (
+  editor: Editor,
+  value: string,
+  savedCursor?: { line: number; ch: number } | null
+) => {
   if (!value) {
     return false;
   }
@@ -79,6 +83,22 @@ const insertIntoEditor = (editor: Editor, value: string) => {
       const cursor = editor.getCursor();
       editor.replaceRange(value, cursor);
     }
+    editor.focus();
+    return true;
+  }
+
+  // If we have a saved cursor position, insert at that position
+  if (savedCursor) {
+    editor.replaceRange(value, savedCursor);
+    // Move cursor to end of inserted text
+    const lines = value.split("\n");
+    const lastLineIndex = savedCursor.line + lines.length - 1;
+    const lastLineLength = lines[lines.length - 1].length;
+    const newCursorPos =
+      lines.length === 1
+        ? { line: savedCursor.line, ch: savedCursor.ch + lastLineLength }
+        : { line: lastLineIndex, ch: lastLineLength };
+    editor.setCursor(newCursorPos);
     editor.focus();
     return true;
   }
@@ -245,6 +265,9 @@ export const openMagicPaste = async (
 ) => {
   const { editor, view } = resolveEditor(app, context);
 
+  // Capture the cursor position before opening the modal
+  const savedCursor = editor ? editor.getCursor() : null;
+
   let clipboardText = "";
   try {
     clipboardText = await readClipboardText();
@@ -259,7 +282,7 @@ export const openMagicPaste = async (
     const latestEditor = latestView?.editor ?? editor;
 
     if (latestEditor) {
-      insertIntoEditor(latestEditor, value);
+      insertIntoEditor(latestEditor, value, savedCursor);
       new Notice("Cleaned text inserted.");
       return;
     }
