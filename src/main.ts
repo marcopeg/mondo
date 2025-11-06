@@ -447,7 +447,7 @@ export default class Mondo extends Plugin {
       this.dashboardRibbonEl,
       isEnabled("dashboard"),
       DASHBOARD_ICON,
-      "Open Mondo Dashboard",
+      "List Mondo Dashboard",
       () => {
         void this.showPanel(DASHBOARD_VIEW, "main");
       }
@@ -457,7 +457,7 @@ export default class Mondo extends Plugin {
       this.audioLogsRibbonEl,
       isEnabled("audioLogs"),
       AUDIO_LOGS_ICON,
-      "Open Audio Notes",
+      "List Audio Notes",
       () => {
         void this.showPanel(AUDIO_LOGS_VIEW, "main");
       }
@@ -467,7 +467,7 @@ export default class Mondo extends Plugin {
       this.vaultImagesRibbonEl,
       isEnabled("vaultImages"),
       VAULT_IMAGES_ICON,
-      "Open Images",
+      "List Images",
       () => {
         void this.showPanel(VAULT_IMAGES_VIEW, "main");
       }
@@ -477,7 +477,7 @@ export default class Mondo extends Plugin {
       this.vaultFilesRibbonEl,
       isEnabled("vaultFiles"),
       VAULT_FILES_ICON,
-      "Open Files",
+      "List Files",
       () => {
         void this.showPanel(VAULT_FILES_VIEW, "main");
       }
@@ -487,7 +487,7 @@ export default class Mondo extends Plugin {
       this.vaultNotesRibbonEl,
       isEnabled("vaultNotes"),
       VAULT_NOTES_ICON,
-      "Open Markdown Notes",
+      "List Markdown Notes",
       () => {
         void this.showPanel(VAULT_NOTES_VIEW, "main");
       }
@@ -641,32 +641,32 @@ export default class Mondo extends Plugin {
 
     this.addCommand({
       id: "open-dashboard",
-      name: "Open Mondo dashboard",
+      name: "List Mondo dashboard",
       hotkeys: [{ modifiers: ["Mod", "Shift"], key: "m" }], // Cmd/Ctrl+Shift+M (user can change later)
         callback: () => this.showPanel(DASHBOARD_VIEW, "main"),
     });
 
     this.addCommand({
       id: "open-audio-notes",
-      name: "Open Audio Notes",
+      name: "List Audio Notes",
       callback: () => this.showPanel(AUDIO_LOGS_VIEW, "main"),
     });
 
     this.addCommand({
       id: "open-vault-images",
-      name: "Open Images",
+      name: "List Images",
       callback: () => this.showPanel(VAULT_IMAGES_VIEW, "main"),
     });
 
     this.addCommand({
       id: "open-vault-files",
-      name: "Open Files",
+      name: "List Files",
       callback: () => this.showPanel(VAULT_FILES_VIEW, "main"),
     });
 
     this.addCommand({
       id: "open-vault-notes",
-      name: "Open Markdown Notes",
+      name: "List Markdown Notes",
       callback: () => this.showPanel(VAULT_NOTES_VIEW, "main"),
     });
 
@@ -772,13 +772,13 @@ export default class Mondo extends Plugin {
 
     this.addCommand({
       id: "open-today",
-      name: "Open Daily Note",
+      name: "List Daily Note",
       callback: async () => openDailyNote(this.app, this),
     });
 
     this.addCommand({
       id: "open-self-person",
-      name: "Open Myself",
+      name: "List Myself",
       callback: () => {
         void openSelfPersonNote(this.app, this);
       },
@@ -964,7 +964,7 @@ export default class Mondo extends Plugin {
       const label = config?.name ?? fileType;
       this.addCommand({
         id: `open-${fileType}`,
-        name: `Open ${label}`,
+        name: `List ${label}`,
         callback: () => {
           void this.openEntityPanel(fileType);
         },
@@ -995,7 +995,7 @@ export default class Mondo extends Plugin {
 
     this.addCommand({
       id: "open-mondo-settings",
-      name: "Open Mondo settings",
+      name: "List Mondo settings",
       callback: () => {
         (this.app as any).setting.open();
         (this.app as any).setting.openTabById(this.manifest.id);
