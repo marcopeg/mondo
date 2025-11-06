@@ -200,20 +200,9 @@ export const EntityHeaderMondo = ({ entityType }: EntityHeaderMondoProps) => {
   const cachedFile = file as TCachedFile | undefined;
   const headerRef = useRef<HTMLDivElement | null>(null);
   const previousCoverRef = useRef<string | null>(null);
+  const coverFilePathRef = useRef<string | null>(null);
   const [isUploadingCover, setIsUploadingCover] = useState(false);
   const [vaultModifyCounter, setVaultModifyCounter] = useState(0);
-
-  useEffect(() => {
-    const handleVaultModify = () => {
-      setVaultModifyCounter((prev) => prev + 1);
-    };
-
-    const eventRef = app.vault.on("modify", handleVaultModify);
-
-    return () => {
-      app.vault.offref(eventRef);
-    };
-  }, [app]);
 
   const displayName = useMemo(
     () => (cachedFile ? getEntityDisplayName(cachedFile) : "Untitled"),
@@ -224,8 +213,28 @@ export const EntityHeaderMondo = ({ entityType }: EntityHeaderMondoProps) => {
 
   const cover = useMemo(() => {
     if (!cachedFile) return null;
-    return resolveCoverImage(app, cachedFile);
+    const resolved = resolveCoverImage(app, cachedFile);
+    
+    // Track the cover file path for the vault modify listener
+    coverFilePathRef.current = resolved?.kind === "vault" ? resolved.file.path : null;
+    
+    return resolved;
   }, [app, cachedFile, vaultModifyCounter]);
+
+  useEffect(() => {
+    const handleVaultModify = (file: TFile) => {
+      // Only trigger re-computation if the modified file is the current cover image
+      if (coverFilePathRef.current && file.path === coverFilePathRef.current) {
+        setVaultModifyCounter((prev) => prev + 1);
+      }
+    };
+
+    const eventRef = app.vault.on("modify", handleVaultModify);
+
+    return () => {
+      app.vault.offref(eventRef);
+    };
+  }, [app]);
 
   const coverSrc = useMemo(() => {
     if (!cover) return null;
