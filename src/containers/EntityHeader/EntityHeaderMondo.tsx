@@ -201,6 +201,19 @@ export const EntityHeaderMondo = ({ entityType }: EntityHeaderMondoProps) => {
   const headerRef = useRef<HTMLDivElement | null>(null);
   const previousCoverRef = useRef<string | null>(null);
   const [isUploadingCover, setIsUploadingCover] = useState(false);
+  const [vaultModifyCounter, setVaultModifyCounter] = useState(0);
+
+  useEffect(() => {
+    const handleVaultModify = () => {
+      setVaultModifyCounter((prev) => prev + 1);
+    };
+
+    const eventRef = app.vault.on("modify", handleVaultModify);
+
+    return () => {
+      app.vault.offref(eventRef);
+    };
+  }, [app]);
 
   const displayName = useMemo(
     () => (cachedFile ? getEntityDisplayName(cachedFile) : "Untitled"),
@@ -212,7 +225,7 @@ export const EntityHeaderMondo = ({ entityType }: EntityHeaderMondoProps) => {
   const cover = useMemo(() => {
     if (!cachedFile) return null;
     return resolveCoverImage(app, cachedFile);
-  }, [app, cachedFile]);
+  }, [app, cachedFile, vaultModifyCounter]);
 
   const coverSrc = useMemo(() => {
     if (!cover) return null;

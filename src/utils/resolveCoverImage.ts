@@ -127,9 +127,13 @@ export const resolveCoverImage = (
     return null;
   }
 
+  const resourcePath = app.vault.getResourcePath(file);
+  const mtime = file.stat.mtime;
+  const cacheBustedPath = `${resourcePath}?t=${mtime}`;
+
   return {
     kind: "vault",
     file,
-    resourcePath: app.vault.getResourcePath(file),
+    resourcePath: cacheBustedPath,
   };
 };
