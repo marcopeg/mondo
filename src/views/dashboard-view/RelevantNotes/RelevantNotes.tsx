@@ -112,6 +112,14 @@ export const RelevantNotes = ({
   const historyDays = typeof historyDaysSetting === "number" && historyDaysSetting > 0 
     ? historyDaysSetting 
     : DEFAULT_HISTORY_DAYS;
+  const quickSearchEntities = useSetting<MondoEntityType[]>(
+    "dashboard.quickSearchEntities",
+    []
+  );
+  const entityTiles = useSetting<MondoEntityType[]>(
+    "dashboard.entityTiles",
+    []
+  );
   const [mode, setMode] = useState<NotesMode>(sanitizedModeSetting);
   const [hitsVisibleCount, setHitsVisibleCount] = useState(5);
   const [historyLimit, setHistoryLimit] = useState(5);
@@ -298,7 +306,35 @@ export const RelevantNotes = ({
   const hasMore = mode === "history" ? historyHasMore : hitsHasMore;
 
   const filterButtons = useMemo(() => {
-    return MONDO_UI_CONFIG.relevantNotes.filter.order
+    const order = MONDO_UI_CONFIG?.relevantNotes?.filter?.order ?? [];
+    
+    // Merge quickSearchEntities and entityTiles, keeping only first appearance
+    const mergedList: MondoEntityType[] = [];
+    const seen = new Set<MondoEntityType>();
+    
+    const quickSearch = Array.isArray(quickSearchEntities) ? quickSearchEntities : [];
+    const tiles = Array.isArray(entityTiles) ? entityTiles : [];
+    
+    // Add items from quickSearchEntities first
+    for (const type of quickSearch) {
+      if (!seen.has(type)) {
+        mergedList.push(type);
+        seen.add(type);
+      }
+    }
+    
+    // Add items from entityTiles (skipping duplicates)
+    for (const type of tiles) {
+      if (!seen.has(type)) {
+        mergedList.push(type);
+        seen.add(type);
+      }
+    }
+    
+    // Use merged list if not empty, otherwise fall back to config order
+    const source = mergedList.length > 0 ? mergedList : order;
+    
+    return source
       .map((type) => {
         const config = MONDO_ENTITIES[type];
         if (!config) {
@@ -315,7 +351,7 @@ export const RelevantNotes = ({
       icon: string;
       label: string;
     }>;
-  }, []);
+  }, [quickSearchEntities, entityTiles]);
 
   const emptyStateMessage =
     mode === "history"
