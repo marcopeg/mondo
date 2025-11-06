@@ -265,8 +265,9 @@ export const openMagicPaste = async (
 ) => {
   const { editor, view } = resolveEditor(app, context);
 
-  // Capture the cursor position before opening the modal
+  // Capture the cursor position and file path before opening the modal
   const savedCursor = editor ? editor.getCursor() : null;
+  const savedFilePath = view?.file?.path ?? null;
 
   let clipboardText = "";
   try {
@@ -282,8 +283,10 @@ export const openMagicPaste = async (
     const latestEditor = latestView?.editor ?? editor;
 
     if (latestEditor) {
-      // Only use saved cursor if we're still in the same editor
-      const cursorToUse = latestEditor === editor ? savedCursor : null;
+      // Only use saved cursor if we're still in the same file
+      const latestFilePath = latestView?.file?.path ?? null;
+      const cursorToUse =
+        savedFilePath && latestFilePath === savedFilePath ? savedCursor : null;
       insertIntoEditor(latestEditor, value, cursorToUse);
       new Notice("Cleaned text inserted.");
       return;
