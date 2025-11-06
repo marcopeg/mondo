@@ -107,4 +107,28 @@ export const renderDailySection = (props: SettingsDailyProps): void => {
         await (plugin as any).saveSettings();
       });
     });
+
+  const historyRetention =
+    (plugin as any).settings.daily?.historyRetentionDays ?? 30;
+  dailySettingsSection
+    .createSetting()
+    .setName("History retention (days)")
+    .setDesc(
+      "Number of days of daily notes to keep when running the Cleanup Daily History command."
+    )
+    .addText((text) => {
+      text.inputEl.type = "number";
+      text.inputEl.min = "1";
+      text
+        .setPlaceholder("30")
+        .setValue(String(historyRetention))
+        .onChange(async (value) => {
+          const parsed = Number.parseInt(value, 10);
+          (plugin as any).settings.daily = (plugin as any).settings.daily || {};
+          if (!Number.isNaN(parsed) && parsed > 0) {
+            (plugin as any).settings.daily.historyRetentionDays = parsed;
+            await (plugin as any).saveSettings();
+          }
+        });
+    });
 };
