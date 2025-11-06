@@ -6,10 +6,9 @@ export const person = {
       key: "task",
       label: "Task",
       icon: "check-square",
+      targetType: "task",
       create: {
-        attributes: {
-          type: "task",
-        },
+        attributes: {},
       },
     },
   ],

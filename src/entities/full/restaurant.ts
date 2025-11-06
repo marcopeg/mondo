@@ -17,10 +17,10 @@ export const restaurant = {
       key: "recipe",
       label: "Recipe",
       icon: recipe.icon,
+      targetType: "recipe",
       create: {
         title: "Untitled Recipe for {@this.show}",
         attributes: {
-          type: "recipe",
           restaurant: ["{@this}"],
         },
       },
@@ -29,10 +29,10 @@ export const restaurant = {
       key: "task",
       label: "Task",
       icon: task.icon,
+      targetType: "task",
       create: {
         title: "New Task for {@this.show}",
         attributes: {
-          type: "task",
           linksTo: ["{@this}"],
         },
       },
@@ -41,10 +41,10 @@ export const restaurant = {
       key: "log",
       label: "Log",
       icon: log.icon,
+      targetType: "log",
       create: {
         title: "{YY}-{MM}-{DD} {hh}.{mm} Log for {@this.show}",
         attributes: {
-          type: "log",
           linksTo: ["{@this}"],
         },
       },
@@ -53,10 +53,10 @@ export const restaurant = {
       key: "fact",
       label: "Fact",
       icon: fact.icon,
+      targetType: "fact",
       create: {
         title: "New Fact for {@this.show}",
         attributes: {
-          type: "fact",
           linksTo: ["{@this}"],
         },
       },
@@ -65,10 +65,10 @@ export const restaurant = {
       key: "document",
       label: "Document",
       icon: document.icon,
+      targetType: "document",
       create: {
         title: "Untitled Document for {@this.show}",
         attributes: {
-          type: "document",
           linksTo: ["{@this}"],
         },
       },
@@ -77,10 +77,10 @@ export const restaurant = {
       key: "idea",
       label: "Idea",
       icon: idea.icon,
+      targetType: "idea",
       create: {
         title: "New Idea for {@this.show}",
         attributes: {
-          type: "idea",
           linksTo: ["{@this}"],
         },
       },

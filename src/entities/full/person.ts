@@ -23,10 +23,10 @@ export const person = {
       key: "1o1s",
       label: "1:1 Meeting",
       icon: meeting.icon,
+      targetType: "meeting",
       create: {
         title: "{YY}-{MM}-{DD} {hh}.{mm} 1-1 with {@this.show}",
         attributes: {
-          type: "meeting",
           participants: ["{@this}"],
         },
       },
@@ -35,10 +35,10 @@ export const person = {
       key: "fact",
       label: "Fact",
       icon: fact.icon,
+      targetType: "fact",
       create: {
         title: "Untitled Fact for {@this.show}",
         attributes: {
-          type: "fact",
           linksTo: ["{@this}"],
         },
       },
@@ -47,10 +47,10 @@ export const person = {
       key: "log",
       label: "Log",
       icon: log.icon,
+      targetType: "log",
       create: {
         title: "{YY}-{MM}-{DD} {hh}.{mm} Log for {@this.show}",
         attributes: {
-          type: "log",
           linksTo: ["{@this}"],
         },
       },
@@ -59,10 +59,10 @@ export const person = {
       key: "task",
       label: "Task",
       icon: task.icon,
+      targetType: "task",
       create: {
         title: "Untitled Task for {@this.show}",
         attributes: {
-          type: "task",
           linksTo: ["{@this}"],
         },
       },
@@ -71,10 +71,10 @@ export const person = {
       key: "document",
       label: "Document",
       icon: document.icon,
+      targetType: "document",
       create: {
         title: "Untitled Document for {@this.show}",
         attributes: {
-          type: "document",
           linksTo: ["{@this}"],
         },
       },
@@ -83,10 +83,10 @@ export const person = {
       key: "project",
       label: "Project",
       icon: project.icon,
+      targetType: "project",
       create: {
         title: "Untitled Project for {@this.show}",
         attributes: {
-          type: "project",
           linksTo: ["{@this}"],
         },
       },
@@ -95,10 +95,10 @@ export const person = {
       key: "teammate",
       label: "Teammate",
       icon: team.icon,
+      targetType: "person",
       create: {
         title: "New Teammate for {@this.show}",
         attributes: {
-          type: "person",
           company: ["{@this.company}"],
           area: ["{@this.area}"],
           team: ["{@this.team}"],
@@ -109,10 +109,10 @@ export const person = {
       key: "report",
       label: "Report",
       icon: "user",
+      targetType: "person",
       create: {
         title: "New Report for {@this.show}",
         attributes: {
-          type: "person",
           reportsTo: ["{@this}"],
           company: ["{@this.company}"],
           area: ["{@this.area}"],

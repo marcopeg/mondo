@@ -6,10 +6,9 @@ export const company = {
       key: "person",
       label: "Person",
       icon: "user-plus",
+      targetType: "person",
       create: {
-        attributes: {
-          type: "person",
-        },
+        attributes: {},
       },
     },
   ],

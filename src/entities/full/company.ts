@@ -21,10 +21,10 @@ export const company = {
       key: "meeting",
       label: "Meeting",
       icon: meeting.icon,
+      targetType: "meeting",
       create: {
         title: "{YY}-{MM}-{DD} {hh}.{mm} on {@this.show}",
         attributes: {
-          type: "meeting",
           company: ["{@this}"],
         },
       },
@@ -33,10 +33,10 @@ export const company = {
       key: "employee",
       label: "Person",
       icon: person.icon,
+      targetType: "person",
       create: {
         title: "New Employee for {@this.show}",
         attributes: {
-          type: "person",
           company: ["{@this}"],
         },
       },
@@ -45,10 +45,10 @@ export const company = {
       key: "team",
       label: "Team",
       icon: team.icon,
+      targetType: "team",
       create: {
         title: "New Team for {@this.show}",
         attributes: {
-          type: "team",
           company: ["{@this}"],
         },
       },
@@ -57,10 +57,10 @@ export const company = {
       key: "project",
       label: "Project",
       icon: project.icon,
+      targetType: "project",
       create: {
         title: "New Project for {@this.show}",
         attributes: {
-          type: "project",
           company: ["{@this}"],
           team: [],
           status: "draft",
@@ -71,10 +71,10 @@ export const company = {
       key: "task",
       label: "Task",
       icon: task.icon,
+      targetType: "task",
       create: {
         title: "New Task for {@this.show}",
         attributes: {
-          type: "task",
           company: ["{@this}"],
         },
       },
@@ -83,10 +83,10 @@ export const company = {
       key: "fact",
       label: "Fact",
       icon: fact.icon,
+      targetType: "fact",
       create: {
         title: "New Fact for {@this.show}",
         attributes: {
-          type: "fact",
           company: ["{@this}"],
         },
       },
@@ -95,10 +95,10 @@ export const company = {
       key: "log",
       label: "Log",
       icon: log.icon,
+      targetType: "log",
       create: {
         title: "{YY}-{MM}-{DD} {hh}.{mm} Log for {@this.show}",
         attributes: {
-          type: "log",
           company: ["{@this}"],
         },
       },
@@ -107,10 +107,10 @@ export const company = {
       key: "gear",
       label: "Gear",
       icon: gear.icon,
+      targetType: "gear",
       create: {
         title: "Untitled Gear for {@this.show}",
         attributes: {
-          type: "gear",
           company: ["{@this}"],
         },
       },
@@ -119,10 +119,10 @@ export const company = {
       key: "idea",
       label: "Idea",
       icon: idea.icon,
+      targetType: "idea",
       create: {
         title: "Untitled Idea for {@this.show}",
         attributes: {
-          type: "idea",
           company: ["{@this}"],
         },
       },
@@ -131,10 +131,10 @@ export const company = {
       key: "document",
       label: "Document",
       icon: document.icon,
+      targetType: "document",
       create: {
         title: "Untitled Document for {@this.show}",
         attributes: {
-          type: "document",
           company: ["{@this}"],
         },
       },

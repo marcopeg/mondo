@@ -6,11 +6,10 @@ export const task = {
       key: "subtask",
       label: "Sub-task",
       icon: "list-plus",
+      targetType: "task",
       create: {
         title: "Untitled Sub-task",
-        attributes: {
-          type: "task",
-        },
+        attributes: {},
       },
     },
   ],

@@ -15,10 +15,10 @@ export const team = {
       key: "meeting",
       label: "Meeting",
       icon: meeting.icon,
+      targetType: "meeting",
       create: {
         title: "{YY}-{MM}-{DD} {hh}.{mm} on {@this.show}",
         attributes: {
-          type: "meeting",
           team: ["{@this}"],
         },
       },
@@ -27,10 +27,10 @@ export const team = {
       key: "project",
       label: "Project",
       icon: project.icon,
+      targetType: "project",
       create: {
         title: "New Project for {@this.show}",
         attributes: {
-          type: "project",
           team: ["{@this}"],
         },
       },
@@ -39,10 +39,10 @@ export const team = {
       key: "task",
       label: "Task",
       icon: task.icon,
+      targetType: "task",
       create: {
         title: "New Task for {@this.show}",
         attributes: {
-          type: "task",
           linksTo: ["{@this}"],
         },
       },
@@ -51,10 +51,10 @@ export const team = {
       key: "log",
       label: "Log",
       icon: log.icon,
+      targetType: "log",
       create: {
         title: "{YY}-{MM}-{DD} {hh}.{mm} Log for {@this.show}",
         attributes: {
-          type: "log",
           linksTo: ["{@this}"],
         },
       },
@@ -63,10 +63,10 @@ export const team = {
       key: "fact",
       label: "Fact",
       icon: fact.icon,
+      targetType: "fact",
       create: {
         title: "New Fact for {@this.show}",
         attributes: {
-          type: "fact",
           linksTo: ["{@this}"],
         },
       },
@@ -75,10 +75,10 @@ export const team = {
       key: "document",
       label: "Document",
       icon: document.icon,
+      targetType: "document",
       create: {
         title: "Untitled Document for {@this.show}",
         attributes: {
-          type: "document",
           linksTo: ["{@this}"],
         },
       },
@@ -87,10 +87,10 @@ export const team = {
       key: "idea",
       label: "Idea",
       icon: idea.icon,
+      targetType: "idea",
       create: {
         title: "New Idea for {@this.show}",
         attributes: {
-          type: "idea",
           linksTo: ["{@this}"],
         },
       },
@@ -99,10 +99,10 @@ export const team = {
       key: "member",
       label: "Member",
       icon: 'user',
+      targetType: "person",
       create: {
         title: "New Member for {@this.show}",
         attributes: {
-          type: "person",
           team: ["{@this}"],
         },
       },

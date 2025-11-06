@@ -14,10 +14,10 @@ export const task = {
       key: "subtask",
       label: "Sub-Task",
       icon: "check-square",
+      targetType: "task",
       create: {
         title: "Untitled Sub-Task for {@this.show}",
         attributes: {
-          type: "task",
           task: ["{@this}"],
         },
       },
@@ -27,10 +27,10 @@ export const task = {
       label: "Fact",
       icon: fact.icon,
       panelKey: "facts",
+      targetType: "fact",
       create: {
         title: "Untitled Fact for {@this.show}",
         attributes: {
-          type: "fact",
           linksTo: ["{@this}"],
         },
       },
@@ -40,10 +40,10 @@ export const task = {
       label: "Log",
       icon: log.icon,
       panelKey: "logs",
+      targetType: "log",
       create: {
         title: "{YY}-{MM}-{DD} {hh}.{mm} Log for {@this.show}",
         attributes: {
-          type: "log",
           linksTo: ["{@this}"],
         },
       },
@@ -52,10 +52,10 @@ export const task = {
       key: "document",
       label: "Document",
       icon: document.icon,
+      targetType: "document",
       create: {
         title: "Untitled Document for {@this.show}",
         attributes: {
-          type: "document",
           linksTo: ["{@this}"],
         },
       },
@@ -64,10 +64,10 @@ export const task = {
       key: "idea",
       label: "Idea",
       icon: 'lightbulb',
+      targetType: "idea",
       create: {
         title: "Untitled Idea for {@this.show}",
         attributes: {
-          type: "idea",
           linksTo: ["{@this}"],
         },
       },
