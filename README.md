@@ -18,6 +18,7 @@ _Mondo_ is a general purpose plugin that adds plentiful of utilities to a standa
 
 > I'm developing this plugin to facilitate my life 🤘
 
+
 # How to Install & Update
 
 ObsidianMondo is under active development so you would install it as a _Beta Tester_ at your own risk. But it's fine, I use it for myself first and it works, even if it needs a lot of love still!
@@ -34,7 +35,9 @@ https://github.com/marcopeg/mondo
 
 > I suggest you keep it updated to the latest version, but at this point feel free to install whatever available release.
 
-# 🏚️ Dashboard
+# Features
+
+## 🏚️ Dashboard
 
 Run the command `Open Mondo Dashboard` to open your vault's control center:
 
@@ -43,7 +46,7 @@ Run the command `Open Mondo Dashboard` to open your vault's control center:
 - **IMS Entities Wall** wall let you jump to the various entities lists. Think \_"Obsidian bases on steroid".
 - **Stats** show some numbers about your valut and offer some file based views of your stuff. Not only notes, but also images, audio and generic attachments across the whole vault.
 
-# 🎤 Dictation
+## 🎤 Dictation
 
 > This feature requires an [OpenAI API Key](https://help.openai.com/en/articles/4936850-where-do-i-find-my-openai-api-key)
 
@@ -51,7 +54,7 @@ Dictation lets you write your note's content with your voice, by sending a recor
 
 Use the command `Start dictation`, or press the microphone button to initiate a dictation session. The resulting transcription is inserted at your cursor's position.
 
-# 📝 Transcription
+## 📝 Transcription
 
 > This feature requires an [OpenAI API Key](https://help.openai.com/en/articles/4936850-where-do-i-find-my-openai-api-key)
 
@@ -59,7 +62,7 @@ Use the command `Start transcription` when over an _audio note_ to start the tra
 
 Once done, a new note with the full transcription and a reference to the original audio will be created and opened for you.
 
-# 🔈 Voiceover
+## 🔈 Voiceover
 
 > This feature requires an [OpenAI API Key](https://help.openai.com/en/articles/4936850-where-do-i-find-my-openai-api-key)
 
@@ -69,7 +72,7 @@ The file will be automatically referenced into the note's _frontmatter_.
 
 > You can use the _Voiceover_ also on a text-selection!
 
-# 🕰️ Timestamps
+## 🕰️ Timestamps
 
 Run the command `Insert timestamp` to inject a pre-configured date-time text in your note, where your cursor is.
 
@@ -81,7 +84,7 @@ Here is an example of a Heading level 2 timestamp template:
 ## YY/MM/DD hh:mm
 ```
 
-# 🧘 Focus Mode
+## 🧘 Focus Mode
 
 Sometimes, you just want to get lost in your writing.
 
@@ -89,11 +92,11 @@ Run the command `Start Focus Mode` to hide away most of the Obsidian UI and focu
 
 👉 Mondo will activate this mode any time you step into your Journal to give you maximum focus on introspection and self-awarness.
 
-# 🤖 Open in ChatGPT
+## 🤖 Open in ChatGPT
 
 Take any note or text selection and use the command `Send to ChatGPT` to open the famous AI tool with a pre-compiled prompt.
 
-# 🌆 Image Editor
+## 🌆 Image Editor
 
 Open an image and run the command `Edit Image` to open the image editor. 
 
@@ -103,7 +106,7 @@ There you can **resize** and **crop** an image to improve your vault without lea
 
 ![Edit Image](./images/edit-image.png)
 
-# 👫 Mondo IMS
+## 👫 Mondo IMS
 
 Mondo ships a powerful _Information Management System_ in which you can define your own entities and their relations to bring to life your tailored ERP/CRM/CMS of sort.
 
@@ -111,7 +114,7 @@ Mondo ships a powerful _Information Management System_ in which you can define y
 
 👉 Use the **IMS Presets** to experiment with common and community-curated systems!
 
-# 📈 Habits Tracker
+## 📈 Habits Tracker
 
 Tracking my daily habits is an important part of my self development plan, and i wantet it to be fully included into my Obsidian workflow.
 
@@ -133,7 +136,7 @@ You can add a block as many `habits` blocks you want:
 
 👉 [How to add Habit Trackers into your notes](./howto/TRACKER.md)
 
-# ⏱️ Training Timers
+## ⏱️ Training Timers
 
 Timers let you embed any kind of working timers in your notes.
 
@@ -155,7 +158,7 @@ Follow the full tutorial for more information and options:
 
 👉 [How to Add and Configure Timers](./howto/TIMER.md)
 
-# 📆 Daily Notes
+## 📆 Daily Notes
 
 Daily notes help jotting down quick information.
 
@@ -171,7 +174,7 @@ Try also the following commands:
 
 Mondo keeps a log of all the notes that were created, modified, and opened each day in the _Daily Note_. That becomes your vault's hystory datatabase and also a damn good way to find out notes when you rememeber when you worked on someting.
 
-# 🖌️ Journaling
+## 🖌️ Journaling
 
 Dealing with the modern world and its crazy pace can crash your soul. **Journaling** is a simple yet effective way to keep your thoughts, emotions, and hidden convinctions under control.
 
@@ -180,3 +183,62 @@ Hit `Shift+Cmd+j` and write anything that is personal.
 > Let yourself go.  
 > Don't think.  
 > Just write.
+
+# Mondo Commands
+
+Below is the list of commands that Mondo registers in Obsidian's command palette, grouped by feature. Command names are shown exactly as they appear in the palette.
+
+Dashboard
+- `Open Mondo Dashboard` — open the Mondo dashboard (default hotkey: Mod+Shift+M)
+
+Vault & Views
+- `Open Audio Notes`
+- `Open Images`
+- `Open Files`
+- `Open Markdown Notes`
+
+Image editor
+- `Edit Image` — opens the image editor for the active/selected image
+
+Audio & Transcription
+- `Start Transcription` — transcribe the active audio file
+- `Start Voiceover` — generate audio (voiceover) for the current note or selection
+
+Dictation & Recording
+- `Start Dictation` — dictation into the active editor (toggle)
+- `Record to Daily Note` — start a quick native recording and embed it into the daily note
+
+Daily notes
+- `Open Daily Note` — open today's daily note
+- `Append to Daily Note` — append a new time entry to the daily note (default hotkey: Mod+Shift+L)
+- `Talk to Daily Note` — append to daily note and start dictation
+- `Record to Daily Note` — append a recording to the daily note
+- `Cleanup Daily Notes History` — remove or clean old daily notes according to settings
+
+Journaling
+- `Toggle Journaling` — open/close journaling mode (hotkey: Mod+Shift+J)
+- `Move to Previous Journal Entry` — navigate to the previous journal entry
+- `Move to Next Journal Entry` — navigate to the next journal entry
+
+Editor utilities
+- `Add timestamp` — insert a configured timestamp at the cursor
+- `Copy Note Text` — copy current note body (or selection) to clipboard
+- `Magic Paste` — clean & paste clipboard text via a modal
+- `Edit with AI` — open the Edit-with-AI modal for the active note/selection
+- `Send to ChatGPT` — open ChatGPT with the active note/selection pre-filled
+
+🚧 Geolocation 🚧
+- `Add Geolocation to Current Note` — add current geolocation to the active note
+- `Cancel Geolocation Request` — cancel an in-flight geolocation lookup
+
+Misc & Settings
+- `Open Myself` — open the configured "self" note
+- `Open Mondo Settings` — open the plugin settings
+- `Toggle Focus Mode` — toggle Mondo's focus mode
+
+IMS Commands - For each configured IMS entity type Mondo also creates two commands:
+	- `List <Entity>` — list entities of that type
+	- `New <Entity>` — create a new entity note of that type
+
+Notes
+- Some commands are context-sensitive and only enabled when relevant (for example `Start Transcription` only when an audio file is active, `Edit Image` only for an image file). A few commands also have toolbar/menu equivalents (for instance audio transcription and voiceover are available from file/editor menus).

@@ -659,32 +659,32 @@ export default class Mondo extends Plugin {
 
     this.addCommand({
       id: "open-dashboard",
-      name: "List Mondo dashboard",
+      name: "Open Mondo Dashboard",
       hotkeys: [{ modifiers: ["Mod", "Shift"], key: "m" }], // Cmd/Ctrl+Shift+M (user can change later)
         callback: () => this.showPanel(DASHBOARD_VIEW, "main"),
     });
 
     this.addCommand({
       id: "open-audio-notes",
-      name: "List Audio Notes",
+      name: "Open Audio Notes",
       callback: () => this.showPanel(AUDIO_LOGS_VIEW, "main"),
     });
 
     this.addCommand({
       id: "open-vault-images",
-      name: "List Images",
+      name: "Open Images",
       callback: () => this.showPanel(VAULT_IMAGES_VIEW, "main"),
     });
 
     this.addCommand({
       id: "open-vault-files",
-      name: "List Files",
+      name: "Open Files",
       callback: () => this.showPanel(VAULT_FILES_VIEW, "main"),
     });
 
     this.addCommand({
       id: "open-vault-notes",
-      name: "List Markdown Notes",
+      name: "Open Markdown Notes",
       callback: () => this.showPanel(VAULT_NOTES_VIEW, "main"),
     });
 
@@ -708,7 +708,7 @@ export default class Mondo extends Plugin {
 
     this.addCommand({
       id: "transcribe-audio-note",
-      name: "Start transcription",
+      name: "Start Transcription",
       checkCallback: (checking) => {
         const file = this.app.workspace.getActiveFile();
 
@@ -729,7 +729,7 @@ export default class Mondo extends Plugin {
 
     this.addCommand({
       id: "mondo-start-note-dictation",
-      name: "Start dictation",
+      name: "Start Dictation",
       icon: "mic",
       editorCallback: async () => {
         const status = this.noteDictationManager?.getDictationStatus();
@@ -778,7 +778,7 @@ export default class Mondo extends Plugin {
     
     this.addCommand({
       id: "focus-mode-toggle",
-      name: "Toggle focus mode",
+      name: "Toggle Focus Mode",
       callback: () => {
         if (isFocusModeActive()) {
           deactivateFocusMode(this.app, "manual");
@@ -790,13 +790,13 @@ export default class Mondo extends Plugin {
 
     this.addCommand({
       id: "open-today",
-      name: "List Daily Note",
+      name: "Open Daily Note",
       callback: async () => openDailyNote(this.app, this),
     });
 
     this.addCommand({
       id: "open-self-person",
-      name: "List Myself",
+      name: "Open Myself",
       callback: () => {
         void openSelfPersonNote(this.app, this);
       },
@@ -823,7 +823,7 @@ export default class Mondo extends Plugin {
 
     this.addCommand({
       id: "cleanup-daily-history",
-      name: "Cleanup Daily History",
+      name: "Cleanup Daily Notes History",
       callback: () => {
         void cleanupDailyHistory(this.app, this);
       },
@@ -831,7 +831,7 @@ export default class Mondo extends Plugin {
 
     this.addCommand({
       id: "insert-timestamp",
-      name: "Add timestamp",
+      name: "Add Timestamp",
       icon: "clock",
       editorCallback: () => {
         insertTimestamp(this.app, this);
@@ -840,7 +840,7 @@ export default class Mondo extends Plugin {
 
     this.addCommand({
       id: "copy-note-text",
-      name: "Copy note text",
+      name: "Copy Note Text",
       icon: "copy",
       editorCallback: (editor, context) => {
         const markdownView =
@@ -854,7 +854,7 @@ export default class Mondo extends Plugin {
 
     this.addCommand({
       id: "magic-paste",
-      name: "Magic paste",
+      name: "Magic Paste",
       icon: "clipboard-paste",
       editorCallback: (editor, context) => {
         const markdownView =
@@ -1059,7 +1059,7 @@ export default class Mondo extends Plugin {
 
     this.addCommand({
       id: "open-mondo-settings",
-      name: "List Mondo settings",
+      name: "Open Mondo Settings",
       callback: () => {
         (this.app as any).setting.open();
         (this.app as any).setting.openTabById(this.manifest.id);
