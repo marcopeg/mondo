@@ -345,14 +345,23 @@ export const useEntityPanels = (entityType: MondoFileType) => {
           });
 
         // Sort people by their show name before taking the first MAX_LINKED_PEOPLE
-        const linkedPeople = peopleWithNames
+        const sortedPeople = peopleWithNames
           .sort((a, b) => 
             a.sortKey.localeCompare(b.sortKey, undefined, { sensitivity: "base", numeric: true })
-          )
+          );
+        
+        const totalPeopleCount = sortedPeople.length;
+        const linkedPeople = sortedPeople
           .slice(0, MAX_LINKED_PEOPLE) // Take only first MAX_LINKED_PEOPLE people
           .map(({ personFile, showName }) => 
             `[[${personFile.file.path}|${showName}]]`
           );
+        
+        // If there are more people than MAX_LINKED_PEOPLE, store the total count and role path
+        // so the cell can add a "..." link to the role's page
+        if (totalPeopleCount > MAX_LINKED_PEOPLE) {
+          linkedPeople.push(`__MORE__:${totalPeopleCount}:${file.path}`);
+        }
         
         enhancedFrontmatter.people = linkedPeople;
       }
