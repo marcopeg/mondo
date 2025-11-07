@@ -219,7 +219,9 @@ const getColumnRawValue = (row: MondoEntityListRow, column: string): unknown => 
 
 export const useEntityPanels = (entityType: MondoFileType) => {
   const files = useFiles(entityType);
-  // Only fetch person files when needed (for role entities with people column)
+  // Fetch person files for role entities. While this fetches data even when the
+  // 'people' column isn't configured, React hooks must be called unconditionally.
+  // The actual computation is guarded by shouldComputePeople check below.
   const needsPeople = entityType === MondoFileType.ROLE;
   const allPeople = useFiles(needsPeople ? MondoFileType.PERSON : entityType);
 
@@ -276,8 +278,12 @@ export const useEntityPanels = (entityType: MondoFileType) => {
           })
           .map((personFile) => {
             const personFm = personFile.cache?.frontmatter as Record<string, unknown> | undefined;
-            const showName = personFm?.show || personFile.file.basename;
-            const sortKey = showName.toString().toLowerCase();
+            const rawShowName = personFm?.show || personFile.file.basename;
+            // Ensure showName is a string for safe operations
+            const showName = typeof rawShowName === "string" 
+              ? rawShowName 
+              : String(rawShowName || personFile.file.basename);
+            const sortKey = showName.toLowerCase();
             return { personFile, showName, sortKey };
           });
 
