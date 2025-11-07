@@ -1,18 +1,18 @@
 import RelevantNotes from "../../RelevantNotes";
-import { useMediaQuery } from "../../hooks/useMediaQuery";
 import { useDashboardPanelCollapsed } from "../../hooks/useDashboardPanelCollapsed";
 
 type RelevantNotesSectionProps = {
   enabled: boolean;
+  isCompactLayout: boolean;
 };
 
 export const RelevantNotesSection = ({
   enabled,
+  isCompactLayout,
 }: RelevantNotesSectionProps) => {
-  const isDesktop = useMediaQuery("(min-width: 1024px)");
   const [collapsed, setCollapsed] = useDashboardPanelCollapsed(
     "relevantNotes",
-    !isDesktop
+    isCompactLayout
   );
 
   if (!enabled) {

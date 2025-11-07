@@ -1,3 +1,4 @@
+import { useCallback, useState } from "react";
 import { Typography } from "@/components/ui/Typography";
 import { useSetting } from "@/hooks/use-setting";
 import QuickButtons from "./components/QuickButtons";
@@ -8,6 +9,9 @@ import ImsButtons from "./components/ImsButtons";
 import VaultStatsSection from "./components/VaultStatsSection";
 import QuickDaily from "./QuickDaily";
 import { useDashboardPanelCollapsed } from "./hooks/useDashboardPanelCollapsed";
+import { useContainerBreakpoint } from "./hooks/useContainerBreakpoint";
+
+const DASHBOARD_COMPACT_BREAKPOINT = 1024;
 
 export const DashboardView = () => {
   const quickTasksEnabled = useSetting<boolean>(
@@ -28,13 +32,25 @@ export const DashboardView = () => {
 
   const [quickDailyCollapsed, setQuickDailyCollapsed] =
     useDashboardPanelCollapsed("quickDaily", false);
+  const [container, setContainer] = useState<HTMLDivElement | null>(null);
+  const handleContainerRef = useCallback((node: HTMLDivElement | null) => {
+    setContainer(node);
+  }, []);
+  const isCompactLayout = useContainerBreakpoint(
+    container,
+    DASHBOARD_COMPACT_BREAKPOINT
+  );
 
   return (
-    <div className="p-4 space-y-6">
+    <div ref={handleContainerRef} className="p-4 space-y-6">
       <Typography variant="h1">Mondo Dashboard</Typography>
       <QuickButtons />
       {shouldShowProductivity && (
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 lg:items-start">
+        <div
+          className={`grid gap-4 items-start ${
+            isCompactLayout ? "grid-cols-1" : "grid-cols-2"
+          }`}
+        >
           {quickDailyEnabled && (
             <QuickDaily
               collapsed={quickDailyCollapsed}
@@ -42,7 +58,10 @@ export const DashboardView = () => {
             />
           )}
           <QuickTasksSection enabled={quickTasksEnabled} />
-          <RelevantNotesSection enabled={relevantNotesEnabled} />
+          <RelevantNotesSection
+            enabled={relevantNotesEnabled}
+            isCompactLayout={isCompactLayout}
+          />
         </div>
       )}
       <ImsEntities />
