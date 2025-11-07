@@ -239,6 +239,11 @@ const columnRules: Partial<Record<string, (row: MondoEntityListRow) => unknown>>
     const area = row.frontmatter?.area;
     return { company, area };
   },
+  country_region: (row) => {
+    const country = row.frontmatter?.country;
+    const region = row.frontmatter?.region;
+    return { country, region };
+  },
 };
 
 const formatFrontmatterValue = (value: unknown): string => {
@@ -283,9 +288,9 @@ const getColumnRawValue = (row: MondoEntityListRow, column: string): unknown => 
 
 export const useEntityPanels = (entityType: MondoFileType) => {
   const files = useFiles(entityType);
-  // Conditionally fetch person files only for role or team entities
+  // Conditionally fetch person files only for role, team, or location entities
   // When not needed, pass an empty type to avoid duplicate fetches
-  const shouldFetchPeople = entityType === MondoFileType.ROLE || entityType === MondoFileType.TEAM;
+  const shouldFetchPeople = entityType === MondoFileType.ROLE || entityType === MondoFileType.TEAM || entityType === MondoFileType.LOCATION;
   // Using a dummy entity type to satisfy React hooks rules while avoiding duplicate fetch
   const allPeople = useFiles(shouldFetchPeople ? MondoFileType.PERSON : ('' as any));
 
@@ -312,6 +317,8 @@ export const useEntityPanels = (entityType: MondoFileType) => {
     const shouldComputePeople = entityType === MondoFileType.ROLE && columns.includes("people");
     // Check if we need to compute members column for teams
     const shouldComputeMembers = entityType === MondoFileType.TEAM && columns.includes("members");
+    // Check if we need to compute people column for locations
+    const shouldComputeLocationPeople = entityType === MondoFileType.LOCATION && columns.includes("people");
 
     const rows = files.map<MondoEntityListRow>((cached) => {
       const { file, cache } = cached;
@@ -412,6 +419,55 @@ export const useEntityPanels = (entityType: MondoFileType) => {
         // Store the members list and whether there are more
         enhancedFrontmatter.members = linkedMembers;
         enhancedFrontmatter.members_has_more = membersWithNames.length > MAX_LINKED_PEOPLE;
+      }
+
+      // For location entities, compute linked people (people who have this location in their location property)
+      if (shouldComputeLocationPeople) {
+        // Pre-compute person display info to avoid redundant frontmatter access
+        const peopleWithNames = allPeople
+          .filter((personFile) => {
+            const personFm = personFile.cache?.frontmatter as Record<string, unknown> | undefined;
+            if (!personFm) return false;
+            // Support both 'location' and 'locations' properties
+            const locationValue = personFm.location ?? personFm.locations;
+            
+            // Check if this person's location property references the current location file
+            if (Array.isArray(locationValue)) {
+              return locationValue.some((loc) => matchesRoleReference(loc, file));
+            } else if (locationValue !== undefined && locationValue !== null) {
+              return matchesRoleReference(locationValue, file);
+            }
+            return false;
+          })
+          .map((personFile) => {
+            const personFm = personFile.cache?.frontmatter as Record<string, unknown> | undefined;
+            const rawShowName = personFm?.show || personFile.file.basename;
+            const showName = String(rawShowName);
+            const sortKey = showName.toLowerCase();
+            return { personFile, showName, sortKey };
+          });
+
+        // Sort people by their show name before taking the first 10
+        const sortedPeople = peopleWithNames
+          .sort((a, b) => 
+            a.sortKey.localeCompare(b.sortKey, undefined, { sensitivity: "base", numeric: true })
+          );
+        
+        const totalPeopleCount = sortedPeople.length;
+        const linkedPeople = sortedPeople
+          .slice(0, 10) // Take first 10 people for locations
+          .map(({ personFile }) => {
+            const personFm = personFile.cache?.frontmatter as Record<string, unknown> | undefined;
+            return {
+              path: personFile.file.path,
+              cover: personFm?.cover || null,
+            };
+          });
+        
+        // Store the people list with more info
+        enhancedFrontmatter.people = linkedPeople;
+        enhancedFrontmatter.people_has_more = totalPeopleCount > 10;
+        enhancedFrontmatter.people_total = totalPeopleCount;
       }
 
       return {

@@ -4,4 +4,6 @@ export { EntityLinksCell } from "./EntityLinksCell";
 export { EntityDateCell } from "./EntityDateCell";
 export { EntityCoverCell } from "./EntityCoverCell";
 export { EntityCompanyAreaCell } from "./EntityCompanyAreaCell";
+export { EntityCountryRegionCell } from "./EntityCountryRegionCell";
+export { EntityLocationPeopleCell } from "./EntityLocationPeopleCell";
 export { EntityMembersCell } from "./EntityMembersCell";

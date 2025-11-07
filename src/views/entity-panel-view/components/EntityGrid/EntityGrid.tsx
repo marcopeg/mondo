@@ -9,6 +9,8 @@ import {
   EntityLinksCell,
   EntityTitleCell,
   EntityCompanyAreaCell,
+  EntityCountryRegionCell,
+  EntityLocationPeopleCell,
   EntityMembersCell,
 } from "./cells";
 
@@ -21,7 +23,6 @@ const LINK_COLUMNS = new Set([
   "owner",
   "participants",
   "references",
-  "people",
 ]);
 const COVER_COLUMNS = new Set(["cover", "thumbnail", "image"]);
 
@@ -63,8 +64,18 @@ const getCellRenderer = (column: string) => {
     return EntityCompanyAreaCell;
   }
 
+  if (normalized === "country_region") {
+    return EntityCountryRegionCell;
+  }
+
   if (normalized === "members") {
     return EntityMembersCell;
+  }
+
+  if (normalized === "people") {
+    // The EntityLocationPeopleCell will handle both location people (objects) and role people (strings)
+    // It will detect the format and render accordingly
+    return EntityLocationPeopleCell;
   }
 
   if (normalized.endsWith("date")) {
