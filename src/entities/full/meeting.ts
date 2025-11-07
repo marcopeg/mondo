@@ -79,7 +79,7 @@ export const meeting = {
     },
   ],
   list: {
-    columns: ["date_time", "participants"],
+    columns: ["date_time", "references", "participants"],
     sort: {
       column: "date_time",
       direction: "desc",

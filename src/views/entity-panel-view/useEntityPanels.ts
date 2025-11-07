@@ -13,6 +13,61 @@ export type MondoEntityListRow = {
 
 const DEFAULT_COLUMN = "show";
 
+const REFERENCE_KEYS = ["company", "team", "location", "linksTo"] as const;
+
+const normalizeReferenceIdentifier = (value: string): string => {
+  let normalized = value.trim();
+  if (!normalized) {
+    return "";
+  }
+
+  if (normalized.startsWith("[[") && normalized.endsWith("]]")) {
+    normalized = normalized.slice(2, -2);
+  }
+
+  normalized = normalized.split("|")[0];
+  normalized = normalized.split("#")[0];
+  normalized = normalized.replace(/\\/g, "/");
+  normalized = normalized.replace(/\.md$/iu, "");
+  normalized = normalized.replace(/^\/+/, "");
+
+  return normalized.trim().toLowerCase();
+};
+
+const collectReferenceValues = (
+  frontmatter: Record<string, unknown>
+): string[] => {
+  const seen = new Set<string>();
+  const results: string[] = [];
+
+  REFERENCE_KEYS.forEach((key) => {
+    const rawValue = frontmatter[key];
+    const values = Array.isArray(rawValue)
+      ? rawValue
+      : rawValue !== undefined
+      ? [rawValue]
+      : [];
+
+    values.forEach((entry) => {
+      const stringValue = String(entry ?? "").trim();
+      if (!stringValue) {
+        return;
+      }
+
+      const identifier = normalizeReferenceIdentifier(stringValue);
+      const dedupeKey = identifier || stringValue.toLowerCase();
+      if (seen.has(dedupeKey)) {
+        return;
+      }
+
+      seen.add(dedupeKey);
+      results.push(stringValue);
+    });
+  });
+
+  return results;
+};
+
 const getTrimmedString = (value: unknown): string | undefined => {
   if (typeof value !== "string") return undefined;
   const trimmed = value.trim();
@@ -193,6 +248,10 @@ const getColumnRawValue = (row: MondoEntityListRow, column: string): unknown => 
 
   if (column === "fileName" || column === "filename") {
     return row.fileName;
+  }
+
+  if (column === "references") {
+    return collectReferenceValues(row.frontmatter ?? {});
   }
 
   const columnRule = columnRules[column];

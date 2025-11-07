@@ -11,55 +11,118 @@ type MeetingsTableProps = {
   emptyLabel?: React.ReactNode;
 };
 
+type ResolvedFrontmatterLink = { path: string | null; label: string };
+
+const normalizeFrontmatterValues = (value: unknown): string[] => {
+  if (!value) {
+    return [];
+  }
+
+  if (Array.isArray(value)) {
+    return value
+      .map((entry) => String(entry))
+      .map((entry) => entry.trim())
+      .filter(Boolean);
+  }
+
+  return [String(value).trim()].filter(Boolean);
+};
+
+const resolveFrontmatterLink = (
+  rawValue: string,
+  entry: TCachedFile,
+  app: ReturnType<typeof useApp>
+): ResolvedFrontmatterLink => {
+  if (!rawValue) {
+    return { path: null, label: "" };
+  }
+
+  let value = rawValue;
+  if (value.startsWith("[[") && value.endsWith("]]")) {
+    value = value.slice(2, -2);
+  }
+  value = value.split("|")[0].split("#")[0].replace(/\.md$/i, "").trim();
+
+  if (!value) {
+    return { path: null, label: rawValue };
+  }
+
+  const destination = app.metadataCache.getFirstLinkpathDest(
+    value,
+    entry.file.path
+  );
+  if (destination && (destination as any).path) {
+    return {
+      path: (destination as any).path as string,
+      label: ((destination as any).basename as string) ?? value,
+    };
+  }
+
+  const absolute = app.vault.getAbstractFileByPath(value) as any;
+  if (absolute && absolute.path) {
+    return { path: absolute.path as string, label: absolute.basename ?? value };
+  }
+
+  const absoluteWithExtension = app.vault.getAbstractFileByPath(
+    `${value}.md`
+  ) as any;
+  if (absoluteWithExtension && absoluteWithExtension.path) {
+    return {
+      path: absoluteWithExtension.path as string,
+      label: absoluteWithExtension.basename ?? value,
+    };
+  }
+
+  return { path: null, label: value };
+};
+
+const resolveFrontmatterLinks = (
+  entry: TCachedFile,
+  app: ReturnType<typeof useApp>,
+  keys: string[]
+): ResolvedFrontmatterLink[] => {
+  const frontmatter = entry.cache?.frontmatter as
+    | Record<string, unknown>
+    | undefined;
+  if (!frontmatter) {
+    return [];
+  }
+
+  const seen = new Set<string>();
+
+  return keys
+    .flatMap((key) => normalizeFrontmatterValues(frontmatter[key]))
+    .map((value) => resolveFrontmatterLink(value, entry, app))
+    .filter((item) => {
+      const identifier = item.path ?? item.label;
+      if (!identifier) {
+        return false;
+      }
+      if (seen.has(identifier)) {
+        return false;
+      }
+      seen.add(identifier);
+      return true;
+    });
+};
+
 const resolveParticipants = (
   entry: TCachedFile,
   app: ReturnType<typeof useApp>
-): Array<{ path: string | null; label: string }> => {
-  const rawParticipants = entry.cache?.frontmatter?.participants;
-  const values: Array<string> = rawParticipants
-    ? Array.isArray(rawParticipants)
-      ? rawParticipants.map((value) => String(value))
-      : [String(rawParticipants)]
-    : [];
+): ResolvedFrontmatterLink[] => {
+  return resolveFrontmatterLinks(entry, app, ["participants"]);
+};
 
-  return values
-    .map((raw) => {
-      if (!raw) return null;
-      let value = String(raw).trim();
-      if (value.startsWith("[[") && value.endsWith("]]")) {
-        value = value.slice(2, -2);
-      }
-      value = value.split("|")[0].split("#")[0].replace(/\.md$/i, "").trim();
-
-      const destination = app.metadataCache.getFirstLinkpathDest(
-        value,
-        entry.file.path
-      );
-      if (destination && (destination as any).path) {
-        return {
-          path: (destination as any).path as string,
-          label: ((destination as any).basename as string) ?? value,
-        };
-      }
-
-      const absolute = app.vault.getAbstractFileByPath(value) as any;
-      if (absolute && absolute.path) {
-        return { path: absolute.path as string, label: absolute.basename ?? value };
-      }
-
-      const absoluteWithExtension = app.vault.getAbstractFileByPath(
-        `${value}.md`
-      ) as any;
-      if (absoluteWithExtension && absoluteWithExtension.path) {
-        return {
-          path: absoluteWithExtension.path as string,
-          label: absoluteWithExtension.basename ?? value,
-        };
-      }
-
-      return { path: null, label: value };
-    })
-    .filter(Boolean) as Array<{ path: string | null; label: string }>;
+const resolveReferences = (
+  entry: TCachedFile,
+  app: ReturnType<typeof useApp>
+): ResolvedFrontmatterLink[] => {
+  return resolveFrontmatterLinks(entry, app, [
+    "company",
+    "team",
+    "location",
+    "linksTo",
+  ]);
 };
 
 const parseMeetingDateValue = (
@@ -147,7 +210,13 @@ export const MeetingsTable: React.FC<MeetingsTableProps> = ({
           entry.file.path;
         const meetingDate = getMeetingDateInfo(entry);
 
+        const showLabel =
+          entry.cache?.frontmatter?.show ??
+          entry.file.basename ??
+          entry.file.path;
+
         const participants = resolveParticipants(entry, app);
+        const references = resolveReferences(entry, app);
 
         return (
           <>
@@ -155,22 +224,49 @@ export const MeetingsTable: React.FC<MeetingsTableProps> = ({
               <Button to={entry.file.path} variant="link">
                 {label}
               </Button>
-              {meetingDate ? (
-                <div className="text-xs text-[var(--text-muted)]">
-                  <ReadableDate
-                    value={meetingDate.value}
-                    fallback={meetingDate.fallback ?? "—"}
-                    extraHint={
-                      meetingDate.suffix === "created"
-                        ? "Created from file metadata"
-                        : null
-                    }
-                  />
-                  {meetingDate.suffix === "created" ? (
-                    <span className="ml-1">• created</span>
+              {(meetingDate || showLabel) && (
+                <div className="mt-1 space-y-1 text-xs text-[var(--text-muted)]">
+                  {meetingDate ? (
+                    <div>
+                      <ReadableDate
+                        value={meetingDate.value}
+                        fallback={meetingDate.fallback ?? "—"}
+                        extraHint={
+                          meetingDate.suffix === "created"
+                            ? "Created from file metadata"
+                            : null
+                        }
+                      />
+                      {meetingDate.suffix === "created" ? (
+                        <span className="ml-1">• created</span>
+                      ) : null}
+                    </div>
                   ) : null}
+                  {showLabel ? <div>{showLabel}</div> : null}
                 </div>
-              ) : null}
+              )}
+            </Table.Cell>
+            <Table.Cell className="px-2 py-2 align-top text-xs text-[var(--text-muted)]">
+              {references.length > 0 ? (
+                references.map((reference, index) => (
+                  <React.Fragment key={`${reference.label}-${index}`}>
+                    {reference.path ? (
+                      <Button
+                        to={reference.path}
+                        variant="link"
+                        className="text-xs"
+                      >
+                        {reference.label}
+                      </Button>
+                    ) : (
+                      <span className="text-xs">{reference.label}</span>
+                    )}
+                    {index < references.length - 1 ? ", " : null}
+                  </React.Fragment>
+                ))
+              ) : (
+                <span>—</span>
+              )}
             </Table.Cell>
             <Table.Cell className="px-2 py-2 align-top text-xs text-[var(--text-muted)]">
               {participants.length > 0 ? (
