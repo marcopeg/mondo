@@ -208,6 +208,8 @@ const getColumnRawValue = (row: MondoEntityListRow, column: string): unknown => 
 
 export const useEntityPanels = (entityType: MondoFileType) => {
   const files = useFiles(entityType);
+  // For role entities, also fetch all person files to compute backlinks
+  const allPeople = useFiles(MondoFileType.PERSON);
 
   const { columns, rows } = useMemo(() => {
     const config = getMondoEntityConfig(entityType);
@@ -239,11 +241,51 @@ export const useEntityPanels = (entityType: MondoFileType) => {
           ? explicitTitle
           : baseName;
 
+      // For role entities, compute linked people (backlinks)
+      const enhancedFrontmatter = { ...frontmatter };
+      if (entityType === MondoFileType.ROLE && columns.includes("people")) {
+        const linkedPeople = allPeople
+          .filter((personFile) => {
+            const personFm = personFile.cache?.frontmatter as Record<string, unknown> | undefined;
+            if (!personFm) return false;
+            const roleValue = personFm.role;
+            
+            // Check if this person's role property references the current role file
+            if (Array.isArray(roleValue)) {
+              return roleValue.some((r) => {
+                const roleStr = String(r).trim();
+                // Handle both [[Role Name]] and plain "Role Name" formats
+                if (roleStr.startsWith("[[") && roleStr.endsWith("]]")) {
+                  const inner = roleStr.slice(2, -2).split("|")[0].trim();
+                  return inner === file.basename || inner === file.path;
+                }
+                return roleStr === file.basename || roleStr === file.path;
+              });
+            } else if (typeof roleValue === "string") {
+              const roleStr = roleValue.trim();
+              if (roleStr.startsWith("[[") && roleStr.endsWith("]]")) {
+                const inner = roleStr.slice(2, -2).split("|")[0].trim();
+                return inner === file.basename || inner === file.path;
+              }
+              return roleStr === file.basename || roleStr === file.path;
+            }
+            return false;
+          })
+          .slice(0, 5) // Take only first 5 people
+          .map((personFile) => {
+            const personFm = personFile.cache?.frontmatter as Record<string, unknown> | undefined;
+            const showName = personFm?.show || personFile.file.basename;
+            return `[[${personFile.file.path}|${showName}]]`;
+          });
+        
+        enhancedFrontmatter.people = linkedPeople;
+      }
+
       return {
         path: file.path,
         label,
         fileName: baseName,
-        frontmatter,
+        frontmatter: enhancedFrontmatter,
         file,
       };
     });
@@ -261,7 +303,7 @@ export const useEntityPanels = (entityType: MondoFileType) => {
     });
 
     return { columns, rows };
-  }, [entityType, files]);
+  }, [entityType, files, allPeople]);
 
   return { columns, rows };
 };
