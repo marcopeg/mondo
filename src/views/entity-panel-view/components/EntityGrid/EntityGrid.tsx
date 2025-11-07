@@ -18,6 +18,7 @@ const LINK_COLUMNS = new Set([
   "role",
   "owner",
   "participants",
+  "people",
 ]);
 const COVER_COLUMNS = new Set(["cover", "thumbnail", "image"]);
 
