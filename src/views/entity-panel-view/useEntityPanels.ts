@@ -219,8 +219,9 @@ const getColumnRawValue = (row: MondoEntityListRow, column: string): unknown => 
 
 export const useEntityPanels = (entityType: MondoFileType) => {
   const files = useFiles(entityType);
-  // For role entities, also fetch all person files to compute backlinks
-  const allPeople = useFiles(MondoFileType.PERSON);
+  // Only fetch person files when needed (for role entities with people column)
+  const needsPeople = entityType === MondoFileType.ROLE;
+  const allPeople = useFiles(needsPeople ? MondoFileType.PERSON : entityType);
 
   const { columns, rows } = useMemo(() => {
     const config = getMondoEntityConfig(entityType);
@@ -268,6 +269,14 @@ export const useEntityPanels = (entityType: MondoFileType) => {
               return matchesRoleReference(roleValue, file);
             }
             return false;
+          })
+          // Sort people by their show name before taking the first MAX_LINKED_PEOPLE
+          .sort((a, b) => {
+            const aFm = a.cache?.frontmatter as Record<string, unknown> | undefined;
+            const bFm = b.cache?.frontmatter as Record<string, unknown> | undefined;
+            const aName = (aFm?.show || a.file.basename).toString().toLowerCase();
+            const bName = (bFm?.show || b.file.basename).toString().toLowerCase();
+            return aName.localeCompare(bName, undefined, { sensitivity: "base", numeric: true });
           })
           .slice(0, MAX_LINKED_PEOPLE) // Take only first MAX_LINKED_PEOPLE people
           .map((personFile) => {
