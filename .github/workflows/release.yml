@@ -1,5 +1,4 @@
 name: Release Mondo
-run-name: Release • ${{ github.event.head_commit.message || github.sha }}
 
 # Commented out - use the manual "publish-release" workflow instead
 # on:
