@@ -51,13 +51,25 @@ export const DashboardView = () => {
             isCompactLayout ? "grid-cols-1" : "grid-cols-2"
           }`}
         >
-          {quickDailyEnabled && (
-            <QuickDaily
-              collapsed={quickDailyCollapsed}
-              onCollapseChange={setQuickDailyCollapsed}
-            />
+          {quickDailyEnabled && quickTasksEnabled ? (
+            <div className="flex flex-col gap-4">
+              <QuickDaily
+                collapsed={quickDailyCollapsed}
+                onCollapseChange={setQuickDailyCollapsed}
+              />
+              <QuickTasksSection enabled={quickTasksEnabled} />
+            </div>
+          ) : (
+            <>
+              {quickDailyEnabled && (
+                <QuickDaily
+                  collapsed={quickDailyCollapsed}
+                  onCollapseChange={setQuickDailyCollapsed}
+                />
+              )}
+              <QuickTasksSection enabled={quickTasksEnabled} />
+            </>
           )}
-          <QuickTasksSection enabled={quickTasksEnabled} />
           <RelevantNotesSection
             enabled={relevantNotesEnabled}
             isCompactLayout={isCompactLayout}
