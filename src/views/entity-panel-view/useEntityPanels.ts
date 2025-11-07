@@ -12,6 +12,17 @@ export type MondoEntityListRow = {
 };
 
 const DEFAULT_COLUMN = "show";
+const MAX_LINKED_PEOPLE = 5;
+
+// Helper function to check if a role reference matches the given file
+const matchesRoleReference = (roleStr: string, file: TFile): boolean => {
+  const trimmed = roleStr.trim();
+  if (trimmed.startsWith("[[") && trimmed.endsWith("]]")) {
+    const inner = trimmed.slice(2, -2).split("|")[0].trim();
+    return inner === file.basename || inner === file.path;
+  }
+  return trimmed === file.basename || trimmed === file.path;
+};
 
 const getTrimmedString = (value: unknown): string | undefined => {
   if (typeof value !== "string") return undefined;
@@ -252,26 +263,13 @@ export const useEntityPanels = (entityType: MondoFileType) => {
             
             // Check if this person's role property references the current role file
             if (Array.isArray(roleValue)) {
-              return roleValue.some((r) => {
-                const roleStr = String(r).trim();
-                // Handle both [[Role Name]] and plain "Role Name" formats
-                if (roleStr.startsWith("[[") && roleStr.endsWith("]]")) {
-                  const inner = roleStr.slice(2, -2).split("|")[0].trim();
-                  return inner === file.basename || inner === file.path;
-                }
-                return roleStr === file.basename || roleStr === file.path;
-              });
+              return roleValue.some((r) => matchesRoleReference(String(r), file));
             } else if (typeof roleValue === "string") {
-              const roleStr = roleValue.trim();
-              if (roleStr.startsWith("[[") && roleStr.endsWith("]]")) {
-                const inner = roleStr.slice(2, -2).split("|")[0].trim();
-                return inner === file.basename || inner === file.path;
-              }
-              return roleStr === file.basename || roleStr === file.path;
+              return matchesRoleReference(roleValue, file);
             }
             return false;
           })
-          .slice(0, 5) // Take only first 5 people
+          .slice(0, MAX_LINKED_PEOPLE) // Take only first MAX_LINKED_PEOPLE people
           .map((personFile) => {
             const personFm = personFile.cache?.frontmatter as Record<string, unknown> | undefined;
             const showName = personFm?.show || personFile.file.basename;
