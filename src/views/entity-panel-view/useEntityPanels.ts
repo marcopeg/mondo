@@ -455,15 +455,44 @@ export const useEntityPanels = (entityType: MondoFileType) => {
           );
         
         const totalPeopleCount = sortedPeople.length;
-        const linkedPeople = sortedPeople
-          .slice(0, MAX_LOCATION_PEOPLE) // Take first MAX_LOCATION_PEOPLE people for locations
-          .map(({ personFile }) => {
-            const personFm = personFile.cache?.frontmatter as Record<string, unknown> | undefined;
-            return {
+        
+        // Separate people with covers from those without
+        const peopleWithCovers: Array<{ path: string; cover: unknown; showName: string }> = [];
+        const peopleWithoutCovers: Array<{ path: string; showName: string }> = [];
+        
+        sortedPeople.forEach(({ personFile, showName }) => {
+          const personFm = personFile.cache?.frontmatter as Record<string, unknown> | undefined;
+          const cover = personFm?.cover || null;
+          
+          if (cover) {
+            peopleWithCovers.push({
               path: personFile.file.path,
-              cover: personFm?.cover || null,
-            };
-          });
+              cover,
+              showName,
+            });
+          } else {
+            peopleWithoutCovers.push({
+              path: personFile.file.path,
+              showName,
+            });
+          }
+        });
+        
+        // Take first MAX_LOCATION_PEOPLE people, preferring those with covers
+        const linkedPeople: Array<{ path: string; cover?: unknown; showName: string }> = [];
+        let remaining = MAX_LOCATION_PEOPLE;
+        
+        // First, add all people with covers (up to the limit)
+        const coversToShow = peopleWithCovers.slice(0, remaining);
+        linkedPeople.push(...coversToShow);
+        remaining -= coversToShow.length;
+        
+        // Then, add people without covers to fill up to the limit
+        if (remaining > 0) {
+          const namesToShow = peopleWithoutCovers.slice(0, remaining);
+          linkedPeople.push(...namesToShow);
+          remaining -= namesToShow.length;
+        }
         
         // Store the people list with more info
         enhancedFrontmatter.people = linkedPeople;
