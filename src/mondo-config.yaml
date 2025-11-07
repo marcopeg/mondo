@@ -906,6 +906,7 @@ entities:
     list:
       columns:
         - date_time
+        - references
         - participants
       sort:
         column: date_time

@@ -57,7 +57,7 @@ export const EntityDateCell = ({ value, row, column }: EntityDateCellProps) => {
   const fallback = info.raw ?? "—";
   const extraHint =
     source === "created" ? "Created from file metadata" : null;
-  const content = (
+  const dateContent = (
     <span className="inline-flex items-center gap-1">
       <ReadableDate
         value={valueForDisplay}
@@ -68,6 +68,28 @@ export const EntityDateCell = ({ value, row, column }: EntityDateCellProps) => {
     </span>
   );
   const shouldLink = normalizedColumn === "date_time";
+
+  const mondoType =
+    typeof row.frontmatter?.mondoType === "string"
+      ? row.frontmatter.mondoType.trim().toLowerCase()
+      : "";
+  const isMeeting = mondoType === "meeting";
+
+  const rawShow =
+    typeof row.frontmatter?.show === "string"
+      ? row.frontmatter.show.trim()
+      : "";
+  const fallbackLabel = row.file?.basename ?? row.file?.name ?? row.label;
+  const showLabel = rawShow || fallbackLabel;
+
+  const content = isMeeting && showLabel
+    ? (
+        <span className="flex flex-col gap-1">
+          {dateContent}
+          <span className="text-xs text-[var(--text-muted)]">{showLabel}</span>
+        </span>
+      )
+    : dateContent;
 
   if (shouldLink) {
     return <MondoFileLink path={row.path} label={content} />;
