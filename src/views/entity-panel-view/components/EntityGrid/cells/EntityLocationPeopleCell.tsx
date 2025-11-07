@@ -38,6 +38,16 @@ const parseWikiLink = (raw: string) => {
   return target.trim();
 };
 
+// Type guard to check if value is a PersonWithCover object
+const isPersonWithCover = (value: unknown): value is PersonWithCover => {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    "path" in value &&
+    typeof (value as PersonWithCover).path === "string"
+  );
+};
+
 export const EntityLocationPeopleCell = ({ value, row }: EntityLocationPeopleCellProps) => {
   const app = useApp();
 
@@ -47,7 +57,8 @@ export const EntityLocationPeopleCell = ({ value, row }: EntityLocationPeopleCel
     }
 
     // Check if this is location people data (array of objects) or role people data (array of strings)
-    const isLocationPeople = value.length > 0 && typeof value[0] === "object" && value[0] !== null && "path" in value[0];
+    // Use the type guard to check if the first element is a PersonWithCover object
+    const isLocationPeople = value.length > 0 && isPersonWithCover(value[0]);
 
     if (!isLocationPeople) {
       // This is role people data (array of wiki link strings), process as links

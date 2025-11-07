@@ -13,6 +13,7 @@ export type MondoEntityListRow = {
 
 const DEFAULT_COLUMN = "show";
 const MAX_LINKED_PEOPLE = 5;
+const MAX_LOCATION_PEOPLE = 10;
 
 // Helper function to check if a role reference matches the given file
 const matchesRoleReference = (roleValue: unknown, file: TFile): boolean => {
@@ -455,7 +456,7 @@ export const useEntityPanels = (entityType: MondoFileType) => {
         
         const totalPeopleCount = sortedPeople.length;
         const linkedPeople = sortedPeople
-          .slice(0, 10) // Take first 10 people for locations
+          .slice(0, MAX_LOCATION_PEOPLE) // Take first MAX_LOCATION_PEOPLE people for locations
           .map(({ personFile }) => {
             const personFm = personFile.cache?.frontmatter as Record<string, unknown> | undefined;
             return {
@@ -466,7 +467,7 @@ export const useEntityPanels = (entityType: MondoFileType) => {
         
         // Store the people list with more info
         enhancedFrontmatter.people = linkedPeople;
-        enhancedFrontmatter.people_has_more = totalPeopleCount > 10;
+        enhancedFrontmatter.people_has_more = totalPeopleCount > MAX_LOCATION_PEOPLE;
         enhancedFrontmatter.people_total = totalPeopleCount;
       }
 
