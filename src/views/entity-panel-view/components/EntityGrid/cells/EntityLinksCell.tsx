@@ -4,18 +4,56 @@ import { useApp } from "@/hooks/use-app";
 import type { MondoEntityListRow } from "@/views/entity-panel-view/useEntityPanels";
 import { MondoFileLink } from "../../MondoFileLink";
 
-const extractEntries = (value: unknown): string[] => {
-  if (!value) return [];
+type MoreInfo = {
+  hasMore: boolean;
+  totalCount?: number;
+  rolePath?: string;
+};
+
+const extractEntries = (value: unknown): { entries: string[]; moreInfo: MoreInfo } => {
+  const moreInfo: MoreInfo = { hasMore: false };
+  
+  if (!value) return { entries: [], moreInfo };
   if (Array.isArray(value)) {
-    return value.flatMap((item) => extractEntries(item));
+    const entries: string[] = [];
+    for (const item of value) {
+      if (typeof item === "string" && item.startsWith("__MORE__:")) {
+        // Extract metadata: __MORE__:totalCount:rolePath
+        const parts = item.split(":");
+        if (parts.length >= 3) {
+          moreInfo.hasMore = true;
+          moreInfo.totalCount = parseInt(parts[1], 10);
+          moreInfo.rolePath = parts.slice(2).join(":"); // Handle paths with colons
+        }
+      } else {
+        const nested = extractEntries(item);
+        entries.push(...nested.entries);
+        if (nested.moreInfo.hasMore) {
+          Object.assign(moreInfo, nested.moreInfo);
+        }
+      }
+    }
+    return { entries, moreInfo };
   }
   if (typeof value === "string") {
-    return value
-      .split(/[,;\n]/)
-      .map((entry) => entry.trim())
-      .filter((entry) => entry.length > 0);
+    if (value.startsWith("__MORE__:")) {
+      const parts = value.split(":");
+      if (parts.length >= 3) {
+        moreInfo.hasMore = true;
+        moreInfo.totalCount = parseInt(parts[1], 10);
+        moreInfo.rolePath = parts.slice(2).join(":");
+      }
+      return { entries: [], moreInfo };
+    }
+    return {
+      entries: value
+        .split(/[,;\n]/)
+        .map((entry) => entry.trim())
+        .filter((entry) => entry.length > 0),
+      moreInfo,
+    };
   }
-  return [];
+  return { entries: [], moreInfo };
 };
 
 type LinkEntry = {
@@ -52,10 +90,10 @@ const resolveFile = (app: ReturnType<typeof useApp>, target: string): TFile | nu
 export const EntityLinksCell = ({ value }: EntityLinksCellProps) => {
   const app = useApp();
 
-  const links = useMemo(() => {
-    const entries = extractEntries(value);
+  const { links, moreInfo } = useMemo(() => {
+    const { entries, moreInfo } = extractEntries(value);
 
-    return entries.map<LinkEntry>((entry) => {
+    const links = entries.map<LinkEntry>((entry) => {
       let label = entry;
       let target = entry;
 
@@ -74,9 +112,11 @@ export const EntityLinksCell = ({ value }: EntityLinksCellProps) => {
         path,
       };
     });
+
+    return { links, moreInfo };
   }, [app, value]);
 
-  if (links.length === 0) {
+  if (links.length === 0 && !moreInfo.hasMore) {
     return <span>—</span>;
   }
 
@@ -100,6 +140,12 @@ export const EntityLinksCell = ({ value }: EntityLinksCellProps) => {
           </span>
         );
       })}
+      {moreInfo.hasMore && moreInfo.rolePath && (
+        <>
+          {links.length > 0 && <span>, </span>}
+          <MondoFileLink path={moreInfo.rolePath} label="..." />
+        </>
+      )}
     </span>
   );
 };
