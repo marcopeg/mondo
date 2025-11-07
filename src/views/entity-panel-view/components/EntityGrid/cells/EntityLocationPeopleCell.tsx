@@ -136,13 +136,13 @@ export const EntityLocationPeopleCell = ({ value, row }: EntityLocationPeopleCel
         );
       })}
       
-      {/* Render names for people without covers */}
+      {/* Render names for people without covers, comma-separated */}
       {peopleWithoutCovers.length > 0 && (
-        <span className="flex flex-wrap items-center gap-1">
+        <span className="flex flex-wrap items-center">
           {peopleWithoutCovers.map((person, index) => (
             <span key={`name-${person.path}-${index}`}>
               <MondoFileLink path={person.path} label={person.label} />
-              {index < peopleWithoutCovers.length - 1 && <span>, </span>}
+              {index < peopleWithoutCovers.length - 1 && <span>,&nbsp;</span>}
             </span>
           ))}
         </span>

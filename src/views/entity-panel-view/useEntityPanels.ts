@@ -453,26 +453,13 @@ export const useEntityPanels = (entityType: MondoFileType) => {
             a.sortKey.localeCompare(b.sortKey, undefined, { sensitivity: "base", numeric: true })
           );
 
-        // Separate people with covers and without covers
-        const peopleWithCovers = peopleWithInfo.filter(p => p.hasCover);
-        const peopleWithoutCovers = peopleWithInfo.filter(p => !p.hasCover);
+        // Take the first 10 people alphabetically
+        const first10People = peopleWithInfo.slice(0, 10);
         
-        // Take up to 10 people with covers
-        const selectedPeopleWithCovers = peopleWithCovers.slice(0, 10);
-        const remainingSlots = 10 - selectedPeopleWithCovers.length;
-        
-        // Fill remaining slots with people without covers
-        const selectedPeopleWithoutCovers = peopleWithoutCovers.slice(0, remainingSlots);
-        
-        // Combine both groups
-        const linkedPeople = [
-          ...selectedPeopleWithCovers.map(({ personFile, showName, hasCover }) => 
-            `[[${personFile.file.path}|${showName}]]${hasCover ? '|HAS_COVER' : ''}`
-          ),
-          ...selectedPeopleWithoutCovers.map(({ personFile, showName }) => 
-            `[[${personFile.file.path}|${showName}]]`
-          )
-        ];
+        // Mark those with covers
+        const linkedPeople = first10People.map(({ personFile, showName, hasCover }) => 
+          `[[${personFile.file.path}|${showName}]]${hasCover ? '|HAS_COVER' : ''}`
+        );
         
         enhancedFrontmatter.people = linkedPeople;
         enhancedFrontmatter.people_total = peopleWithInfo.length;
