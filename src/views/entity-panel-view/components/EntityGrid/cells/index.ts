@@ -6,3 +6,5 @@ export { EntityCoverCell } from "./EntityCoverCell";
 export { EntityCompanyAreaCell } from "./EntityCompanyAreaCell";
 export { EntityMembersCell } from "./EntityMembersCell";
 export { EntityUrlCell } from "./EntityUrlCell";
+export { EntityCountryRegionCell } from "./EntityCountryRegionCell";
+export { EntityLocationPeopleCell } from "./EntityLocationPeopleCell";

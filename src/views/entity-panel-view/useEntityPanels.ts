@@ -239,6 +239,11 @@ const columnRules: Partial<Record<string, (row: MondoEntityListRow) => unknown>>
     const area = row.frontmatter?.area;
     return { company, area };
   },
+  country_region: (row) => {
+    const country = row.frontmatter?.country;
+    const region = row.frontmatter?.region;
+    return { country, region };
+  },
 };
 
 const formatFrontmatterValue = (value: unknown): string => {
@@ -283,9 +288,9 @@ const getColumnRawValue = (row: MondoEntityListRow, column: string): unknown => 
 
 export const useEntityPanels = (entityType: MondoFileType) => {
   const files = useFiles(entityType);
-  // Conditionally fetch person files only for role or team entities
+  // Conditionally fetch person files only for role, team, or location entities
   // When not needed, pass an empty type to avoid duplicate fetches
-  const shouldFetchPeople = entityType === MondoFileType.ROLE || entityType === MondoFileType.TEAM;
+  const shouldFetchPeople = entityType === MondoFileType.ROLE || entityType === MondoFileType.TEAM || entityType === MondoFileType.LOCATION;
   // Using a dummy entity type to satisfy React hooks rules while avoiding duplicate fetch
   const allPeople = useFiles(shouldFetchPeople ? MondoFileType.PERSON : ('' as any));
 
@@ -312,6 +317,8 @@ export const useEntityPanels = (entityType: MondoFileType) => {
     const shouldComputePeople = entityType === MondoFileType.ROLE && columns.includes("people");
     // Check if we need to compute members column for teams
     const shouldComputeMembers = entityType === MondoFileType.TEAM && columns.includes("members");
+    // Check if we need to compute people column for locations
+    const shouldComputeLocationPeople = entityType === MondoFileType.LOCATION && columns.includes("people");
 
     const rows = files.map<MondoEntityListRow>((cached) => {
       const { file, cache } = cached;
@@ -412,6 +419,63 @@ export const useEntityPanels = (entityType: MondoFileType) => {
         // Store the members list and whether there are more
         enhancedFrontmatter.members = linkedMembers;
         enhancedFrontmatter.members_has_more = membersWithNames.length > MAX_LINKED_PEOPLE;
+      }
+
+      // For location entities, compute linked people (those who have this location in their location property)
+      if (shouldComputeLocationPeople) {
+        const peopleWithInfo = allPeople
+          .filter((personFile) => {
+            const personFm = personFile.cache?.frontmatter as Record<string, unknown> | undefined;
+            if (!personFm) return false;
+            const locationValue = personFm.location;
+            
+            // Check if this person's location property references the current location file
+            if (Array.isArray(locationValue)) {
+              return locationValue.some((l) => matchesRoleReference(l, file));
+            } else if (locationValue !== undefined && locationValue !== null) {
+              return matchesRoleReference(locationValue, file);
+            }
+            return false;
+          })
+          .map((personFile) => {
+            const personFm = personFile.cache?.frontmatter as Record<string, unknown> | undefined;
+            const rawShowName = personFm?.show || personFile.file.basename;
+            const showName = String(rawShowName);
+            const sortKey = showName.toLowerCase();
+            
+            // Check if person has a cover image
+            const coverValue = personFm?.cover;
+            const hasCover = Boolean(coverValue);
+            
+            return { personFile, showName, sortKey, hasCover };
+          })
+          .sort((a, b) => 
+            a.sortKey.localeCompare(b.sortKey, undefined, { sensitivity: "base", numeric: true })
+          );
+
+        // Separate people with covers and without covers
+        const peopleWithCovers = peopleWithInfo.filter(p => p.hasCover);
+        const peopleWithoutCovers = peopleWithInfo.filter(p => !p.hasCover);
+        
+        // Take up to 10 people with covers
+        const selectedPeopleWithCovers = peopleWithCovers.slice(0, 10);
+        const remainingSlots = 10 - selectedPeopleWithCovers.length;
+        
+        // Fill remaining slots with people without covers
+        const selectedPeopleWithoutCovers = peopleWithoutCovers.slice(0, remainingSlots);
+        
+        // Combine both groups
+        const linkedPeople = [
+          ...selectedPeopleWithCovers.map(({ personFile, showName, hasCover }) => 
+            `[[${personFile.file.path}|${showName}]]${hasCover ? '|HAS_COVER' : ''}`
+          ),
+          ...selectedPeopleWithoutCovers.map(({ personFile, showName }) => 
+            `[[${personFile.file.path}|${showName}]]`
+          )
+        ];
+        
+        enhancedFrontmatter.people = linkedPeople;
+        enhancedFrontmatter.people_total = peopleWithInfo.length;
       }
 
       return {

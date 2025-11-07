@@ -11,6 +11,8 @@ import {
   EntityCompanyAreaCell,
   EntityMembersCell,
   EntityUrlCell,
+  EntityCountryRegionCell,
+  EntityLocationPeopleCell,
 } from "./cells";
 
 const TITLE_COLUMNS = new Set(["show", "filename", "fileName", "title"]);
@@ -37,7 +39,7 @@ type EntityGridProps = {
   rows: MondoEntityListRow[];
 };
 
-const getCellRenderer = (column: string) => {
+const getCellRenderer = (column: string, row: MondoEntityListRow) => {
   const normalized = column.toLowerCase();
 
   if (TITLE_COLUMNS.has(normalized)) {
@@ -56,12 +58,12 @@ const getCellRenderer = (column: string) => {
     return EntityCoverCell;
   }
 
-  if (LINK_COLUMNS.has(normalized)) {
-    return EntityLinksCell;
-  }
-
   if (normalized === "company_area") {
     return EntityCompanyAreaCell;
+  }
+
+  if (normalized === "country_region") {
+    return EntityCountryRegionCell;
   }
 
   if (normalized === "members") {
@@ -70,6 +72,18 @@ const getCellRenderer = (column: string) => {
 
   if (normalized === "url") {
     return EntityUrlCell;
+  }
+
+  // For "people" column, check if it's for a location (has people_total metadata)
+  if (normalized === "people") {
+    if (row.frontmatter?.people_total !== undefined) {
+      return EntityLocationPeopleCell;
+    }
+    return EntityLinksCell;
+  }
+
+  if (LINK_COLUMNS.has(normalized)) {
+    return EntityLinksCell;
   }
 
   if (normalized.endsWith("date")) {
@@ -109,7 +123,7 @@ export const EntityGrid = ({ columns, rows }: EntityGridProps) => {
               className="odd:bg-[var(--background-primary-alt)] even:bg-[var(--background-primary)]"
             >
               {columns.map((column) => {
-                const CellComponent = getCellRenderer(column);
+                const CellComponent = getCellRenderer(column, row);
                 const value = getDisplayValue(row, column);
                 const isCover = COVER_COLUMNS.has(column.toLowerCase());
                 return (
