@@ -101,6 +101,7 @@ export const EntityLocationPeopleCell = ({ value, row }: EntityLocationPeopleCel
 
   const peopleWithCovers = people.filter(p => p.hasCover);
   const peopleWithoutCovers = people.filter(p => !p.hasCover);
+  const hasMore = row.frontmatter?.people_has_more === true;
 
   if (people.length === 0) {
     return <span>—</span>;
@@ -146,6 +147,14 @@ export const EntityLocationPeopleCell = ({ value, row }: EntityLocationPeopleCel
             </span>
           ))}
         </span>
+      )}
+      
+      {/* Show "..." link to location page if there are more people */}
+      {hasMore && (
+        <>
+          {(peopleWithCovers.length > 0 || peopleWithoutCovers.length > 0) && <span>,&nbsp;</span>}
+          <MondoFileLink path={row.path} label="..." />
+        </>
       )}
     </div>
   );

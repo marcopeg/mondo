@@ -13,6 +13,7 @@ export type MondoEntityListRow = {
 
 const DEFAULT_COLUMN = "show";
 const MAX_LINKED_PEOPLE = 5;
+const MAX_LOCATION_PEOPLE = 10;
 
 // Helper function to check if a role reference matches the given file
 const matchesRoleReference = (roleValue: unknown, file: TFile): boolean => {
@@ -453,15 +454,16 @@ export const useEntityPanels = (entityType: MondoFileType) => {
             a.sortKey.localeCompare(b.sortKey, undefined, { sensitivity: "base", numeric: true })
           );
 
-        // Take the first 10 people alphabetically
-        const first10People = peopleWithInfo.slice(0, 10);
+        // Take the first MAX_LOCATION_PEOPLE people alphabetically
+        const firstPeople = peopleWithInfo.slice(0, MAX_LOCATION_PEOPLE);
         
         // Mark those with covers
-        const linkedPeople = first10People.map(({ personFile, showName, hasCover }) => 
+        const linkedPeople = firstPeople.map(({ personFile, showName, hasCover }) => 
           `[[${personFile.file.path}|${showName}]]${hasCover ? '|HAS_COVER' : ''}`
         );
         
         enhancedFrontmatter.people = linkedPeople;
+        enhancedFrontmatter.people_has_more = peopleWithInfo.length > MAX_LOCATION_PEOPLE;
         enhancedFrontmatter.people_total = peopleWithInfo.length;
       }
 
