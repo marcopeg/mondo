@@ -166,10 +166,11 @@ export const EntityLocationPeopleCell = ({ value, row }: EntityLocationPeopleCel
       {peopleWithoutCovers.map((person, index) => {
         const personFile = app.vault.getAbstractFileByPath(person.path);
         const personName = person.showName || (personFile instanceof TFile ? personFile.basename : "Person");
+        const needsComma = peopleWithCovers.length > 0 || index > 0;
         
         return (
           <span key={`name-${person.path}-${index}`}>
-            {index > 0 && <span>, </span>}
+            {needsComma && <span>, </span>}
             <MondoFileLink path={person.path} label={personName} />
           </span>
         );
