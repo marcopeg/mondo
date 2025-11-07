@@ -234,6 +234,11 @@ const columnRules: Partial<Record<string, (row: MondoEntityListRow) => unknown>>
     const info = getRowDateInfo(row);
     return info.date ?? info.raw ?? undefined;
   },
+  company_area: (row) => {
+    const company = row.frontmatter?.company;
+    const area = row.frontmatter?.area;
+    return { company, area };
+  },
 };
 
 const formatFrontmatterValue = (value: unknown): string => {
@@ -278,9 +283,9 @@ const getColumnRawValue = (row: MondoEntityListRow, column: string): unknown => 
 
 export const useEntityPanels = (entityType: MondoFileType) => {
   const files = useFiles(entityType);
-  // Conditionally fetch person files only for role entities
+  // Conditionally fetch person files only for role or team entities
   // When not needed, pass an empty type to avoid duplicate fetches
-  const shouldFetchPeople = entityType === MondoFileType.ROLE;
+  const shouldFetchPeople = entityType === MondoFileType.ROLE || entityType === MondoFileType.TEAM;
   // Using a dummy entity type to satisfy React hooks rules while avoiding duplicate fetch
   const allPeople = useFiles(shouldFetchPeople ? MondoFileType.PERSON : ('' as any));
 
@@ -305,6 +310,8 @@ export const useEntityPanels = (entityType: MondoFileType) => {
 
     // Check once if we need to compute people column for roles
     const shouldComputePeople = entityType === MondoFileType.ROLE && columns.includes("people");
+    // Check if we need to compute members column for teams
+    const shouldComputeMembers = entityType === MondoFileType.TEAM && columns.includes("members");
 
     const rows = files.map<MondoEntityListRow>((cached) => {
       const { file, cache } = cached;
@@ -364,6 +371,47 @@ export const useEntityPanels = (entityType: MondoFileType) => {
         }
         
         enhancedFrontmatter.people = linkedPeople;
+      }
+
+      // For team entities, compute linked people (members who have this team in their team property)
+      if (shouldComputeMembers) {
+        // Pre-compute person display info to avoid redundant frontmatter access
+        const membersWithNames = allPeople
+          .filter((personFile) => {
+            const personFm = personFile.cache?.frontmatter as Record<string, unknown> | undefined;
+            if (!personFm) return false;
+            // Support both 'team' and 'teams' properties
+            const teamValue = personFm.team ?? personFm.teams;
+            
+            // Check if this person's team property references the current team file
+            if (Array.isArray(teamValue)) {
+              return teamValue.some((t) => matchesRoleReference(t, file));
+            } else if (teamValue !== undefined && teamValue !== null) {
+              return matchesRoleReference(teamValue, file);
+            }
+            return false;
+          })
+          .map((personFile) => {
+            const personFm = personFile.cache?.frontmatter as Record<string, unknown> | undefined;
+            const rawShowName = personFm?.show || personFile.file.basename;
+            const showName = String(rawShowName);
+            const sortKey = showName.toLowerCase();
+            return { personFile, showName, sortKey };
+          });
+
+        // Sort members by their show name before taking the first MAX_LINKED_PEOPLE
+        const linkedMembers = membersWithNames
+          .sort((a, b) => 
+            a.sortKey.localeCompare(b.sortKey, undefined, { sensitivity: "base", numeric: true })
+          )
+          .slice(0, MAX_LINKED_PEOPLE) // Take only first MAX_LINKED_PEOPLE members
+          .map(({ personFile, showName }) => 
+            `[[${personFile.file.path}|${showName}]]`
+          );
+        
+        // Store the members list and whether there are more
+        enhancedFrontmatter.members = linkedMembers;
+        enhancedFrontmatter.members_has_more = membersWithNames.length > MAX_LINKED_PEOPLE;
       }
 
       return {
