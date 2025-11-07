@@ -55,18 +55,15 @@ export const EntityCompanyAreaCell = ({ value }: EntityCompanyAreaCellProps) => 
     </>
   );
 
+  const renderRow = (links: LinkEntry[]) =>
+    links.length > 0 ? (
+      <div className="flex items-center gap-1">{renderLinks(links)}</div>
+    ) : null;
+
   return (
     <div className="flex flex-col gap-1">
-      {companyLinks.length > 0 && (
-        <div className="flex items-center gap-1">
-          {renderLinks(companyLinks)}
-        </div>
-      )}
-      {areaLinks.length > 0 && (
-        <div className="flex items-center gap-1">
-          {renderLinks(areaLinks)}
-        </div>
-      )}
+      {renderRow(companyLinks)}
+      {renderRow(areaLinks)}
     </div>
   );
 };

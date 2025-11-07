@@ -400,9 +400,8 @@ export const useEntityPanels = (entityType: MondoFileType) => {
             `[[${personFile.file.path}|${showName}]]`
           );
         
-        // Store both the members list and the total count for "..." rendering
+        // Store the members list and whether there are more
         enhancedFrontmatter.members = linkedMembers;
-        enhancedFrontmatter.members_total = membersWithNames.length;
         enhancedFrontmatter.members_has_more = membersWithNames.length > MAX_LINKED_PEOPLE;
       }
 
