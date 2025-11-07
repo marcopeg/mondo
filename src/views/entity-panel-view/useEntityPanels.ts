@@ -325,7 +325,8 @@ export const useEntityPanels = (entityType: MondoFileType) => {
           .filter((personFile) => {
             const personFm = personFile.cache?.frontmatter as Record<string, unknown> | undefined;
             if (!personFm) return false;
-            const roleValue = personFm.role;
+            // Support both 'role' and 'roles' properties for consistency with PeopleTable
+            const roleValue = personFm.role ?? personFm.roles;
             
             // Check if this person's role property references the current role file
             if (Array.isArray(roleValue)) {
