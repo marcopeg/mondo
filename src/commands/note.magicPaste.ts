@@ -49,11 +49,21 @@ const hasExplicitCursor = (editor: Editor): boolean => {
 
 const appendToBottom = (editor: Editor, value: string) => {
   const documentText = editor.getValue();
-  const needsLeadingNewline = documentText.length > 0 && !documentText.endsWith("\n");
-  const insertText = `${needsLeadingNewline ? "\n" : ""}${value}`;
+  
+  // Ensure we have a full empty line separator before the new content
+  let prefix = "";
+  if (documentText.length > 0) {
+    if (!documentText.endsWith("\n")) {
+      prefix = "\n\n"; // Add newline to close last line + empty line separator
+    } else if (!documentText.endsWith("\n\n")) {
+      prefix = "\n"; // Add empty line separator
+    }
+  }
+  
+  const insertText = `${prefix}${value}`;
   const lastLine = editor.lastLine();
   const lastLineLength = lastLine >= 0 ? editor.getLine(lastLine).length : 0;
-  const insertPosition = needsLeadingNewline
+  const insertPosition = prefix.length > 0 && !documentText.endsWith("\n")
     ? { line: lastLine, ch: lastLineLength }
     : { line: editor.lineCount(), ch: 0 };
 
