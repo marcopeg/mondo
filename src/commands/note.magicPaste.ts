@@ -63,7 +63,7 @@ const appendToBottom = (editor: Editor, value: string) => {
   const insertText = `${prefix}${value}`;
   const lastLine = editor.lastLine();
   const lastLineLength = lastLine >= 0 ? editor.getLine(lastLine).length : 0;
-  const insertPosition = prefix.length > 0 && !documentText.endsWith("\n")
+  const insertPosition = !documentText.endsWith("\n")
     ? { line: lastLine, ch: lastLineLength }
     : { line: editor.lineCount(), ch: 0 };
 
