@@ -10,6 +10,7 @@ import {
   EntityTitleCell,
   EntityCompanyAreaCell,
   EntityMembersCell,
+  EntityUrlCell,
 } from "./cells";
 
 const TITLE_COLUMNS = new Set(["show", "filename", "fileName", "title"]);
@@ -65,6 +66,10 @@ const getCellRenderer = (column: string) => {
 
   if (normalized === "members") {
     return EntityMembersCell;
+  }
+
+  if (normalized === "url") {
+    return EntityUrlCell;
   }
 
   if (normalized.endsWith("date")) {
