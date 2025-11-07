@@ -242,6 +242,9 @@ export const useEntityPanels = (entityType: MondoFileType) => {
     const sortDirection =
       config?.list?.sort?.direction === "desc" ? "desc" : "asc";
 
+    // Check once if we need to compute people column for roles
+    const shouldComputePeople = entityType === MondoFileType.ROLE && columns.includes("people");
+
     const rows = files.map<MondoEntityListRow>((cached) => {
       const { file, cache } = cached;
       const frontmatter = (cache?.frontmatter ?? {}) as Record<string, unknown>;
@@ -255,8 +258,9 @@ export const useEntityPanels = (entityType: MondoFileType) => {
 
       // For role entities, compute linked people (backlinks)
       const enhancedFrontmatter = { ...frontmatter };
-      if (entityType === MondoFileType.ROLE && columns.includes("people")) {
-        const linkedPeople = allPeople
+      if (shouldComputePeople) {
+        // Pre-compute person display info to avoid redundant frontmatter access
+        const peopleWithNames = allPeople
           .filter((personFile) => {
             const personFm = personFile.cache?.frontmatter as Record<string, unknown> | undefined;
             if (!personFm) return false;
@@ -270,20 +274,22 @@ export const useEntityPanels = (entityType: MondoFileType) => {
             }
             return false;
           })
-          // Sort people by their show name before taking the first MAX_LINKED_PEOPLE
-          .sort((a, b) => {
-            const aFm = a.cache?.frontmatter as Record<string, unknown> | undefined;
-            const bFm = b.cache?.frontmatter as Record<string, unknown> | undefined;
-            const aName = (aFm?.show || a.file.basename).toString().toLowerCase();
-            const bName = (bFm?.show || b.file.basename).toString().toLowerCase();
-            return aName.localeCompare(bName, undefined, { sensitivity: "base", numeric: true });
-          })
-          .slice(0, MAX_LINKED_PEOPLE) // Take only first MAX_LINKED_PEOPLE people
           .map((personFile) => {
             const personFm = personFile.cache?.frontmatter as Record<string, unknown> | undefined;
             const showName = personFm?.show || personFile.file.basename;
-            return `[[${personFile.file.path}|${showName}]]`;
+            const sortKey = showName.toString().toLowerCase();
+            return { personFile, showName, sortKey };
           });
+
+        // Sort people by their show name before taking the first MAX_LINKED_PEOPLE
+        const linkedPeople = peopleWithNames
+          .sort((a, b) => 
+            a.sortKey.localeCompare(b.sortKey, undefined, { sensitivity: "base", numeric: true })
+          )
+          .slice(0, MAX_LINKED_PEOPLE) // Take only first MAX_LINKED_PEOPLE people
+          .map(({ personFile, showName }) => 
+            `[[${personFile.file.path}|${showName}]]`
+          );
         
         enhancedFrontmatter.people = linkedPeople;
       }
