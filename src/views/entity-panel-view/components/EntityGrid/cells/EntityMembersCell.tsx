@@ -25,7 +25,7 @@ export const EntityMembersCell = ({ value, row }: EntityMembersCellProps) => {
   }
 
   return (
-    <div className="flex flex-col gap-0.5">
+    <span>
       {links.map((link, index) => {
         const key = `${link.path ?? link.label}-${index}`;
         const content = link.path ? (
@@ -36,13 +36,14 @@ export const EntityMembersCell = ({ value, row }: EntityMembersCellProps) => {
           </span>
         );
 
-        return <div key={key}>{content}</div>;
+        return (
+          <span key={key}>
+            {content}
+            {(index < links.length - 1 || hasMore) && <span>, </span>}
+          </span>
+        );
       })}
-      {hasMore && (
-        <div>
-          <MondoFileLink path={row.path} label="..." />
-        </div>
-      )}
-    </div>
+      {hasMore && <MondoFileLink path={row.path} label="..." />}
+    </span>
   );
 };
