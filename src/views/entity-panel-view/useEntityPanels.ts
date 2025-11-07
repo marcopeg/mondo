@@ -15,13 +15,13 @@ const DEFAULT_COLUMN = "show";
 const MAX_LINKED_PEOPLE = 5;
 
 // Helper function to check if a role reference matches the given file
-const matchesRoleReference = (roleStr: string, file: TFile): boolean => {
-  const trimmed = roleStr.trim();
-  if (trimmed.startsWith("[[") && trimmed.endsWith("]]")) {
-    const inner = trimmed.slice(2, -2).split("|")[0].trim();
+const matchesRoleReference = (roleValue: unknown, file: TFile): boolean => {
+  const roleStr = String(roleValue).trim();
+  if (roleStr.startsWith("[[") && roleStr.endsWith("]]")) {
+    const inner = roleStr.slice(2, -2).split("|")[0].trim();
     return inner === file.basename || inner === file.path;
   }
-  return trimmed === file.basename || trimmed === file.path;
+  return roleStr === file.basename || roleStr === file.path;
 };
 
 const getTrimmedString = (value: unknown): string | undefined => {
@@ -219,11 +219,11 @@ const getColumnRawValue = (row: MondoEntityListRow, column: string): unknown => 
 
 export const useEntityPanels = (entityType: MondoFileType) => {
   const files = useFiles(entityType);
-  // Fetch person files for role entities. While this fetches data even when the
-  // 'people' column isn't configured, React hooks must be called unconditionally.
-  // The actual computation is guarded by shouldComputePeople check below.
-  const needsPeople = entityType === MondoFileType.ROLE;
-  const allPeople = useFiles(needsPeople ? MondoFileType.PERSON : entityType);
+  // Conditionally fetch person files only for role entities
+  // When not needed, pass an empty type to avoid duplicate fetches
+  const shouldFetchPeople = entityType === MondoFileType.ROLE;
+  // Using a dummy entity type to satisfy React hooks rules while avoiding duplicate fetch
+  const allPeople = useFiles(shouldFetchPeople ? MondoFileType.PERSON : ('' as any));
 
   const { columns, rows } = useMemo(() => {
     const config = getMondoEntityConfig(entityType);
@@ -270,8 +270,8 @@ export const useEntityPanels = (entityType: MondoFileType) => {
             
             // Check if this person's role property references the current role file
             if (Array.isArray(roleValue)) {
-              return roleValue.some((r) => matchesRoleReference(String(r), file));
-            } else if (typeof roleValue === "string") {
+              return roleValue.some((r) => matchesRoleReference(r, file));
+            } else if (roleValue !== undefined && roleValue !== null) {
               return matchesRoleReference(roleValue, file);
             }
             return false;
@@ -279,10 +279,7 @@ export const useEntityPanels = (entityType: MondoFileType) => {
           .map((personFile) => {
             const personFm = personFile.cache?.frontmatter as Record<string, unknown> | undefined;
             const rawShowName = personFm?.show || personFile.file.basename;
-            // Ensure showName is a string for safe operations
-            const showName = typeof rawShowName === "string" 
-              ? rawShowName 
-              : String(rawShowName || personFile.file.basename);
+            const showName = String(rawShowName);
             const sortKey = showName.toLowerCase();
             return { personFile, showName, sortKey };
           });
