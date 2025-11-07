@@ -21,9 +21,12 @@ const extractEntries = (value: unknown): { entries: string[]; moreInfo: MoreInfo
         // Extract metadata: __MORE__:totalCount:rolePath
         const parts = item.split(":");
         if (parts.length >= 3) {
-          moreInfo.hasMore = true;
-          moreInfo.totalCount = parseInt(parts[1], 10);
-          moreInfo.rolePath = parts.slice(2).join(":"); // Handle paths with colons
+          const count = Number(parts[1]);
+          if (!Number.isNaN(count) && count > 0) {
+            moreInfo.hasMore = true;
+            moreInfo.totalCount = count;
+            moreInfo.rolePath = parts.slice(2).join(":"); // Handle paths with colons
+          }
         }
       } else {
         const nested = extractEntries(item);
@@ -39,9 +42,12 @@ const extractEntries = (value: unknown): { entries: string[]; moreInfo: MoreInfo
     if (value.startsWith("__MORE__:")) {
       const parts = value.split(":");
       if (parts.length >= 3) {
-        moreInfo.hasMore = true;
-        moreInfo.totalCount = parseInt(parts[1], 10);
-        moreInfo.rolePath = parts.slice(2).join(":");
+        const count = Number(parts[1]);
+        if (!Number.isNaN(count) && count > 0) {
+          moreInfo.hasMore = true;
+          moreInfo.totalCount = count;
+          moreInfo.rolePath = parts.slice(2).join(":");
+        }
       }
       return { entries: [], moreInfo };
     }
@@ -143,6 +149,7 @@ export const EntityLinksCell = ({ value }: EntityLinksCellProps) => {
       {moreInfo.hasMore && moreInfo.rolePath && (
         <>
           {links.length > 0 && <span>, </span>}
+          {/* rolePath is always set when hasMore is true based on marker parsing */}
           <MondoFileLink path={moreInfo.rolePath} label="..." />
         </>
       )}
