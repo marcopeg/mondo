@@ -49,11 +49,21 @@ const hasExplicitCursor = (editor: Editor): boolean => {
 
 const appendToBottom = (editor: Editor, value: string) => {
   const documentText = editor.getValue();
-  const needsLeadingNewline = documentText.length > 0 && !documentText.endsWith("\n");
-  const insertText = `${needsLeadingNewline ? "\n" : ""}${value}`;
+  
+  // Ensure we have a full empty line separator before the new content
+  let prefix = "";
+  if (documentText.length > 0) {
+    if (!documentText.endsWith("\n")) {
+      prefix = "\n\n"; // Add newline to close last line + empty line separator
+    } else if (!documentText.endsWith("\n\n")) {
+      prefix = "\n"; // Add empty line separator
+    }
+  }
+  
+  const insertText = `${prefix}${value}`;
   const lastLine = editor.lastLine();
   const lastLineLength = lastLine >= 0 ? editor.getLine(lastLine).length : 0;
-  const insertPosition = needsLeadingNewline
+  const insertPosition = !documentText.endsWith("\n")
     ? { line: lastLine, ch: lastLineLength }
     : { line: editor.lineCount(), ch: 0 };
 
@@ -64,7 +74,11 @@ const appendToBottom = (editor: Editor, value: string) => {
   editor.focus();
 };
 
-const insertIntoEditor = (editor: Editor, value: string) => {
+const insertIntoEditor = (
+  editor: Editor,
+  value: string,
+  savedCursor?: { line: number; ch: number } | null
+) => {
   if (!value) {
     return false;
   }
@@ -79,6 +93,22 @@ const insertIntoEditor = (editor: Editor, value: string) => {
       const cursor = editor.getCursor();
       editor.replaceRange(value, cursor);
     }
+    editor.focus();
+    return true;
+  }
+
+  // If we have a saved cursor position, insert at that position
+  if (savedCursor) {
+    editor.replaceRange(value, savedCursor);
+    // Move cursor to end of inserted text
+    const lines = value.split("\n");
+    const lastLineIndex = savedCursor.line + lines.length - 1;
+    const lastLineLength = lines[lines.length - 1].length;
+    const newCursorPos =
+      lines.length === 1
+        ? { line: savedCursor.line, ch: savedCursor.ch + lastLineLength }
+        : { line: lastLineIndex, ch: lastLineLength };
+    editor.setCursor(newCursorPos);
     editor.focus();
     return true;
   }
@@ -245,6 +275,10 @@ export const openMagicPaste = async (
 ) => {
   const { editor, view } = resolveEditor(app, context);
 
+  // Capture the cursor position and file path before opening the modal
+  const savedCursor = editor ? editor.getCursor() : null;
+  const savedFilePath = view?.file?.path ?? null;
+
   let clipboardText = "";
   try {
     clipboardText = await readClipboardText();
@@ -259,7 +293,11 @@ export const openMagicPaste = async (
     const latestEditor = latestView?.editor ?? editor;
 
     if (latestEditor) {
-      insertIntoEditor(latestEditor, value);
+      // Only use saved cursor if we're still in the same file
+      const latestFilePath = latestView?.file?.path ?? null;
+      const cursorToUse =
+        savedFilePath && latestFilePath === savedFilePath ? savedCursor : null;
+      insertIntoEditor(latestEditor, value, cursorToUse);
       new Notice("Cleaned text inserted.");
       return;
     }

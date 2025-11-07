@@ -12,6 +12,17 @@ export type MondoEntityListRow = {
 };
 
 const DEFAULT_COLUMN = "show";
+const MAX_LINKED_PEOPLE = 5;
+
+// Helper function to check if a role reference matches the given file
+const matchesRoleReference = (roleValue: unknown, file: TFile): boolean => {
+  const roleStr = String(roleValue).trim();
+  if (roleStr.startsWith("[[") && roleStr.endsWith("]]")) {
+    const inner = roleStr.slice(2, -2).split("|")[0].trim();
+    return inner === file.basename || inner === file.path;
+  }
+  return roleStr === file.basename || roleStr === file.path;
+};
 
 const REFERENCE_KEYS = ["company", "team", "location", "linksTo"] as const;
 
@@ -267,6 +278,11 @@ const getColumnRawValue = (row: MondoEntityListRow, column: string): unknown => 
 
 export const useEntityPanels = (entityType: MondoFileType) => {
   const files = useFiles(entityType);
+  // Conditionally fetch person files only for role entities
+  // When not needed, pass an empty type to avoid duplicate fetches
+  const shouldFetchPeople = entityType === MondoFileType.ROLE;
+  // Using a dummy entity type to satisfy React hooks rules while avoiding duplicate fetch
+  const allPeople = useFiles(shouldFetchPeople ? MondoFileType.PERSON : ('' as any));
 
   const { columns, rows } = useMemo(() => {
     const config = getMondoEntityConfig(entityType);
@@ -287,6 +303,9 @@ export const useEntityPanels = (entityType: MondoFileType) => {
     const sortDirection =
       config?.list?.sort?.direction === "desc" ? "desc" : "asc";
 
+    // Check once if we need to compute people column for roles
+    const shouldComputePeople = entityType === MondoFileType.ROLE && columns.includes("people");
+
     const rows = files.map<MondoEntityListRow>((cached) => {
       const { file, cache } = cached;
       const frontmatter = (cache?.frontmatter ?? {}) as Record<string, unknown>;
@@ -298,11 +317,50 @@ export const useEntityPanels = (entityType: MondoFileType) => {
           ? explicitTitle
           : baseName;
 
+      // For role entities, compute linked people (backlinks)
+      const enhancedFrontmatter = { ...frontmatter };
+      if (shouldComputePeople) {
+        // Pre-compute person display info to avoid redundant frontmatter access
+        const peopleWithNames = allPeople
+          .filter((personFile) => {
+            const personFm = personFile.cache?.frontmatter as Record<string, unknown> | undefined;
+            if (!personFm) return false;
+            const roleValue = personFm.role;
+            
+            // Check if this person's role property references the current role file
+            if (Array.isArray(roleValue)) {
+              return roleValue.some((r) => matchesRoleReference(r, file));
+            } else if (roleValue !== undefined && roleValue !== null) {
+              return matchesRoleReference(roleValue, file);
+            }
+            return false;
+          })
+          .map((personFile) => {
+            const personFm = personFile.cache?.frontmatter as Record<string, unknown> | undefined;
+            const rawShowName = personFm?.show || personFile.file.basename;
+            const showName = String(rawShowName);
+            const sortKey = showName.toLowerCase();
+            return { personFile, showName, sortKey };
+          });
+
+        // Sort people by their show name before taking the first MAX_LINKED_PEOPLE
+        const linkedPeople = peopleWithNames
+          .sort((a, b) => 
+            a.sortKey.localeCompare(b.sortKey, undefined, { sensitivity: "base", numeric: true })
+          )
+          .slice(0, MAX_LINKED_PEOPLE) // Take only first MAX_LINKED_PEOPLE people
+          .map(({ personFile, showName }) => 
+            `[[${personFile.file.path}|${showName}]]`
+          );
+        
+        enhancedFrontmatter.people = linkedPeople;
+      }
+
       return {
         path: file.path,
         label,
         fileName: baseName,
-        frontmatter,
+        frontmatter: enhancedFrontmatter,
         file,
       };
     });
@@ -320,7 +378,7 @@ export const useEntityPanels = (entityType: MondoFileType) => {
     });
 
     return { columns, rows };
-  }, [entityType, files]);
+  }, [entityType, files, allPeople]);
 
   return { columns, rows };
 };
