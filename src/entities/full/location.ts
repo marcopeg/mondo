@@ -15,7 +15,7 @@ export const location = {
   icon: "map-pin",
   template: "---\ntype: {{type}}\ndate: {{date}}\n---\n",
   list: {
-    columns: ["cover", "show", "country", "region"],
+    columns: ["cover", "show", "country_region", "people"],
   },
   createRelated: [
     {
