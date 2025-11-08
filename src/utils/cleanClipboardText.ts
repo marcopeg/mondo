@@ -12,7 +12,8 @@ export const cleanClipboardText = (value: string): string => {
 
   let text = value;
   text = strip.bom(text);
-  text = replace.exoticChars(text);
+  // Normalise typographic punctuation while preserving locale-specific letters.
+  text = replace.smartChars(text);
   text = text.replace(CARRIAGE_RETURN, "\n");
   text = text.replace(/\u00A0/g, " ");
   text = text.replace(ZERO_WIDTH_CHARACTERS, "");
