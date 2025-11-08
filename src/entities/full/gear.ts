@@ -14,7 +14,12 @@ export const gear = {
   icon: "settings",
   template: "\ndate: {{date}}\nowner: []\nlocation: []\n---\n",
   list: {
-    columns: ["cover", "show", "owner", "location"],
+    columns: [
+      { type: "cover" },
+      { type: "title", prop: "show" },
+      { type: "link", prop: "owner" },
+      { type: "link", prop: "location" },
+    ],
   },
   createRelated: [
     {

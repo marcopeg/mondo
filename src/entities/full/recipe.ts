@@ -12,7 +12,13 @@ export const recipe = {
   template:
     "\ndate: {{date}}\ncategory: []\ncookTime:\ncalories:\n---\n\n## Ingredients\n\n- \n\n## Instructions\n\n1. \n\n",
   list: {
-    columns: ["cover", "show", "category", "cookingTime", "url"],
+    columns: [
+      { type: "cover" },
+      { type: "title", prop: "show" },
+      { type: "value", prop: "category" },
+      { type: "value", prop: "cookingTime" },
+      { type: "url" },
+    ],
   },
   createRelated: [
     {

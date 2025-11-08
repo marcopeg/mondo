@@ -11,7 +11,13 @@ export const article = {
   icon: "newspaper",
   template: "\ndate: {{date}}\nstatus: draft\n---\n",
   list: {
-    columns: ["cover", "show", "author", "status", "source"],
+    columns: [
+      { type: "cover" },
+      { type: "title", prop: "show" },
+      { type: "link", prop: "author" },
+      { type: "value", prop: "status" },
+      { type: "value", prop: "source" },
+    ],
   },
   createRelated: [
     {

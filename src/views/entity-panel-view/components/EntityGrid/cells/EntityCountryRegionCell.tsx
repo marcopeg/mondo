@@ -1,9 +1,12 @@
-import type { MondoEntityListRow } from "@/views/entity-panel-view/useEntityPanels";
+import type {
+  MondoEntityListColumn,
+  MondoEntityListRow,
+} from "@/views/entity-panel-view/useEntityPanels";
 
 type EntityCountryRegionCellProps = {
   value: unknown;
   row: MondoEntityListRow;
-  column: string;
+  column: MondoEntityListColumn;
 };
 
 const formatValue = (value: unknown): string => {

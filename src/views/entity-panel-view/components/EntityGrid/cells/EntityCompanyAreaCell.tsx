@@ -1,13 +1,16 @@
 import { useMemo } from "react";
 import { useApp } from "@/hooks/use-app";
-import type { MondoEntityListRow } from "@/views/entity-panel-view/useEntityPanels";
+import type {
+  MondoEntityListColumn,
+  MondoEntityListRow,
+} from "@/views/entity-panel-view/useEntityPanels";
 import { MondoFileLink } from "../../MondoFileLink";
 import { extractEntries, processLinkEntries, type LinkEntry } from "./linkUtils";
 
 type EntityCompanyAreaCellProps = {
   value: unknown;
   row: MondoEntityListRow;
-  column: string;
+  column: MondoEntityListColumn;
 };
 
 export const EntityCompanyAreaCell = ({ value }: EntityCompanyAreaCellProps) => {

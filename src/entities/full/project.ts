@@ -15,7 +15,7 @@ export const project = {
     "\ndate: {{date}}\ncompany: []\nteam: []\nparticipants: []\nstatus: draft\n---\n",
   
   list: {
-    columns: ["show"],
+    columns: [{ type: "title", prop: "show" }],
   },
     createRelated: [
     {

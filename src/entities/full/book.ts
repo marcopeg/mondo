@@ -11,7 +11,13 @@ export const book = {
   icon: "book",
   template: "\ndate: {{date}}\n---\n",
   list: {
-    columns: ["cover", "show", "author", "status", "genre"],
+    columns: [
+      { type: "cover" },
+      { type: "title", prop: "show" },
+      { type: "link", prop: "author" },
+      { type: "value", prop: "status" },
+      { type: "value", prop: "genre" },
+    ],
   },
   createRelated: [
     {

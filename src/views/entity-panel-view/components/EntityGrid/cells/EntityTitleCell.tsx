@@ -1,10 +1,13 @@
-import type { MondoEntityListRow } from "@/views/entity-panel-view/useEntityPanels";
+import type {
+  MondoEntityListColumn,
+  MondoEntityListRow,
+} from "@/views/entity-panel-view/useEntityPanels";
 import { MondoFileLink } from "../../MondoFileLink";
 
 type EntityTitleCellProps = {
   row: MondoEntityListRow;
   value: unknown;
-  column: string;
+  column: MondoEntityListColumn;
 };
 
 export const EntityTitleCell = ({ row, value }: EntityTitleCellProps) => {

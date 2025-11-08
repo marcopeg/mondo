@@ -8,7 +8,11 @@ export const task = {
   icon: "check-square",
   template: "\ndate: {{date}}\nstatus: todo\n---\n",
   list: {
-    columns: ["show", "participants", "status"],
+    columns: [
+      { type: "title", prop: "show" },
+      { type: "link", prop: "participants" },
+      { type: "value", prop: "status" },
+    ],
   },
   createRelated: [
     {

@@ -4,7 +4,11 @@ export const document = {
   icon: "file-text",
   template: "\ndate: {{date}}\nfile:\n---\n",
   list: {
-    columns: ["show", "category", "file"],
+    columns: [
+      { type: "title", prop: "show" },
+      { type: "value", prop: "category" },
+      { type: "value", prop: "file" },
+    ],
   },
   links: [
     {

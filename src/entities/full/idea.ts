@@ -10,7 +10,10 @@ export const idea = {
   icon: "lightbulb",
   template: "\ndate: {{date}}\nstatus: draft\n---\n",
   list: {
-    columns: ["show", "status"],
+    columns: [
+      { type: "title", prop: "show" },
+      { type: "value", prop: "status" },
+    ],
   },
   createRelated: [
     {

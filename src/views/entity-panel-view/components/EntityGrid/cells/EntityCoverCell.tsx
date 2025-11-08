@@ -1,7 +1,10 @@
 import { useMemo, useCallback } from "react";
 import { TFile } from "obsidian";
 import { useApp } from "@/hooks/use-app";
-import type { MondoEntityListRow } from "@/views/entity-panel-view/useEntityPanels";
+import type {
+  MondoEntityListColumn,
+  MondoEntityListRow,
+} from "@/views/entity-panel-view/useEntityPanels";
 import { Cover } from "@/components/ui/Cover";
 
 const extractFirstEntry = (value: unknown): string | null => {
@@ -22,7 +25,7 @@ const extractFirstEntry = (value: unknown): string | null => {
 type EntityCoverCellProps = {
   value: unknown;
   row: MondoEntityListRow;
-  column: string;
+  column: MondoEntityListColumn;
 };
 
 const parseWikiLink = (raw: string) => {

@@ -13,7 +13,14 @@ export const person = {
   template:
     "\ndate: {{date}}\nlocation: []\ncompany: []\nrole: []\nteam: []\n---\n",
   list: {
-    columns: ["cover", "show", "company", "role", "team", "location"],
+    columns: [
+      { type: "cover" },
+      { type: "title", prop: "show" },
+      { type: "link", prop: "company" },
+      { type: "link", prop: "role" },
+      { type: "link", prop: "team" },
+      { type: "link", prop: "location" },
+    ],
     sort: {
       column: "show",
       direction: "asc",

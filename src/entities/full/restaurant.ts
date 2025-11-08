@@ -12,7 +12,11 @@ export const restaurant = {
   icon: "utensils",
   template: "\ndate: {{date}}\nlocation: []\n---\n",
   list: {
-    columns: ["cover", "show", "location"],
+    columns: [
+      { type: "cover" },
+      { type: "title", prop: "show" },
+      { type: "link", prop: "location" },
+    ],
   },
   createRelated: [
     {

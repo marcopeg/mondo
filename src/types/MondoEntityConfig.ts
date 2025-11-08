@@ -8,8 +8,79 @@ export interface MondoEntityListSortConfig {
   direction?: MondoEntityListSortDirection;
 }
 
+export type MondoEntityListColumnBase = {
+  key?: string;
+  label?: string;
+};
+
+export type MondoEntityListValueColumn = MondoEntityListColumnBase & {
+  type: "value";
+  prop: string;
+};
+
+export type MondoEntityListLinkColumn = MondoEntityListColumnBase & {
+  type: "link";
+  prop: string;
+  mode?: "inline" | "bullet";
+};
+
+export type MondoEntityListCoverColumn = MondoEntityListColumnBase & {
+  type: "cover";
+  prop?: string;
+};
+
+export type MondoEntityListTitleColumn = MondoEntityListColumnBase & {
+  type: "title";
+  prop?: string;
+};
+
+export type MondoEntityListDateColumn = MondoEntityListColumnBase & {
+  type: "date";
+  prop?: string;
+  linkToNote?: boolean;
+};
+
+export type MondoEntityListCompanyAreaColumn = MondoEntityListColumnBase & {
+  type: "companyArea";
+  companyProp?: string;
+  areaProp?: string;
+};
+
+export type MondoEntityListCountryRegionColumn = MondoEntityListColumnBase & {
+  type: "countryRegion";
+  countryProp?: string;
+  regionProp?: string;
+};
+
+export type MondoEntityListMembersColumn = MondoEntityListColumnBase & {
+  type: "members";
+  prop?: string;
+};
+
+export type MondoEntityListLocationPeopleColumn = MondoEntityListColumnBase & {
+  type: "locationPeople";
+  prop?: string;
+};
+
+export type MondoEntityListUrlColumn = MondoEntityListColumnBase & {
+  type: "url";
+  prop?: string;
+};
+
+export type MondoEntityListColumnDefinition =
+  | MondoEntityListValueColumn
+  | MondoEntityListLinkColumn
+  | MondoEntityListCoverColumn
+  | MondoEntityListTitleColumn
+  | MondoEntityListDateColumn
+  | MondoEntityListCompanyAreaColumn
+  | MondoEntityListCountryRegionColumn
+  | MondoEntityListMembersColumn
+  | MondoEntityListLocationPeopleColumn
+  | MondoEntityListUrlColumn;
+
 export interface MondoEntityListConfig {
-  columns?: string[];
+  columns?: MondoEntityListColumnDefinition[];
   sort?: MondoEntityListSortConfig;
 }
 
