@@ -1,4 +1,4 @@
-import { replace, strip } from "clean-text-utils";
+import { strip } from "clean-text-utils";
 
 const ZERO_WIDTH_CHARACTERS = /[\u200B-\u200D\u2060\uFEFF]/g;
 const MULTIPLE_NEWLINES = /\n{3,}/g;
@@ -12,8 +12,7 @@ export const cleanClipboardText = (value: string): string => {
 
   let text = value;
   text = strip.bom(text);
-  // Normalise typographic punctuation while preserving locale-specific letters.
-  text = replace.smartChars(text);
+  // Preserve raw punctuation so Markdown tokens (e.g. `**bold**`, lists) remain untouched.
   text = text.replace(CARRIAGE_RETURN, "\n");
   text = text.replace(/\u00A0/g, " ");
   text = text.replace(ZERO_WIDTH_CHARACTERS, "");
