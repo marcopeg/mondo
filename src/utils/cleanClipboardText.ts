@@ -17,8 +17,8 @@ export const cleanClipboardText = (value: string): string => {
   text = text.replace(CARRIAGE_RETURN, "\n");
   text = text.replace(/\u00A0/g, " ");
   text = text.replace(ZERO_WIDTH_CHARACTERS, "");
-  text = text.replace(TRAILING_WHITESPACE, "");
+  text = text.replace(TRAILING_WHITESPACE, (match) => (match.endsWith("  ") ? "  " : ""));
   text = text.replace(MULTIPLE_NEWLINES, "\n\n");
 
-  return text.trim();
+  return text;
 };
