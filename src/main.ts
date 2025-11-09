@@ -850,6 +850,15 @@ export default class Mondo extends Plugin {
 
         void copyNoteText(this.app, { editor, view: markdownView });
       },
+      callback: () => {
+        const markdownView =
+          this.app.workspace.getActiveViewOfType(MarkdownView) ?? null;
+
+        void copyNoteText(this.app, {
+          view: markdownView,
+          editor: markdownView?.editor ?? undefined,
+        });
+      },
     });
 
     this.addCommand({
