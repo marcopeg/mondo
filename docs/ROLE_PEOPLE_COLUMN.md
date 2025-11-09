@@ -12,14 +12,17 @@ The role entity is configured in `src/entities/role.ts` with:
 
 ```typescript
 list: {
-  columns: ["show", "people"],
+  columns: [
+    { type: "title", prop: "show" },
+    { type: "link", prop: "people" },
+  ],
   sort: { column: "show", direction: "asc" }
 }
 ```
 
 This configuration tells the entity list view to display two columns:
-1. **show**: The role name
-2. **people**: The computed list of people in that role
+1. **title**: The role name (pulled from the `show` property)
+2. **link**: The computed list of people in that role
 
 ### Implementation
 

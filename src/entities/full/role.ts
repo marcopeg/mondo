@@ -11,7 +11,10 @@ export const role = {
   icon: "briefcase",
   template: "---\ntype: {{type}}\ndate: {{date}}\n---\n",
   list: {
-    columns: ["show", "people"],
+    columns: [
+      { type: "title", prop: "show" },
+      { type: "link", prop: "people" },
+    ],
     sort: {
       column: "show",
       direction: "asc",

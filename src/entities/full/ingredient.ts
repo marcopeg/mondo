@@ -11,7 +11,12 @@ export const ingredient = {
   icon: "carrot",
   template: "\ncategory: []\nsupplier: []\n---\n",
   list: {
-    columns: ["cover", "show", "category", "supplier"],
+    columns: [
+      { type: "cover" },
+      { type: "title", prop: "show" },
+      { type: "value", prop: "category" },
+      { type: "link", prop: "supplier" },
+    ],
   },
   createRelated: [
     {

@@ -11,7 +11,12 @@ export const newsletter = {
   icon: "send",
   template: "\ndate: {{date}}\nfrequency:\ncategory: []\nauthor: []\n---\n",
   list: {
-    columns: ["show", "frequency", "category", "author"],
+    columns: [
+      { type: "title", prop: "show" },
+      { type: "value", prop: "frequency" },
+      { type: "value", prop: "category" },
+      { type: "link", prop: "author" },
+    ],
   },
   createRelated: [
     {

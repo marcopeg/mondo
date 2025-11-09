@@ -33,7 +33,11 @@ Treat both as equivalent. A valid payload uses the shape below (see `src/types/M
       "icon": "user",
       "template": "...",
       "list": {
-        "columns": ["cover", "show", "company"],
+        "columns": [
+          { "type": "cover" },
+          { "type": "title", "prop": "show" },
+          { "type": "link", "prop": "company" }
+        ],
         "sort": { "column": "show", "direction": "asc" }
       },
       "createRelated": [
@@ -92,7 +96,7 @@ Treat both as equivalent. A valid payload uses the shape below (see `src/types/M
 - `icon` (string): Lucide icon id. Invalid or missing icons fall back to `tag` during validation.
 - `template` (string): Default note content injected when the plugin creates a note of this type. Supports tokens expanded by `MondoTemplates` (`{{title}}`, `{{date}}`, `{{datetime}}`, `{{slug}}`, etc.).
 - `list` (optional): Controls the entity panel table layout.
-  - `columns`: string array; components interpret values such as `cover`, `show`, frontmatter keys, etc.
+  - `columns`: array of column definition objects (see `MondoEntityListColumnDefinition` in `src/types/MondoEntityConfig.ts`). Each entry specifies a `type` (`cover`, `title`, `value`, `link`, `date`, etc.) and, when required, the `prop` to read from frontmatter.
   - `sort`: `{ "column": string, "direction": "asc" | "desc" }`.
 - `createRelated` (optional): Array describing quick-create actions surfaced in entity headers and link panels.
   - Each entry can define `key`, `label`, `icon`, `referenceLink`, and a `create` object.

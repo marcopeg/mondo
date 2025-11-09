@@ -1,96 +1,12 @@
 import {
-  getDisplayValue,
   type MondoEntityListRow,
+  type MondoEntityListColumn,
 } from "@/views/entity-panel-view/useEntityPanels";
-import {
-  EntityCell,
-  EntityCoverCell,
-  EntityDateCell,
-  EntityLinksCell,
-  EntityTitleCell,
-  EntityCompanyAreaCell,
-  EntityMembersCell,
-  EntityUrlCell,
-  EntityCountryRegionCell,
-  EntityLocationPeopleCell,
-} from "./cells";
-
-const TITLE_COLUMNS = new Set(["show", "filename", "fileName", "title"]);
-const LINK_COLUMNS = new Set([
-  "company",
-  "location",
-  "team",
-  "role",
-  "owner",
-  "participants",
-  "references",
-  "people",
-]);
-const COVER_COLUMNS = new Set(["cover", "thumbnail", "image"]);
-
-const formatColumnLabel = (column: string): string =>
-  column
-    .split(/[-_]/)
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(" ");
+import { ColumnValue } from "./ColumnValue";
 
 type EntityGridProps = {
-  columns: string[];
+  columns: MondoEntityListColumn[];
   rows: MondoEntityListRow[];
-};
-
-const getCellRenderer = (column: string, row: MondoEntityListRow) => {
-  const normalized = column.toLowerCase();
-
-  if (TITLE_COLUMNS.has(normalized)) {
-    return EntityTitleCell;
-  }
-
-  if (normalized === "date") {
-    return EntityDateCell;
-  }
-
-  if (normalized === "date_time" || normalized === "datetime") {
-    return EntityDateCell;
-  }
-
-  if (COVER_COLUMNS.has(normalized)) {
-    return EntityCoverCell;
-  }
-
-  if (normalized === "company_area") {
-    return EntityCompanyAreaCell;
-  }
-
-  if (normalized === "country_region") {
-    return EntityCountryRegionCell;
-  }
-
-  if (normalized === "members") {
-    return EntityMembersCell;
-  }
-
-  if (normalized === "url") {
-    return EntityUrlCell;
-  }
-
-  // For "people" column, check if it's for a location (has people_total metadata)
-  if (normalized === "people") {
-    if (row.frontmatter?.people_total !== undefined) {
-      return EntityLocationPeopleCell;
-    }
-    return EntityLinksCell;
-  }
-
-  if (LINK_COLUMNS.has(normalized)) {
-    return EntityLinksCell;
-  }
-
-  if (normalized.endsWith("date")) {
-    return EntityDateCell;
-  }
-
-  return EntityCell;
 };
 
 export const EntityGrid = ({ columns, rows }: EntityGridProps) => {
@@ -104,13 +20,13 @@ export const EntityGrid = ({ columns, rows }: EntityGridProps) => {
         <thead>
           <tr className="bg-[var(--background-secondary)]">
             {columns.map((column) => {
-              const isCover = COVER_COLUMNS.has(column.toLowerCase());
+              const isCover = column.type === "cover";
               const headerClass = isCover
                 ? "border-b border-[var(--background-modifier-border)] w-16 min-w-[4rem] max-w-[4rem] p-0 text-center text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]"
                 : "border-b border-[var(--background-modifier-border)] px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]";
               return (
-                <th key={column} className={headerClass}>
-                  {formatColumnLabel(column)}
+                <th key={column.key} className={headerClass}>
+                  {column.label}
                 </th>
               );
             })}
@@ -123,19 +39,17 @@ export const EntityGrid = ({ columns, rows }: EntityGridProps) => {
               className="odd:bg-[var(--background-primary-alt)] even:bg-[var(--background-primary)]"
             >
               {columns.map((column) => {
-                const CellComponent = getCellRenderer(column, row);
-                const value = getDisplayValue(row, column);
-                const isCover = COVER_COLUMNS.has(column.toLowerCase());
+                const isCover = column.type === "cover";
                 return (
                   <td
-                    key={`${row.path}-${column}`}
+                    key={`${row.path}-${column.key}`}
                     className={`border-t border-[var(--background-modifier-border)] text-sm text-[var(--text-normal)] ${
                       isCover
                         ? "w-16 min-w-[4rem] max-w-[4rem] p-0 align-middle"
                         : "px-3 py-2"
                     }`}
                   >
-                    <CellComponent row={row} column={column} value={value} />
+                    <ColumnValue column={column} row={row} />
                   </td>
                 );
               })}

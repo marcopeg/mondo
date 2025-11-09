@@ -1,7 +1,10 @@
 import { useMemo } from "react";
 import { TFile } from "obsidian";
 import { useApp } from "@/hooks/use-app";
-import type { MondoEntityListRow } from "@/views/entity-panel-view/useEntityPanels";
+import type {
+  MondoEntityListColumn,
+  MondoEntityListRow,
+} from "@/views/entity-panel-view/useEntityPanels";
 import { MondoFileLink } from "../../MondoFileLink";
 
 type MoreInfo = {
@@ -70,7 +73,8 @@ type LinkEntry = {
 type EntityLinksCellProps = {
   value: unknown;
   row: MondoEntityListRow;
-  column: string;
+  column: MondoEntityListColumn;
+  mode?: "inline" | "bullet";
 };
 
 const parseWikiLink = (raw: string) => {
@@ -93,7 +97,7 @@ const resolveFile = (app: ReturnType<typeof useApp>, target: string): TFile | nu
   return dest instanceof TFile ? dest : null;
 };
 
-export const EntityLinksCell = ({ value }: EntityLinksCellProps) => {
+export const EntityLinksCell = ({ value, mode }: EntityLinksCellProps) => {
   const app = useApp();
 
   const { links, moreInfo } = useMemo(() => {
@@ -124,6 +128,30 @@ export const EntityLinksCell = ({ value }: EntityLinksCellProps) => {
 
   if (links.length === 0 && !moreInfo.hasMore) {
     return <span>—</span>;
+  }
+
+  if (mode === "bullet") {
+    return (
+      <ul className="list-disc pl-4 text-sm text-[var(--text-normal)]">
+        {links.map((link, index) => {
+          const key = `${link.path ?? link.label}-${index}`;
+          const content = link.path ? (
+            <MondoFileLink path={link.path} label={link.label} />
+          ) : (
+            <span className="rounded bg-[var(--background-modifier-hover)] px-2 py-1 text-xs">
+              {link.label}
+            </span>
+          );
+
+          return <li key={key}>{content}</li>;
+        })}
+        {moreInfo.hasMore && moreInfo.rolePath && (
+          <li key="more">
+            <MondoFileLink path={moreInfo.rolePath} label="..." />
+          </li>
+        )}
+      </ul>
+    );
   }
 
   return (

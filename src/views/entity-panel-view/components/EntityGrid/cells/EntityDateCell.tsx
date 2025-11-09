@@ -2,6 +2,7 @@ import {
   getDateInfoForValue,
   getRowDateInfo,
   type MondoEntityDateInfo,
+  type MondoEntityListColumn,
   type MondoEntityListRow,
 } from "@/views/entity-panel-view/useEntityPanels";
 import { ReadableDate } from "@/components/ui/ReadableDate";
@@ -10,7 +11,7 @@ import { MondoFileLink } from "../../MondoFileLink";
 type EntityDateCellProps = {
   value: unknown;
   row: MondoEntityListRow;
-  column: string;
+  column: MondoEntityListColumn;
 };
 
 type DateDisplayInfo = {
@@ -20,17 +21,37 @@ type DateDisplayInfo = {
 };
 
 export const EntityDateCell = ({ value, row, column }: EntityDateCellProps) => {
-  const normalizedColumn = column.toLowerCase();
   const rawValue = Array.isArray(value) ? value[0] : value;
 
   let info: DateDisplayInfo;
   let source: MondoEntityDateInfo["source"] | undefined;
 
-  if (
-    normalizedColumn === "date" ||
-    normalizedColumn === "date_time" ||
-    normalizedColumn === "datetime"
-  ) {
+  if (column.type === "date") {
+    const prop = column.prop ?? "date";
+
+    if (prop === "date" || prop === "date_time" || prop === "datetime") {
+      const rowInfo = getRowDateInfo(row);
+      info = {
+        date: rowInfo.date,
+        raw: rowInfo.raw,
+        hasTime: rowInfo.hasTime,
+      };
+      source = rowInfo.source;
+    } else {
+      const candidate = getDateInfoForValue(rawValue);
+      info = {
+        date: candidate.date,
+        raw: candidate.raw,
+        hasTime: candidate.hasTime,
+      };
+      source = undefined;
+
+      if (!info.raw && typeof rawValue === "string") {
+        const trimmed = rawValue.trim();
+        info = { ...info, raw: trimmed.length > 0 ? trimmed : null };
+      }
+    }
+  } else {
     const rowInfo = getRowDateInfo(row);
     info = {
       date: rowInfo.date,
@@ -38,19 +59,6 @@ export const EntityDateCell = ({ value, row, column }: EntityDateCellProps) => {
       hasTime: rowInfo.hasTime,
     };
     source = rowInfo.source;
-  } else {
-    const candidate = getDateInfoForValue(rawValue);
-    info = {
-      date: candidate.date,
-      raw: candidate.raw,
-      hasTime: candidate.hasTime,
-    };
-    source = undefined;
-
-    if (!info.raw && typeof rawValue === "string") {
-      const trimmed = rawValue.trim();
-      info = { ...info, raw: trimmed.length > 0 ? trimmed : null };
-    }
   }
 
   const valueForDisplay = info.date ?? info.raw ?? null;
@@ -67,7 +75,11 @@ export const EntityDateCell = ({ value, row, column }: EntityDateCellProps) => {
       {source === "created" ? <span>• created</span> : null}
     </span>
   );
-  const shouldLink = normalizedColumn === "date_time";
+  const shouldLink =
+    column.type === "date" &&
+    (column.linkToNote === true ||
+      (column.linkToNote === undefined &&
+        (column.prop === "date_time" || column.prop === "datetime")));
 
   const mondoType =
     typeof row.frontmatter?.mondoType === "string"

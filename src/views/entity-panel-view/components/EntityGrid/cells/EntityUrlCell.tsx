@@ -1,4 +1,7 @@
-import type { MondoEntityListRow } from "@/views/entity-panel-view/useEntityPanels";
+import type {
+  MondoEntityListColumn,
+  MondoEntityListRow,
+} from "@/views/entity-panel-view/useEntityPanels";
 
 const formatValue = (value: unknown): string => {
   if (value === null || value === undefined) return "";
@@ -21,7 +24,7 @@ const isValidUrl = (str: string): boolean => {
 type EntityUrlCellProps = {
   value: unknown;
   row: MondoEntityListRow;
-  column: string;
+  column: MondoEntityListColumn;
 };
 
 export const EntityUrlCell = ({ value }: EntityUrlCellProps) => {

@@ -1,7 +1,10 @@
 import { useMemo, useCallback } from "react";
 import { TFile } from "obsidian";
 import { useApp } from "@/hooks/use-app";
-import type { MondoEntityListRow } from "@/views/entity-panel-view/useEntityPanels";
+import type {
+  MondoEntityListColumn,
+  MondoEntityListRow,
+} from "@/views/entity-panel-view/useEntityPanels";
 import { Cover } from "@/components/ui/Cover";
 import { MondoFileLink } from "../../MondoFileLink";
 
@@ -46,7 +49,7 @@ const extractEntries = (value: unknown): string[] => {
 type EntityLocationPeopleCellProps = {
   value: unknown;
   row: MondoEntityListRow;
-  column: string;
+  column: MondoEntityListColumn;
 };
 
 export const EntityLocationPeopleCell = ({ value, row }: EntityLocationPeopleCellProps) => {

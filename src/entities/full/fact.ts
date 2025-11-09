@@ -4,7 +4,10 @@ export const fact = {
   icon: "bookmark",
   template: "\ndate: {{date}}\n---\n",
   list: {
-    columns: ["date", "show"],
+    columns: [
+      { type: "date", prop: "date" },
+      { type: "title", prop: "show" },
+    ],
     sort: {
       column: "date",
       direction: "desc",

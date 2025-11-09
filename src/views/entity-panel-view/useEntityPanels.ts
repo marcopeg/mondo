@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import type { TFile } from "obsidian";
 import { useFiles } from "@/hooks/use-files";
 import { MondoFileType, getMondoEntityConfig } from "@/types/MondoFileType";
+import type { MondoEntityListColumnDefinition } from "@/types/MondoEntityConfig";
 
 export type MondoEntityListRow = {
   path: string;
@@ -11,7 +12,16 @@ export type MondoEntityListRow = {
   file: TFile;
 };
 
-const DEFAULT_COLUMN = "show";
+export type MondoEntityListColumn = MondoEntityListColumnDefinition & {
+  key: string;
+  label: string;
+};
+
+const DEFAULT_COLUMN_DEFINITION: MondoEntityListColumnDefinition = {
+  type: "title",
+  prop: "show",
+  key: "show",
+};
 const MAX_LINKED_PEOPLE = 5;
 const MAX_LOCATION_PEOPLE = 10;
 
@@ -222,69 +232,176 @@ export const getRowDateInfo = (row: MondoEntityListRow): MondoEntityDateInfo => 
   return { date: null, raw: fallbackRaw, hasTime: false, source: null };
 };
 
-const columnRules: Partial<Record<string, (row: MondoEntityListRow) => unknown>> = {
-  date: (row) => {
-    const info = getRowDateInfo(row);
-    return info.date ?? info.raw ?? undefined;
-  },
-  datetime: (row) => {
-    const info = getRowDateInfo(row);
-    return info.date ?? info.raw ?? undefined;
-  },
-  date_time: (row) => {
-    const info = getRowDateInfo(row);
-    return info.date ?? info.raw ?? undefined;
-  },
-  company_area: (row) => {
-    const company = row.frontmatter?.company;
-    const area = row.frontmatter?.area;
-    return { company, area };
-  },
-  country_region: (row) => {
-    const country = row.frontmatter?.country;
-    const region = row.frontmatter?.region;
-    return { country, region };
-  },
+const formatColumnLabel = (column: string): string =>
+  column
+    .split(/[-_]/)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
+
+const normalizeColumn = (
+  definition: MondoEntityListColumnDefinition
+): MondoEntityListColumn => {
+  if (definition.type === "cover") {
+    const prop = definition.prop ?? "cover";
+    const key = definition.key ?? prop ?? "cover";
+    const label = definition.label ?? formatColumnLabel(key);
+    return { ...definition, prop, key, label };
+  }
+
+  if (definition.type === "title") {
+    const prop = definition.prop ?? "show";
+    const key = definition.key ?? prop;
+    const label = definition.label ?? formatColumnLabel(key);
+    return { ...definition, prop, key, label };
+  }
+
+  if (definition.type === "date") {
+    const prop = definition.prop ?? "date";
+    const key = definition.key ?? prop ?? "date";
+    const label = definition.label ?? formatColumnLabel(key);
+    return { ...definition, prop, key, label };
+  }
+
+  if (definition.type === "value") {
+    const key = definition.key ?? definition.prop;
+    const label = definition.label ?? formatColumnLabel(key);
+    return { ...definition, key, label };
+  }
+
+  if (definition.type === "link") {
+    const key = definition.key ?? definition.prop;
+    const label = definition.label ?? formatColumnLabel(key);
+    return { ...definition, key, label };
+  }
+
+  if (definition.type === "companyArea") {
+    const companyProp = definition.companyProp ?? "company";
+    const areaProp = definition.areaProp ?? "area";
+    const key = definition.key ?? "company_area";
+    const label = definition.label ?? formatColumnLabel(key);
+    return { ...definition, companyProp, areaProp, key, label };
+  }
+
+  if (definition.type === "countryRegion") {
+    const countryProp = definition.countryProp ?? "country";
+    const regionProp = definition.regionProp ?? "region";
+    const key = definition.key ?? "country_region";
+    const label = definition.label ?? formatColumnLabel(key);
+    return { ...definition, countryProp, regionProp, key, label };
+  }
+
+  if (definition.type === "members") {
+    const prop = definition.prop ?? "members";
+    const key = definition.key ?? "members";
+    const label = definition.label ?? formatColumnLabel(key);
+    return { ...definition, prop, key, label };
+  }
+
+  if (definition.type === "locationPeople") {
+    const prop = definition.prop ?? "people";
+    const key = definition.key ?? "people";
+    const label = definition.label ?? formatColumnLabel(key);
+    return { ...definition, prop, key, label };
+  }
+
+  if (definition.type === "url") {
+    const prop = definition.prop ?? "url";
+    const key = definition.key ?? prop ?? "url";
+    const label = definition.label ?? formatColumnLabel(key);
+    return { ...definition, prop, key, label };
+  }
+
+  const exhaustiveCheck: never = definition;
+  throw new Error(`Unsupported column type: ${exhaustiveCheck}`);
 };
 
-const formatFrontmatterValue = (value: unknown): string => {
+const normalizeColumns = (
+  definitions: MondoEntityListColumnDefinition[] | undefined
+): MondoEntityListColumn[] =>
+  Array.isArray(definitions)
+    ? definitions.map((definition) => normalizeColumn(definition))
+    : [];
+
+const stringifySortValue = (value: unknown): string => {
   if (value === null || value === undefined) return "";
   if (Array.isArray(value)) {
-    return value.map((entry) => formatFrontmatterValue(entry)).join(", ");
+    return value.map((entry) => stringifySortValue(entry)).join(", ");
   }
   if (value instanceof Date) return value.toISOString();
   if (typeof value === "object") return JSON.stringify(value);
   return String(value);
 };
 
-const getColumnRawValue = (row: MondoEntityListRow, column: string): unknown => {
-  if (!column) return "";
+const getTitleValue = (row: MondoEntityListRow, prop: string): string => {
+  const frontmatterValue = row.frontmatter?.[prop];
+  if (typeof frontmatterValue === "string") {
+    const trimmed = frontmatterValue.trim();
+    if (trimmed.length > 0) {
+      return trimmed;
+    }
+  }
 
-  if (column === DEFAULT_COLUMN) {
+  if (prop !== "show") {
     const showValue = row.frontmatter?.show;
-    if (typeof showValue === "string" && showValue.trim().length > 0) {
-      return showValue;
-    }
-    return row.label;
-  }
-
-  if (column === "fileName" || column === "filename") {
-    return row.fileName;
-  }
-
-  if (column === "references") {
-    return collectReferenceValues(row.frontmatter ?? {});
-  }
-
-  const columnRule = columnRules[column];
-  if (columnRule) {
-    const computed = columnRule(row);
-    if (computed !== undefined) {
-      return computed;
+    if (typeof showValue === "string") {
+      const trimmed = showValue.trim();
+      if (trimmed.length > 0) {
+        return trimmed;
+      }
     }
   }
 
-  return row.frontmatter?.[column];
+  return row.label;
+};
+
+export const getColumnValue = (
+  row: MondoEntityListRow,
+  column: MondoEntityListColumn
+): unknown => {
+  const frontmatter = row.frontmatter ?? {};
+
+  switch (column.type) {
+    case "title":
+      return getTitleValue(row, column.prop ?? "show");
+    case "cover":
+      return frontmatter[column.prop ?? "cover"];
+    case "value":
+      return frontmatter[column.prop];
+    case "link":
+      if (column.prop === "references") {
+        return collectReferenceValues(frontmatter);
+      }
+      return frontmatter[column.prop];
+    case "companyArea":
+      return {
+        company: frontmatter[column.companyProp ?? "company"],
+        area: frontmatter[column.areaProp ?? "area"],
+      };
+    case "countryRegion":
+      return {
+        country: frontmatter[column.countryProp ?? "country"],
+        region: frontmatter[column.regionProp ?? "region"],
+      };
+    case "members":
+      return frontmatter[column.prop ?? "members"];
+    case "locationPeople":
+      return frontmatter[column.prop ?? "people"];
+    case "url":
+      return frontmatter[column.prop ?? "url"];
+    case "date": {
+      const prop = column.prop ?? "date";
+      if (prop === "date" || prop === "date_time" || prop === "datetime") {
+        const info = getRowDateInfo(row);
+        return info.date ?? info.raw ?? undefined;
+      }
+      return frontmatter[prop];
+    }
+    default: {
+      const exhaustiveCheck: never = column;
+      void exhaustiveCheck;
+      return undefined;
+    }
+  }
 };
 
 export const useEntityPanels = (entityType: MondoFileType) => {
@@ -297,29 +414,52 @@ export const useEntityPanels = (entityType: MondoFileType) => {
 
   const { columns, rows } = useMemo(() => {
     const config = getMondoEntityConfig(entityType);
-    const configuredColumns = config?.list?.columns?.filter((column) => column);
+    const configuredColumns = normalizeColumns(config?.list?.columns);
     const columns =
-      configuredColumns && configuredColumns.length > 0
+      configuredColumns.length > 0
         ? configuredColumns
-        : [DEFAULT_COLUMN];
+        : [normalizeColumn(DEFAULT_COLUMN_DEFINITION)];
 
-    const sortColumn = (() => {
-      const requested = config?.list?.sort?.column;
-      if (requested && columns.includes(requested)) {
-        return requested;
+    const sortColumnDefinition = (() => {
+      const requestedKey = config?.list?.sort?.column;
+      if (!requestedKey) {
+        return columns[0];
       }
-      return columns[0];
+
+      const byKey = columns.find((column) => column.key === requestedKey);
+      if (byKey) {
+        return byKey;
+      }
+
+      const byProp = columns.find((column) => {
+        if (column.type === "companyArea" || column.type === "countryRegion") {
+          return column.key === requestedKey;
+        }
+
+        if ("prop" in column) {
+          return column.prop === requestedKey;
+        }
+
+        return false;
+      });
+
+      return byProp ?? columns[0];
     })();
 
     const sortDirection =
       config?.list?.sort?.direction === "desc" ? "desc" : "asc";
 
-    // Check once if we need to compute people column for roles
-    const shouldComputePeople = entityType === MondoFileType.ROLE && columns.includes("people");
-    // Check if we need to compute members column for teams
-    const shouldComputeMembers = entityType === MondoFileType.TEAM && columns.includes("members");
-    // Check if we need to compute people column for locations
-    const shouldComputeLocationPeople = entityType === MondoFileType.LOCATION && columns.includes("people");
+    const shouldComputePeople =
+      entityType === MondoFileType.ROLE &&
+      columns.some(
+        (column) => column.type === "link" && column.prop === "people"
+      );
+    const shouldComputeMembers =
+      entityType === MondoFileType.TEAM &&
+      columns.some((column) => column.type === "members");
+    const shouldComputeLocationPeople =
+      entityType === MondoFileType.LOCATION &&
+      columns.some((column) => column.type === "locationPeople");
 
     const rows = files.map<MondoEntityListRow>((cached) => {
       const { file, cache } = cached;
@@ -477,10 +617,10 @@ export const useEntityPanels = (entityType: MondoFileType) => {
     });
 
     rows.sort((a, b) => {
-      const rawA = getColumnRawValue(a, sortColumn);
-      const rawB = getColumnRawValue(b, sortColumn);
-      const valueA = formatFrontmatterValue(rawA).toLowerCase();
-      const valueB = formatFrontmatterValue(rawB).toLowerCase();
+      const rawA = getColumnValue(a, sortColumnDefinition);
+      const rawB = getColumnValue(b, sortColumnDefinition);
+      const valueA = stringifySortValue(rawA).toLowerCase();
+      const valueB = stringifySortValue(rawB).toLowerCase();
       const comparison = valueA.localeCompare(valueB, undefined, {
         sensitivity: "base",
         numeric: true,
@@ -493,8 +633,3 @@ export const useEntityPanels = (entityType: MondoFileType) => {
 
   return { columns, rows };
 };
-
-export const getDisplayValue = (
-  row: MondoEntityListRow,
-  column: string
-): unknown => getColumnRawValue(row, column);

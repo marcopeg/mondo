@@ -3,7 +3,11 @@ export const link = {
   icon: "link",
   template: "\ndate: {{date}}\nurl:\n---\n",
   list: {
-    columns: ["show", "url", "date"],
+    columns: [
+      { type: "title", prop: "show" },
+      { type: "url" },
+      { type: "date", prop: "date" },
+    ],
   },
   createRelated: [
     {

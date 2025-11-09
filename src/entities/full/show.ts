@@ -11,7 +11,14 @@ export const show = {
   icon: "clapperboard",
   template: "\ndate: {{date}}\nformat: movie\ngenre: []\n---\n",
   list: {
-    columns: ["cover", "show", "format", "status", "platform", "release_date"],
+    columns: [
+      { type: "cover" },
+      { type: "title", prop: "show" },
+      { type: "value", prop: "format" },
+      { type: "value", prop: "status" },
+      { type: "value", prop: "platform" },
+      { type: "date", prop: "release_date" },
+    ],
   },
   createRelated: [
     {

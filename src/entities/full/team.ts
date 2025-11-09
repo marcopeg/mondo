@@ -122,7 +122,11 @@ export const team = {
     },
   ],
   list: {
-    columns: ["show", "company_area", "members"],
+    columns: [
+      { type: "title", prop: "show" },
+      { type: "companyArea" },
+      { type: "members" },
+    ],
   },
   links: [
     {

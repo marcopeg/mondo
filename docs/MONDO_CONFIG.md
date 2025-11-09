@@ -33,7 +33,11 @@ Every change flows through the validator in `src/utils/MondoConfigManager.ts`, s
       "icon": "user",
       "template": "...",
       "list": {
-        "columns": ["cover", "show", "company"],
+        "columns": [
+          { "type": "cover" },
+          { "type": "title", "prop": "show" },
+          { "type": "link", "prop": "company" }
+        ],
         "sort": { "column": "show", "direction": "asc" }
       },
       "createRelated": [
@@ -75,7 +79,7 @@ Each object in `entities` must comply with `MondoEntityConfig` (`src/types/Mondo
 
 - `name` and `icon` feed UI labels and icons across dashboard tiles, filters, and entity headers.
 - `template` is injected when the user creates a new note of that type (Quick Search, panel actions, command palette, etc.). Tokens like `{{title}}`, `{{date}}`, `{@this}` are expanded by helpers in `src/utils/MondoTemplates.ts` and `src/utils/createEntityNoteFromInput.ts`.
-- `list` configures default table columns and sorting for entity list views rendered by `EntityView` (`src/views/entity-panel-view/EntityView.tsx`). Columns accept custom strings; the view renders matching metadata or falls back to `show`/frontmatter values.
+- `list` configures default table columns and sorting for entity list views rendered by `EntityView` (`src/views/entity-panel-view/EntityView.tsx`). Columns are defined as objects that describe the display strategy (cover, title, value, link, date, etc.) and the source property when relevant. See `MondoEntityListColumnDefinition` in `src/types/MondoEntityConfig.ts` for the supported options.
 - `createRelated` defines reusable creation flows surfaced by entity headers and link panels. Supported keys inside `create`:
   - `title`: string with templating tokens.
   - `attributes`: object of frontmatter values to prefill (strings, numbers, booleans, arrays, nested objects). These are **merged with the target entity's template frontmatter**. If both the template and `attributes` define the same key, the `attributes` value takes precedence (override).

@@ -79,7 +79,11 @@ export const meeting = {
     },
   ],
   list: {
-    columns: ["date_time", "references", "participants"],
+    columns: [
+      { type: "date", prop: "date_time", linkToNote: true },
+      { type: "link", prop: "references" },
+      { type: "link", prop: "participants", mode: "bullet" },
+    ],
     sort: {
       column: "date_time",
       direction: "desc",

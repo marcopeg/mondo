@@ -11,7 +11,13 @@ export const tool = {
   icon: "hammer",
   template: "\ndate: {{date}}\n---\n",
   list: {
-    columns: ["cover", "show", "category", "owner", "location"],
+    columns: [
+      { type: "cover" },
+      { type: "title", prop: "show" },
+      { type: "value", prop: "category" },
+      { type: "link", prop: "owner" },
+      { type: "link", prop: "location" },
+    ],
   },
   createRelated: [
     {
