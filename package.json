@@ -1,6 +1,6 @@
 {
   "name": "mondo",
-  "version": "0.0.59",
+  "version": "0.0.60",
   "description": "This is a sample plugin for Obsidian (https://obsidian.md)",
   "main": "src/main.ts",
   "scripts": {
