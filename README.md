@@ -256,3 +256,7 @@ IMS Commands - For each configured IMS entity type Mondo also creates two comman
 
 Notes
 - Some commands are context-sensitive and only enabled when relevant (for example `Start Transcription` only when an audio file is active, `Edit Image` only for an image file). A few commands also have toolbar/menu equivalents (for instance audio transcription and voiceover are available from file/editor menus).
+
+# 👑 Hidden Gems
+
+- Paste a binary stream into a note's property to automatically generate the file and link it in one "paste" action.
