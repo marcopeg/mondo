@@ -89,6 +89,10 @@ import {
   injectJournalCloseButton,
   disposeJournalCloseButton,
 } from "@/events/inject-journal-close-btn";
+import {
+  injectPropertyPasteHandler,
+  disposePropertyPasteHandlers,
+} from "@/events/inject-property-paste";
 import { requestGeolocation } from "@/utils/geolocation";
 import { buildVoiceoverText } from "@/utils/buildVoiceoverText";
 import {
@@ -1184,6 +1188,11 @@ export default class Mondo extends Plugin {
       this.app.workspace.on("active-leaf-change", injectMondoLinks(this))
     );
 
+    // Inject paste handler for property fields (e.g., pasting images into cover property)
+    this.registerEvent(
+      this.app.workspace.on("active-leaf-change", injectPropertyPasteHandler(this))
+    );
+
     this.registerEvent(
       this.app.workspace.on("editor-menu", (menu, editor, view) => {
         if (!(view instanceof MarkdownView)) {
@@ -1255,6 +1264,7 @@ export default class Mondo extends Plugin {
     this.vaultNotesRibbonEl = null;
 
     disposeMondoLinkInjections();
+    disposePropertyPasteHandlers();
 
     this.audioTranscriptionManager?.dispose();
     this.audioTranscriptionManager = null;
