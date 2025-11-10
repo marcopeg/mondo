@@ -176,6 +176,7 @@ export const ReadableDate: React.FC<ReadableDateProps> = ({
   const tooltipId = useId();
   const containerRef = useRef<HTMLSpanElement | null>(null);
   const tooltipRef = useRef<HTMLSpanElement | null>(null);
+  const hideTimeoutRef = useRef<number | null>(null);
   const [tooltipPosition, setTooltipPosition] = useState<{
     left: number;
     top: number;
@@ -222,6 +223,14 @@ export const ReadableDate: React.FC<ReadableDateProps> = ({
     }
   }, [supportsHover]);
 
+  useEffect(() => {
+    return () => {
+      if (hideTimeoutRef.current !== null) {
+        window.clearTimeout(hideTimeoutRef.current);
+      }
+    };
+  }, []);
+
   const displayLabel = date ? formatRelative(date, now) : raw ?? fallback;
 
   const fullHint = date ? formatFullDate(date) : raw ?? null;
@@ -236,6 +245,22 @@ export const ReadableDate: React.FC<ReadableDateProps> = ({
 
   const showTooltip = Boolean(tooltip);
   const isTooltipVisible = showTooltip && (isHovering || isToggled);
+
+  const clearHideTimeout = useCallback(() => {
+    if (hideTimeoutRef.current !== null) {
+      window.clearTimeout(hideTimeoutRef.current);
+      hideTimeoutRef.current = null;
+    }
+  }, []);
+
+  const scheduleHide = useCallback(() => {
+    clearHideTimeout();
+    hideTimeoutRef.current = window.setTimeout(() => {
+      setIsHovering(false);
+      setIsToggled(false);
+      hideTimeoutRef.current = null;
+    }, 100);
+  }, [clearHideTimeout]);
 
   const updateTooltipPosition = useCallback(() => {
     if (!containerRef.current) {
@@ -352,35 +377,17 @@ export const ReadableDate: React.FC<ReadableDateProps> = ({
               if (event.pointerType !== "mouse") {
                 return;
               }
+              clearHideTimeout();
               setIsHovering(true);
             }}
             onPointerLeave={(event) => {
               if (event.pointerType !== "mouse") {
                 return;
               }
-
-              const nextTarget = event.relatedTarget;
-              if (
-                nextTarget instanceof Node &&
-                containerRef.current?.contains(nextTarget)
-              ) {
-                return;
-              }
-
-              setIsHovering(false);
-              setIsToggled(false);
+              scheduleHide();
             }}
-            onMouseLeave={(event) => {
-              const nextTarget = event.relatedTarget;
-              if (
-                nextTarget instanceof Node &&
-                containerRef.current?.contains(nextTarget)
-              ) {
-                return;
-              }
-
-              setIsHovering(false);
-              setIsToggled(false);
+            onMouseLeave={() => {
+              scheduleHide();
             }}
           >
             {tooltip}
@@ -398,38 +405,21 @@ export const ReadableDate: React.FC<ReadableDateProps> = ({
           if (!showTooltip || event.pointerType !== "mouse") {
             return;
           }
+          clearHideTimeout();
           setIsHovering(true);
         }}
         onPointerLeave={(event) => {
           if (event.pointerType !== "mouse") {
             return;
           }
-
-          const nextTarget = event.relatedTarget;
-          if (
-            nextTarget instanceof Node &&
-            tooltipRef.current?.contains(nextTarget)
-          ) {
-            return;
-          }
-
-          setIsHovering(false);
-          setIsToggled(false);
+          scheduleHide();
         }}
-        onMouseLeave={(event) => {
-          const nextTarget = event.relatedTarget;
-          if (
-            nextTarget instanceof Node &&
-            tooltipRef.current?.contains(nextTarget)
-          ) {
-            return;
-          }
-
-          setIsHovering(false);
-          setIsToggled(false);
+        onMouseLeave={() => {
+          scheduleHide();
         }}
         onFocus={() => {
           if (!showTooltip) return;
+          clearHideTimeout();
           if (supportsHover) {
             setIsHovering(true);
           } else {
@@ -437,6 +427,7 @@ export const ReadableDate: React.FC<ReadableDateProps> = ({
           }
         }}
         onBlur={() => {
+          clearHideTimeout();
           setIsHovering(false);
           setIsToggled(false);
         }}
