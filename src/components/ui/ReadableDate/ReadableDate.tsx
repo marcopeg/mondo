@@ -170,12 +170,13 @@ export const ReadableDate: React.FC<ReadableDateProps> = ({
 }) => {
   const { date, raw } = useMemo(() => parseDateValue(value), [value]);
   const [now, setNow] = useState(() => Date.now());
-  const [supportsHover, setSupportsHover] = useState(false);
+  // Track only explicit hover/focus state. We intentionally drop the prior
+  // toggle + media-query complexity as the spec now requires simple
+  // mouse-over show / mouse-out hide behaviour.
   const [isHovering, setIsHovering] = useState(false);
-  const [isToggled, setIsToggled] = useState(false);
   const tooltipId = useId();
   const containerRef = useRef<HTMLSpanElement | null>(null);
-  const tooltipRef = useRef<HTMLSpanElement | null>(null);
+  // Ref for container only; tooltip is ephemeral and does not need refs.
   const hideTimeoutRef = useRef<number | null>(null);
   const [tooltipPosition, setTooltipPosition] = useState<{
     left: number;
@@ -196,32 +197,7 @@ export const ReadableDate: React.FC<ReadableDateProps> = ({
     };
   }, []);
 
-  useEffect(() => {
-    if (
-      typeof window === "undefined" ||
-      typeof window.matchMedia !== "function"
-    ) {
-      return undefined;
-    }
-
-    const mediaQuery = window.matchMedia("(hover: hover) and (pointer: fine)");
-    const handleChange = (event: MediaQueryListEvent) => {
-      setSupportsHover(event.matches);
-    };
-
-    setSupportsHover(mediaQuery.matches);
-    const detach = attachMediaQueryListener(mediaQuery, handleChange);
-
-    return () => {
-      detach();
-    };
-  }, []);
-
-  useEffect(() => {
-    if (supportsHover) {
-      setIsToggled(false);
-    }
-  }, [supportsHover]);
+  // Removed matchMedia + toggle logic: not needed for simplified spec.
 
   useEffect(() => {
     return () => {
@@ -244,7 +220,7 @@ export const ReadableDate: React.FC<ReadableDateProps> = ({
   const tooltip = tooltipParts.join(" • ");
 
   const showTooltip = Boolean(tooltip);
-  const isTooltipVisible = showTooltip && (isHovering || isToggled);
+  const isTooltipVisible = showTooltip && isHovering;
 
   const clearHideTimeout = useCallback(() => {
     if (hideTimeoutRef.current !== null) {
@@ -257,7 +233,6 @@ export const ReadableDate: React.FC<ReadableDateProps> = ({
     clearHideTimeout();
     hideTimeoutRef.current = window.setTimeout(() => {
       setIsHovering(false);
-      setIsToggled(false);
       hideTimeoutRef.current = null;
     }, 100);
   }, [clearHideTimeout]);
@@ -310,34 +285,7 @@ export const ReadableDate: React.FC<ReadableDateProps> = ({
     };
   }, [isTooltipVisible, updateTooltipPosition]);
 
-  useEffect(() => {
-    if (!isTooltipVisible || supportsHover || typeof window === "undefined") {
-      return undefined;
-    }
-
-    const handlePointerDown = (event: PointerEvent) => {
-      if (!containerRef.current) {
-        return;
-      }
-
-      const target = event.target;
-      if (
-        target instanceof Node &&
-        (containerRef.current.contains(target) ||
-          tooltipRef.current?.contains(target))
-      ) {
-        return;
-      }
-
-      setIsToggled(false);
-    };
-
-    window.addEventListener("pointerdown", handlePointerDown, true);
-
-    return () => {
-      window.removeEventListener("pointerdown", handlePointerDown, true);
-    };
-  }, [isTooltipVisible, supportsHover]);
+  // No outside-click handling needed for hover-only behaviour.
 
   const containerClasses = ["relative inline-flex items-center", className]
     .filter(Boolean)
@@ -345,7 +293,9 @@ export const ReadableDate: React.FC<ReadableDateProps> = ({
 
   const tooltipClasses = [
     "whitespace-nowrap rounded border px-2 py-1 text-xs text-[var(--text-normal)] shadow-lg transition-opacity duration-150 z-[9999]",
-    isTooltipVisible ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none",
+    // Always disable pointer events so hovering the tooltip itself cannot keep it open.
+    isTooltipVisible ? "opacity-100" : "opacity-0",
+    "pointer-events-none",
   ].join(" ");
 
   const tooltipElementId =
@@ -361,10 +311,9 @@ export const ReadableDate: React.FC<ReadableDateProps> = ({
     : undefined;
 
   const tooltipNode =
-    showTooltip && typeof document !== "undefined"
+    isTooltipVisible && typeof document !== "undefined"
       ? createPortal(
           <span
-            ref={tooltipRef}
             id={tooltipElementId}
             className={tooltipClasses}
             role="tooltip"
@@ -372,22 +321,6 @@ export const ReadableDate: React.FC<ReadableDateProps> = ({
               ...tooltipStyle,
               backgroundColor: "var(--background-primary)",
               borderColor: "var(--background-modifier-border)",
-            }}
-            onPointerEnter={(event) => {
-              if (event.pointerType !== "mouse") {
-                return;
-              }
-              clearHideTimeout();
-              setIsHovering(true);
-            }}
-            onPointerLeave={(event) => {
-              if (event.pointerType !== "mouse") {
-                return;
-              }
-              scheduleHide();
-            }}
-            onMouseLeave={() => {
-              scheduleHide();
             }}
           >
             {tooltip}
@@ -420,20 +353,11 @@ export const ReadableDate: React.FC<ReadableDateProps> = ({
         onFocus={() => {
           if (!showTooltip) return;
           clearHideTimeout();
-          if (supportsHover) {
-            setIsHovering(true);
-          } else {
-            setIsToggled(true);
-          }
+          setIsHovering(true);
         }}
         onBlur={() => {
           clearHideTimeout();
           setIsHovering(false);
-          setIsToggled(false);
-        }}
-        onClick={() => {
-          if (!showTooltip || supportsHover) return;
-          setIsToggled((previous) => !previous);
         }}
         role={showTooltip ? "button" : undefined}
         aria-describedby={tooltipElementId}
