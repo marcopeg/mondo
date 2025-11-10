@@ -9,17 +9,20 @@ jobs:
     permissions:
       contents: write
     steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
       - name: Delete beta releases
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           echo "=== Deleting all beta releases ==="
-          gh release list --limit 1000 --json tagName,isPrerelease \
+          gh release list --repo ${{ github.repository }} --limit 1000 --json tagName,isPrerelease \
             | jq -r '.[] | select(.isPrerelease == true) | .tagName' \
             | while read tag; do
                 echo "Deleting beta release: $tag"
-                gh release delete "$tag" -y
+                gh release delete "$tag" --repo ${{ github.repository }} -y
               done
 
       - name: Delete old releases (keep only latest)
@@ -28,9 +31,9 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           echo "=== Deleting old releases (keeping only the latest) ==="
-          gh release list --limit 1000 --exclude-pre-releases --json tagName,publishedAt \
+          gh release list --repo ${{ github.repository }} --limit 1000 --exclude-pre-releases --json tagName,publishedAt \
             | jq -r 'sort_by(.publishedAt) | reverse | .[1:] | .[] | .tagName' \
             | while read tag; do
                 echo "Deleting old release: $tag"
-                gh release delete "$tag" -y
+                gh release delete "$tag" --repo ${{ github.repository }} -y
               done
