@@ -292,8 +292,9 @@ export const ReadableDate: React.FC<ReadableDateProps> = ({
     .join(" ");
 
   const tooltipClasses = [
-    "whitespace-nowrap rounded border px-2 py-1 text-xs text-[var(--text-normal)] shadow-lg transition-opacity duration-150 z-[9999]",
-    // Always disable pointer events so hovering the tooltip itself cannot keep it open.
+    // 4px horizontal padding, 2px vertical padding, 4px rounded corners.
+    "whitespace-nowrap border text-[var(--text-normal)] shadow-lg transition-opacity duration-150 z-[9999]",
+    "px-1 py-0.5 text-[11px] rounded",
     isTooltipVisible ? "opacity-100" : "opacity-0",
     "pointer-events-none",
   ].join(" ");
@@ -321,6 +322,8 @@ export const ReadableDate: React.FC<ReadableDateProps> = ({
               ...tooltipStyle,
               backgroundColor: "var(--background-primary)",
               borderColor: "var(--background-modifier-border)",
+              padding: "2px 4px",
+              borderRadius: "4px",
             }}
           >
             {tooltip}
