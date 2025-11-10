@@ -1,4 +1,12 @@
-import React, { useEffect, useMemo, useState, useId } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useId,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 
 type ReadableDateValue = Date | string | number | null | undefined;
 
@@ -165,6 +173,11 @@ export const ReadableDate: React.FC<ReadableDateProps> = ({
   const [isHovering, setIsHovering] = useState(false);
   const [isToggled, setIsToggled] = useState(false);
   const tooltipId = useId();
+  const containerRef = useRef<HTMLSpanElement | null>(null);
+  const [tooltipPosition, setTooltipPosition] = useState<{
+    left: number;
+    top: number;
+  } | null>(null);
 
   useEffect(() => {
     if (typeof window === "undefined") {
@@ -226,17 +239,66 @@ export const ReadableDate: React.FC<ReadableDateProps> = ({
       : isToggled
     : false;
 
+  const updateTooltipPosition = useCallback(() => {
+    if (!containerRef.current) {
+      return;
+    }
+
+    const rect = containerRef.current.getBoundingClientRect();
+    const offset = 4;
+    setTooltipPosition({
+      left: rect.left + rect.width / 2,
+      top: rect.bottom + offset,
+    });
+  }, []);
+
+  useLayoutEffect(() => {
+    if (!isTooltipVisible) {
+      return;
+    }
+
+    updateTooltipPosition();
+  }, [isTooltipVisible, updateTooltipPosition]);
+
+  useEffect(() => {
+    if (!isTooltipVisible || typeof window === "undefined") {
+      return undefined;
+    }
+
+    const handleChange = () => {
+      updateTooltipPosition();
+    };
+
+    window.addEventListener("resize", handleChange);
+    window.addEventListener("scroll", handleChange, true);
+
+    return () => {
+      window.removeEventListener("resize", handleChange);
+      window.removeEventListener("scroll", handleChange, true);
+    };
+  }, [isTooltipVisible, updateTooltipPosition]);
+
   const containerClasses = ["relative inline-flex items-center", className]
     .filter(Boolean)
     .join(" ");
 
   const tooltipClasses = [
-    "pointer-events-none absolute left-1/2 top-full z-50 mt-1 -translate-x-1/2 whitespace-nowrap rounded border border-[var(--background-modifier-border)] bg-[var(--background-secondary)] px-2 py-1 text-xs text-[var(--text-normal)] shadow-lg transition-opacity duration-150",
+    "pointer-events-none whitespace-nowrap rounded border border-[var(--background-modifier-border)] bg-[var(--background-secondary)] px-2 py-1 text-xs text-[var(--text-normal)] shadow-lg transition-opacity duration-150 z-[9999]",
     isTooltipVisible ? "opacity-100" : "opacity-0",
   ].join(" ");
 
+  const tooltipStyle = tooltipPosition
+    ? {
+        left: tooltipPosition.left,
+        top: tooltipPosition.top,
+        position: "fixed" as const,
+        transform: "translateX(-50%)",
+      }
+    : undefined;
+
   return (
     <span
+      ref={containerRef}
       className={containerClasses}
       onMouseEnter={() => {
         if (!showTooltip || !supportsHover) return;
@@ -268,7 +330,12 @@ export const ReadableDate: React.FC<ReadableDateProps> = ({
     >
       <span>{displayLabel}</span>
       {showTooltip ? (
-        <span id={tooltipId} className={tooltipClasses} role="tooltip">
+        <span
+          id={tooltipId}
+          className={tooltipClasses}
+          role="tooltip"
+          style={tooltipStyle}
+        >
           {tooltip}
         </span>
       ) : null}
