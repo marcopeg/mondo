@@ -370,6 +370,18 @@ export const ReadableDate: React.FC<ReadableDateProps> = ({
               setIsHovering(false);
               setIsToggled(false);
             }}
+            onMouseLeave={(event) => {
+              const nextTarget = event.relatedTarget;
+              if (
+                nextTarget instanceof Node &&
+                containerRef.current?.contains(nextTarget)
+              ) {
+                return;
+              }
+
+              setIsHovering(false);
+              setIsToggled(false);
+            }}
           >
             {tooltip}
           </span>,
@@ -393,6 +405,18 @@ export const ReadableDate: React.FC<ReadableDateProps> = ({
             return;
           }
 
+          const nextTarget = event.relatedTarget;
+          if (
+            nextTarget instanceof Node &&
+            tooltipRef.current?.contains(nextTarget)
+          ) {
+            return;
+          }
+
+          setIsHovering(false);
+          setIsToggled(false);
+        }}
+        onMouseLeave={(event) => {
           const nextTarget = event.relatedTarget;
           if (
             nextTarget instanceof Node &&
