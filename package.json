@@ -10,7 +10,7 @@
     "deploy": "yarn build && cp -f main.js styles.css manifest.json \"/Users/marcopeg/Library/Mobile Documents/iCloud~md~obsidian/Documents/Marco/.obsidian/plugins/mondo\"",
     "sync": "set -e; SRC=\"/Users/marcopeg/Library/Mobile Documents/iCloud~md~obsidian/Documents/Marco/\"; DEST=\"/Users/marcopeg/dv/MarcoDev\"; find \"$DEST\" -mindepth 1 -maxdepth 1 ! -name '.obsidian' -exec rm -rf {} +; rsync -a --exclude '.obsidian' --exclude '.obsidian/' \"$SRC\" \"$DEST/\"",
     "release": "gh workflow run release.yml",
-    "release:clean": "gh release list --limit 1000 --json tagName,isLatest | jq -r '.[] | select(.isLatest == false) | .tagName' | xargs -r -I {} gh release delete {} -y",
+    "release:clean": "gh release list --limit 1000 --json tagName,isPrerelease | jq -r '.[] | select(.isPrerelease == true) | .tagName' | xargs -r -I {} gh release delete {} -y && gh release list --limit 1000 --exclude-pre-releases --json tagName,publishedAt | jq -r 'sort_by(.publishedAt) | reverse | .[1:] | .[] | .tagName' | xargs -r -I {} gh release delete {} -y",
     "tag:push": "git tag $(node -p \"require('./package.json').version\") && git push origin $(node -p \"require('./package.json').version\")",
     "tag:prune": "git tag -d $(node -p \"require('./package.json').version\") && git push --delete origin $(node -p \"require('./package.json').version\") || true"
   },

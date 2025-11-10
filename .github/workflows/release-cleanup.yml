@@ -9,11 +9,28 @@ jobs:
     permissions:
       contents: write
     steps:
-      - name: Delete non-latest releases
+      - name: Delete beta releases
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release list --limit 1000 --json tagName,isLatest \
-            | jq -r '.[] | select(.isLatest == false) | .tagName' \
-            | xargs -r -I {} gh release delete {} -y
+          echo "=== Deleting all beta releases ==="
+          gh release list --limit 1000 --json tagName,isPrerelease \
+            | jq -r '.[] | select(.isPrerelease == true) | .tagName' \
+            | while read tag; do
+                echo "Deleting beta release: $tag"
+                gh release delete "$tag" -y
+              done
+
+      - name: Delete old releases (keep only latest)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "=== Deleting old releases (keeping only the latest) ==="
+          gh release list --limit 1000 --exclude-pre-releases --json tagName,publishedAt \
+            | jq -r 'sort_by(.publishedAt) | reverse | .[1:] | .[] | .tagName' \
+            | while read tag; do
+                echo "Deleting old release: $tag"
+                gh release delete "$tag" -y
+              done
