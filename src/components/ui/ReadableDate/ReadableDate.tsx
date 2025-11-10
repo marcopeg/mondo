@@ -288,12 +288,37 @@ export const ReadableDate: React.FC<ReadableDateProps> = ({
     };
   }, [isTooltipVisible, updateTooltipPosition]);
 
+  useEffect(() => {
+    if (!isTooltipVisible || supportsHover || typeof window === "undefined") {
+      return undefined;
+    }
+
+    const handlePointerDown = (event: PointerEvent) => {
+      if (!containerRef.current) {
+        return;
+      }
+
+      const target = event.target;
+      if (target instanceof Node && containerRef.current.contains(target)) {
+        return;
+      }
+
+      setIsToggled(false);
+    };
+
+    window.addEventListener("pointerdown", handlePointerDown, true);
+
+    return () => {
+      window.removeEventListener("pointerdown", handlePointerDown, true);
+    };
+  }, [isTooltipVisible, supportsHover]);
+
   const containerClasses = ["relative inline-flex items-center", className]
     .filter(Boolean)
     .join(" ");
 
   const tooltipClasses = [
-    "pointer-events-none whitespace-nowrap rounded border border-[var(--background-modifier-border)] bg-[var(--background-secondary)] px-2 py-1 text-xs text-[var(--text-normal)] shadow-lg transition-opacity duration-150 z-[9999]",
+    "pointer-events-none whitespace-nowrap rounded border border-[var(--background-modifier-border)] bg-[var(--background-primary)] px-2 py-1 text-xs text-[var(--text-normal)] shadow-lg transition-opacity duration-150 z-[9999]",
     isTooltipVisible ? "opacity-100" : "opacity-0",
   ].join(" ");
 
@@ -334,8 +359,8 @@ export const ReadableDate: React.FC<ReadableDateProps> = ({
           setIsHovering(true);
         }}
         onMouseLeave={() => {
-          if (!supportsHover) return;
           setIsHovering(false);
+          setIsToggled(false);
         }}
         onFocus={() => {
           if (!showTooltip) return;
