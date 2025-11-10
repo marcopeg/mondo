@@ -10,6 +10,7 @@ _Mondo_ is a general purpose plugin that adds plentiful of utilities to a standa
 - [**🧘 Focus Mode:** hide most of the UI and focus on your writing](#🧘-focus-mode)
 - [**🤖 Open in ChatGPT:** use your notes as templates for ChatGPT prompts](#🤖-open-in-chatgpt)
 - [**🌆 Image Editor:** resize and crop images in your vault](#🌆-image-editor)
+- [**📋 Paste Images:** paste images from clipboard directly into property fields](#📋-paste-images-into-properties)
 - [**👫 Mondo IMS:** typed entities with strong relations](#👫-mondo-ims)
 - [**📈 Habits Tracker:** embed a streak tracking app in any note](#📈-habits-tracker)
 - [**⏱️ Training Timers:** embed a training trimer app in any note](#⏱️-training-timers)
@@ -105,6 +106,19 @@ There you can **resize** and **crop** an image to improve your vault without lea
 > 📲 works on mobile as well!
 
 ![Edit Image](./images/edit-image.png)
+
+## 📋 Paste Images into Properties
+
+Quickly add images to your notes by pasting them directly into property fields!
+
+Take a screenshot (⌘⇧4 on Mac), copy it, and paste it into any image property field like `cover`, `avatar`, or `thumbnail`. Mondo will:
+- ✅ Automatically save the image to your vault
+- ✅ Generate a descriptive filename
+- ✅ Link it properly in the frontmatter
+
+Supported properties: `cover`, `thumbnail`, `avatar`, `image`, `banner`, `icon`
+
+👉 [Learn more about pasting images](./howto/PASTE_IMAGES.md)
 
 ## 👫 Mondo IMS
 

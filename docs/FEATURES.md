@@ -7,6 +7,7 @@ This document summarises the functionality exposed by the Mondo Obsidian plugin 
 - **Entity-aware rendering** – Notes with a frontmatter `mondoType` matching the active configuration are treated as Mondo entities. The plugin injects a rich header, link panels, and context-aware actions (`src/events/inject-mondo-links.tsx`, `src/containers/EntityHeader`).
 - **Configuration driven** – `src/mondo-config.json` (or the JSON pasted through settings) describes entities, dashboards, quick search tiles, link panels, and creation presets (`src/entities/index.ts`, `src/utils/MondoConfigManager.ts`).
 - **Workspace integration** – React views are registered as Obsidian panes (dashboard, entity panel, vault browsers, audio logs) and Markdown post processors (code blocks, transcription decorations) inside `src/main.ts`.
+- **Paste images into properties** – Paste images from clipboard (e.g., screenshots) directly into property fields. Supported properties include `cover`, `thumbnail`, `avatar`, `image`, `banner`, and `icon`. The image is automatically saved as a file and linked in the frontmatter (`src/events/inject-property-paste.ts`).
 
 ## Dashboard view (`DASHBOARD_VIEW`)
 
