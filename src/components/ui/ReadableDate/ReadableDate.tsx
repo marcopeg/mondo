@@ -321,7 +321,7 @@ export const ReadableDate: React.FC<ReadableDateProps> = ({
             style={{
               ...tooltipStyle,
               backgroundColor: "var(--background-primary)",
-              borderColor: "var(--background-modifier-border)",
+              border: "1px solid var(--background-modifier-border)",
               padding: "2px 4px",
               borderRadius: "4px",
             }}
