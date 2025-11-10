@@ -58,17 +58,31 @@ const getFileFromPropertyElement = (
   app: App,
   element: HTMLElement
 ): TFile | null => {
-  // Find the parent markdown view container
-  const viewContent = element.closest(".markdown-source-view, .markdown-reading-view");
-  if (!viewContent) {
-    return null;
+  // Find the parent workspace leaf container
+  const leafContainer = element.closest<HTMLElement>(".workspace-leaf");
+  if (!leafContainer) {
+    // Fallback to active file if we can't determine from DOM
+    return app.workspace.getActiveFile();
   }
 
-  // Try to get the file path from the view
-  const workspaceLeaf = app.workspace.getLeaf(false);
-  const activeFile = app.workspace.getActiveFile();
+  // Try to find the leaf from all markdown leaves
+  const leaves = app.workspace.getLeavesOfType("markdown");
+  for (const leaf of leaves) {
+    const container = (leaf as any).containerEl as HTMLElement | undefined;
+    if (container && (container === leafContainer || leafContainer.contains(container))) {
+      // Found the matching leaf, get its file
+      const view = leaf.view;
+      if (view && "file" in view) {
+        const file = (view as any).file;
+        if (file instanceof TFile) {
+          return file;
+        }
+      }
+    }
+  }
   
-  return activeFile;
+  // Fallback to active file
+  return app.workspace.getActiveFile();
 };
 
 /**
