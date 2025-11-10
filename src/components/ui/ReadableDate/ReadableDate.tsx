@@ -175,6 +175,7 @@ export const ReadableDate: React.FC<ReadableDateProps> = ({
   const [isToggled, setIsToggled] = useState(false);
   const tooltipId = useId();
   const containerRef = useRef<HTMLSpanElement | null>(null);
+  const tooltipRef = useRef<HTMLSpanElement | null>(null);
   const [tooltipPosition, setTooltipPosition] = useState<{
     left: number;
     top: number;
@@ -295,7 +296,11 @@ export const ReadableDate: React.FC<ReadableDateProps> = ({
       }
 
       const target = event.target;
-      if (target instanceof Node && containerRef.current.contains(target)) {
+      if (
+        target instanceof Node &&
+        (containerRef.current.contains(target) ||
+          tooltipRef.current?.contains(target))
+      ) {
         return;
       }
 
@@ -314,8 +319,8 @@ export const ReadableDate: React.FC<ReadableDateProps> = ({
     .join(" ");
 
   const tooltipClasses = [
-    "pointer-events-none whitespace-nowrap rounded border px-2 py-1 text-xs text-[var(--text-normal)] shadow-lg transition-opacity duration-150 z-[9999]",
-    isTooltipVisible ? "opacity-100" : "opacity-0",
+    "whitespace-nowrap rounded border px-2 py-1 text-xs text-[var(--text-normal)] shadow-lg transition-opacity duration-150 z-[9999]",
+    isTooltipVisible ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none",
   ].join(" ");
 
   const tooltipElementId =
@@ -334,6 +339,7 @@ export const ReadableDate: React.FC<ReadableDateProps> = ({
     showTooltip && typeof document !== "undefined"
       ? createPortal(
           <span
+            ref={tooltipRef}
             id={tooltipElementId}
             className={tooltipClasses}
             role="tooltip"
@@ -341,6 +347,28 @@ export const ReadableDate: React.FC<ReadableDateProps> = ({
               ...tooltipStyle,
               backgroundColor: "var(--background-primary)",
               borderColor: "var(--background-modifier-border)",
+            }}
+            onPointerEnter={(event) => {
+              if (event.pointerType !== "mouse") {
+                return;
+              }
+              setIsHovering(true);
+            }}
+            onPointerLeave={(event) => {
+              if (event.pointerType !== "mouse") {
+                return;
+              }
+
+              const nextTarget = event.relatedTarget;
+              if (
+                nextTarget instanceof Node &&
+                containerRef.current?.contains(nextTarget)
+              ) {
+                return;
+              }
+
+              setIsHovering(false);
+              setIsToggled(false);
             }}
           >
             {tooltip}
@@ -360,7 +388,19 @@ export const ReadableDate: React.FC<ReadableDateProps> = ({
           }
           setIsHovering(true);
         }}
-        onPointerLeave={() => {
+        onPointerLeave={(event) => {
+          if (event.pointerType !== "mouse") {
+            return;
+          }
+
+          const nextTarget = event.relatedTarget;
+          if (
+            nextTarget instanceof Node &&
+            tooltipRef.current?.contains(nextTarget)
+          ) {
+            return;
+          }
+
           setIsHovering(false);
           setIsToggled(false);
         }}
