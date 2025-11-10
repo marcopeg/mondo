@@ -112,9 +112,13 @@ const handlePropertyPaste = async (
     return;
   }
 
-  // For now, we only support the "cover" property
-  // This can be extended to support other file-based properties
-  if (propertyKey !== "cover") {
+  // Support image paste for file-related properties
+  // Common properties that accept image files: cover, thumbnail, avatar, image, banner, etc.
+  const imageProperties = ["cover", "thumbnail", "avatar", "image", "banner", "icon"];
+  const propertyLower = propertyKey.toLowerCase();
+  
+  if (!imageProperties.includes(propertyLower)) {
+    // Property doesn't support image pasting, let default behavior proceed
     return;
   }
 
@@ -139,7 +143,8 @@ const handlePropertyPaste = async (
     // Generate filename with timestamp to avoid conflicts
     const timestamp = new Date().getTime();
     const extension = getFileExtensionFromMimeType(imageItem.type);
-    const filename = `pasted-image-${timestamp}.${extension}`;
+    const propertyPrefix = propertyKey.toLowerCase();
+    const filename = `${propertyPrefix}-${timestamp}.${extension}`;
 
     // Get available path for the attachment
     const targetPath = await app.fileManager.getAvailablePathForAttachment(
