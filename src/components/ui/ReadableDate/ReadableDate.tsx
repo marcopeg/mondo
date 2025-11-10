@@ -234,11 +234,7 @@ export const ReadableDate: React.FC<ReadableDateProps> = ({
   const tooltip = tooltipParts.join(" • ");
 
   const showTooltip = Boolean(tooltip);
-  const isTooltipVisible = showTooltip
-    ? supportsHover
-      ? isHovering
-      : isToggled
-    : false;
+  const isTooltipVisible = showTooltip && (isHovering || isToggled);
 
   const updateTooltipPosition = useCallback(() => {
     if (!containerRef.current) {
@@ -318,7 +314,7 @@ export const ReadableDate: React.FC<ReadableDateProps> = ({
     .join(" ");
 
   const tooltipClasses = [
-    "pointer-events-none whitespace-nowrap rounded border border-[var(--background-modifier-border)] bg-[var(--background-primary)] px-2 py-1 text-xs text-[var(--text-normal)] shadow-lg transition-opacity duration-150 z-[9999]",
+    "pointer-events-none whitespace-nowrap rounded border px-2 py-1 text-xs text-[var(--text-normal)] shadow-lg transition-opacity duration-150 z-[9999]",
     isTooltipVisible ? "opacity-100" : "opacity-0",
   ].join(" ");
 
@@ -341,7 +337,11 @@ export const ReadableDate: React.FC<ReadableDateProps> = ({
             id={tooltipElementId}
             className={tooltipClasses}
             role="tooltip"
-            style={tooltipStyle}
+            style={{
+              ...tooltipStyle,
+              backgroundColor: "var(--background-primary)",
+              borderColor: "var(--background-modifier-border)",
+            }}
           >
             {tooltip}
           </span>,
@@ -354,11 +354,13 @@ export const ReadableDate: React.FC<ReadableDateProps> = ({
       <span
         ref={containerRef}
         className={containerClasses}
-        onMouseEnter={() => {
-          if (!showTooltip || !supportsHover) return;
+        onPointerEnter={(event) => {
+          if (!showTooltip || event.pointerType !== "mouse") {
+            return;
+          }
           setIsHovering(true);
         }}
-        onMouseLeave={() => {
+        onPointerLeave={() => {
           setIsHovering(false);
           setIsToggled(false);
         }}
