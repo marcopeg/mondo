@@ -18,6 +18,7 @@ import {
   MONDO_DICTATION_ICON_ID,
   registerDictationIcon,
 } from "@/utils/registerDictationIcon";
+import { getAiApiKey, getMissingAiApiKeyMessage } from "@/ai/settings";
 
 registerDictationIcon();
 
@@ -137,7 +138,7 @@ const TextField = forwardRef<HTMLInputElement, TextFieldProps>(
       }
 
       if (!service.hasApiKey()) {
-        const message = "Set your OpenAI API key in the Mondo settings.";
+        const message = service.getMissingApiKeyMessage();
         new Notice(message);
         throw new Error(message);
       }
@@ -228,11 +229,12 @@ const TextField = forwardRef<HTMLInputElement, TextFieldProps>(
     const isSuccess = status === "success";
 
     const plugin = getMondoPlugin(app);
-    const hasApiKey = Boolean(plugin?.settings?.openAIWhisperApiKey?.trim?.());
+    const missingKeyMessage = getMissingAiApiKeyMessage(plugin?.settings);
+    const hasApiKey = Boolean(getAiApiKey(plugin?.settings));
     const micUnavailableReason = !plugin
       ? "Mondo plugin is not ready yet."
       : !hasApiKey
-      ? "Set your OpenAI API key in the Mondo settings."
+      ? missingKeyMessage
       : null;
 
     // No direct DOM icon mutation needed; Button will render dynamic icon from state.

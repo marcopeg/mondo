@@ -70,7 +70,7 @@ The settings tab (`src/views/settings/SettingsView.tsx`) exposes:
 
 - Root folders per entity type, with folder pickers (`rootPaths`).
 - Templates per entity (`templates`).
-- Audio credentials and tuning (`openAIWhisperApiKey`, `openAIModel`, `openAIVoice`, `openAITranscriptionPolishEnabled`).
+- Audio credentials and tuning (`aiApiKey`, `aiProvider`, `openAIModel`, `openAIVoice`, `openAITranscriptionPolishEnabled`).
 - Voiceover cache folder and toggles for mobile toolbars (`VoiceoverManager`, `TimestampToolbarManager`, `CopyNoteToolbarManager`).
 - Daily/journal paths and naming templates, plus quick-task inbox root (`renderDailySection`, `renderJournalSection`, `renderGeneralSection`).
 - Timestamp format options, including toolbar enablement (`renderTimestampsSection`).

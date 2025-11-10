@@ -6,8 +6,7 @@ import {
   setIcon,
 } from "obsidian";
 import TranscriptionOverlay from "@/utils/TranscriptionOverlay";
-
-const TRANSCRIPTION_MODEL = "gpt-4o-mini-transcribe";
+import VoiceTranscriptionService from "@/utils/VoiceTranscriptionService";
 
 const MIME_FALLBACK = "application/octet-stream";
 const EXTENSION_TO_MIME: Record<string, string> = {
@@ -22,7 +21,7 @@ const EXTENSION_TO_MIME: Record<string, string> = {
 
 export const AUDIO_FILE_EXTENSIONS = new Set(Object.keys(EXTENSION_TO_MIME));
 
-const WHISPER_REALTIME_RATIO = 0.3;
+const TRANSCRIPTION_REALTIME_RATIO = 0.3;
 
 type ActiveTranscription = {
   controller: AbortController;
@@ -59,6 +58,8 @@ export class AudioTranscriptionManager {
 
   private readonly overlay = new TranscriptionOverlay();
 
+  private readonly transcriptionService: VoiceTranscriptionService;
+
   private readonly audioDurationCache = new Map<string, number>();
 
   private readonly audioDurationRequests = new Map<string, Promise<number | null>>();
@@ -67,6 +68,7 @@ export class AudioTranscriptionManager {
 
   constructor(plugin: Mondo) {
     this.plugin = plugin;
+    this.transcriptionService = new VoiceTranscriptionService(plugin);
   }
 
   private matchesAudioFrontmatterValue = (
@@ -186,12 +188,8 @@ export class AudioTranscriptionManager {
     file: TFile,
     originPath?: string
   ): Promise<TFile | null> => {
-    const apiKey = this.plugin.settings?.openAIWhisperApiKey?.trim?.();
-
-    if (!apiKey) {
-      new Notice(
-        "Set your OpenAI Whisper API key in the Mondo settings before transcribing."
-      );
+    if (!this.transcriptionService.hasApiKey()) {
+      new Notice(this.transcriptionService.getMissingApiKeyMessage());
       return null;
     }
 
@@ -216,7 +214,6 @@ export class AudioTranscriptionManager {
 
     try {
       const transcript = await this.createTranscription(
-        apiKey,
         file,
         session.controller.signal
       );
@@ -323,55 +320,10 @@ export class AudioTranscriptionManager {
     return null;
   };
 
-  private createTranscription = async (
-    apiKey: string,
-    file: TFile,
-    signal: AbortSignal
-  ) => {
+  private createTranscription = async (file: TFile, signal: AbortSignal) => {
     const buffer = await this.plugin.app.vault.adapter.readBinary(file.path);
     const blob = new Blob([buffer], { type: getMimeFromExtension(file.extension) });
-
-    const formData = new FormData();
-    formData.append("model", TRANSCRIPTION_MODEL);
-    formData.append("file", blob, file.name);
-
-    const response = await fetch("https://api.openai.com/v1/audio/transcriptions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: formData,
-      signal,
-    });
-
-    if (!response.ok) {
-      let errorMessage = response.statusText || "Request failed";
-
-      try {
-        const payload = await response.json();
-        errorMessage = payload?.error?.message ?? errorMessage;
-      } catch (parseError) {
-        console.warn(
-          "Mondo: unable to parse transcription error payload",
-          parseError
-        );
-      }
-
-      throw new Error(errorMessage);
-    }
-
-    const payload = await response.json();
-    const transcript: Maybe<string> =
-      payload?.text ??
-      payload?.transcription ??
-      payload?.results?.[0]?.text ??
-      payload?.results?.[0]?.alternatives?.[0]?.transcript;
-
-    if (!transcript || !String(transcript).trim()) {
-      throw new Error("Received an empty transcription result.");
-    }
-
-    return String(transcript).trim();
+    return this.transcriptionService.transcribe(blob, { signal });
   };
 
   private writeMarkdownNote = async (file: TFile, transcript: string) => {
@@ -629,7 +581,7 @@ export class AudioTranscriptionManager {
 
     const estimatedSeconds = Math.max(
       5,
-      Math.round(durationSeconds * WHISPER_REALTIME_RATIO)
+      Math.round(durationSeconds * TRANSCRIPTION_REALTIME_RATIO)
     );
 
     target.setText(` (est. ${this.formatDuration(estimatedSeconds)})`);

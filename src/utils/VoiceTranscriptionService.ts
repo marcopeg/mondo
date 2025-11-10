@@ -1,13 +1,13 @@
 import type Mondo from "@/main";
+import { createAiProvider } from "@/ai/providerFactory";
 import {
-  extractOpenAIErrorMessage,
-  extractOpenAIOutputText,
-} from "@/utils/openAIResponseHelpers";
+  getAiApiKey,
+  getMissingAiApiKeyMessage,
+  getSelectedAiProviderId,
+} from "@/ai/settings";
 
-const TRANSCRIPTION_MODEL = "gpt-4o-mini-transcribe";
-const DEFAULT_MODEL = "gpt-5-nano";
-const RESPONSES_URL = "https://api.openai.com/v1/responses";
-const TRANSCRIPTIONS_URL = "https://api.openai.com/v1/audio/transcriptions";
+const DEFAULT_OPENAI_MODEL = "gpt-5-nano";
+const DEFAULT_GEMINI_MODEL = "gemini-1.5-flash";
 
 export class VoiceTranscriptionService {
   private readonly plugin: Mondo;
@@ -16,21 +16,22 @@ export class VoiceTranscriptionService {
     this.plugin = plugin;
   }
 
-  getApiKey = () => {
-    const key = this.plugin.settings?.openAIWhisperApiKey;
-    if (typeof key !== "string") {
-      return "";
-    }
-    return key.trim();
-  };
+  getApiKey = () => getAiApiKey(this.plugin.settings);
 
   hasApiKey = () => Boolean(this.getApiKey());
 
   getSelectedModel = () => {
+    const providerId = getSelectedAiProviderId(this.plugin.settings);
+
+    if (providerId === "gemini") {
+      return DEFAULT_GEMINI_MODEL;
+    }
+
     const model = this.plugin.settings?.openAIModel;
     if (typeof model !== "string" || !model.trim()) {
-      return DEFAULT_MODEL;
+      return DEFAULT_OPENAI_MODEL;
     }
+
     return model.trim();
   };
 
@@ -39,77 +40,45 @@ export class VoiceTranscriptionService {
     return flag !== false;
   };
 
+  getMissingApiKeyMessage = () => getMissingAiApiKeyMessage(this.plugin.settings);
+
   private ensureApiKey = () => {
     const key = this.getApiKey();
     if (!key) {
-      throw new Error("Set your OpenAI API key in the Mondo settings.");
+      throw new Error(this.getMissingApiKeyMessage());
     }
     return key;
   };
 
-  transcribe = async (audio: Blob, options: { signal?: AbortSignal } = {}) => {
+  private createProvider = () => {
+    const providerId = getSelectedAiProviderId(this.plugin.settings);
     const apiKey = this.ensureApiKey();
+    return createAiProvider(providerId, apiKey);
+  };
 
-    const formData = new FormData();
-    formData.append("model", TRANSCRIPTION_MODEL);
-    formData.append("file", audio, "voice-note.webm");
-
-    const response = await fetch(TRANSCRIPTIONS_URL, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: formData,
-      signal: options.signal,
-    });
-
-    if (!response.ok) {
-      const message = await extractOpenAIErrorMessage(response);
-      throw new Error(message || "Transcription request failed.");
-    }
-
-    const payload = (await response.json()) as { text?: string };
-    const transcript = typeof payload.text === "string" ? payload.text.trim() : "";
-
-    if (!transcript) {
-      throw new Error("Received an empty transcription result.");
-    }
-
-    return transcript;
+  transcribe = async (audio: Blob, options: { signal?: AbortSignal } = {}) => {
+    const provider = this.createProvider();
+    return provider.transcribeAudio({ audio, signal: options.signal });
   };
 
   polish = async (transcript: string, options: { signal?: AbortSignal } = {}) => {
-    const apiKey = this.ensureApiKey();
+    const provider = this.createProvider();
     const model = this.getSelectedModel();
 
     const prompt = `You are an expert transcription curator.\nTake this raw voice transcript and polish it from the classic vocalization issues.\nMake the minimum intervention possible.\n\nTRANSCRIPT:\n${transcript}`;
 
-    const response = await fetch(RESPONSES_URL, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model,
-        input: prompt,
-      }),
+    const text = await provider.generateText({
+      model,
+      messages: [
+        {
+          role: "user",
+          content: prompt,
+        },
+      ],
       signal: options.signal,
     });
 
-    if (!response.ok) {
-      const message = await extractOpenAIErrorMessage(response);
-      throw new Error(message || "Model request failed.");
-    }
-
-    const payload = (await response.json()) as Record<string, unknown>;
-    const polished = extractOpenAIOutputText(payload).trim();
-
-    if (!polished) {
-      throw new Error("The model did not return any text.");
-    }
-
-    return polished;
+    return text.trim();
   };
 
   process = async (audio: Blob, options: { signal?: AbortSignal } = {}) => {

@@ -176,9 +176,8 @@ export class NoteDictationManager {
     const visible = hasActiveNote && this.isDesktopFabEnabled();
     const apiKey = this.getApiKey();
 
-    const tooltip = !apiKey
-      ? "Set your OpenAI API key in the Mondo settings."
-      : undefined;
+    const missingKeyMessage = this.transcriptionService.getMissingApiKeyMessage();
+    const tooltip = !apiKey ? missingKeyMessage : undefined;
 
     this.container.style.display = visible ? "block" : "none";
 
@@ -237,7 +236,7 @@ export class NoteDictationManager {
     }
 
     if (!apiKey) {
-      throw new Error("Set your OpenAI API key in the Mondo settings.");
+      throw new Error(this.transcriptionService.getMissingApiKeyMessage());
     }
 
     this.processingNotice?.hide();
