@@ -1,4 +1,13 @@
-import React, { useEffect, useMemo, useState, useId } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useId,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import { createPortal } from "react-dom";
 
 type ReadableDateValue = Date | string | number | null | undefined;
 
@@ -165,6 +174,12 @@ export const ReadableDate: React.FC<ReadableDateProps> = ({
   const [isHovering, setIsHovering] = useState(false);
   const [isToggled, setIsToggled] = useState(false);
   const tooltipId = useId();
+  const containerRef = useRef<HTMLSpanElement | null>(null);
+  const tooltipRef = useRef<HTMLSpanElement | null>(null);
+  const [tooltipPosition, setTooltipPosition] = useState<{
+    left: number;
+    top: number;
+  } | null>(null);
 
   useEffect(() => {
     if (typeof window === "undefined") {
@@ -220,58 +235,198 @@ export const ReadableDate: React.FC<ReadableDateProps> = ({
   const tooltip = tooltipParts.join(" • ");
 
   const showTooltip = Boolean(tooltip);
-  const isTooltipVisible = showTooltip
-    ? supportsHover
-      ? isHovering
-      : isToggled
-    : false;
+  const isTooltipVisible = showTooltip && (isHovering || isToggled);
+
+  const updateTooltipPosition = useCallback(() => {
+    if (!containerRef.current) {
+      return;
+    }
+
+    const rect = containerRef.current.getBoundingClientRect();
+    const offset = 4;
+
+    if (typeof window === "undefined") {
+      setTooltipPosition({
+        left: rect.left + rect.width / 2,
+        top: rect.bottom + offset,
+      });
+      return;
+    }
+
+    setTooltipPosition({
+      left: rect.left + rect.width / 2 + window.scrollX,
+      top: rect.bottom + offset + window.scrollY,
+    });
+  }, []);
+
+  useLayoutEffect(() => {
+    if (!isTooltipVisible) {
+      return;
+    }
+
+    updateTooltipPosition();
+  }, [isTooltipVisible, updateTooltipPosition]);
+
+  useEffect(() => {
+    if (!isTooltipVisible || typeof window === "undefined") {
+      return undefined;
+    }
+
+    const handleChange = () => {
+      updateTooltipPosition();
+    };
+
+    window.addEventListener("resize", handleChange);
+    window.addEventListener("scroll", handleChange, true);
+
+    return () => {
+      window.removeEventListener("resize", handleChange);
+      window.removeEventListener("scroll", handleChange, true);
+    };
+  }, [isTooltipVisible, updateTooltipPosition]);
+
+  useEffect(() => {
+    if (!isTooltipVisible || supportsHover || typeof window === "undefined") {
+      return undefined;
+    }
+
+    const handlePointerDown = (event: PointerEvent) => {
+      if (!containerRef.current) {
+        return;
+      }
+
+      const target = event.target;
+      if (
+        target instanceof Node &&
+        (containerRef.current.contains(target) ||
+          tooltipRef.current?.contains(target))
+      ) {
+        return;
+      }
+
+      setIsToggled(false);
+    };
+
+    window.addEventListener("pointerdown", handlePointerDown, true);
+
+    return () => {
+      window.removeEventListener("pointerdown", handlePointerDown, true);
+    };
+  }, [isTooltipVisible, supportsHover]);
 
   const containerClasses = ["relative inline-flex items-center", className]
     .filter(Boolean)
     .join(" ");
 
   const tooltipClasses = [
-    "pointer-events-none absolute left-1/2 top-full z-50 mt-1 -translate-x-1/2 whitespace-nowrap rounded border border-[var(--background-modifier-border)] bg-[var(--background-secondary)] px-2 py-1 text-xs text-[var(--text-normal)] shadow-lg transition-opacity duration-150",
-    isTooltipVisible ? "opacity-100" : "opacity-0",
+    "whitespace-nowrap rounded border px-2 py-1 text-xs text-[var(--text-normal)] shadow-lg transition-opacity duration-150 z-[9999]",
+    isTooltipVisible ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none",
   ].join(" ");
 
+  const tooltipElementId =
+    showTooltip && typeof document !== "undefined" ? tooltipId : undefined;
+
+  const tooltipStyle = tooltipPosition
+    ? {
+        left: tooltipPosition.left,
+        top: tooltipPosition.top,
+        position: "absolute" as const,
+        transform: "translateX(-50%)",
+      }
+    : undefined;
+
+  const tooltipNode =
+    showTooltip && typeof document !== "undefined"
+      ? createPortal(
+          <span
+            ref={tooltipRef}
+            id={tooltipElementId}
+            className={tooltipClasses}
+            role="tooltip"
+            style={{
+              ...tooltipStyle,
+              backgroundColor: "var(--background-primary)",
+              borderColor: "var(--background-modifier-border)",
+            }}
+            onPointerEnter={(event) => {
+              if (event.pointerType !== "mouse") {
+                return;
+              }
+              setIsHovering(true);
+            }}
+            onPointerLeave={(event) => {
+              if (event.pointerType !== "mouse") {
+                return;
+              }
+
+              const nextTarget = event.relatedTarget;
+              if (
+                nextTarget instanceof Node &&
+                containerRef.current?.contains(nextTarget)
+              ) {
+                return;
+              }
+
+              setIsHovering(false);
+              setIsToggled(false);
+            }}
+          >
+            {tooltip}
+          </span>,
+          document.body
+        )
+      : null;
+
   return (
-    <span
-      className={containerClasses}
-      onMouseEnter={() => {
-        if (!showTooltip || !supportsHover) return;
-        setIsHovering(true);
-      }}
-      onMouseLeave={() => {
-        if (!supportsHover) return;
-        setIsHovering(false);
-      }}
-      onFocus={() => {
-        if (!showTooltip) return;
-        if (supportsHover) {
+    <>
+      <span
+        ref={containerRef}
+        className={containerClasses}
+        onPointerEnter={(event) => {
+          if (!showTooltip || event.pointerType !== "mouse") {
+            return;
+          }
           setIsHovering(true);
-        } else {
-          setIsToggled(true);
-        }
-      }}
-      onBlur={() => {
-        setIsHovering(false);
-        setIsToggled(false);
-      }}
-      onClick={() => {
-        if (!showTooltip || supportsHover) return;
-        setIsToggled((previous) => !previous);
-      }}
-      role={showTooltip ? "button" : undefined}
-      aria-describedby={showTooltip ? tooltipId : undefined}
-      tabIndex={showTooltip ? 0 : undefined}
-    >
-      <span>{displayLabel}</span>
-      {showTooltip ? (
-        <span id={tooltipId} className={tooltipClasses} role="tooltip">
-          {tooltip}
-        </span>
-      ) : null}
-    </span>
+        }}
+        onPointerLeave={(event) => {
+          if (event.pointerType !== "mouse") {
+            return;
+          }
+
+          const nextTarget = event.relatedTarget;
+          if (
+            nextTarget instanceof Node &&
+            tooltipRef.current?.contains(nextTarget)
+          ) {
+            return;
+          }
+
+          setIsHovering(false);
+          setIsToggled(false);
+        }}
+        onFocus={() => {
+          if (!showTooltip) return;
+          if (supportsHover) {
+            setIsHovering(true);
+          } else {
+            setIsToggled(true);
+          }
+        }}
+        onBlur={() => {
+          setIsHovering(false);
+          setIsToggled(false);
+        }}
+        onClick={() => {
+          if (!showTooltip || supportsHover) return;
+          setIsToggled((previous) => !previous);
+        }}
+        role={showTooltip ? "button" : undefined}
+        aria-describedby={tooltipElementId}
+        tabIndex={showTooltip ? 0 : undefined}
+      >
+        <span>{displayLabel}</span>
+      </span>
+      {tooltipNode}
+    </>
   );
 };
