@@ -7,6 +7,7 @@ import React, {
   useRef,
   useState,
 } from "react";
+import { createPortal } from "react-dom";
 
 type ReadableDateValue = Date | string | number | null | undefined;
 
@@ -246,9 +247,18 @@ export const ReadableDate: React.FC<ReadableDateProps> = ({
 
     const rect = containerRef.current.getBoundingClientRect();
     const offset = 4;
+
+    if (typeof window === "undefined") {
+      setTooltipPosition({
+        left: rect.left + rect.width / 2,
+        top: rect.bottom + offset,
+      });
+      return;
+    }
+
     setTooltipPosition({
-      left: rect.left + rect.width / 2,
-      top: rect.bottom + offset,
+      left: rect.left + rect.width / 2 + window.scrollX,
+      top: rect.bottom + offset + window.scrollY,
     });
   }, []);
 
@@ -287,58 +297,69 @@ export const ReadableDate: React.FC<ReadableDateProps> = ({
     isTooltipVisible ? "opacity-100" : "opacity-0",
   ].join(" ");
 
+  const tooltipElementId =
+    showTooltip && typeof document !== "undefined" ? tooltipId : undefined;
+
   const tooltipStyle = tooltipPosition
     ? {
         left: tooltipPosition.left,
         top: tooltipPosition.top,
-        position: "fixed" as const,
+        position: "absolute" as const,
         transform: "translateX(-50%)",
       }
     : undefined;
 
+  const tooltipNode =
+    showTooltip && typeof document !== "undefined"
+      ? createPortal(
+          <span
+            id={tooltipElementId}
+            className={tooltipClasses}
+            role="tooltip"
+            style={tooltipStyle}
+          >
+            {tooltip}
+          </span>,
+          document.body
+        )
+      : null;
+
   return (
-    <span
-      ref={containerRef}
-      className={containerClasses}
-      onMouseEnter={() => {
-        if (!showTooltip || !supportsHover) return;
-        setIsHovering(true);
-      }}
-      onMouseLeave={() => {
-        if (!supportsHover) return;
-        setIsHovering(false);
-      }}
-      onFocus={() => {
-        if (!showTooltip) return;
-        if (supportsHover) {
+    <>
+      <span
+        ref={containerRef}
+        className={containerClasses}
+        onMouseEnter={() => {
+          if (!showTooltip || !supportsHover) return;
           setIsHovering(true);
-        } else {
-          setIsToggled(true);
-        }
-      }}
-      onBlur={() => {
-        setIsHovering(false);
-        setIsToggled(false);
-      }}
-      onClick={() => {
-        if (!showTooltip || supportsHover) return;
-        setIsToggled((previous) => !previous);
-      }}
-      role={showTooltip ? "button" : undefined}
-      aria-describedby={showTooltip ? tooltipId : undefined}
-      tabIndex={showTooltip ? 0 : undefined}
-    >
-      <span>{displayLabel}</span>
-      {showTooltip ? (
-        <span
-          id={tooltipId}
-          className={tooltipClasses}
-          role="tooltip"
-          style={tooltipStyle}
-        >
-          {tooltip}
-        </span>
-      ) : null}
-    </span>
+        }}
+        onMouseLeave={() => {
+          if (!supportsHover) return;
+          setIsHovering(false);
+        }}
+        onFocus={() => {
+          if (!showTooltip) return;
+          if (supportsHover) {
+            setIsHovering(true);
+          } else {
+            setIsToggled(true);
+          }
+        }}
+        onBlur={() => {
+          setIsHovering(false);
+          setIsToggled(false);
+        }}
+        onClick={() => {
+          if (!showTooltip || supportsHover) return;
+          setIsToggled((previous) => !previous);
+        }}
+        role={showTooltip ? "button" : undefined}
+        aria-describedby={tooltipElementId}
+        tabIndex={showTooltip ? 0 : undefined}
+      >
+        <span>{displayLabel}</span>
+      </span>
+      {tooltipNode}
+    </>
   );
 };
