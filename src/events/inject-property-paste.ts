@@ -91,7 +91,8 @@ const getFileFromPropertyElement = (
 const handlePropertyPaste = async (
   event: ClipboardEvent,
   app: App,
-  propertyElement: HTMLElement
+  propertyElement: HTMLElement,
+  target: HTMLElement
 ): Promise<void> => {
   const clipboardData = event.clipboardData;
   if (!clipboardData) {
@@ -125,12 +126,17 @@ const handlePropertyPaste = async (
   // Prevent default paste behavior since we're handling it
   event.preventDefault();
   event.stopPropagation();
+  event.stopImmediatePropagation();
 
   const file = getFileFromPropertyElement(app, propertyElement);
   if (!file) {
     new Notice("Unable to determine the current note.");
     return;
   }
+
+  // Store the original value of the input field to restore it if needed
+  const inputEl = target as HTMLInputElement | HTMLTextAreaElement;
+  const originalValue = inputEl.value || "";
 
   try {
     // Get the image blob from clipboard
@@ -182,10 +188,21 @@ const handlePropertyPaste = async (
       frontmatter[propertyKey] = `[[${linktext}]]`;
     });
 
+    // Blur the input field to ensure Obsidian's property system doesn't overwrite our change
+    // This is necessary because the input might still be trying to update the property value
+    if (inputEl && typeof inputEl.blur === "function") {
+      inputEl.blur();
+    }
+
     new Notice("Image pasted and linked successfully.");
   } catch (error) {
     console.error("Mondo: Failed to paste image into property", error);
     new Notice("Failed to paste image. Please try again.");
+    
+    // Restore original value on error
+    if (inputEl && "value" in inputEl) {
+      inputEl.value = originalValue;
+    }
   }
 };
 
@@ -212,7 +229,7 @@ const setupPropertyPasteListener = (
       return;
     }
 
-    void handlePropertyPaste(event, app, propertyElement);
+    void handlePropertyPaste(event, app, propertyElement, target);
   };
 
   // Use capture phase to intercept paste events before they reach the property input
