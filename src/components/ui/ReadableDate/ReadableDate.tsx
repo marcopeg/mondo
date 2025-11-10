@@ -170,12 +170,14 @@ export const ReadableDate: React.FC<ReadableDateProps> = ({
 }) => {
   const { date, raw } = useMemo(() => parseDateValue(value), [value]);
   const [now, setNow] = useState(() => Date.now());
-  const [supportsHover, setSupportsHover] = useState(false);
+  // Track only explicit hover/focus state. We intentionally drop the prior
+  // toggle + media-query complexity as the spec now requires simple
+  // mouse-over show / mouse-out hide behaviour.
   const [isHovering, setIsHovering] = useState(false);
-  const [isToggled, setIsToggled] = useState(false);
   const tooltipId = useId();
   const containerRef = useRef<HTMLSpanElement | null>(null);
-  const tooltipRef = useRef<HTMLSpanElement | null>(null);
+  // Ref for container only; tooltip is ephemeral and does not need refs.
+  const hideTimeoutRef = useRef<number | null>(null);
   const [tooltipPosition, setTooltipPosition] = useState<{
     left: number;
     top: number;
@@ -195,32 +197,15 @@ export const ReadableDate: React.FC<ReadableDateProps> = ({
     };
   }, []);
 
+  // Removed matchMedia + toggle logic: not needed for simplified spec.
+
   useEffect(() => {
-    if (
-      typeof window === "undefined" ||
-      typeof window.matchMedia !== "function"
-    ) {
-      return undefined;
-    }
-
-    const mediaQuery = window.matchMedia("(hover: hover) and (pointer: fine)");
-    const handleChange = (event: MediaQueryListEvent) => {
-      setSupportsHover(event.matches);
-    };
-
-    setSupportsHover(mediaQuery.matches);
-    const detach = attachMediaQueryListener(mediaQuery, handleChange);
-
     return () => {
-      detach();
+      if (hideTimeoutRef.current !== null) {
+        window.clearTimeout(hideTimeoutRef.current);
+      }
     };
   }, []);
-
-  useEffect(() => {
-    if (supportsHover) {
-      setIsToggled(false);
-    }
-  }, [supportsHover]);
 
   const displayLabel = date ? formatRelative(date, now) : raw ?? fallback;
 
@@ -235,7 +220,22 @@ export const ReadableDate: React.FC<ReadableDateProps> = ({
   const tooltip = tooltipParts.join(" • ");
 
   const showTooltip = Boolean(tooltip);
-  const isTooltipVisible = showTooltip && (isHovering || isToggled);
+  const isTooltipVisible = showTooltip && isHovering;
+
+  const clearHideTimeout = useCallback(() => {
+    if (hideTimeoutRef.current !== null) {
+      window.clearTimeout(hideTimeoutRef.current);
+      hideTimeoutRef.current = null;
+    }
+  }, []);
+
+  const scheduleHide = useCallback(() => {
+    clearHideTimeout();
+    hideTimeoutRef.current = window.setTimeout(() => {
+      setIsHovering(false);
+      hideTimeoutRef.current = null;
+    }, 100);
+  }, [clearHideTimeout]);
 
   const updateTooltipPosition = useCallback(() => {
     if (!containerRef.current) {
@@ -285,42 +285,18 @@ export const ReadableDate: React.FC<ReadableDateProps> = ({
     };
   }, [isTooltipVisible, updateTooltipPosition]);
 
-  useEffect(() => {
-    if (!isTooltipVisible || supportsHover || typeof window === "undefined") {
-      return undefined;
-    }
-
-    const handlePointerDown = (event: PointerEvent) => {
-      if (!containerRef.current) {
-        return;
-      }
-
-      const target = event.target;
-      if (
-        target instanceof Node &&
-        (containerRef.current.contains(target) ||
-          tooltipRef.current?.contains(target))
-      ) {
-        return;
-      }
-
-      setIsToggled(false);
-    };
-
-    window.addEventListener("pointerdown", handlePointerDown, true);
-
-    return () => {
-      window.removeEventListener("pointerdown", handlePointerDown, true);
-    };
-  }, [isTooltipVisible, supportsHover]);
+  // No outside-click handling needed for hover-only behaviour.
 
   const containerClasses = ["relative inline-flex items-center", className]
     .filter(Boolean)
     .join(" ");
 
   const tooltipClasses = [
-    "whitespace-nowrap rounded border px-2 py-1 text-xs text-[var(--text-normal)] shadow-lg transition-opacity duration-150 z-[9999]",
-    isTooltipVisible ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none",
+    // 4px horizontal padding, 2px vertical padding, 4px rounded corners.
+    "whitespace-nowrap border text-[var(--text-normal)] shadow-lg transition-opacity duration-150 z-[9999]",
+    "px-1 py-0.5 text-[11px] rounded",
+    isTooltipVisible ? "opacity-100" : "opacity-0",
+    "pointer-events-none",
   ].join(" ");
 
   const tooltipElementId =
@@ -336,39 +312,18 @@ export const ReadableDate: React.FC<ReadableDateProps> = ({
     : undefined;
 
   const tooltipNode =
-    showTooltip && typeof document !== "undefined"
+    isTooltipVisible && typeof document !== "undefined"
       ? createPortal(
           <span
-            ref={tooltipRef}
             id={tooltipElementId}
             className={tooltipClasses}
             role="tooltip"
             style={{
               ...tooltipStyle,
               backgroundColor: "var(--background-primary)",
-              borderColor: "var(--background-modifier-border)",
-            }}
-            onPointerEnter={(event) => {
-              if (event.pointerType !== "mouse") {
-                return;
-              }
-              setIsHovering(true);
-            }}
-            onPointerLeave={(event) => {
-              if (event.pointerType !== "mouse") {
-                return;
-              }
-
-              const nextTarget = event.relatedTarget;
-              if (
-                nextTarget instanceof Node &&
-                containerRef.current?.contains(nextTarget)
-              ) {
-                return;
-              }
-
-              setIsHovering(false);
-              setIsToggled(false);
+              border: "1px solid var(--background-modifier-border)",
+              padding: "2px 4px",
+              borderRadius: "4px",
             }}
           >
             {tooltip}
@@ -386,39 +341,26 @@ export const ReadableDate: React.FC<ReadableDateProps> = ({
           if (!showTooltip || event.pointerType !== "mouse") {
             return;
           }
+          clearHideTimeout();
           setIsHovering(true);
         }}
         onPointerLeave={(event) => {
           if (event.pointerType !== "mouse") {
             return;
           }
-
-          const nextTarget = event.relatedTarget;
-          if (
-            nextTarget instanceof Node &&
-            tooltipRef.current?.contains(nextTarget)
-          ) {
-            return;
-          }
-
-          setIsHovering(false);
-          setIsToggled(false);
+          scheduleHide();
+        }}
+        onMouseLeave={() => {
+          scheduleHide();
         }}
         onFocus={() => {
           if (!showTooltip) return;
-          if (supportsHover) {
-            setIsHovering(true);
-          } else {
-            setIsToggled(true);
-          }
+          clearHideTimeout();
+          setIsHovering(true);
         }}
         onBlur={() => {
+          clearHideTimeout();
           setIsHovering(false);
-          setIsToggled(false);
-        }}
-        onClick={() => {
-          if (!showTooltip || supportsHover) return;
-          setIsToggled((previous) => !previous);
         }}
         role={showTooltip ? "button" : undefined}
         aria-describedby={tooltipElementId}
