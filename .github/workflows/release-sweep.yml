@@ -1,4 +1,4 @@
-name: Release Cleanup
+name: Release Sweep
 
 on:
   workflow_dispatch:

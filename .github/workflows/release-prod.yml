@@ -1,4 +1,4 @@
-name: Release Mondo
+name: Release Prod
 
 # Commented out - use the manual "publish-release" workflow instead
 # on:

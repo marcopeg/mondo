@@ -1,5 +1,5 @@
-name: Beta Release
-run-name: Beta Release • ${{ github.event.inputs.target_branch }} • beta-${{ github.run_number }}
+name: Release Branch
+run-name: Beta • ${{ github.event.inputs.target_branch }} • beta-${{ github.run_number }}
 
 on:
   workflow_dispatch:
