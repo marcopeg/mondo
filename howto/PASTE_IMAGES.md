@@ -1,16 +1,17 @@
 # How to Paste Images into Properties
 
-Mondo now supports pasting images directly from your clipboard into property fields. This is particularly useful when you take a screenshot and want to quickly add it as a cover image, avatar, or thumbnail.
+Mondo now supports pasting images directly from your clipboard into **any property field**. This is particularly useful when you take a screenshot and want to quickly add it as a cover image, avatar, thumbnail, or any other image property.
 
 ## Supported Properties
 
-The paste functionality works with the following property fields:
+The paste functionality works with **all property fields**. You can paste images into any property, including but not limited to:
 - `cover` - Main cover image for notes
 - `thumbnail` - Thumbnail images
 - `avatar` - User/entity avatar images
 - `image` - Generic image properties
 - `banner` - Banner images
 - `icon` - Icon images
+- Or any custom property name you define in your vault
 
 ## How to Use
 
@@ -18,9 +19,9 @@ The paste functionality works with the following property fields:
    - Take a screenshot (Cmd+Shift+4 on Mac, Win+Shift+S on Windows)
    - Or copy an image from any application (Cmd+C / Ctrl+C)
 
-2. **Click into a supported property field**
+2. **Click into any property field**
    - Open a note with properties (frontmatter)
-   - Click on the value field of a supported property (e.g., the "cover" property)
+   - Click on the value field of any property where you want to add an image
 
 3. **Paste the image**
    - Press Cmd+V (Mac) or Ctrl+V (Windows)

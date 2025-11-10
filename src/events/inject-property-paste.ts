@@ -113,16 +113,6 @@ const handlePropertyPaste = async (
     return;
   }
 
-  // Support image paste for file-related properties
-  // Common properties that accept image files: cover, thumbnail, avatar, image, banner, etc.
-  const imageProperties = ["cover", "thumbnail", "avatar", "image", "banner", "icon"];
-  const propertyLower = propertyKey.toLowerCase();
-  
-  if (!imageProperties.includes(propertyLower)) {
-    // Property doesn't support image pasting, let default behavior proceed
-    return;
-  }
-
   // Prevent default paste behavior since we're handling it
   event.preventDefault();
   event.stopPropagation();

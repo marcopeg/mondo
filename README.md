@@ -109,14 +109,14 @@ There you can **resize** and **crop** an image to improve your vault without lea
 
 ## 📋 Paste Images into Properties
 
-Quickly add images to your notes by pasting them directly into property fields!
+Quickly add images to your notes by pasting them directly into **any property field**!
 
-Take a screenshot (⌘⇧4 on Mac), copy it, and paste it into any image property field like `cover`, `avatar`, or `thumbnail`. Mondo will:
+Take a screenshot (⌘⇧4 on Mac), copy it, and paste it into any property field. Mondo will:
 - ✅ Automatically save the image to your vault
 - ✅ Generate a descriptive filename
 - ✅ Link it properly in the frontmatter
 
-Supported properties: `cover`, `thumbnail`, `avatar`, `image`, `banner`, `icon`
+Works with **all properties** - including `cover`, `thumbnail`, `avatar`, `image`, `banner`, `icon`, or any custom property you define.
 
 👉 [Learn more about pasting images](./howto/PASTE_IMAGES.md)
 
