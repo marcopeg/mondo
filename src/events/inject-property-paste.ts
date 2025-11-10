@@ -33,6 +33,19 @@ const isImageType = (mimeType: string): boolean => {
 };
 
 /**
+ * Sanitize a property key for use in a filename
+ * Removes or replaces characters that are invalid in filenames
+ */
+const sanitizePropertyKeyForFilename = (propertyKey: string): string => {
+  return propertyKey
+    .toLowerCase()
+    .replace(/[^a-z0-9_-]/g, "-") // Replace invalid chars with dash
+    .replace(/^-+|-+$/g, "") // Remove leading/trailing dashes
+    .replace(/-{2,}/g, "-") // Replace multiple dashes with single dash
+    .substring(0, 50) || "property"; // Limit length and provide fallback
+};
+
+/**
  * Extract the property key from a metadata property element
  */
 const getPropertyKey = (element: HTMLElement): string | null => {
@@ -135,12 +148,26 @@ const handlePropertyPaste = async (
       new Notice("Failed to read image from clipboard.");
       return;
     }
+    
+    // Validate blob has content
+    if (blob.size === 0) {
+      new Notice("Clipboard image is empty.");
+      return;
+    }
 
     // Generate filename with timestamp to avoid conflicts
     const timestamp = new Date().getTime();
     const extension = getFileExtensionFromMimeType(imageItem.type);
-    const propertyPrefix = propertyKey.toLowerCase();
+    const propertyPrefix = sanitizePropertyKeyForFilename(propertyKey);
     const filename = `${propertyPrefix}-${timestamp}.${extension}`;
+    
+    console.log("Mondo: Pasting image into property", {
+      propertyKey,
+      sanitizedPrefix: propertyPrefix,
+      filename,
+      blobSize: blob.size,
+      blobType: blob.type
+    });
 
     // Get available path for the attachment
     const targetPath = await app.fileManager.getAvailablePathForAttachment(
@@ -150,7 +177,21 @@ const handlePropertyPaste = async (
 
     // Convert blob to ArrayBuffer and create file in vault
     const arrayBuffer = await blob.arrayBuffer();
+    console.log("Mondo: ArrayBuffer created", {
+      byteLength: arrayBuffer.byteLength,
+      targetPath
+    });
+    
+    // Validate ArrayBuffer has content
+    if (arrayBuffer.byteLength === 0) {
+      throw new Error("ArrayBuffer is empty - image data lost during conversion");
+    }
+    
     const created = await app.vault.createBinary(targetPath, arrayBuffer);
+    console.log("Mondo: File created in vault", {
+      created: created instanceof TFile,
+      path: created instanceof TFile ? created.path : "unknown"
+    });
 
     let targetFile: TFile | null = null;
     if (created instanceof TFile) {
