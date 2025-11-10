@@ -71,6 +71,11 @@ export class SettingsView extends PluginSettingTab {
       "boolean"
         ? (this.plugin as any).settings.openAITranscriptionPolishEnabled
         : true;
+    const voiceDictationSettings = (this.plugin as any).settings
+      .voiceDictation ?? {};
+    (this.plugin as any).settings.voiceDictation = {
+      showRecordingButton: voiceDictationSettings.showRecordingButton === true,
+    };
     (this.plugin as any).settings.timestamp = normalizeTimestampSettings(
       (this.plugin as any).settings.timestamp ?? DEFAULT_TIMESTAMP_SETTINGS
     );

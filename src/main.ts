@@ -140,6 +140,9 @@ export default class Mondo extends Plugin {
     openAIModel: "gpt-5-nano",
     editWithAIModel: DEFAULT_EDIT_WITH_AI_MODEL,
     openAITranscriptionPolishEnabled: true,
+    voiceDictation: {
+      showRecordingButton: false,
+    },
     voiceoverCachePath: "/voiceover",
     selfPersonPath: "",
     includeFrontmatterInChatGPT: false,
@@ -261,6 +264,10 @@ export default class Mondo extends Plugin {
       typeof this.settings.openAITranscriptionPolishEnabled === "boolean"
         ? this.settings.openAITranscriptionPolishEnabled
         : true;
+    const voiceDictationSettings = this.settings.voiceDictation ?? {};
+    this.settings.voiceDictation = {
+      showRecordingButton: voiceDictationSettings.showRecordingButton === true,
+    };
     const cachePath = this.settings.voiceoverCachePath;
     if (typeof cachePath === "string" && cachePath.trim()) {
       this.settings.voiceoverCachePath = cachePath.trim();

@@ -102,6 +102,10 @@ export class NoteDictationManager {
     );
   };
 
+  public refresh = () => {
+    this.render();
+  };
+
   dispose = () => {
     this.processingNotice?.hide();
     this.processingNotice = null;
@@ -154,6 +158,13 @@ export class NoteDictationManager {
     return this.transcriptionService.getApiKey();
   };
 
+  private isDesktopFabEnabled = () => {
+    const voiceDictation = this.plugin.settings?.voiceDictation;
+    return (
+      Platform.isDesktopApp && voiceDictation?.showRecordingButton === true
+    );
+  };
+
   private render = () => {
     if (!this.root || !this.container) {
       return;
@@ -161,7 +172,8 @@ export class NoteDictationManager {
 
     const controller = this.ensureController();
     const view = this.getActiveMarkdownView();
-    const visible = Boolean(view);
+    const hasActiveNote = Boolean(view);
+    const visible = hasActiveNote && this.isDesktopFabEnabled();
     const apiKey = this.getApiKey();
 
     const tooltip = !apiKey
@@ -181,7 +193,7 @@ export class NoteDictationManager {
       </React.StrictMode>
     );
 
-    this.toolbarVisible = visible;
+    this.toolbarVisible = hasActiveNote;
     this.toolbarDisabled = !apiKey;
     this.toolbarTooltip = tooltip;
     this.updateToolbarButton();

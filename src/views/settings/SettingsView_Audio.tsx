@@ -37,4 +37,24 @@ export const renderAudioSection = (props: SettingsAudioProps): void => {
         (text.inputEl as HTMLInputElement).type = "password";
       } catch (e) {}
     });
+
+  audioSettingsSection
+    .createSetting()
+    .setName("Show recording button")
+    .setDesc(
+      "Show the floating record button on desktop notes when transcription is enabled."
+    )
+    .addToggle((toggle) => {
+      const settings = (plugin as any).settings.voiceDictation ?? {};
+      toggle
+        .setValue(settings.showRecordingButton === true)
+        .onChange(async (value) => {
+          (plugin as any).settings.voiceDictation = {
+            ...(plugin as any).settings.voiceDictation,
+            showRecordingButton: value,
+          };
+          await (plugin as any).saveSettings();
+          plugin.getNoteDictationManager()?.refresh();
+        });
+    });
 };
