@@ -4,6 +4,7 @@ import { fact } from "./fact";
 import { document } from "./document";
 import { idea } from "./idea";
 import { link } from "./link";
+import { goal } from "./goal";
 
 export const meeting = {
   name: "Meetings",
@@ -74,6 +75,18 @@ export const meeting = {
         attributes: {
           type: "link",
           meeting: ["{@this}"],
+        },
+      },
+    },
+    {
+      key: "goal",
+      label: "Goal",
+      icon: goal.icon,
+      targetType: "goal",
+      create: {
+        title: "Untitled Goal for {@this.show}",
+        attributes: {
+          linksTo: ["{@this}"],
         },
       },
     },
@@ -152,6 +165,36 @@ export const meeting = {
         ],
         sort: {
           strategy: "manual",
+        },
+      },
+    },
+    {
+      type: "backlinks",
+      key: "goals",
+      config: {
+        targetType: "goal",
+        properties: ["linksTo"],
+        title: goal.name,
+        icon: goal.icon,
+        visibility: "notEmpty",
+        columns: [
+          {
+            type: "show",
+          },
+          {
+            type: "attribute",
+            key: "status",
+          },
+          {
+            type: "date",
+            align: "right",
+          },
+        ],
+        sort: {
+          strategy: "manual",
+        },
+        createEntity: {
+          referenceCreate: "goal",
         },
       },
     },

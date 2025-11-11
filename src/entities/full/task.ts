@@ -1,6 +1,7 @@
 import { fact } from "./fact";
 import { log } from "./log";
 import { document } from "./document";
+import { goal } from "./goal";
 
 export const task = {
   name: "Tasks",
@@ -72,6 +73,18 @@ export const task = {
       targetType: "idea",
       create: {
         title: "Untitled Idea for {@this.show}",
+        attributes: {
+          linksTo: ["{@this}"],
+        },
+      },
+    },
+    {
+      key: "goal",
+      label: "Goal",
+      icon: goal.icon,
+      targetType: "goal",
+      create: {
+        title: "Untitled Goal for {@this.show}",
         attributes: {
           linksTo: ["{@this}"],
         },
@@ -164,6 +177,36 @@ export const task = {
         ],
         sort: {
           strategy: "manual",
+        },
+      },
+    },
+    {
+      type: "backlinks",
+      key: "goals",
+      config: {
+        targetType: "goal",
+        properties: ["linksTo"],
+        title: goal.name,
+        icon: goal.icon,
+        visibility: "notEmpty",
+        columns: [
+          {
+            type: "show",
+          },
+          {
+            type: "attribute",
+            key: "status",
+          },
+          {
+            type: "date",
+            align: "right",
+          },
+        ],
+        sort: {
+          strategy: "manual",
+        },
+        createEntity: {
+          referenceCreate: "goal",
         },
       },
     },

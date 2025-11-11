@@ -8,6 +8,7 @@ import { team } from "./team";
 import { company } from "./company";
 import { gear } from "./gear";
 import { link } from "./link";
+import { goal } from "./goal";
 
 export const location = {
   name: "Locations",
@@ -138,6 +139,18 @@ export const location = {
       targetType: "idea",
       create: {
         title: "New Idea for {@this.show}",
+        attributes: {
+          linksTo: ["{@this}"],
+        },
+      },
+    },
+    {
+      key: "goal",
+      label: "Goal",
+      icon: goal.icon,
+      targetType: "goal",
+      create: {
+        title: "Untitled Goal for {@this.show}",
         attributes: {
           linksTo: ["{@this}"],
         },
@@ -393,6 +406,36 @@ export const location = {
         },
         createEntity: {
           referenceCreate: "link",
+        },
+      },
+    },
+    {
+      type: "backlinks",
+      key: "goals",
+      config: {
+        targetType: "goal",
+        properties: ["linksTo"],
+        title: goal.name,
+        icon: goal.icon,
+        visibility: "notEmpty",
+        columns: [
+          {
+            type: "show",
+          },
+          {
+            type: "attribute",
+            key: "status",
+          },
+          {
+            type: "date",
+            align: "right",
+          },
+        ],
+        sort: {
+          strategy: "manual",
+        },
+        createEntity: {
+          referenceCreate: "goal",
         },
       },
     },

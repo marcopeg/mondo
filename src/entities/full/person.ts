@@ -5,6 +5,7 @@ import { meeting } from "./meeting";
 import { project } from "./project";
 import { team } from "./team";
 import { task } from "./task";
+import { goal } from "./goal";
 
 export const person = {
   name: "People",
@@ -124,6 +125,18 @@ export const person = {
           reportsTo: ["{@this}"],
           company: ["{@this.company}"],
           area: ["{@this.area}"],
+        },
+      },
+    },
+    {
+      key: "goal",
+      label: "Goal",
+      icon: goal.icon,
+      targetType: "goal",
+      create: {
+        title: "Untitled Goal for {@this.show}",
+        attributes: {
+          linksTo: ["{@this}"],
         },
       },
     },
@@ -543,6 +556,36 @@ export const person = {
         ],
         createEntity: {
           enabled: false,
+        },
+      },
+    },
+    {
+      type: "backlinks",
+      key: "goals",
+      config: {
+        targetType: "goal",
+        properties: ["linksTo"],
+        title: goal.name,
+        icon: goal.icon,
+        visibility: "notEmpty",
+        columns: [
+          {
+            type: "show",
+          },
+          {
+            type: "attribute",
+            key: "status",
+          },
+          {
+            type: "date",
+            align: "right",
+          },
+        ],
+        sort: {
+          strategy: "manual",
+        },
+        createEntity: {
+          referenceCreate: "goal",
         },
       },
     },

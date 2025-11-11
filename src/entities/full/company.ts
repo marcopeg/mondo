@@ -9,6 +9,7 @@ import { idea } from "./idea";
 import { document } from "./document";
 import { meeting } from "./meeting";
 import { link } from "./link";
+import { goal } from "./goal";
 
 export const company = {
   name: "Companies",
@@ -154,6 +155,18 @@ export const company = {
         attributes: {
           type: "link",
           company: ["{@this}"],
+        },
+      },
+    },
+    {
+      key: "goal",
+      label: "Goal",
+      icon: goal.icon,
+      targetType: "goal",
+      create: {
+        title: "Untitled Goal for {@this.show}",
+        attributes: {
+          linksTo: ["{@this}"],
         },
       },
     },
@@ -426,6 +439,36 @@ export const company = {
         },
         createEntity: {
           referenceCreate: "link",
+        },
+      },
+    },
+    {
+      type: "backlinks",
+      key: "goals",
+      config: {
+        targetType: "goal",
+        properties: ["linksTo"],
+        title: goal.name,
+        icon: goal.icon,
+        visibility: "notEmpty",
+        columns: [
+          {
+            type: "show",
+          },
+          {
+            type: "attribute",
+            key: "status",
+          },
+          {
+            type: "date",
+            align: "right",
+          },
+        ],
+        sort: {
+          strategy: "manual",
+        },
+        createEntity: {
+          referenceCreate: "goal",
         },
       },
     },
