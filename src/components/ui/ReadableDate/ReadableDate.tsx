@@ -2,12 +2,11 @@ import React, {
   useCallback,
   useEffect,
   useId,
-  useLayoutEffect,
   useMemo,
   useRef,
   useState,
 } from "react";
-import { createPortal } from "react-dom";
+import { Popover } from "@/components/ui/Popover";
 
 type ReadableDateValue = Date | string | number | null | undefined;
 
@@ -145,23 +144,6 @@ const formatFullDate = (date: Date) =>
     timeStyle: "short",
   }).format(date);
 
-const attachMediaQueryListener = (
-  mediaQuery: MediaQueryList,
-  listener: (event: MediaQueryListEvent) => void
-) => {
-  if (typeof mediaQuery.addEventListener === "function") {
-    mediaQuery.addEventListener("change", listener);
-    return () => mediaQuery.removeEventListener("change", listener);
-  }
-
-  if (typeof mediaQuery.addListener === "function") {
-    mediaQuery.addListener(listener);
-    return () => mediaQuery.removeListener(listener);
-  }
-
-  return () => undefined;
-};
-
 export const ReadableDate: React.FC<ReadableDateProps> = ({
   value,
   fallback = "—",
@@ -175,13 +157,8 @@ export const ReadableDate: React.FC<ReadableDateProps> = ({
   // mouse-over show / mouse-out hide behaviour.
   const [isHovering, setIsHovering] = useState(false);
   const tooltipId = useId();
-  const containerRef = useRef<HTMLSpanElement | null>(null);
-  // Ref for container only; tooltip is ephemeral and does not need refs.
+  const [anchorEl, setAnchorEl] = useState<HTMLSpanElement | null>(null);
   const hideTimeoutRef = useRef<number | null>(null);
-  const [tooltipPosition, setTooltipPosition] = useState<{
-    left: number;
-    top: number;
-  } | null>(null);
 
   useEffect(() => {
     if (typeof window === "undefined") {
@@ -237,56 +214,6 @@ export const ReadableDate: React.FC<ReadableDateProps> = ({
     }, 100);
   }, [clearHideTimeout]);
 
-  const updateTooltipPosition = useCallback(() => {
-    if (!containerRef.current) {
-      return;
-    }
-
-    const rect = containerRef.current.getBoundingClientRect();
-    const offset = 4;
-
-    if (typeof window === "undefined") {
-      setTooltipPosition({
-        left: rect.left + rect.width / 2,
-        top: rect.bottom + offset,
-      });
-      return;
-    }
-
-    setTooltipPosition({
-      left: rect.left + rect.width / 2 + window.scrollX,
-      top: rect.bottom + offset + window.scrollY,
-    });
-  }, []);
-
-  useLayoutEffect(() => {
-    if (!isTooltipVisible) {
-      return;
-    }
-
-    updateTooltipPosition();
-  }, [isTooltipVisible, updateTooltipPosition]);
-
-  useEffect(() => {
-    if (!isTooltipVisible || typeof window === "undefined") {
-      return undefined;
-    }
-
-    const handleChange = () => {
-      updateTooltipPosition();
-    };
-
-    window.addEventListener("resize", handleChange);
-    window.addEventListener("scroll", handleChange, true);
-
-    return () => {
-      window.removeEventListener("resize", handleChange);
-      window.removeEventListener("scroll", handleChange, true);
-    };
-  }, [isTooltipVisible, updateTooltipPosition]);
-
-  // No outside-click handling needed for hover-only behaviour.
-
   const containerClasses = ["relative inline-flex items-center", className]
     .filter(Boolean)
     .join(" ");
@@ -302,40 +229,14 @@ export const ReadableDate: React.FC<ReadableDateProps> = ({
   const tooltipElementId =
     showTooltip && typeof document !== "undefined" ? tooltipId : undefined;
 
-  const tooltipStyle = tooltipPosition
-    ? {
-        left: tooltipPosition.left,
-        top: tooltipPosition.top,
-        position: "absolute" as const,
-        transform: "translateX(-50%)",
-      }
-    : undefined;
-
-  const tooltipNode =
-    isTooltipVisible && typeof document !== "undefined"
-      ? createPortal(
-          <span
-            id={tooltipElementId}
-            className={tooltipClasses}
-            role="tooltip"
-            style={{
-              ...tooltipStyle,
-              backgroundColor: "var(--background-primary)",
-              border: "1px solid var(--background-modifier-border)",
-              padding: "2px 4px",
-              borderRadius: "4px",
-            }}
-          >
-            {tooltip}
-          </span>,
-          document.body
-        )
-      : null;
+  const handleAnchorRef = useCallback((node: HTMLSpanElement | null) => {
+    setAnchorEl(node);
+  }, []);
 
   return (
     <>
       <span
-        ref={containerRef}
+        ref={handleAnchorRef}
         className={containerClasses}
         onPointerEnter={(event) => {
           if (!showTooltip || event.pointerType !== "mouse") {
@@ -368,7 +269,25 @@ export const ReadableDate: React.FC<ReadableDateProps> = ({
       >
         <span>{displayLabel}</span>
       </span>
-      {tooltipNode}
+      <Popover
+        id={tooltipElementId}
+        role="tooltip"
+        anchorEl={anchorEl}
+        open={isTooltipVisible}
+        className={tooltipClasses}
+        style={{
+          backgroundColor: "var(--background-primary)",
+          border: "1px solid var(--background-modifier-border)",
+          padding: "2px 4px",
+          borderRadius: "4px",
+          transform: "translateX(-50%)",
+        }}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+        transformOrigin={{ vertical: "top", horizontal: "center" }}
+        offset={{ vertical: 4 }}
+      >
+        {tooltip}
+      </Popover>
     </>
   );
 };
