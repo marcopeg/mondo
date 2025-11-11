@@ -559,5 +559,35 @@ export const person = {
         },
       },
     },
+    {
+      type: "backlinks",
+      key: "goals",
+      config: {
+        targetType: "goal",
+        properties: ["linksTo"],
+        title: goal.name,
+        icon: goal.icon,
+        visibility: "notEmpty",
+        columns: [
+          {
+            type: "show",
+          },
+          {
+            type: "attribute",
+            key: "status",
+          },
+          {
+            type: "date",
+            align: "right",
+          },
+        ],
+        sort: {
+          strategy: "manual",
+        },
+        createEntity: {
+          referenceCreate: "goal",
+        },
+      },
+    },
   ],
 } as const;
