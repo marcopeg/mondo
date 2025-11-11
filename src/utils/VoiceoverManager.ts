@@ -7,29 +7,18 @@ import {
   type App,
   type Editor,
 } from "obsidian";
-
-const VOICEOVER_MODEL = "gpt-4o-mini-tts";
-const FALLBACK_VOICES = [
-  "alloy",
-  "ash",
-  "coral",
-  "ember",
-  "lumen",
-  "pearl",
-  "sage",
-  "sol",
-];
+import { createAiProvider } from "@/ai/providerFactory";
+import {
+  getAiApiKey,
+  getMissingAiApiKeyMessage,
+  getSelectedAiProviderId,
+} from "@/ai/settings";
 
 const DEFAULT_VOICEOVER_CACHE_PATH = "/voiceover";
 
 const AUDIO_MIME_TYPE = "audio/mpeg";
 const VOICE_PREVIEW_TEXT =
   "Hello from Obsidian Mondo. This is a quick voice preview.";
-
-type VoicesResponse = {
-  voices?: unknown;
-  data?: unknown;
-};
 
 const getTimestamp = () => {
   const now = new Date();
@@ -76,30 +65,6 @@ const hashContent = async (content: string) => {
   }
 
   return computeFallbackHash(content);
-};
-
-const resolveVoiceName = (input: unknown) => {
-  if (!input) {
-    return null;
-  }
-
-  if (typeof input === "string") {
-    return input.trim() || null;
-  }
-
-  if (typeof input !== "object") {
-    return null;
-  }
-
-  const candidate =
-    (input as Record<string, unknown>).id ??
-    (input as Record<string, unknown>).name ??
-    (input as Record<string, unknown>).voice ??
-    (input as Record<string, unknown>).value;
-
-  return typeof candidate === "string" && candidate.trim()
-    ? candidate.trim()
-    : null;
 };
 
 class VoiceoverModal extends Modal {
@@ -238,6 +203,7 @@ class VoiceoverModal extends Modal {
 export class VoiceoverManager {
   private readonly plugin: Mondo;
   private cachedVoices: string[] | undefined;
+  private cachedVoicesProvider: string | null = null;
   private readonly activeNotes = new Map<string, AbortController>();
   private previewAudio: HTMLAudioElement | null = null;
   private previewUrl: string | null = null;
@@ -247,66 +213,91 @@ export class VoiceoverManager {
     this.plugin = plugin;
   }
 
+  private getProviderId = () => getSelectedAiProviderId(this.plugin.settings);
+
+  private getMissingApiKeyMessage = () =>
+    getMissingAiApiKeyMessage(this.plugin.settings);
+
+  private getProviderDetails = (requireKey: boolean) => {
+    const providerId = this.getProviderId();
+    const apiKey = getAiApiKey(this.plugin.settings);
+
+    if (requireKey && !apiKey) {
+      throw new Error(this.getMissingApiKeyMessage());
+    }
+
+    return {
+      providerId,
+      apiKey,
+      provider: createAiProvider(providerId, apiKey),
+    };
+  };
+
   initialize = () => {
     // Placeholder for potential initialization work.
   };
 
   dispose = () => {
     this.cachedVoices = undefined;
+    this.cachedVoicesProvider = null;
     this.activeNotes.clear();
     this.previewController?.abort();
     this.previewController = null;
     this.stopPreview();
   };
 
+  // Ensure the voice is valid for the currently selected provider.
+  // If the currently stored voice belongs to another provider (e.g. 'ash' from OpenAI
+  // while using Gemini), fall back to a sensible default for that provider.
+  private ensureVoiceForProvider = async (
+    providerId: string,
+    voice: string
+  ): Promise<string> => {
+    const trimmed = voice?.trim?.() ?? "";
+    const available = await this.getAvailableVoices();
+
+    if (trimmed && available.includes(trimmed)) {
+      return trimmed;
+    }
+
+    if (providerId === "gemini") {
+      // Prefer a good neural US English default for Gemini
+      return "en-US-Neural2-C";
+    }
+
+    // Default to the first available voice (OpenAI or others)
+    return available[0] ?? "alloy";
+  };
+
   getAvailableVoices = async (): Promise<string[]> => {
-    if (this.cachedVoices) {
+    const { provider, providerId, apiKey } = this.getProviderDetails(false);
+
+    if (this.cachedVoices && this.cachedVoicesProvider === providerId) {
       return this.cachedVoices;
     }
 
-    const apiKey = this.getApiKey();
+    const fallbackVoices = [...provider.defaultVoices];
+
     if (!apiKey) {
-      return [];
+      this.cachedVoices = fallbackVoices;
+      this.cachedVoicesProvider = providerId;
+      return fallbackVoices;
     }
 
     try {
-      const response = await fetch("https://api.openai.com/v1/audio/voices", {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-        },
-      });
-
-      if (!response.ok) {
-        throw await this.resolveError(response);
-      }
-
-      const payload = (await response.json()) as VoicesResponse;
-      const rawList: unknown[] =
-        (Array.isArray(payload.voices) ? payload.voices : null) ??
-        (Array.isArray(payload.data) ? payload.data : null) ??
-        [];
-
-      const voices = rawList
-        .map((voice: unknown) => resolveVoiceName(voice))
-        .filter((voice): voice is string => typeof voice === "string");
-
-      if (voices.length === 0) {
-        this.cachedVoices = [...FALLBACK_VOICES];
-      } else {
-        const uniqueVoices = Array.from(new Set(voices));
-        this.cachedVoices = uniqueVoices.length
-          ? uniqueVoices
-          : [...FALLBACK_VOICES];
-      }
+      const voices = await provider.listVoices();
+      const resolved = voices.length ? voices : fallbackVoices;
+      this.cachedVoices = resolved;
     } catch (error) {
-      console.error("Mondo: failed to load OpenAI voices", error);
-      this.cachedVoices = [...FALLBACK_VOICES];
+      console.error(
+        `Mondo: failed to load ${provider.label} voices`,
+        error
+      );
+      this.cachedVoices = fallbackVoices;
     }
 
-    const resolved = this.cachedVoices ?? [...FALLBACK_VOICES];
-    this.cachedVoices = resolved;
-    return resolved;
+    this.cachedVoicesProvider = providerId;
+    return this.cachedVoices ?? fallbackVoices;
   };
 
   generateVoiceover = async (
@@ -323,11 +314,16 @@ export class VoiceoverManager {
       return;
     }
 
-    const apiKey = this.getApiKey();
-    if (!apiKey) {
-      new Notice(
-        "Set your OpenAI Whisper API key in the Mondo settings before generating a voiceover."
-      );
+    let providerId: string;
+    let provider;
+    try {
+      ({ provider, providerId } = this.getProviderDetails(true));
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : this.getMissingApiKeyMessage();
+      new Notice(message);
       return;
     }
 
@@ -349,6 +345,9 @@ export class VoiceoverManager {
       if (!voice) {
         voice = (await this.resolveVoice()).trim();
       }
+
+      // Normalize to a provider-compatible voice (e.g. map OpenAI 'ash' to Gemini default)
+      voice = await this.ensureVoiceForProvider(providerId, voice);
 
       const contentHash = await hashContent(`${voice}::${trimmed}`);
       const existing = await this.findExistingVoiceover(
@@ -372,12 +371,11 @@ export class VoiceoverManager {
         voiceoverModal.setStatus("Cancelling voiceover…");
       });
 
-      const audioBuffer = await this.requestVoiceover(
-        trimmed,
+      const audioBuffer = await provider.synthesizeSpeech({
+        text: trimmed,
         voice,
-        apiKey,
-        controller.signal
-      );
+        signal: controller.signal,
+      });
 
       const audioFile = await this.saveAudioFile(
         file,
@@ -419,19 +417,30 @@ export class VoiceoverManager {
       return selected;
     }
 
+    const { provider, providerId } = this.getProviderDetails(false);
     const voices = await this.getAvailableVoices();
-    if (voices.length === 0) {
-      return FALLBACK_VOICES[0];
+    
+    // Pick provider-appropriate default voice
+    let fallbackVoice: string;
+    if (providerId === "gemini") {
+      fallbackVoice = "en-US-Neural2-C"; // Preferred Gemini voice
+    } else {
+      fallbackVoice = provider.defaultVoices[0] ?? ""; // OpenAI default
     }
 
-    const voice = voices[0];
+    if (voices.length === 0) {
+      if (fallbackVoice) {
+        this.plugin.settings.openAIVoice = fallbackVoice;
+        await this.plugin.saveSettings();
+      }
+      return fallbackVoice || "default";
+    }
+
+    const voice = voices[0] ?? (fallbackVoice || "default");
     this.plugin.settings.openAIVoice = voice;
     await this.plugin.saveSettings();
     return voice;
   };
-
-  private getApiKey = () =>
-    this.plugin.settings?.openAIWhisperApiKey?.trim?.() ?? "";
 
   previewVoice = async (voice: string) => {
     const trimmed = voice?.trim?.();
@@ -440,12 +449,7 @@ export class VoiceoverManager {
       throw new Error("Select a voice to preview.");
     }
 
-    const apiKey = this.getApiKey();
-    if (!apiKey) {
-      throw new Error(
-        "Set your OpenAI Whisper API key in the Mondo settings before previewing voices."
-      );
-    }
+    const { provider } = this.getProviderDetails(true);
 
     this.previewController?.abort();
     this.previewController = null;
@@ -455,12 +459,11 @@ export class VoiceoverManager {
     this.previewController = controller;
 
     try {
-      const audioBuffer = await this.requestVoiceover(
-        VOICE_PREVIEW_TEXT,
-        trimmed,
-        apiKey,
-        controller.signal
-      );
+      const audioBuffer = await provider.synthesizeSpeech({
+        text: VOICE_PREVIEW_TEXT,
+        voice: trimmed,
+        signal: controller.signal,
+      });
 
       if (controller.signal.aborted) {
         return;
@@ -498,34 +501,6 @@ export class VoiceoverManager {
     }
   };
 
-  private requestVoiceover = async (
-    text: string,
-    voice: string,
-    apiKey: string,
-    signal: AbortSignal
-  ) => {
-    const response = await fetch("https://api.openai.com/v1/audio/speech", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-        Accept: AUDIO_MIME_TYPE,
-      },
-      body: JSON.stringify({
-        model: VOICEOVER_MODEL,
-        voice,
-        input: text,
-      }),
-      signal,
-    });
-
-    if (!response.ok) {
-      throw await this.resolveError(response);
-    }
-
-    return response.arrayBuffer();
-  };
-
   private stopPreview = () => {
     const audio = this.previewAudio;
     if (audio) {
@@ -541,18 +516,6 @@ export class VoiceoverManager {
 
     this.previewAudio = null;
     this.previewUrl = null;
-  };
-
-  private resolveError = async (response: Response) => {
-    try {
-      const payload = await response.json();
-      const message =
-        payload?.error?.message ?? payload?.message ?? response.statusText;
-      return new Error(message || "Request failed");
-    } catch (error) {
-      console.warn("Mondo: unable to parse OpenAI error response", error);
-      return new Error(response.statusText || "Request failed");
-    }
   };
 
   private saveAudioFile = async (

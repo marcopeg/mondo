@@ -9,21 +9,23 @@ import {
 import type Mondo from "@/main";
 import editWithAIPrompt from "@/prompts/edit-with-ai.md";
 import {
-  extractOpenAIErrorMessage,
-  extractOpenAIOutputText,
-} from "@/utils/openAIResponseHelpers";
-import {
-  EDIT_WITH_AI_MODEL_OPTIONS,
+  OPENAI_EDIT_MODELS,
+  GEMINI_EDIT_MODELS,
   normalizeEditWithAIModel,
 } from "@/constants/openAIModels";
+import { createAiProvider } from "@/ai/providerFactory";
+import {
+  getAiApiKey,
+  getMissingAiApiKeyMessage,
+  getSelectedAiProviderId,
+} from "@/ai/settings";
 
-const RESPONSES_URL = "https://api.openai.com/v1/responses";
 type ConversationEntry =
   | { type: "user"; instructions: string }
   | { type: "assistant"; text: string }
   | { type: "error"; message: string };
 
-type ChatMessage = { role: "user" | "assistant"; content: string };
+type ChatMessage = { role: "system" | "user" | "assistant"; content: string };
 
 const buildPrompt = (instructions: string, providedText: string) =>
   editWithAIPrompt
@@ -103,8 +105,11 @@ class EditWithAIModal extends Modal {
     this.hasSelection = options.hasSelection;
     this.selectionRange = options.selectionRange;
     this.currentSourceText = options.initialText;
+    
+    const providerId = getSelectedAiProviderId(this.plugin.settings);
     const storedModel = normalizeEditWithAIModel(
-      (this.plugin as any).settings?.editWithAIModel
+      (this.plugin as any).settings?.editWithAIModel,
+      providerId
     );
     this.selectedModel = storedModel;
     if (
@@ -188,7 +193,11 @@ class EditWithAIModal extends Modal {
       cls: "mondo-edit-ai__select",
       attr: { id: "mondo-edit-ai-model" },
     });
-    for (const option of EDIT_WITH_AI_MODEL_OPTIONS) {
+    
+    const providerId = getSelectedAiProviderId(this.plugin.settings);
+    const modelOptions = providerId === "gemini" ? GEMINI_EDIT_MODELS : OPENAI_EDIT_MODELS;
+    
+    for (const option of modelOptions) {
       const optionEl = select.createEl("option", {
         text: option.label,
         attr: { value: option.value },
@@ -198,7 +207,7 @@ class EditWithAIModal extends Modal {
       }
     }
     select.addEventListener("change", () => {
-      const nextModel = normalizeEditWithAIModel(select.value);
+      const nextModel = normalizeEditWithAIModel(select.value, providerId);
       this.selectedModel = nextModel;
       (this.plugin as any).settings.editWithAIModel = this.selectedModel;
       void this.plugin.saveSettings();
@@ -381,12 +390,15 @@ class EditWithAIModal extends Modal {
       return;
     }
 
-    const apiKey = this.plugin.settings?.openAIWhisperApiKey?.trim?.() ?? "";
+    const apiKey = getAiApiKey(this.plugin.settings);
 
     if (!apiKey) {
-      new Notice("Set your OpenAI API key in the Mondo settings before using Edit with AI.");
+      new Notice(getMissingAiApiKeyMessage(this.plugin.settings));
       return;
     }
+
+    const providerId = getSelectedAiProviderId(this.plugin.settings);
+    const provider = createAiProvider(providerId, apiKey);
 
     this.setStatus("Sending request…");
     this.isRequestInFlight = true;
@@ -405,37 +417,15 @@ class EditWithAIModal extends Modal {
     this.requestController = controller;
 
     try {
-      const response = await fetch(RESPONSES_URL, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: this.selectedModel,
-          input: this.chatHistory.map((message) => ({
-            role: message.role,
-            content: message.content,
-          })),
-        }),
+      const text = await provider.generateText({
+        model: this.selectedModel,
+        messages: this.chatHistory,
         signal: controller.signal,
       });
 
-      if (!response.ok) {
-        const message = await extractOpenAIErrorMessage(response);
-        this.appendDisplayEntry({
-          type: "error",
-          message: message || "Model request failed.",
-        });
-        this.chatHistory.pop();
-        this.setStatus("Model request failed.", "error");
-        return;
-      }
+      const trimmed = text.trim();
 
-      const payload = (await response.json()) as Record<string, unknown>;
-      const text = extractOpenAIOutputText(payload).trim();
-
-      if (!text) {
+      if (!trimmed) {
         this.appendDisplayEntry({
           type: "error",
           message: "The model did not return any text.",
@@ -445,10 +435,10 @@ class EditWithAIModal extends Modal {
         return;
       }
 
-      this.chatHistory.push({ role: "assistant", content: text });
-      this.lastAssistantResponse = text;
-      this.currentSourceText = text;
-      this.appendDisplayEntry({ type: "assistant", text });
+      this.chatHistory.push({ role: "assistant", content: trimmed });
+      this.lastAssistantResponse = trimmed;
+      this.currentSourceText = trimmed;
+      this.appendDisplayEntry({ type: "assistant", text: trimmed });
       this.setStatus("Received response.");
     } catch (error) {
       if ((error as Error).name === "AbortError") {

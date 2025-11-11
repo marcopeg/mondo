@@ -121,6 +121,11 @@ import {
   DEFAULT_EDIT_WITH_AI_MODEL,
   normalizeEditWithAIModel,
 } from "@/constants/openAIModels";
+import {
+  getAiApiKey,
+  getSelectedAiProviderId,
+  setAiApiKey,
+} from "@/ai/settings";
 
 const MONDO_ICON = "anchor";
 
@@ -139,6 +144,8 @@ export default class Mondo extends Plugin {
     journal: DEFAULT_MONDO_JOURNAL_SETTINGS,
     daily: DEFAULT_MONDO_DAILY_SETTINGS,
     templates: Object.fromEntries(MONDO_FILE_TYPES.map((t) => [String(t), ""])),
+    aiProvider: "openai",
+    aiApiKey: "",
     openAIWhisperApiKey: "",
     openAIVoice: "",
     openAIModel: "gpt-5-nano",
@@ -258,7 +265,10 @@ export default class Mondo extends Plugin {
       this.settings.templates ?? {}
     );
 
-    this.settings.openAIWhisperApiKey = this.settings.openAIWhisperApiKey ?? "";
+    const providerId = getSelectedAiProviderId(this.settings);
+    this.settings.aiProvider = providerId;
+    const apiKey = getAiApiKey(this.settings);
+    setAiApiKey(this.settings, apiKey);
     this.settings.openAIVoice = this.settings.openAIVoice ?? "";
     this.settings.openAIModel = this.settings.openAIModel ?? "gpt-5-nano";
     this.settings.editWithAIModel = normalizeEditWithAIModel(
