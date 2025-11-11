@@ -1,14 +1,14 @@
 import { AiMessage, AiProvider } from "@/ai/types";
 
 const GENERATE_CONTENT_BASE =
-  "https://generativelanguage.googleapis.com/v1beta/models";
+  "https://generativelanguage.googleapis.com/v1/models";
 const SPEECH_RECOGNITION_URL =
   "https://speech.googleapis.com/v1p1beta1/speech:recognize";
 const TEXT_TO_SPEECH_URL =
   "https://texttospeech.googleapis.com/v1/text:synthesize";
 const LIST_VOICES_URL = "https://texttospeech.googleapis.com/v1/voices";
 
-const DEFAULT_MODEL = "gemini-1.5-flash";
+const DEFAULT_MODEL = "gemini-2.5-flash";
 const DEFAULT_TRANSCRIPTION_MODEL = "latest_short";
 const DEFAULT_LANGUAGE = "en-US";
 const DEFAULT_VOICES = [

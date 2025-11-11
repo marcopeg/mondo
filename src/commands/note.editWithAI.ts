@@ -9,7 +9,8 @@ import {
 import type Mondo from "@/main";
 import editWithAIPrompt from "@/prompts/edit-with-ai.md";
 import {
-  EDIT_WITH_AI_MODEL_OPTIONS,
+  OPENAI_EDIT_MODELS,
+  GEMINI_EDIT_MODELS,
   normalizeEditWithAIModel,
 } from "@/constants/openAIModels";
 import { createAiProvider } from "@/ai/providerFactory";
@@ -104,8 +105,11 @@ class EditWithAIModal extends Modal {
     this.hasSelection = options.hasSelection;
     this.selectionRange = options.selectionRange;
     this.currentSourceText = options.initialText;
+    
+    const providerId = getSelectedAiProviderId(this.plugin.settings);
     const storedModel = normalizeEditWithAIModel(
-      (this.plugin as any).settings?.editWithAIModel
+      (this.plugin as any).settings?.editWithAIModel,
+      providerId
     );
     this.selectedModel = storedModel;
     if (
@@ -189,7 +193,11 @@ class EditWithAIModal extends Modal {
       cls: "mondo-edit-ai__select",
       attr: { id: "mondo-edit-ai-model" },
     });
-    for (const option of EDIT_WITH_AI_MODEL_OPTIONS) {
+    
+    const providerId = getSelectedAiProviderId(this.plugin.settings);
+    const modelOptions = providerId === "gemini" ? GEMINI_EDIT_MODELS : OPENAI_EDIT_MODELS;
+    
+    for (const option of modelOptions) {
       const optionEl = select.createEl("option", {
         text: option.label,
         attr: { value: option.value },
@@ -199,7 +207,7 @@ class EditWithAIModal extends Modal {
       }
     }
     select.addEventListener("change", () => {
-      const nextModel = normalizeEditWithAIModel(select.value);
+      const nextModel = normalizeEditWithAIModel(select.value, providerId);
       this.selectedModel = nextModel;
       (this.plugin as any).settings.editWithAIModel = this.selectedModel;
       void this.plugin.saveSettings();
