@@ -1,9 +1,8 @@
 import type Mondo from "@/main";
 import {
   getAiApiKey,
-  getAiProviderOptions,
-  getSelectedAiProviderId,
   setAiApiKey,
+  detectAiProviderFromKey,
 } from "@/ai/settings";
 import { createSettingsSection } from "./SettingsView_utils";
 
@@ -23,8 +22,8 @@ export const renderAudioSection = (props: SettingsAudioProps): void => {
 
   const providerSetting = audioSettingsSection
     .createSetting()
-    .setName("AI Provider")
-    .setDesc("Configure the AI provider and API key used for audio features.");
+    .setName("AI API Key")
+    .setDesc("Your API key (sk-... for OpenAI, AIza... for Google Gemini). The provider will be detected automatically.");
 
   providerSetting.controlEl.addClass("mondo-ai-provider-setting");
 
@@ -43,11 +42,44 @@ export const renderAudioSection = (props: SettingsAudioProps): void => {
   const keyInputEl = keyFieldEl.createEl("input", {
     attr: {
       type: "password",
-      placeholder: "sk-...",
+      placeholder: "sk-... or AIza...",
       value: getAiApiKey(plugin.settings),
     },
     cls: "mondo-ai-provider-setting__input",
   });
+
+  const detectionEl = keyFieldEl.createDiv({
+    cls: "mondo-ai-provider-setting__detection",
+  });
+
+  const updateDetection = () => {
+    const key = keyInputEl.value.trim();
+    const detected = detectAiProviderFromKey(key);
+    
+    detectionEl.empty();
+    
+    if (!key) {
+      detectionEl.createEl("span", {
+        text: "No API key provided",
+        cls: "mondo-ai-provider-setting__detection-text mondo-ai-provider-setting__detection-unknown",
+      });
+    } else if (detected === "openai") {
+      detectionEl.createEl("span", {
+        text: "✓ Detected: OpenAI",
+        cls: "mondo-ai-provider-setting__detection-text mondo-ai-provider-setting__detection-success",
+      });
+    } else if (detected === "gemini") {
+      detectionEl.createEl("span", {
+        text: "✓ Detected: Google Gemini",
+        cls: "mondo-ai-provider-setting__detection-text mondo-ai-provider-setting__detection-success",
+      });
+    } else {
+      detectionEl.createEl("span", {
+        text: "⚠ Unknown provider",
+        cls: "mondo-ai-provider-setting__detection-text mondo-ai-provider-setting__detection-unknown",
+      });
+    }
+  };
 
   keyInputEl.addEventListener("change", async (event) => {
     const target = event.currentTarget as HTMLInputElement;
@@ -55,37 +87,13 @@ export const renderAudioSection = (props: SettingsAudioProps): void => {
     target.value = trimmed;
     setAiApiKey(plugin.settings, trimmed);
     await plugin.saveSettings();
+    updateDetection();
   });
 
-  const providerFieldEl = controlsEl.createDiv({
-    cls: "mondo-ai-provider-setting__field",
-  });
-  providerFieldEl.createEl("label", {
-    text: "Provider",
-    cls: "mondo-ai-provider-setting__label",
-  });
+  keyInputEl.addEventListener("input", updateDetection);
 
-  const providerSelectEl = providerFieldEl.createEl("select", {
-    cls: "mondo-ai-provider-setting__input",
-  });
-
-  const providerOptions = getAiProviderOptions();
-  const selectedProvider = getSelectedAiProviderId(plugin.settings);
-
-  for (const option of providerOptions) {
-    providerSelectEl.createEl("option", {
-      value: option.id,
-      text: option.label,
-    });
-  }
-
-  providerSelectEl.value = selectedProvider;
-
-  providerSelectEl.addEventListener("change", async (event) => {
-    const target = event.currentTarget as HTMLSelectElement;
-    (plugin.settings as { aiProvider?: string }).aiProvider = target.value;
-    await plugin.saveSettings();
-  });
+  // Initial detection display
+  updateDetection();
 
   audioSettingsSection
     .createSetting()

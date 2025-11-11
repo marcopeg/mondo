@@ -5,6 +5,23 @@ import {
   normalizeAiProviderId,
 } from "@/ai/types";
 
+// Detect AI provider based on API key format
+export const detectAiProviderFromKey = (apiKey: string): AiProviderId | null => {
+  const trimmed = apiKey.trim();
+  
+  // OpenAI keys start with sk-
+  if (trimmed.startsWith("sk-")) {
+    return "openai";
+  }
+  
+  // Google Cloud / Gemini keys start with AIza
+  if (trimmed.startsWith("AIza")) {
+    return "gemini";
+  }
+  
+  return null;
+};
+
 export const getAiApiKey = (settings: unknown): string => {
   if (!settings || typeof settings !== "object") {
     return "";
@@ -39,6 +56,17 @@ export const getSelectedAiProviderId = (settings: unknown): AiProviderId => {
     return "openai";
   }
 
+  const apiKey = getAiApiKey(settings);
+  
+  // First, try to detect from API key format
+  if (apiKey) {
+    const detected = detectAiProviderFromKey(apiKey);
+    if (detected) {
+      return detected;
+    }
+  }
+
+  // Fall back to stored provider preference (if set)
   const raw = (settings as { aiProvider?: unknown }).aiProvider;
   return normalizeAiProviderId(raw);
 };

@@ -19,6 +19,8 @@ _Mondo_ is a general purpose plugin that adds plentiful of utilities to a standa
 
 > I'm developing this plugin to facilitate my life 🤘
 
+🔥 Mondo's AI-related features (Dictation, Voiceover, LLM) support both OpenAI and Gemini. Just paste your API Key and the plugin will auto-detect the correct provider. 🔥
+
 
 # How to Install & Update
 

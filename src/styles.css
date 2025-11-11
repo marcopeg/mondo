@@ -2446,3 +2446,20 @@ body.focus-mode .markdown-preview-view .view-header {
 .mondo-ai-provider-setting__input {
   width: 100%;
 }
+
+.mondo-ai-provider-setting__detection {
+  margin-top: 0.5rem;
+  font-size: 0.75rem;
+}
+
+.mondo-ai-provider-setting__detection-text {
+  font-weight: 500;
+}
+
+.mondo-ai-provider-setting__detection-success {
+  color: var(--text-success, #11b981);
+}
+
+.mondo-ai-provider-setting__detection-unknown {
+  color: var(--text-warning, #f59e0b);
+}
