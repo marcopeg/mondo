@@ -246,6 +246,29 @@ export class VoiceoverManager {
     this.stopPreview();
   };
 
+  // Ensure the voice is valid for the currently selected provider.
+  // If the currently stored voice belongs to another provider (e.g. 'ash' from OpenAI
+  // while using Gemini), fall back to a sensible default for that provider.
+  private ensureVoiceForProvider = async (
+    providerId: string,
+    voice: string
+  ): Promise<string> => {
+    const trimmed = voice?.trim?.() ?? "";
+    const available = await this.getAvailableVoices();
+
+    if (trimmed && available.includes(trimmed)) {
+      return trimmed;
+    }
+
+    if (providerId === "gemini") {
+      // Prefer a good neural US English default for Gemini
+      return "en-US-Neural2-C";
+    }
+
+    // Default to the first available voice (OpenAI or others)
+    return available[0] ?? "alloy";
+  };
+
   getAvailableVoices = async (): Promise<string[]> => {
     const { provider, providerId, apiKey } = this.getProviderDetails(false);
 
@@ -291,9 +314,10 @@ export class VoiceoverManager {
       return;
     }
 
+    let providerId: string;
     let provider;
     try {
-      ({ provider } = this.getProviderDetails(true));
+      ({ provider, providerId } = this.getProviderDetails(true));
     } catch (error) {
       const message =
         error instanceof Error
@@ -321,6 +345,9 @@ export class VoiceoverManager {
       if (!voice) {
         voice = (await this.resolveVoice()).trim();
       }
+
+      // Normalize to a provider-compatible voice (e.g. map OpenAI 'ash' to Gemini default)
+      voice = await this.ensureVoiceForProvider(providerId, voice);
 
       const contentHash = await hashContent(`${voice}::${trimmed}`);
       const existing = await this.findExistingVoiceover(
@@ -390,9 +417,16 @@ export class VoiceoverManager {
       return selected;
     }
 
-    const { provider } = this.getProviderDetails(false);
+    const { provider, providerId } = this.getProviderDetails(false);
     const voices = await this.getAvailableVoices();
-    const fallbackVoice = provider.defaultVoices[0] ?? "";
+    
+    // Pick provider-appropriate default voice
+    let fallbackVoice: string;
+    if (providerId === "gemini") {
+      fallbackVoice = "en-US-Neural2-C"; // Preferred Gemini voice
+    } else {
+      fallbackVoice = provider.defaultVoices[0] ?? ""; // OpenAI default
+    }
 
     if (voices.length === 0) {
       if (fallbackVoice) {
