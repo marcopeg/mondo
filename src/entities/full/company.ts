@@ -9,6 +9,7 @@ import { idea } from "./idea";
 import { document } from "./document";
 import { meeting } from "./meeting";
 import { link } from "./link";
+import { goal } from "./goal";
 
 export const company = {
   name: "Companies",
@@ -154,6 +155,18 @@ export const company = {
         attributes: {
           type: "link",
           company: ["{@this}"],
+        },
+      },
+    },
+    {
+      key: "goal",
+      label: "Goal",
+      icon: goal.icon,
+      targetType: "goal",
+      create: {
+        title: "Untitled Goal for {@this.show}",
+        attributes: {
+          linksTo: ["{@this}"],
         },
       },
     },

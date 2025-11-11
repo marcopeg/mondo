@@ -6,6 +6,7 @@ import { log } from "./log";
 import { document } from "./document";
 import { idea } from "./idea";
 import { link } from "./link";
+import { goal } from "./goal";
 
 export const project = {
   name: "Projects",
@@ -99,6 +100,18 @@ export const project = {
         title: "New Link for {@this.show}",
         attributes: {
           project: ["{@this}"],
+        },
+      },
+    },
+    {
+      key: "goal",
+      label: "Goal",
+      icon: goal.icon,
+      targetType: "goal",
+      create: {
+        title: "Untitled Goal for {@this.show}",
+        attributes: {
+          linksTo: ["{@this}"],
         },
       },
     },

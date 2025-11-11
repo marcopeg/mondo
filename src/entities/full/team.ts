@@ -6,6 +6,7 @@ import { idea } from "./idea";
 import { meeting } from "./meeting";
 import { project } from "./project";
 import { link } from "./link";
+import { goal } from "./goal";
 
 export const team = {
   name: "Teams",
@@ -117,6 +118,18 @@ export const team = {
         title: "New Link for {@this.show}",
         attributes: {
           team: ["{@this}"],
+        },
+      },
+    },
+    {
+      key: "goal",
+      label: "Goal",
+      icon: goal.icon,
+      targetType: "goal",
+      create: {
+        title: "Untitled Goal for {@this.show}",
+        attributes: {
+          linksTo: ["{@this}"],
         },
       },
     },

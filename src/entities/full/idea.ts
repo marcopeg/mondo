@@ -3,6 +3,7 @@ import { log } from "./log";
 import { fact } from "./fact";
 import { document } from "./document";
 import { link } from "./link";
+import { goal } from "./goal";
 
 export const idea = {
   name: "Ideas",
@@ -73,6 +74,18 @@ export const idea = {
         attributes: {
           type: "link",
           idea: ["{@this}"],
+        },
+      },
+    },
+    {
+      key: "goal",
+      label: "Goal",
+      icon: goal.icon,
+      targetType: "goal",
+      create: {
+        title: "Untitled Goal for {@this.show}",
+        attributes: {
+          linksTo: ["{@this}"],
         },
       },
     },

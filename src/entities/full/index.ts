@@ -20,6 +20,7 @@ import { newsletter } from "./newsletter";
 import { document } from "./document";
 import { article } from "./article";
 import { link } from "./link";
+import { goal } from "./goal";
 
 export const mondoConfigFull = {
   titles: {
@@ -30,6 +31,7 @@ export const mondoConfigFull = {
       "task",
       "project",
       "idea",
+      "goal",
       "company",
       "team",
       "meeting",
@@ -57,6 +59,7 @@ export const mondoConfigFull = {
         "task",
         "project",
         "idea",
+        "goal",
         "company",
         "team",
         "meeting",
@@ -86,6 +89,7 @@ export const mondoConfigFull = {
     task,
     project,
     idea,
+    goal,
     company,
     team,
     meeting,
