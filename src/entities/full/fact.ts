@@ -13,6 +13,20 @@ export const fact = {
       direction: "desc",
     },
   },
+  createRelated: [
+    {
+      key: "fact",
+      label: "Fact",
+      icon: "bookmark",
+      targetType: "fact",
+      create: {
+        title: "Untitled Fact for {@this.show}",
+        attributes: {
+          linksTo: ["{@this}"],
+        },
+      },
+    },
+  ],
   links: [
     {
       type: "backlinks",
