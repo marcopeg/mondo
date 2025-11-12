@@ -1293,6 +1293,9 @@ export default class Mondo extends Plugin {
 
     this.magicPasteToolbarManager?.dispose();
     this.magicPasteToolbarManager = null;
+
+    this.dailyNoteTracker?.dispose();
+    this.dailyNoteTracker = null;
   }
 
   getAudioTranscriptionManager(): AudioTranscriptionManager | null {
