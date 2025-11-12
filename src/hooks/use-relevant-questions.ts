@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useApp } from "@/hooks/use-app";
 import type { ListItemCache, TFile } from "obsidian";
-import { getMondoEntityConfig } from "@/types/MondoFileType";
+import { getMondoEntityConfig, isDailyNoteType, isJournalType } from "@/types/MondoFileType";
 
 const CHECKBOX_STATUS_REGEX = /\[(?<status>[ xX-])\]/;
 
@@ -153,6 +153,12 @@ export const useRelevantQuestions = (): {
           const cache = app.metadataCache.getFileCache(file);
           const noteTitle = getNoteTitle(file, cache);
           const noteType = getNoteType(cache);
+          
+          // Filter out daily notes and journals
+          if (isDailyNoteType(noteType) || isJournalType(noteType)) {
+            continue;
+          }
+          
           const noteShow = getNoteShow(cache);
           const raw = await app.vault.cachedRead(file);
           const rawLines = raw.split(/\r?\n/);
