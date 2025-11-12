@@ -69,9 +69,26 @@ export class DailyNoteTracker {
 
   private readonly pendingModifyPaths = new Set<string>();
 
+  private readonly pendingMetadataChecks = new Map<string, NodeJS.Timeout>();
+
   constructor(plugin: Mondo) {
     this.plugin = plugin;
+    this.setupMetadataListener();
   }
+
+  private setupMetadataListener = () => {
+    // Listen for metadata changes to handle pending file creations
+    this.plugin.registerEvent(
+      this.app.metadataCache.on("changed", (file) => {
+        const timeout = this.pendingMetadataChecks.get(file.path);
+        if (timeout) {
+          clearTimeout(timeout);
+          this.pendingMetadataChecks.delete(file.path);
+          this.processPendingFileCreated(file);
+        }
+      })
+    );
+  };
 
   public handleFileCreated = (abstract: TAbstractFile) => {
     if (!this.isMarkdownFile(abstract)) {
@@ -79,7 +96,29 @@ export class DailyNoteTracker {
     }
 
     const file = abstract;
-    if (this.shouldIgnorePath(file.path) || this.isDailyNoteFile(file)) {
+    if (this.shouldIgnorePath(file.path)) {
+      return;
+    }
+
+    // Check if metadata is immediately available
+    const cache = this.app.metadataCache.getFileCache(file);
+    if (cache && cache.frontmatter !== undefined) {
+      // Metadata is already available, process immediately
+      this.processPendingFileCreated(file);
+    } else {
+      // Metadata not yet available, wait for metadata cache to update
+      // Set a timeout as fallback in case the metadata event doesn't fire
+      const timeout = setTimeout(() => {
+        this.pendingMetadataChecks.delete(file.path);
+        this.processPendingFileCreated(file);
+      }, 500);
+      
+      this.pendingMetadataChecks.set(file.path, timeout);
+    }
+  };
+
+  private processPendingFileCreated = (file: TFile) => {
+    if (this.isDailyNoteFile(file)) {
       return;
     }
 
@@ -908,6 +947,14 @@ export class DailyNoteTracker {
 
     const dateKey = this.formatDateKey(new Date());
     void this.recordOpenedNote(dateKey, file);
+  };
+
+  public dispose = () => {
+    // Clear all pending metadata check timeouts
+    for (const timeout of this.pendingMetadataChecks.values()) {
+      clearTimeout(timeout);
+    }
+    this.pendingMetadataChecks.clear();
   };
 }
 
