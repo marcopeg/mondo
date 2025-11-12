@@ -151,7 +151,7 @@ const QuickDailyCard = ({
 
   return (
     <Card
-      icon="sun"
+      icon="calendar"
       collapsible
       collapsed={collapsed}
       collapseOnHeaderClick

@@ -171,6 +171,18 @@ export const renderDashboardSection = (
 
   dashboardSection
     .createSetting()
+    .setName("Enable Relevant Questions")
+    .setDesc("Show Relevant Questions (open checkboxes) on the dashboard.")
+    .addToggle((toggle) => {
+      const current =
+        dashboardSettings.enableRelevantQuestions === true ? true : false;
+      toggle.setValue(current).onChange(async (value) => {
+        await persistDashboardSetting(plugin, "enableRelevantQuestions", value);
+      });
+    });
+
+  dashboardSection
+    .createSetting()
     .setName("Disable Stats Block")
     .setDesc("Hide the stats block on the dashboard.")
     .addToggle((toggle) => {
