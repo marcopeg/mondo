@@ -1,30 +1,63 @@
-import { App, MarkdownPostProcessorContext } from "obsidian";
-import { createRoot } from "react-dom/client";
+import { App, MarkdownPostProcessorContext, MarkdownRenderChild } from "obsidian";
+import { createRoot, Root } from "react-dom/client";
 import { AppProvider } from "@/context/AppProvider";
 import { CodeBlockView } from "./CodeBlockView";
 
-export class MondoInlineViewWrapper {
+const REACT_ROOT_SYMBOL = Symbol.for("mondo-react-root");
+
+export class MondoInlineViewWrapper extends MarkdownRenderChild {
+  private root: Root | null = null;
+  private app: App;
+  private source: string;
+  private sourcePath: string;
+
   constructor(
     app: App,
     source: string,
     el: HTMLElement,
     ctx: MarkdownPostProcessorContext
   ) {
-    // Render the app:
-    const root = createRoot(el);
-    root.render(
-      <AppProvider app={app}>
-        <CodeBlockView source={source} sourcePath={ctx.sourcePath} />
+    super(el);
+    this.app = app;
+    this.source = source;
+    this.sourcePath = ctx.sourcePath;
+    
+    // Register this component with the context so Obsidian can manage its lifecycle
+    ctx.addChild(this);
+  }
+
+  onload() {
+    // Check if a root already exists for this element
+    const existingRoot = (this.containerEl as any)[REACT_ROOT_SYMBOL] as Root | undefined;
+    if (existingRoot) {
+      try {
+        existingRoot.unmount();
+      } catch (e) {
+        // Root may already be unmounted
+      }
+    }
+
+    // Create and render the React root
+    this.root = createRoot(this.containerEl);
+    (this.containerEl as any)[REACT_ROOT_SYMBOL] = this.root;
+    
+    this.root.render(
+      <AppProvider app={this.app}>
+        <CodeBlockView source={this.source} sourcePath={this.sourcePath} />
       </AppProvider>
     );
+  }
 
-    // Cleanup when the element is removed from the DOM
-    const observer = new MutationObserver(() => {
-      if (!document.body.contains(el)) {
-        root.unmount();
-        observer.disconnect();
+  onunload() {
+    // Clean up the React root
+    if (this.root) {
+      try {
+        this.root.unmount();
+      } catch (e) {
+        // Root may already be unmounted
       }
-    });
-    observer.observe(document.body, { childList: true, subtree: true });
+      this.root = null;
+      delete (this.containerEl as any)[REACT_ROOT_SYMBOL];
+    }
   }
 }
