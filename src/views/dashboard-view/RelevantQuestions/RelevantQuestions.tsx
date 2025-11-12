@@ -8,6 +8,7 @@ import Button from "@/components/ui/Button";
 import { Separator } from "@/components/ui/Separator";
 import { useRelevantQuestions } from "@/hooks/use-relevant-questions";
 import { getMondoEntityConfig } from "@/types/MondoFileType";
+import { useApp } from "@/hooks/use-app";
 
 type RelevantQuestionsProps = {
   collapsed?: boolean;
@@ -18,6 +19,7 @@ export const RelevantQuestions = ({
   collapsed = false,
   onCollapseChange,
 }: RelevantQuestionsProps) => {
+  const app = useApp();
   const { questions, isLoading, toggleQuestion } = useRelevantQuestions();
   const [visibleCount, setVisibleCount] = useState(5);
   const [pending, setPending] = useState<Record<string, boolean>>({});
@@ -53,6 +55,41 @@ export const RelevantQuestions = ({
   const handleLoadMore = useCallback(() => {
     setVisibleCount((prev) => prev + 5);
   }, []);
+
+  const handleLinkClick = useCallback(
+    async (question: ReturnType<typeof useRelevantQuestions>["questions"][number], e: MouseEvent) => {
+      e.preventDefault();
+      
+      try {
+        const isCmdOrCtrl = (e as any).metaKey || (e as any).ctrlKey;
+        const file = question.file;
+        const lineNumber = question.lineStart;
+        
+        // Open file in new leaf if Cmd/Ctrl is pressed
+        const leaf = isCmdOrCtrl 
+          ? app.workspace.getLeaf('tab')
+          : app.workspace.getLeaf(false);
+        
+        if (!leaf) return;
+        
+        // Open the file
+        await (leaf as any).openFile(file, {
+          eState: {
+            cursor: {
+              from: { line: lineNumber, ch: 0 },
+              to: { line: lineNumber, ch: 0 }
+            }
+          }
+        });
+        
+        // Ensure the leaf is visible
+        app.workspace.revealLeaf(leaf);
+      } catch (err) {
+        console.error("RelevantQuestions: failed to open link", err);
+      }
+    },
+    [app]
+  );
 
   return (
     <Card
@@ -124,6 +161,7 @@ export const RelevantQuestions = ({
                       <Link
                         to={linkPath}
                         className="block text-sm font-medium text-[var(--text-accent)] hover:underline"
+                        onClick={(e) => void handleLinkClick(question, e)}
                       >
                         {question.checkboxText}
                       </Link>

@@ -17,6 +17,8 @@ type RelevantQuestion = {
   lineStart: number;
   lineEnd: number;
   show: string | null;
+  lastModified: number;
+  created: number;
 };
 
 const stripCheckboxFromLine = (line: string): string => {
@@ -207,16 +209,17 @@ export const useRelevantQuestions = (): {
               lineStart: item.position.start.line,
               lineEnd: item.position.end.line,
               show: noteShow,
+              lastModified: file.stat.mtime,
+              created: file.stat.ctime,
             });
           });
         }
 
-        // Sort by file path and line number for consistency
+        // Sort by last modified time (most recent first), fallback to created time
         allQuestions.sort((a, b) => {
-          if (a.filePath !== b.filePath) {
-            return a.filePath.localeCompare(b.filePath);
-          }
-          return a.lineStart - b.lineStart;
+          const aTime = a.lastModified || a.created;
+          const bTime = b.lastModified || b.created;
+          return bTime - aTime; // Descending order (most recent first)
         });
 
         if (!cancelled) {
@@ -258,10 +261,11 @@ export const useRelevantQuestions = (): {
           return;
         }
 
-        // Add completion timestamp
+        // Add completion timestamp with date and time
         const now = new Date();
-        const timestamp = now.toISOString().slice(0, 10);
-        const completionSuffix = ` _(Completed on ${timestamp})_`;
+        const date = now.toISOString().slice(0, 10);
+        const time = now.toTimeString().slice(0, 5); // HH:MM format
+        const completionSuffix = ` _(Completed on ${date} at ${time})_`;
 
         // Replace the checkbox status and add timestamp
         const replaced = targetLine
