@@ -232,8 +232,17 @@ export const useRelevantQuestions = (): {
 
     void loadQuestions();
 
+    // Listen to vault events for real-time updates
+    const refs: any[] = [];
+    refs.push(app.vault.on("create", () => void loadQuestions()));
+    refs.push(app.vault.on("modify", () => void loadQuestions()));
+    refs.push(app.vault.on("delete", () => void loadQuestions()));
+    refs.push(app.metadataCache.on("changed", () => void loadQuestions()));
+
     return () => {
       cancelled = true;
+      refs.forEach((ref) => app.vault.offref(ref));
+      refs.forEach((ref) => app.metadataCache.offref(ref));
     };
   }, [app, refreshToken]);
 

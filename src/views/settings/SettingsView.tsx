@@ -117,6 +117,7 @@ export class SettingsView extends PluginSettingTab {
       enableQuickTasks: dashboardSettings.enableQuickTasks !== false,
       enableRelevantNotes:
         dashboardSettings.enableRelevantNotes !== false,
+      enableRelevantQuestions: dashboardSettings.enableRelevantQuestions === true,
       relevantNotesMode,
       disableStats,
       quickSearchEntities,
