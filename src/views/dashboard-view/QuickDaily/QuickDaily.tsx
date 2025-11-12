@@ -33,26 +33,12 @@ const QuickDailyCard = ({
   const { entries, isLoading, addEntry, markEntryDone, convertEntry } = state;
   const [visible, setVisible] = useState(5);
   const [pending, setPending] = useState<Record<string, boolean>>({});
-  const [searchQuery, setSearchQuery] = useState("");
 
-  // Filter entries based on search query
-  const filteredEntries = useMemo(() => {
-    if (!searchQuery.trim()) {
-      return entries;
-    }
-    const lowerQuery = searchQuery.toLowerCase();
-    return entries.filter(entry =>
-      entry.fullText.toLowerCase().includes(lowerQuery) ||
-      entry.displayText.toLowerCase().includes(lowerQuery) ||
-      entry.noteTitle.toLowerCase().includes(lowerQuery)
-    );
-  }, [entries, searchQuery]);
-
-  const filteredVisibleEntries = useMemo(
-    () => filteredEntries.slice(0, visible),
-    [filteredEntries, visible]
+  const visibleEntries = useMemo(
+    () => entries.slice(0, visible),
+    [entries, visible]
   );
-  const showLoadMoreFiltered = filteredEntries.length > visible;
+  const showLoadMore = entries.length > visible;
 
   const convertTypeOptions = useMemo(() => {
     const preferred: MondoFileType[] = [
@@ -172,19 +158,6 @@ const QuickDailyCard = ({
       onCollapseChange={onCollapseChange}
       actions={[
         {
-          key: "search-field",
-          content: (
-            <input
-              type="text"
-              placeholder="Search Quick Daily"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="px-2 py-1 text-sm border border-[var(--background-modifier-border)] rounded bg-[var(--background-primary)] text-[var(--text-normal)]"
-              style={{ width: "200px" }}
-            />
-          ),
-        },
-        {
           content: (
             <div className="flex-1 min-w-0">
               <QuickDailyEntry
@@ -207,13 +180,9 @@ const QuickDailyCard = ({
         <Typography variant="body" className="text-sm text-[var(--text-muted)]">
           No unchecked items in daily notes.
         </Typography>
-      ) : filteredEntries.length === 0 ? (
-        <Typography variant="body" className="text-sm text-[var(--text-muted)]">
-          No entries match your search.
-        </Typography>
       ) : (
         <Stack direction="column" gap={2} className="w-full">
-          {filteredVisibleEntries.map((entry) => {
+          {visibleEntries.map((entry) => {
             const isBusy = Boolean(pending[entry.id]);
             const timestamp = entry.occurredAt ?? entry.noteDate;
             const hintPieces: string[] = [];
@@ -298,7 +267,7 @@ const QuickDailyCard = ({
               </div>
             );
           })}
-          {showLoadMoreFiltered && (
+          {showLoadMore && (
             <div className="flex w-full flex-col gap-2 pt-1">
               <Separator />
               <Button
