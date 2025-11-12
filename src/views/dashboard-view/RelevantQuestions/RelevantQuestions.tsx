@@ -1,14 +1,19 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Card } from "@/components/ui/Card";
 import { Stack } from "@/components/ui/Stack";
 import { Typography } from "@/components/ui/Typography";
 import Link from "@/components/ui/Link";
 import { Icon } from "@/components/ui/Icon";
 import Button from "@/components/ui/Button";
+import Switch from "@/components/ui/Switch";
 import { Separator } from "@/components/ui/Separator";
 import { useRelevantQuestions } from "@/hooks/use-relevant-questions";
 import { getMondoEntityConfig } from "@/types/MondoFileType";
 import { useApp } from "@/hooks/use-app";
+import { useSetting } from "@/hooks/use-setting";
+import getMondoPlugin from "@/utils/getMondoPlugin";
+
+type TasksMode = "alphabetical" | "history";
 
 type RelevantQuestionsProps = {
   collapsed?: boolean;
@@ -23,9 +28,31 @@ export const RelevantQuestions = ({
   const { questions, isLoading, toggleQuestion } = useRelevantQuestions();
   const [visibleCount, setVisibleCount] = useState(5);
   const [pending, setPending] = useState<Record<string, boolean>>({});
+  
+  const modeSetting = useSetting<TasksMode>(
+    "dashboard.relevantTasksMode",
+    "history"
+  );
+  const sanitizedModeSetting: TasksMode =
+    modeSetting === "alphabetical" ? "alphabetical" : "history";
+  const [mode, setMode] = useState<TasksMode>(sanitizedModeSetting);
 
-  const visibleQuestions = questions.slice(0, visibleCount);
-  const hasMore = questions.length > visibleCount;
+  useEffect(() => {
+    setMode(sanitizedModeSetting);
+  }, [sanitizedModeSetting]);
+
+  // Sort questions based on mode
+  const sortedQuestions = useMemo(() => {
+    const sorted = [...questions];
+    if (mode === "alphabetical") {
+      sorted.sort((a, b) => a.checkboxText.localeCompare(b.checkboxText));
+    }
+    // "history" mode is already sorted by time in the hook
+    return sorted;
+  }, [questions, mode]);
+
+  const visibleQuestions = sortedQuestions.slice(0, visibleCount);
+  const hasMore = sortedQuestions.length > visibleCount;
 
   const setPendingState = useCallback((questionId: string, active: boolean) => {
     setPending((prev) => {
@@ -55,6 +82,57 @@ export const RelevantQuestions = ({
   const handleLoadMore = useCallback(() => {
     setVisibleCount((prev) => prev + 5);
   }, []);
+
+  const persistModeSetting = useCallback(
+    async (nextMode: TasksMode) => {
+      const plugin = getMondoPlugin(app);
+      if (!plugin) {
+        return;
+      }
+
+      const settings = plugin.settings ?? {};
+      const dashboardSettings = settings.dashboard ?? {};
+      if (dashboardSettings.relevantTasksMode === nextMode) {
+        return;
+      }
+
+      plugin.settings = {
+        ...settings,
+        dashboard: {
+          ...dashboardSettings,
+          relevantTasksMode: nextMode,
+        },
+      };
+
+      try {
+        await plugin.saveSettings?.();
+      } catch (error) {
+        console.debug(
+          "RelevantTasks: failed to persist mode setting",
+          error
+        );
+      }
+
+      try {
+        window.dispatchEvent(new CustomEvent("mondo:settings-updated"));
+      } catch (error) {
+        console.debug(
+          "RelevantTasks: failed to dispatch settings update event",
+          error
+        );
+      }
+    },
+    [app]
+  );
+
+  const handleModeChange = useCallback(
+    (checked: boolean) => {
+      const nextMode: TasksMode = checked ? "history" : "alphabetical";
+      setMode(nextMode);
+      void persistModeSetting(nextMode);
+    },
+    [persistModeSetting]
+  );
 
   const handleLinkClick = useCallback(
     async (question: ReturnType<typeof useRelevantQuestions>["questions"][number], e: MouseEvent) => {
@@ -93,12 +171,26 @@ export const RelevantQuestions = ({
 
   return (
     <Card
-      title="Relevant Questions"
+      title="Relevant Tasks"
       icon="help-circle"
       collapsible
       collapsed={collapsed}
       collapseOnHeaderClick
       onCollapseChange={onCollapseChange}
+      actions={[
+        {
+          key: "mode-toggle",
+          content: (
+            <Switch
+              checked={mode === "history"}
+              onCheckedChange={handleModeChange}
+              uncheckedLabel="a-z"
+              checkedLabel="history"
+              aria-label="Toggle relevant tasks sorting mode"
+            />
+          ),
+        },
+      ]}
     >
       {isLoading ? (
         <Typography variant="body" className="text-sm text-[var(--text-muted)]">

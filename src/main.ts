@@ -169,6 +169,7 @@ export default class Mondo extends Plugin {
       enableRelevantNotes: true,
       enableRelevantQuestions: false,
       relevantNotesMode: "hits",
+      relevantTasksMode: "history",
       disableStats: true,
       quickSearchEntities: [],
       quickTasksEntities: [],
@@ -406,6 +407,10 @@ export default class Mondo extends Plugin {
         }
       }
     }
+    const relevantTasksModeSetting = dashboardSettings.relevantTasksMode;
+    const relevantTasksMode =
+      relevantTasksModeSetting === "alphabetical" ? "alphabetical" : "history";
+    
     this.settings.dashboard = {
       openAtBoot: dashboardSettings.openAtBoot === true,
       forceTab: dashboardSettings.forceTab === true,
@@ -414,6 +419,7 @@ export default class Mondo extends Plugin {
       enableRelevantNotes: dashboardSettings.enableRelevantNotes !== false,
       enableRelevantQuestions: dashboardSettings.enableRelevantQuestions === true,
       relevantNotesMode,
+      relevantTasksMode,
       disableStats,
       quickSearchEntities,
       quickTasksEntities,

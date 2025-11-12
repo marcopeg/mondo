@@ -110,6 +110,10 @@ export class SettingsView extends PluginSettingTab {
       entityTilesSetting,
       MONDO_ENTITY_TYPES
     );
+    const relevantTasksModeSetting = dashboardSettings.relevantTasksMode;
+    const relevantTasksMode =
+      relevantTasksModeSetting === "alphabetical" ? "alphabetical" : "history";
+    
     (this.plugin as any).settings.dashboard = {
       openAtBoot: dashboardSettings.openAtBoot === true,
       forceTab: dashboardSettings.forceTab === true,
@@ -119,6 +123,7 @@ export class SettingsView extends PluginSettingTab {
         dashboardSettings.enableRelevantNotes !== false,
       enableRelevantQuestions: dashboardSettings.enableRelevantQuestions === true,
       relevantNotesMode,
+      relevantTasksMode,
       disableStats,
       quickSearchEntities,
       quickTasksEntities,
