@@ -8,7 +8,6 @@ import Button from "@/components/ui/Button";
 import { Separator } from "@/components/ui/Separator";
 import { useRelevantQuestions } from "@/hooks/use-relevant-questions";
 import { getMondoEntityConfig } from "@/types/MondoFileType";
-import { useApp } from "@/hooks/use-app";
 
 type RelevantQuestionsProps = {
   collapsed?: boolean;
@@ -19,7 +18,6 @@ export const RelevantQuestions = ({
   collapsed = false,
   onCollapseChange,
 }: RelevantQuestionsProps) => {
-  const app = useApp();
   const { questions, isLoading, toggleQuestion } = useRelevantQuestions();
   const [visibleCount, setVisibleCount] = useState(5);
   const [pending, setPending] = useState<Record<string, boolean>>({});
@@ -56,33 +54,6 @@ export const RelevantQuestions = ({
     setVisibleCount((prev) => prev + 5);
   }, []);
 
-  const handleLinkClick = useCallback(
-    async (question: ReturnType<typeof useRelevantQuestions>["questions"][number], e: MouseEvent) => {
-      e.preventDefault();
-      
-      try {
-        const isCmdOrCtrl = (e as any).metaKey || (e as any).ctrlKey;
-        const linkPath = question.headingTitle
-          ? `${question.filePath}#${question.headingTitle}`
-          : question.filePath;
-        
-        if (isCmdOrCtrl) {
-          // Open in new tab
-          await app.workspace.openLinkText(linkPath, "", "split");
-        } else {
-          // Open in current tab
-          const activeLeaf = app.workspace.getLeaf(false) || app.workspace.getLeaf(true);
-          await app.workspace.openLinkText(linkPath, "", false, {
-            active: true,
-          });
-        }
-      } catch (err) {
-        console.error("RelevantQuestions: failed to open link", err);
-      }
-    },
-    [app]
-  );
-
   return (
     <Card
       title="Relevant Questions"
@@ -110,6 +81,11 @@ export const RelevantQuestions = ({
             const iconName = config?.icon;
             const entityName = config?.name ?? question.noteType;
             const displayName = question.show || question.noteTitle;
+            
+            // Build the link path with heading if available
+            const linkPath = question.headingTitle
+              ? `${question.filePath}#${question.headingTitle}`
+              : question.filePath;
 
             return (
               <div
@@ -146,9 +122,8 @@ export const RelevantQuestions = ({
                       className="flex-1 min-w-0"
                     >
                       <Link
-                        to={question.filePath}
+                        to={linkPath}
                         className="block text-sm font-medium text-[var(--text-accent)] hover:underline"
-                        onClick={(e) => void handleLinkClick(question, e)}
                       >
                         {question.checkboxText}
                       </Link>
