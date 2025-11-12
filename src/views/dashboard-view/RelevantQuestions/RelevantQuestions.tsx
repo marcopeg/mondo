@@ -52,8 +52,23 @@ export const RelevantQuestions = ({
     return sorted;
   }, [questions, mode]);
 
-  const visibleQuestions = sortedQuestions.slice(0, visibleCount);
-  const hasMore = sortedQuestions.length > visibleCount;
+  const [searchQuery, setSearchQuery] = useState("");
+
+  // Filter questions based on search query
+  const filteredQuestions = useMemo(() => {
+    if (!searchQuery.trim()) {
+      return sortedQuestions;
+    }
+    const lowerQuery = searchQuery.toLowerCase();
+    return sortedQuestions.filter(q => 
+      q.checkboxText.toLowerCase().includes(lowerQuery) ||
+      q.noteTitle.toLowerCase().includes(lowerQuery) ||
+      (q.show && q.show.toLowerCase().includes(lowerQuery))
+    );
+  }, [sortedQuestions, searchQuery]);
+
+  const visibleQuestions = filteredQuestions.slice(0, visibleCount);
+  const hasMore = filteredQuestions.length > visibleCount;
 
   const setPendingState = useCallback((questionId: string, active: boolean) => {
     setPending((prev) => {
@@ -173,12 +188,25 @@ export const RelevantQuestions = ({
   return (
     <Card
       title="Relevant Tasks"
-      icon="help-circle"
+      icon="check-square"
       collapsible
       collapsed={collapsed}
       collapseOnHeaderClick
       onCollapseChange={onCollapseChange}
       actions={[
+        {
+          key: "search-field",
+          content: (
+            <input
+              type="text"
+              placeholder="Search Relevant Tasks"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="px-2 py-1 text-sm border border-[var(--background-modifier-border)] rounded bg-[var(--background-primary)] text-[var(--text-normal)]"
+              style={{ width: "200px" }}
+            />
+          ),
+        },
         {
           key: "mode-toggle",
           content: (
@@ -195,11 +223,15 @@ export const RelevantQuestions = ({
     >
       {isLoading ? (
         <Typography variant="body" className="text-sm text-[var(--text-muted)]">
-          Loading open questions...
+          Loading open tasks...
         </Typography>
       ) : questions.length === 0 ? (
         <Typography variant="body" className="text-sm text-[var(--text-muted)]">
-          No open questions found in your vault.
+          No open tasks found in your vault.
+        </Typography>
+      ) : filteredQuestions.length === 0 ? (
+        <Typography variant="body" className="text-sm text-[var(--text-muted)]">
+          No tasks match your search.
         </Typography>
       ) : (
         <Stack direction="column" gap={2} className="w-full">

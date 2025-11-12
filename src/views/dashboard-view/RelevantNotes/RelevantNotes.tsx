@@ -123,17 +123,30 @@ export const RelevantNotes = ({
   const [mode, setMode] = useState<NotesMode>(sanitizedModeSetting);
   const [hitsVisibleCount, setHitsVisibleCount] = useState(5);
   const [historyLimit, setHistoryLimit] = useState(5);
+  const [searchQuery, setSearchQuery] = useState("");
   const hitsNotes = useRelevantNotes(historyDays);
   useEffect(() => {
     setMode(sanitizedModeSetting);
   }, [sanitizedModeSetting]);
-  const scopedNotes = useMemo(
-    () =>
-      selectedType
-        ? hitsNotes.filter((note) => note.type === selectedType)
-        : hitsNotes,
-    [hitsNotes, selectedType]
-  );
+  const scopedNotes = useMemo(() => {
+    let filtered = hitsNotes;
+    
+    // Apply type filter
+    if (selectedType) {
+      filtered = filtered.filter((note) => note.type === selectedType);
+    }
+    
+    // Apply search filter
+    if (searchQuery.trim()) {
+      const lowerQuery = searchQuery.toLowerCase();
+      filtered = filtered.filter((note) =>
+        note.label.toLowerCase().includes(lowerQuery) ||
+        note.path.toLowerCase().includes(lowerQuery)
+      );
+    }
+    
+    return filtered;
+  }, [hitsNotes, selectedType, searchQuery]);
 
   const filteredHits = useMemo(() => {
     const sorted = [...scopedNotes];
@@ -361,12 +374,25 @@ export const RelevantNotes = ({
   return (
     <Card
       title="Relevant Notes"
-      icon="target"
+      icon="file-text"
       collapsible
       collapsed={collapsed}
       collapseOnHeaderClick
       onCollapseChange={onCollapseChange}
       actions={[
+        {
+          key: "search-field",
+          content: (
+            <input
+              type="text"
+              placeholder="Search Relevant Notes"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="px-2 py-1 text-sm border border-[var(--background-modifier-border)] rounded bg-[var(--background-primary)] text-[var(--text-normal)]"
+              style={{ width: "200px" }}
+            />
+          ),
+        },
         {
           key: "mode-toggle",
           content: (
