@@ -7,6 +7,7 @@ import { Icon } from "@/components/ui/Icon";
 import Button from "@/components/ui/Button";
 import Switch from "@/components/ui/Switch";
 import { Separator } from "@/components/ui/Separator";
+import { ReadableDate } from "@/components/ui/ReadableDate";
 import { useRelevantQuestions } from "@/hooks/use-relevant-questions";
 import { getMondoEntityConfig } from "@/types/MondoFileType";
 import { useApp } from "@/hooks/use-app";
@@ -261,7 +262,8 @@ export const RelevantQuestions = ({
                         variant="body"
                         className="text-xs text-[var(--text-muted)]"
                       >
-                        {displayName}
+                        {displayName},{" "}
+                        <ReadableDate value={question.lastModified} />
                       </Typography>
                     </Stack>
                   </Stack>
