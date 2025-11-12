@@ -5,6 +5,7 @@ import QuickButtons from "./components/QuickButtons";
 import ImsEntities from "./components/ImsEntities";
 import QuickTasksSection from "./components/QuickTasksSection";
 import RelevantNotesSection from "./components/RelevantNotesSection";
+import RelevantQuestionsSection from "./components/RelevantQuestionsSection";
 import ImsButtons from "./components/ImsButtons";
 import VaultStatsSection from "./components/VaultStatsSection";
 import QuickDaily from "./QuickDaily";
@@ -22,13 +23,17 @@ export const DashboardView = () => {
     "dashboard.enableRelevantNotes",
     true
   );
+  const relevantQuestionsEnabled = useSetting<boolean>(
+    "dashboard.enableRelevantQuestions",
+    false
+  );
 
   const quickDailyEnabled = useSetting<boolean>(
     "dashboard.enableQuickDaily",
     false
   );
   const shouldShowProductivity =
-    quickDailyEnabled || quickTasksEnabled || relevantNotesEnabled;
+    quickDailyEnabled || quickTasksEnabled || relevantNotesEnabled || relevantQuestionsEnabled;
 
   const [quickDailyCollapsed, setQuickDailyCollapsed] =
     useDashboardPanelCollapsed("quickDaily", false);
@@ -70,10 +75,16 @@ export const DashboardView = () => {
               <QuickTasksSection enabled={quickTasksEnabled} />
             </>
           )}
-          <RelevantNotesSection
-            enabled={relevantNotesEnabled}
-            isCompactLayout={isCompactLayout}
-          />
+          <div className="flex flex-col gap-4">
+            <RelevantNotesSection
+              enabled={relevantNotesEnabled}
+              isCompactLayout={isCompactLayout}
+            />
+            <RelevantQuestionsSection
+              enabled={relevantQuestionsEnabled}
+              isCompactLayout={isCompactLayout}
+            />
+          </div>
         </div>
       )}
       <ImsEntities />
