@@ -26,7 +26,6 @@ const headerClasses = [
   "flex min-h-[5rem] items-center justify-between gap-3",
   "rounded-md border border-[var(--background-modifier-border)]",
   "bg-[var(--background-secondary)] px-3 py-2",
-  "mb-4",
 ].join(" ");
 
 export const EntityHeaderUnknown = () => {
