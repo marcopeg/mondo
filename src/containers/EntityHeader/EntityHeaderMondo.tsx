@@ -47,7 +47,6 @@ const headerClasses = [
   "flex min-h-[5rem] items-start gap-3",
   "rounded-md border border-[var(--background-modifier-border)]",
   "bg-[var(--background-secondary)] px-3 py-2",
-  "mb-4",
 ].join(" ");
 
 const toOptionalString = (value: unknown): string | undefined => {

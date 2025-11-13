@@ -333,6 +333,25 @@
   height: 0;
 }
 
+/* Entity panel spacing: small gaps between panels, large gap after block */
+.mondo [data-mondo-entity-panel-root] {
+  margin-bottom: var(--size-4-4, 1rem);
+}
+
+.mondo [data-mondo-entity-panel-root] .mod-card {
+  margin-bottom: 0;
+}
+
+.mondo [data-mondo-entity-panel-root] .mondo-entity-links-panel {
+  margin-bottom: 0.5rem;
+}
+
+.mondo
+  [data-mondo-entity-panel-root]
+  .mondo-entity-links-panel:last-of-type {
+  margin-bottom: 0;
+}
+
 .mondo .mondo-card--minimize-on-collapsed {
   margin-bottom: 0.5rem;
 }
