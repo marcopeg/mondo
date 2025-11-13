@@ -183,12 +183,12 @@ export const renderDashboardSection = (
 
   dashboardSection
     .createSetting()
-    .setName("Disable Stats Block")
-    .setDesc("Hide the stats block on the dashboard.")
+    .setName("Enable Stats Block")
+    .setDesc("Show the stats block on the dashboard.")
     .addToggle((toggle) => {
-      const current = dashboardSettings.disableStats === false ? false : true;
+      const current = dashboardSettings.disableStats === false;
       toggle.setValue(current).onChange(async (value) => {
-        await persistDashboardSetting(plugin, "disableStats", value);
+        await persistDashboardSetting(plugin, "disableStats", !value);
       });
     });
 
