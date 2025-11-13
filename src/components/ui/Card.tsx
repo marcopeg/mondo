@@ -260,7 +260,7 @@ export const Card: React.FC<CardProps> = ({
         ? "flex-start"
         : "center",
     justifyContent: hasTextualHeaderContent ? "space-between" : "flex-end",
-    gap: "0.5rem",
+    gap: isMinimizedAndCollapsed ? "0.375rem" : "0.5rem",
     width: isMinimizedAndCollapsed ? undefined : "100%",
   };
 
@@ -279,7 +279,7 @@ export const Card: React.FC<CardProps> = ({
     alignSelf: hasTextualHeaderContent ? "center" : undefined,
   };
 
-  const headerGap = 2;
+  const headerGap = isMinimizedAndCollapsed ? 1 : 2;
   const actionsGap = isMinimizedAndCollapsed ? 1 : 2;
 
   const hasBodyContent = React.Children.count(children) > 0;
@@ -309,7 +309,15 @@ export const Card: React.FC<CardProps> = ({
       ? "cursor-pointer select-none"
       : undefined;
 
-  const titleWrapperStyle: React.CSSProperties = { outline: "none" };
+  const titleWrapperStyle: React.CSSProperties = {
+    outline: "none",
+    ...(isMinimizedAndCollapsed
+      ? {
+          flex: "1 1 auto",
+          minWidth: 0,
+        }
+      : {}),
+  };
 
   return (
     // keep Paper unpadded by default; padding will be applied to the inner Boxes

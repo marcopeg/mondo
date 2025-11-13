@@ -1,4 +1,4 @@
-import { useMemo, useRef } from "react";
+import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useEntityFile } from "@/context/EntityFileProvider";
 import { EntityHeader } from "@/containers/EntityHeader";
 import { EntityLinks } from "@/containers/EntityLinks";
@@ -22,6 +22,57 @@ const normalizeType = (rawType: unknown): string | null => {
 export const EntityPanel = () => {
   const { file } = useEntityFile();
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const [collapsedCardMode, setCollapsedCardMode] = useState<
+    "compact" | "default"
+  >("default");
+
+  useLayoutEffect(() => {
+    const element = containerRef.current;
+    if (!element) {
+      return () => {};
+    }
+
+    const threshold = 560;
+    const resolveMode = (width: number) =>
+      width <= threshold ? "compact" : "default";
+
+    const measure = () => {
+      const width = element.getBoundingClientRect().width;
+      setCollapsedCardMode((previous) => {
+        const next = resolveMode(width);
+        return previous === next ? previous : next;
+      });
+    };
+
+    measure();
+
+    if (typeof ResizeObserver !== "undefined") {
+      let frame = 0;
+      const observer = new ResizeObserver(() => {
+        if (frame) {
+          cancelAnimationFrame(frame);
+        }
+        frame = requestAnimationFrame(measure);
+      });
+      observer.observe(element);
+
+      return () => {
+        if (frame) {
+          cancelAnimationFrame(frame);
+        }
+        observer.disconnect();
+      };
+    }
+
+    if (typeof window !== "undefined") {
+      window.addEventListener("resize", measure);
+      return () => {
+        window.removeEventListener("resize", measure);
+      };
+    }
+
+    return () => {};
+  }, []);
 
   const { type, showHeader, showEntityLinks, showDailyLinks } = useMemo(() => {
     const frontmatter = (file?.cache?.frontmatter ?? {}) as
@@ -66,6 +117,7 @@ export const EntityPanel = () => {
       <div
         ref={containerRef}
         className="flex flex-col gap-2"
+        data-collapsed-card-mode={collapsedCardMode}
         data-mondo-entity-panel-root
       >
         {showHeader && <EntityHeader type={type} />}
