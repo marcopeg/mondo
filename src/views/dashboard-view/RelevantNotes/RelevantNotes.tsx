@@ -373,7 +373,6 @@ export const RelevantNotes = ({
 
   return (
     <Card
-      title="Relevant Notes"
       icon="file-text"
       collapsible
       collapsed={collapsed}
@@ -388,8 +387,7 @@ export const RelevantNotes = ({
               placeholder="Search Relevant Notes"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="px-2 py-1 text-sm border border-[var(--background-modifier-border)] rounded bg-[var(--background-primary)] text-[var(--text-normal)]"
-              style={{ width: "200px" }}
+              className="w-full min-w-0 px-2 py-1 text-sm border border-[var(--background-modifier-border)] rounded bg-[var(--background-primary)] text-[var(--text-normal)]"
             />
           ),
         },
