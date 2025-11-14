@@ -1,0 +1,127 @@
+{
+  "titles": {
+    "order": ["person", "company", "fact"]
+  },
+  "relevantNotes": {
+    "filter": {
+      "order": ["person", "company", "fact"]
+    }
+  },
+  "entities": {
+    "person": {
+      "type": "person",
+      "name": "People",
+      "icon": "user",
+      "template": "---\nmondoType: person\nshow: {{title}}\nrole: []\n---\n",
+      "frontmatter": {
+        "company": {
+          "type": "entity",
+          "title": "Link to a Company",
+          "filter": {
+            "type": {
+              "in": ["company"]
+            }
+          },
+          "multiple": true
+        },
+        "date": {
+          "type": "datetime",
+          "default": "now"
+        }
+      },
+      "links": [
+        {
+          "type": "backlinks",
+          "key": "facts",
+          "config": {
+            "title": "Related Facts",
+            "icon": "info",
+            "targetType": "fact",
+            "find": {
+              "query": [
+                {
+                  "description": "Facts referencing this person",
+                  "steps": [
+                    {
+                      "in": {
+                        "property": "person",
+                        "type": ["fact"]
+                      }
+                    }
+                  ]
+                }
+              ],
+              "combine": "union"
+            },
+            "filter": {
+              "type": {
+                "in": ["fact"]
+              }
+            },
+            "columns": [
+              { "type": "show" },
+              { "type": "date", "label": "Date", "align": "right" }
+            ],
+            "sort": { "strategy": "manual" }
+          }
+        }
+      ]
+    },
+    "company": {
+      "type": "company",
+      "name": "Companies",
+      "icon": "building",
+      "template": "---\nmondoType: company\nshow: {{title}}\n---\n",
+      "frontmatter": {
+        "people": {
+          "type": "entity",
+          "title": "Link to People",
+          "filter": {
+            "type": {
+              "in": ["person"]
+            }
+          },
+          "multiple": true
+        }
+      }
+    },
+    "fact": {
+      "type": "fact",
+      "name": "Facts",
+      "icon": "info",
+      "template": "---\nmondoType: fact\nshow: {{title}}\ndate: {{date}}\nperson: []\n---\n",
+      "frontmatter": {
+        "person": {
+          "type": "entity",
+          "title": "Link to a Person",
+          "find": {
+            "query": [
+              {
+                "description": "All people",
+                "steps": [
+                  {
+                    "filter": {
+                      "type": ["person"]
+                    }
+                  }
+                ]
+              }
+            ],
+            "combine": "union"
+          },
+          "multiple": true
+        },
+        "company": {
+          "type": "entity",
+          "title": "Link to a Company",
+          "filter": {
+            "type": {
+              "in": ["company"]
+            }
+          },
+          "multiple": false
+        }
+      }
+    }
+  }
+}

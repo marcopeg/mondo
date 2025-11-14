@@ -13,6 +13,18 @@ export const person = {
   icon: "user",
   template:
     "\ndate: {{date}}\nlocation: []\ncompany: []\nrole: []\nteam: []\n---\n",
+  frontmatter: {
+    company: {
+      type: "entity",
+      title: "Link to a Company",
+      filter: {
+        type: {
+          in: ["company"],
+        },
+      },
+      multiple: true,
+    },
+  },
   list: {
     columns: [
       { type: "cover" },
