@@ -4,6 +4,7 @@ import { SplitButton } from "@/components/ui/SplitButton";
 import { Cover } from "@/components/ui/Cover";
 import { Icon } from "@/components/ui/Icon";
 import { Badge } from "@/components/ui/Badge";
+import { Card } from "@/components/ui/Card";
 import { useEntityFile } from "@/context/EntityFileProvider";
 import { useApp } from "@/hooks/use-app";
 import { MONDO_ENTITIES, type MondoEntityType } from "@/entities";
@@ -43,11 +44,9 @@ const buildHeaderLabel = (entityType: MondoEntityType) => {
   return config?.name ?? entityType;
 };
 
-const headerClasses = [
+const headerContentClasses = [
   "flex min-h-[5rem] items-start gap-3",
-  "rounded-md border border-[var(--background-modifier-border)]",
-  "bg-[var(--background-secondary)] px-3 py-2",
-  "mb-4",
+  "focus:outline-none",
 ].join(" ");
 
 const toOptionalString = (value: unknown): string | undefined => {
@@ -506,63 +505,65 @@ export const EntityHeaderMondo = ({ entityType }: EntityHeaderMondoProps) => {
   return (
     <div className="flex flex-col gap-2">
       <DeprecatedTypeWarning />
-      <div
-        ref={headerRef}
-        className={headerClasses}
-        tabIndex={-1}
-        data-entity-header
-      >
-        <Cover
-          src={coverSrc ?? undefined}
-          alt="Cover thumbnail"
-          size={80}
-          strategy="cover"
-          placeholderIcon={placeholderIcon}
-          placeholderIconClassName="h-8 w-8 text-[var(--text-muted)]"
-          isLoading={isUploadingCover}
-          disabled={isUploadingCover}
-          selectLabel="Add cover image"
-          editLabel="Open cover image"
-          onSelectCover={handleCoverSelect}
-          onEditCover={handleCoverEdit}
-        />
+      <Card className="mb-4" px={3} py={2}>
+        <div
+          ref={headerRef}
+          className={headerContentClasses}
+          tabIndex={-1}
+          data-entity-header
+        >
+          <Cover
+            src={coverSrc ?? undefined}
+            alt="Cover thumbnail"
+            size={80}
+            strategy="cover"
+            placeholderIcon={placeholderIcon}
+            placeholderIconClassName="h-8 w-8 text-[var(--text-muted)]"
+            isLoading={isUploadingCover}
+            disabled={isUploadingCover}
+            selectLabel="Add cover image"
+            editLabel="Open cover image"
+            onSelectCover={handleCoverSelect}
+            onEditCover={handleCoverEdit}
+          />
 
-        <div className="flex min-w-0 flex-1 flex-col gap-2">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div className="min-w-0 flex-1">
-              <div className="truncate text-sm font-semibold text-[var(--text-normal)]">
-                {displayName}
+          <div className="flex min-w-0 flex-1 flex-col gap-2">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div className="min-w-0 flex-1">
+                <div className="truncate text-sm font-semibold text-[var(--text-normal)]">
+                  {displayName}
+                </div>
+                <div className="text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">
+                  Mondo Note • {label}
+                </div>
               </div>
-              <div className="text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">
-                Mondo Note • {label}
-              </div>
+              {primary ? (
+                <div className="flex-shrink-0">
+                  <SplitButton
+                    onClick={handlePrimaryClick}
+                    secondaryActions={secondary}
+                    menuAriaLabel="Select related entity to create"
+                    disabled={isBusy}
+                  >
+                    {`+ ${primary.label}`}
+                  </SplitButton>
+                </div>
+              ) : null}
             </div>
-            {primary ? (
-              <div className="flex-shrink-0">
-                <SplitButton
-                  onClick={handlePrimaryClick}
-                  secondaryActions={secondary}
-                  menuAriaLabel="Select related entity to create"
-                  disabled={isBusy}
-                >
-                  {`+ ${primary.label}`}
-                </SplitButton>
+
+            {hasCollapsedPanels ? (
+              <div
+                className="flex flex-wrap gap-2"
+                aria-label="Collapsed entity link panels"
+              >
+                {collapsedPanels.map((panel) => (
+                  <CollapsedPanelButton key={panel.id} panel={panel} />
+                ))}
               </div>
             ) : null}
           </div>
-
-          {hasCollapsedPanels ? (
-            <div
-              className="flex flex-wrap gap-2"
-              aria-label="Collapsed entity link panels"
-            >
-              {collapsedPanels.map((panel) => (
-                <CollapsedPanelButton key={panel.id} panel={panel} />
-              ))}
-            </div>
-          ) : null}
         </div>
-      </div>
+      </Card>
     </div>
   );
 };
