@@ -93,11 +93,18 @@ class EntityPickerModal extends Modal {
     this.modalEl.addClass("mondo-entity-picker-modal");
     this.titleEl.setText(this.title);
 
+    // Make modal more responsive on mobile
+    this.modalEl.style.maxWidth = "min(600px, 90vw)";
+    this.contentEl.style.maxHeight = "min(70vh, 600px)";
+    this.contentEl.style.display = "flex";
+    this.contentEl.style.flexDirection = "column";
+
     // Create search input
     const searchContainer = this.contentEl.createDiv({
       cls: "mondo-entity-picker-search",
     });
     searchContainer.style.marginBottom = "1rem";
+    searchContainer.style.flexShrink = "0";
 
     this.searchInput = searchContainer.createEl("input", {
       type: "text",
@@ -105,7 +112,8 @@ class EntityPickerModal extends Modal {
       cls: "mondo-entity-picker-search-input",
     });
     this.searchInput.style.width = "100%";
-    this.searchInput.style.padding = "0.5rem";
+    this.searchInput.style.padding = "0.75rem";
+    this.searchInput.style.fontSize = "16px"; // Prevent zoom on iOS
     this.searchInput.style.border =
       "1px solid var(--background-modifier-border)";
     this.searchInput.style.borderRadius = "4px";
@@ -120,8 +128,12 @@ class EntityPickerModal extends Modal {
     this.resultsContainer = this.contentEl.createDiv({
       cls: "mondo-entity-picker-results",
     });
-    this.resultsContainer.style.maxHeight = "400px";
+    this.resultsContainer.style.maxHeight = "100%";
     this.resultsContainer.style.overflowY = "auto";
+    this.resultsContainer.style.flex = "1";
+    this.resultsContainer.style.minHeight = "0";
+    // Better scrolling on mobile (using setProperty to avoid TS error)
+    this.resultsContainer.style.setProperty("-webkit-overflow-scrolling", "touch");
 
     // Load and filter entities
     this.loadEntities();
@@ -297,9 +309,13 @@ class EntityPickerModal extends Modal {
       const item = this.resultsContainer!.createDiv({
         cls: "mondo-entity-picker-item",
       });
-      item.style.padding = "0.5rem 0.75rem";
+      item.style.padding = "0.75rem";
       item.style.cursor = "pointer";
       item.style.borderRadius = "4px";
+      item.style.touchAction = "manipulation"; // Better touch handling
+      item.style.minHeight = "44px"; // Minimum touch target size
+      item.style.display = "flex";
+      item.style.alignItems = "center";
 
       const displayName = getEntityDisplayName(file);
       item.setText(displayName);
@@ -310,6 +326,17 @@ class EntityPickerModal extends Modal {
 
       item.addEventListener("mouseleave", () => {
         item.style.backgroundColor = "";
+      });
+
+      // Add active state for touch
+      item.addEventListener("touchstart", () => {
+        item.style.backgroundColor = "var(--background-modifier-hover)";
+      });
+
+      item.addEventListener("touchend", () => {
+        setTimeout(() => {
+          item.style.backgroundColor = "";
+        }, 100);
       });
 
       item.addEventListener("click", () => {
