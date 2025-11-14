@@ -23,6 +23,7 @@ import {
   type CollapsedPanelSummary,
 } from "@/context/EntityLinksLayoutContext";
 import DeprecatedTypeWarning from "./DeprecatedTypeWarning";
+import { AddProperty } from "./AddProperty";
 
 type EntityHeaderMondoProps = {
   entityType: MondoEntityType;
@@ -537,9 +538,12 @@ export const EntityHeaderMondo = ({ entityType }: EntityHeaderMondoProps) => {
                   Mondo Note • {label}
                 </div>
               </div>
+              <div className="flex flex-shrink-0 gap-2">
+              {entityConfig?.frontmatter && (
+                <AddProperty frontmatterConfig={entityConfig.frontmatter} />
+              )}
               {primary ? (
-                <div className="flex-shrink-0">
-                  <SplitButton
+                    <SplitButton
                     onClick={handlePrimaryClick}
                     secondaryActions={secondary}
                     menuAriaLabel="Select related entity to create"
@@ -547,9 +551,9 @@ export const EntityHeaderMondo = ({ entityType }: EntityHeaderMondoProps) => {
                   >
                     {`+ ${primary.label}`}
                   </SplitButton>
-                </div>
-              ) : null}
+                ) : null}
             </div>
+              </div>
 
             {hasCollapsedPanels ? (
               <div

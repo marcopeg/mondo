@@ -96,6 +96,41 @@ export type MondoEntityCreateAttributes = Record<
   MondoEntityCreateAttributeValue
 >;
 
+/**
+ * Frontmatter field configuration for entity properties.
+ * Enables dynamic frontmatter fields that can be added via UI.
+ */
+export interface MondoEntityFrontmatterFieldConfig {
+  /** Field type */
+  type: "entity" | "datetime" | "text" | "number" | "boolean";
+  /** Display title for the field */
+  title?: string;
+  /** Whether to allow multiple values (applies to entity type) */
+  multiple?: boolean;
+  /** Default value or preset function (e.g., "now" for datetime) */
+  default?: string | number | boolean;
+  /** Filter configuration for entity selection (same as backlinks panel filter) */
+  filter?: Record<string, unknown> | { all?: unknown[]; any?: unknown[]; not?: unknown };
+  /** Find configuration for entity selection (same as backlinks panel find) */
+  find?: {
+    query: Array<{
+      description?: string;
+      steps: Array<
+        | { out: { property: string | string[]; type?: string | string[] } }
+        | { in: { property: string | string[]; type?: string | string[] } }
+        | { notIn: { property: string | string[]; type?: string | string[] } }
+        | { filter: { type?: string | string[] } }
+        | { dedupe?: true }
+        | { unique?: true }
+        | { not?: "host" }
+      >;
+    }>;
+    combine?: "union" | "intersect" | "subtract";
+  };
+}
+
+export type MondoEntityFrontmatterConfig = Record<string, MondoEntityFrontmatterFieldConfig>;
+
 export interface MondoEntityRelatedCreateConfig {
   title?: string;
   attributes?: MondoEntityCreateAttributes;
@@ -229,4 +264,6 @@ export interface MondoEntityConfig<
   list?: MondoEntityListConfig;
   links?: TLink[];
   createRelated?: MondoEntityRelatedConfig[];
+  /** Optional frontmatter field configurations for dynamic property addition */
+  frontmatter?: MondoEntityFrontmatterConfig;
 }
