@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef } from "react";
 import { Notice } from "obsidian";
 import { SplitButton } from "@/components/ui/SplitButton";
 import { Cover } from "@/components/ui/Cover";
+import { Card } from "@/components/ui/Card";
 import { useEntityFile } from "@/context/EntityFileProvider";
 import { useApp } from "@/hooks/use-app";
 import { useSetting } from "@/hooks/use-setting";
@@ -22,11 +23,9 @@ const buildEntityOptions = () =>
     icon: MONDO_ENTITIES[type]?.icon,
   })).sort((a, b) => a.label.localeCompare(b.label));
 
-const headerClasses = [
+const headerContentClasses = [
   "flex min-h-[5rem] items-center justify-between gap-3",
-  "rounded-md border border-[var(--background-modifier-border)]",
-  "bg-[var(--background-secondary)] px-3 py-2",
-  "mb-4",
+  "focus:outline-none",
 ].join(" ");
 
 export const EntityHeaderUnknown = () => {
@@ -126,44 +125,46 @@ export const EntityHeaderUnknown = () => {
   );
 
   return (
-    <div
-      ref={headerRef}
-      className={headerClasses}
-      tabIndex={-1}
-      data-entity-header
-    >
-      <Cover
-        src={coverSrc ?? undefined}
-        alt="Cover thumbnail"
-        size={80}
-        strategy="cover"
-        placeholderVariant="solid"
-        placeholderIcon="file-text"
-        placeholderIconClassName="h-8 w-8 text-[var(--text-muted)]"
-        editLabel="Open cover image"
-        onEditCover={handleCoverClick}
-      />
-
-      <div className="min-w-0 flex-1">
-        <div className="truncate text-sm font-semibold text-[var(--text-normal)]">
-          {displayName}
-        </div>
-        <div className="text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">
-          Assign a Mondo type to unlock entity tools
-        </div>
-      </div>
-
-      <SplitButton
-        type="button"
-        icon="plus"
-        menuAriaLabel="Select Mondo note type"
-        secondaryActions={secondaryActions}
-        primaryOpensMenu
-        disabled={secondaryActions.length === 0}
+    <Card className="mb-4" px={3} py={2}>
+      <div
+        ref={headerRef}
+        className={headerContentClasses}
+        tabIndex={-1}
+        data-entity-header
       >
-        Create as Mondo Note
-      </SplitButton>
-    </div>
+        <Cover
+          src={coverSrc ?? undefined}
+          alt="Cover thumbnail"
+          size={80}
+          strategy="cover"
+          placeholderVariant="solid"
+          placeholderIcon="file-text"
+          placeholderIconClassName="h-8 w-8 text-[var(--text-muted)]"
+          editLabel="Open cover image"
+          onEditCover={handleCoverClick}
+        />
+
+        <div className="min-w-0 flex-1">
+          <div className="truncate text-sm font-semibold text-[var(--text-normal)]">
+            {displayName}
+          </div>
+          <div className="text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">
+            Assign a Mondo type to unlock entity tools
+          </div>
+        </div>
+
+        <SplitButton
+          type="button"
+          icon="plus"
+          menuAriaLabel="Select Mondo note type"
+          secondaryActions={secondaryActions}
+          primaryOpensMenu
+          disabled={secondaryActions.length === 0}
+        >
+          Create as Mondo Note
+        </SplitButton>
+      </div>
+    </Card>
   );
 };
 
