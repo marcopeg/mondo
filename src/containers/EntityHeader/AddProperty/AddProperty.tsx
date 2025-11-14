@@ -144,7 +144,7 @@ export const AddProperty = ({ frontmatterConfig }: AddPropertyProps) => {
         offset={{ vertical: 8 }}
       >
         <div
-          className="min-w-[200px] rounded-md border border-[var(--background-modifier-border)] bg-[var(--background-primary)] shadow-lg"
+          className="min-w-[200px] max-w-[90vw] rounded-md border border-[var(--background-modifier-border)] bg-[var(--background-primary)] shadow-lg"
           role="menu"
         >
           {pickerProperties.map((property) => (
@@ -152,7 +152,7 @@ export const AddProperty = ({ frontmatterConfig }: AddPropertyProps) => {
               key={property.key}
               type="button"
               onClick={() => handlePropertySelect(property)}
-              className="w-full px-3 py-2 text-left text-sm text-[var(--text-normal)] hover:bg-[var(--background-modifier-hover)] first:rounded-t-md last:rounded-b-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--interactive-accent)] focus-visible:ring-inset"
+              className="w-full px-3 py-2 text-left text-sm text-[var(--text-normal)] hover:bg-[var(--background-modifier-hover)] first:rounded-t-md last:rounded-b-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--interactive-accent)] focus-visible:ring-inset touch-manipulation"
               role="menuitem"
             >
               {property.config.title || property.key}
