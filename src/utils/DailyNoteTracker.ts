@@ -439,22 +439,64 @@ export class DailyNoteTracker {
   private ensureDailyNoteMetadata = (
     frontmatter: Record<string, unknown>,
     dateKey: string
-  ) => {
-    frontmatter.mondoType = DAILY_NOTE_TYPE;
+  ): boolean => {
+    let changed = false;
+
+    if (frontmatter.mondoType !== DAILY_NOTE_TYPE) {
+      frontmatter.mondoType = DAILY_NOTE_TYPE;
+      changed = true;
+    }
+
     if (Object.prototype.hasOwnProperty.call(frontmatter, "type")) {
       delete (frontmatter as Record<string, unknown>).type;
+      changed = true;
     }
-    frontmatter.date = dateKey;
+
+    if (frontmatter.date !== dateKey) {
+      frontmatter.date = dateKey;
+      changed = true;
+    }
+
+    return changed;
   };
 
   private isPlainObject = (value: unknown): value is Record<string, unknown> =>
     Boolean(value) && typeof value === "object" && !Array.isArray(value);
 
+  private areLinkArraysEqual = (
+    existing: unknown,
+    next: Array<string | { link: string; timestamp?: number }>
+  ): boolean => {
+    const current = this.normalizeLinkArray(existing);
+    if (current.length !== next.length) {
+      return false;
+    }
+
+    return current.every((value, index) => {
+      const other = next[index];
+      if (typeof value === "string" || typeof other === "string") {
+        return value === other;
+      }
+      if (!value || !other || typeof value !== "object" || typeof other !== "object") {
+        return false;
+      }
+      const valueRecord = value as { link?: string; timestamp?: number };
+      const otherRecord = other as { link?: string; timestamp?: number };
+      return (
+        valueRecord.link === otherRecord.link &&
+        valueRecord.timestamp === otherRecord.timestamp
+      );
+    });
+  };
+
   private ensureDailyNoteState = (
     frontmatter: Record<string, unknown>
-  ): DailyNoteState => {
+  ): { state: DailyNoteState; changed: boolean } => {
+    let changed = false;
+
     if (!this.isPlainObject(frontmatter.mondoState)) {
       frontmatter.mondoState = {};
+      changed = true;
     }
 
     const state = frontmatter.mondoState as Record<string, unknown> & {
@@ -468,6 +510,29 @@ export class DailyNoteTracker {
       openedToday?: unknown;
     };
 
+    const normalizeLegacy = (
+      source: Record<string, unknown>,
+      key: keyof typeof state,
+      legacyKeys: Array<keyof typeof state>,
+      frontmatterFallbackKey?: keyof typeof frontmatter
+    ) => {
+      if (this.isPlainObject(source[key])) {
+        return source[key];
+      }
+
+      for (const legacyKey of legacyKeys) {
+        if (source[legacyKey] !== undefined) {
+          return source[legacyKey];
+        }
+      }
+
+      if (frontmatterFallbackKey && frontmatter[frontmatterFallbackKey] !== undefined) {
+        return frontmatter[frontmatterFallbackKey];
+      }
+
+      return source[key];
+    };
+
     if (this.isPlainObject(state.dailyNote)) {
       const legacyDailyNote = state.dailyNote as Record<string, unknown> & {
         created?: unknown;
@@ -479,90 +544,58 @@ export class DailyNoteTracker {
         openedToday?: unknown;
       };
 
-      if (state.created === undefined) {
-        state.created =
-          legacyDailyNote.created ?? legacyDailyNote.createdToday ?? undefined;
-      }
-      if (state.changed === undefined) {
-        state.changed =
-          legacyDailyNote.changed ??
-          legacyDailyNote.changedToday ??
-          legacyDailyNote.modifiedToday ??
-          undefined;
-      }
-      if (state.opened === undefined) {
-        state.opened =
-          legacyDailyNote.opened ?? legacyDailyNote.openedToday ?? undefined;
-      }
+      state.created ??= normalizeLegacy(legacyDailyNote, "created", ["createdToday"]);
+      state.changed ??= normalizeLegacy(legacyDailyNote, "changed", ["changedToday", "modifiedToday"]);
+      state.opened ??= normalizeLegacy(legacyDailyNote, "opened", ["openedToday"]);
 
       delete state.dailyNote;
+      changed = true;
     }
 
-    if (state.createdToday !== undefined && state.created === undefined) {
-      state.created = state.createdToday;
-    }
-    if (state.createdToday !== undefined) {
-      delete state.createdToday;
-    }
+    const nextCreated = this.normalizeLinkArray(
+      normalizeLegacy(state, "created", ["createdToday"], "createdToday")
+    );
+    const nextChanged = this.normalizeLinkArray(
+      normalizeLegacy(state, "changed", ["changedToday", "modifiedToday"], "changedToday")
+    );
+    const nextOpened = this.normalizeLinkArray(
+      normalizeLegacy(state, "opened", ["openedToday"], "openedToday")
+    );
 
-    const legacyFrontmatterCreated = frontmatter.createdToday;
-    if (legacyFrontmatterCreated !== undefined && state.created === undefined) {
-      state.created = legacyFrontmatterCreated;
-    }
-    if (legacyFrontmatterCreated !== undefined) {
-      delete frontmatter.createdToday;
-    }
+    const applyArrayIfChanged = (
+      key: "created" | "changed" | "opened",
+      value: Array<string | { link: string; timestamp?: number }>
+    ) => {
+      if (!this.areLinkArraysEqual(state[key], value)) {
+        state[key] = value;
+        changed = true;
+      }
+    };
 
-    if (state.changedToday !== undefined && state.changed === undefined) {
-      state.changed = state.changedToday;
-    }
-    if (state.changedToday !== undefined) {
-      delete state.changedToday;
-    }
+    applyArrayIfChanged("created", nextCreated);
+    applyArrayIfChanged("changed", nextChanged);
+    applyArrayIfChanged("opened", nextOpened);
 
-    const legacyFrontmatterChanged = frontmatter.changedToday;
-    if (legacyFrontmatterChanged !== undefined && state.changed === undefined) {
-      state.changed = legacyFrontmatterChanged;
-    }
-    if (legacyFrontmatterChanged !== undefined) {
-      delete frontmatter.changedToday;
-    }
+    const removeIfPresent = (
+      target: Record<string, unknown>,
+      key: keyof typeof state | keyof typeof frontmatter
+    ) => {
+      if (Object.prototype.hasOwnProperty.call(target, key)) {
+        delete target[key];
+        changed = true;
+      }
+    };
 
-    const legacyFrontmatterModified = frontmatter.modifiedToday;
-    if (legacyFrontmatterModified !== undefined && state.changed === undefined) {
-      state.changed = legacyFrontmatterModified;
-    }
-    if (legacyFrontmatterModified !== undefined) {
-      delete frontmatter.modifiedToday;
-    }
+    removeIfPresent(state, "createdToday");
+    removeIfPresent(state, "changedToday");
+    removeIfPresent(state, "modifiedToday");
+    removeIfPresent(state, "openedToday");
+    removeIfPresent(frontmatter, "createdToday");
+    removeIfPresent(frontmatter, "changedToday");
+    removeIfPresent(frontmatter, "modifiedToday");
+    removeIfPresent(frontmatter, "openedToday");
 
-    if (state.modifiedToday !== undefined && state.changed === undefined) {
-      state.changed = state.modifiedToday;
-    }
-    if (state.modifiedToday !== undefined) {
-      delete state.modifiedToday;
-    }
-
-    if (state.openedToday !== undefined && state.opened === undefined) {
-      state.opened = state.openedToday;
-    }
-    if (state.openedToday !== undefined) {
-      delete state.openedToday;
-    }
-
-    const legacyFrontmatterOpened = frontmatter.openedToday;
-    if (legacyFrontmatterOpened !== undefined && state.opened === undefined) {
-      state.opened = legacyFrontmatterOpened;
-    }
-    if (legacyFrontmatterOpened !== undefined) {
-      delete frontmatter.openedToday;
-    }
-
-    state.created = this.normalizeLinkArray(state.created);
-    state.changed = this.normalizeLinkArray(state.changed);
-    state.opened = this.normalizeLinkArray(state.opened);
-
-    return state as DailyNoteState;
+    return { state: state as DailyNoteState, changed };
   };
 
   private normalizeLinkArray = (
@@ -802,15 +835,31 @@ export class DailyNoteTracker {
         await this.app.fileManager.processFrontMatter(
           dailyNote,
           (frontmatter) => {
-            this.ensureDailyNoteMetadata(frontmatter, dateKey);
-            const state = this.ensureDailyNoteState(frontmatter);
+            let shouldPersist = this.ensureDailyNoteMetadata(
+              frontmatter,
+              dateKey
+            );
+            const { state, changed: stateChanged } =
+              this.ensureDailyNoteState(frontmatter);
+
+            shouldPersist ||= stateChanged;
+
+            const applyStateArray = (
+              key: "created" | "changed" | "opened",
+              value: Array<string | { link: string; timestamp?: number }>
+            ) => {
+              if (!this.areLinkArraysEqual(state[key], value)) {
+                state[key] = value;
+                shouldPersist = true;
+              }
+            };
 
             const created = this.extractLinkRecords(
               state,
               "created",
               sourcePath
             );
-            const changed = this.extractLinkRecords(
+            const changedRecords = this.extractLinkRecords(
               state,
               "changed",
               sourcePath
@@ -821,12 +870,19 @@ export class DailyNoteTracker {
               created.set.add(file.path);
             }
 
-            const filteredChanged = changed.records.filter(
+            const filteredChanged = changedRecords.records.filter(
               (record) => record.canonical !== file.path
             );
 
-            state.created = created.records.map(serializeLinkRecord);
-            state.changed = filteredChanged.map(serializeLinkRecord);
+            applyStateArray("created", created.records.map(serializeLinkRecord));
+            applyStateArray(
+              "changed",
+              filteredChanged.map(serializeLinkRecord)
+            );
+
+            if (!shouldPersist) {
+              return;
+            }
           }
         );
       });
@@ -853,35 +909,67 @@ export class DailyNoteTracker {
         await this.app.fileManager.processFrontMatter(
           dailyNote,
           (frontmatter) => {
-            this.ensureDailyNoteMetadata(frontmatter, dateKey);
-            const state = this.ensureDailyNoteState(frontmatter);
+            let shouldPersist = this.ensureDailyNoteMetadata(
+              frontmatter,
+              dateKey
+            );
+            const { state, changed: stateChanged } =
+              this.ensureDailyNoteState(frontmatter);
+
+            shouldPersist ||= stateChanged;
+
+            const applyStateArray = (
+              key: "created" | "changed" | "opened",
+              value: Array<string | { link: string; timestamp?: number }>
+            ) => {
+              if (!this.areLinkArraysEqual(state[key], value)) {
+                state[key] = value;
+                shouldPersist = true;
+              }
+            };
 
             const created = this.extractLinkRecords(
               state,
               "created",
               sourcePath
             );
-            const changed = this.extractLinkRecords(
+            const changedRecords = this.extractLinkRecords(
               state,
               "changed",
               sourcePath
             );
 
             if (created.set.has(file.path)) {
-              state.created = created.records.map(serializeLinkRecord);
-              state.changed = changed.records
-                .filter((record) => record.canonical !== file.path)
-                .map(serializeLinkRecord);
+              applyStateArray(
+                "created",
+                created.records.map(serializeLinkRecord)
+              );
+              applyStateArray(
+                "changed",
+                changedRecords.records
+                  .filter((record) => record.canonical !== file.path)
+                  .map(serializeLinkRecord)
+              );
+              if (!shouldPersist) {
+                return;
+              }
               return;
             }
 
-            if (!changed.set.has(file.path)) {
-              changed.records.push({ raw: wikiLink, canonical: file.path, timestamp });
-              changed.set.add(file.path);
+            if (!changedRecords.set.has(file.path)) {
+              changedRecords.records.push({ raw: wikiLink, canonical: file.path, timestamp });
+              changedRecords.set.add(file.path);
             }
 
-            state.created = created.records.map(serializeLinkRecord);
-            state.changed = changed.records.map(serializeLinkRecord);
+            applyStateArray("created", created.records.map(serializeLinkRecord));
+            applyStateArray(
+              "changed",
+              changedRecords.records.map(serializeLinkRecord)
+            );
+
+            if (!shouldPersist) {
+              return;
+            }
           }
         );
       });
@@ -908,8 +996,24 @@ export class DailyNoteTracker {
         await this.app.fileManager.processFrontMatter(
           dailyNote,
           (frontmatter) => {
-            this.ensureDailyNoteMetadata(frontmatter, dateKey);
-            const state = this.ensureDailyNoteState(frontmatter);
+            let shouldPersist = this.ensureDailyNoteMetadata(
+              frontmatter,
+              dateKey
+            );
+            const { state, changed: stateChanged } =
+              this.ensureDailyNoteState(frontmatter);
+
+            shouldPersist ||= stateChanged;
+
+            const applyStateArray = (
+              key: "created" | "changed" | "opened",
+              value: Array<string | { link: string; timestamp?: number }>
+            ) => {
+              if (!this.areLinkArraysEqual(state[key], value)) {
+                state[key] = value;
+                shouldPersist = true;
+              }
+            };
 
             const opened = this.extractOpenedRecords(
               state,
@@ -922,7 +1026,11 @@ export class DailyNoteTracker {
               opened.set.add(file.path);
             }
 
-            state.opened = opened.records.map(serializeLinkRecord);
+            applyStateArray("opened", opened.records.map(serializeLinkRecord));
+
+            if (!shouldPersist) {
+              return;
+            }
           }
         );
       });
