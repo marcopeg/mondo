@@ -36,3 +36,5 @@ tmp-tailwind-test.html
 
 # Lockfile for npm (we use yarn)
 package-lock.json
+.yarnrc.yml
+install-state.gz

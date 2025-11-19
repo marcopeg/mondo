@@ -13,6 +13,7 @@ export interface AiProvider {
   readonly defaultVoices: readonly string[];
   transcribeAudio(options: {
     audio: Blob;
+    mimeType?: string;
     signal?: AbortSignal;
   }): Promise<string>;
   generateText(options: {

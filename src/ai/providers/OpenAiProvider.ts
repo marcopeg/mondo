@@ -1,3 +1,20 @@
+const MIME_TO_EXTENSION: Record<string, string> = {
+  "audio/webm": "webm",
+  "audio/wav": "wav",
+  "audio/mpeg": "mp3",
+  "audio/mp4": "m4a",
+  "audio/aac": "aac",
+  "audio/flac": "flac",
+  "audio/ogg": "ogg",
+};
+
+const getFileExtensionFromMime = (mimeType?: string): string => {
+  if (!mimeType) {
+    return "webm";
+  }
+  return MIME_TO_EXTENSION[mimeType.toLowerCase()] ?? "webm";
+};
+
 import {
   extractOpenAIErrorMessage,
   extractOpenAIOutputText,
@@ -51,12 +68,15 @@ export class OpenAiProvider implements AiProvider {
     return this.apiKey;
   }
 
-  async transcribeAudio(options: { audio: Blob; signal?: AbortSignal }) {
+  async transcribeAudio(options: { audio: Blob; mimeType?: string; signal?: AbortSignal }) {
     const key = this.ensureApiKey();
+  const extension = getFileExtensionFromMime(options.mimeType);
+  const filename = `audio.${extension}`;
+
 
     const formData = new FormData();
     formData.append("model", TRANSCRIPTION_MODEL);
-    formData.append("file", options.audio, "audio.webm");
+    formData.append("file", options.audio, filename);
 
     const response = await fetch(TRANSCRIPTIONS_URL, {
       method: "POST",

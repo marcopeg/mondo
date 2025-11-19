@@ -2,20 +2,23 @@ import { AiMessage, AiProvider } from "@/ai/types";
 
 const GENERATE_CONTENT_BASE =
   "https://generativelanguage.googleapis.com/v1/models";
-const SPEECH_RECOGNITION_URL =
-  "https://speech.googleapis.com/v1p1beta1/speech:recognize";
+
+const GENERATE_CONTENT_UPLOAD_BASE =
+  "https://generativelanguage.googleapis.com/upload/v1/models";
 const TEXT_TO_SPEECH_URL =
   "https://texttospeech.googleapis.com/v1/text:synthesize";
 const LIST_VOICES_URL = "https://texttospeech.googleapis.com/v1/voices";
 
 const DEFAULT_MODEL = "gemini-2.5-flash";
-const DEFAULT_TRANSCRIPTION_MODEL = "latest_short";
+const DEFAULT_TRANSCRIPTION_MODEL = "gemini-2.5-flash";
 const DEFAULT_LANGUAGE = "en-US";
+const DEFAULT_TTS_MODEL = "en-US-Neural2-C";
 const DEFAULT_VOICES = [
-  "en-US-Standard-A",
-  "en-US-Standard-B",
   "en-US-Neural2-C",
-  "en-GB-Standard-A",
+  "en-US-Neural2-D",
+  "en-US-Neural2-F",
+  "en-US-Studio-O",
+  "en-US-Studio-Q",
 ];
 
 const blobToBase64 = (blob: Blob): Promise<string> =>
@@ -182,24 +185,37 @@ export class GoogleGeminiProvider implements AiProvider {
     return this.apiKey;
   }
 
-  async transcribeAudio(options: { audio: Blob; signal?: AbortSignal }) {
+  async transcribeAudio(options: { audio: Blob; mimeType?: string; signal?: AbortSignal }) {
     const key = this.ensureApiKey();
     const content = await blobToBase64(options.audio);
+    const mimeType = options.mimeType || "audio/webm";
 
-    const response = await fetch(buildQueryUrl(SPEECH_RECOGNITION_URL, key), {
+    // Use Gemini's multimodal API for audio transcription
+    const url = buildGenerateUrl(DEFAULT_TRANSCRIPTION_MODEL, key);
+    
+    const response = await fetch(url, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        config: {
-          encoding: "WEBM_OPUS",
-          enableAutomaticPunctuation: true,
-          languageCode: DEFAULT_LANGUAGE,
-          model: DEFAULT_TRANSCRIPTION_MODEL,
-        },
-        audio: {
-          content,
+        contents: [
+          {
+            parts: [
+              {
+                inlineData: {
+                  mimeType,
+                  data: content,
+                },
+              },
+              {
+                text: "Transcribe this audio file. Provide only the transcription text without any additional commentary or formatting.",
+              },
+            ],
+          },
+        ],
+        generationConfig: {
+          temperature: 0.1,
         },
       }),
       signal: options.signal,
@@ -210,19 +226,15 @@ export class GoogleGeminiProvider implements AiProvider {
       throw new Error(message || "Transcription request failed.");
     }
 
-    const payload = (await response.json()) as {
-      results?: Array<{
-        alternatives?: Array<{ transcript?: string }>;
-      }>;
-    };
-
-    const transcripts = payload.results?.flatMap((result) =>
-      (result.alternatives ?? []).map((entry) => entry.transcript?.trim() ?? "")
-    );
-
-    const transcript = transcripts?.find((entry) => entry)?.trim() ?? "";
+    const payload = await response.json();
+    
+    // Debug logging
+    console.log("Gemini transcription response:", JSON.stringify(payload, null, 2));
+    
+    const transcript = resolveGeminiText(payload).trim();
 
     if (!transcript) {
+      console.error("Gemini returned no transcript. Full payload:", payload);
       throw new Error("Received an empty transcription result.");
     }
 
@@ -299,6 +311,14 @@ export class GoogleGeminiProvider implements AiProvider {
     signal?: AbortSignal;
   }) {
     const key = this.ensureApiKey();
+    
+    // Extract language code from voice name (e.g., "en-US-Neural2-C" → "en-US")
+    // If voice doesn't contain a valid language code pattern, fall back to DEFAULT_LANGUAGE
+    const parts = options.voice.split("-");
+    const languageCode = parts.length >= 2 && parts[0].length === 2 && parts[1].length === 2
+      ? `${parts[0]}-${parts[1]}`
+      : DEFAULT_LANGUAGE;
+    
     const response = await fetch(buildQueryUrl(TEXT_TO_SPEECH_URL, key), {
       method: "POST",
       headers: {
@@ -309,8 +329,8 @@ export class GoogleGeminiProvider implements AiProvider {
           text: options.text,
         },
         voice: {
+          languageCode: languageCode,
           name: options.voice,
-          languageCode: options.voice.split("-").slice(0, 2).join("-") || DEFAULT_LANGUAGE,
         },
         audioConfig: {
           audioEncoding: "MP3",

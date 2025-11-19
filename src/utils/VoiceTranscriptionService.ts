@@ -7,7 +7,7 @@ import {
 } from "@/ai/settings";
 
 const DEFAULT_OPENAI_MODEL = "gpt-5-nano";
-const DEFAULT_GEMINI_MODEL = "gemini-1.5-flash";
+const DEFAULT_GEMINI_MODEL = "gemini-2.5-flash";
 
 export class VoiceTranscriptionService {
   private readonly plugin: Mondo;
@@ -56,9 +56,9 @@ export class VoiceTranscriptionService {
     return createAiProvider(providerId, apiKey);
   };
 
-  transcribe = async (audio: Blob, options: { signal?: AbortSignal } = {}) => {
+  transcribe = async (audio: Blob, options: { mimeType?: string; signal?: AbortSignal } = {}) => {
     const provider = this.createProvider();
-    return provider.transcribeAudio({ audio, signal: options.signal });
+    return provider.transcribeAudio({ audio, mimeType: options.mimeType, signal: options.signal });
   };
 
   polish = async (transcript: string, options: { signal?: AbortSignal } = {}) => {

@@ -8,6 +8,7 @@ import {
   type Editor,
 } from "obsidian";
 import { createAiProvider } from "@/ai/providerFactory";
+import type { AiProvider } from "@/ai/types";
 import {
   getAiApiKey,
   getMissingAiApiKeyMessage,
@@ -218,7 +219,11 @@ export class VoiceoverManager {
   private getMissingApiKeyMessage = () =>
     getMissingAiApiKeyMessage(this.plugin.settings);
 
-  private getProviderDetails = (requireKey: boolean) => {
+  private getProviderDetails = (requireKey: boolean): {
+    providerId: "openai" | "gemini";
+    apiKey: string;
+    provider: AiProvider;
+  } => {
     const providerId = this.getProviderId();
     const apiKey = getAiApiKey(this.plugin.settings);
 
@@ -250,11 +255,11 @@ export class VoiceoverManager {
   // If the currently stored voice belongs to another provider (e.g. 'ash' from OpenAI
   // while using Gemini), fall back to a sensible default for that provider.
   private ensureVoiceForProvider = async (
-    providerId: string,
+    providerId: "openai" | "gemini",
     voice: string
   ): Promise<string> => {
     const trimmed = voice?.trim?.() ?? "";
-    const available = await this.getAvailableVoices();
+    const available = await this.getAvailableVoicesForProvider(providerId);
 
     if (trimmed && available.includes(trimmed)) {
       return trimmed;
@@ -270,7 +275,12 @@ export class VoiceoverManager {
   };
 
   getAvailableVoices = async (): Promise<string[]> => {
-    const { provider, providerId, apiKey } = this.getProviderDetails(false);
+    const { providerId } = this.getProviderDetails(false);
+    return this.getAvailableVoicesForProvider(providerId);
+  };
+
+  private getAvailableVoicesForProvider = async (providerId: "openai" | "gemini"): Promise<string[]> => {
+    const { provider, apiKey } = this.getProviderDetails(false);
 
     if (this.cachedVoices && this.cachedVoicesProvider === providerId) {
       return this.cachedVoices;
@@ -300,6 +310,22 @@ export class VoiceoverManager {
     return this.cachedVoices ?? fallbackVoices;
   };
 
+  private getVoiceForProvider = (providerId: "openai" | "gemini"): string => {
+    if (providerId === "gemini") {
+      return this.plugin.settings?.geminiVoice?.trim?.() ?? "";
+    }
+    return this.plugin.settings?.openAIVoice?.trim?.() ?? "";
+  };
+
+  private setVoiceForProvider = async (providerId: "openai" | "gemini", voice: string) => {
+    if (providerId === "gemini") {
+      this.plugin.settings.geminiVoice = voice;
+    } else {
+      this.plugin.settings.openAIVoice = voice;
+    }
+    await this.plugin.saveSettings();
+  };
+
   generateVoiceover = async (
     file: TFile,
     _editor: Editor | null,
@@ -314,8 +340,8 @@ export class VoiceoverManager {
       return;
     }
 
-    let providerId: string;
-    let provider;
+    let providerId: "openai" | "gemini";
+    let provider: AiProvider;
     try {
       ({ provider, providerId } = this.getProviderDetails(true));
     } catch (error) {
@@ -341,9 +367,9 @@ export class VoiceoverManager {
 
     try {
       const cacheDirectory = this.resolveVoiceoverDirectory();
-      let voice = this.plugin.settings?.openAIVoice?.trim?.() ?? "";
+      let voice = this.getVoiceForProvider(providerId);
       if (!voice) {
-        voice = (await this.resolveVoice()).trim();
+        voice = (await this.resolveVoice(providerId)).trim();
       }
 
       // Normalize to a provider-compatible voice (e.g. map OpenAI 'ash' to Gemini default)
@@ -411,34 +437,32 @@ export class VoiceoverManager {
     }
   };
 
-  private resolveVoice = async () => {
-    const selected = this.plugin.settings?.openAIVoice?.trim?.();
+  private resolveVoice = async (providerId: "openai" | "gemini") => {
+    const selected = this.getVoiceForProvider(providerId);
     if (selected) {
       return selected;
     }
 
-    const { provider, providerId } = this.getProviderDetails(false);
+    const { provider } = this.getProviderDetails(false);
     const voices = await this.getAvailableVoices();
     
     // Pick provider-appropriate default voice
     let fallbackVoice: string;
     if (providerId === "gemini") {
-      fallbackVoice = "en-US-Neural2-C"; // Preferred Gemini voice
+      fallbackVoice = "en-US-Neural2-C"; // Google Cloud TTS Neural2 voice
     } else {
       fallbackVoice = provider.defaultVoices[0] ?? ""; // OpenAI default
     }
 
     if (voices.length === 0) {
       if (fallbackVoice) {
-        this.plugin.settings.openAIVoice = fallbackVoice;
-        await this.plugin.saveSettings();
+        await this.setVoiceForProvider(providerId, fallbackVoice);
       }
       return fallbackVoice || "default";
     }
 
     const voice = voices[0] ?? (fallbackVoice || "default");
-    this.plugin.settings.openAIVoice = voice;
-    await this.plugin.saveSettings();
+    await this.setVoiceForProvider(providerId, voice);
     return voice;
   };
 
