@@ -539,11 +539,11 @@ export const EntityHeaderMondo = ({ entityType }: EntityHeaderMondoProps) => {
                 </div>
               </div>
               <div className="flex flex-shrink-0 gap-2">
-              {entityConfig?.frontmatter && (
-                <AddProperty frontmatterConfig={entityConfig.frontmatter} />
-              )}
-              {primary ? (
-                    <SplitButton
+                {entityConfig?.frontmatter && (
+                  <AddProperty frontmatterConfig={entityConfig.frontmatter} />
+                )}
+                {primary ? (
+                  <SplitButton
                     onClick={handlePrimaryClick}
                     secondaryActions={secondary}
                     menuAriaLabel="Select related entity to create"
@@ -552,8 +552,8 @@ export const EntityHeaderMondo = ({ entityType }: EntityHeaderMondoProps) => {
                     {`+ ${primary.label}`}
                   </SplitButton>
                 ) : null}
-            </div>
               </div>
+            </div>
 
             {hasCollapsedPanels ? (
               <div
