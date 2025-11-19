@@ -322,8 +322,9 @@ export class AudioTranscriptionManager {
 
   private createTranscription = async (file: TFile, signal: AbortSignal) => {
     const buffer = await this.plugin.app.vault.adapter.readBinary(file.path);
-    const blob = new Blob([buffer], { type: getMimeFromExtension(file.extension) });
-    return this.transcriptionService.transcribe(blob, { signal });
+    const mimeType = getMimeFromExtension(file.extension);
+    const blob = new Blob([buffer], { type: mimeType });
+    return this.transcriptionService.transcribe(blob, { mimeType, signal });
   };
 
   private writeMarkdownNote = async (file: TFile, transcript: string) => {

@@ -18,6 +18,23 @@ const DEFAULT_VOICES = [
   "en-GB-Standard-A",
 ];
 
+const MIME_TO_GEMINI_ENCODING: Record<string, string> = {
+  "audio/webm": "WEBM_OPUS",
+  "audio/wav": "LINEAR16",
+  "audio/flac": "FLAC",
+  "audio/mpeg": "MP3",
+  "audio/mp4": "MP3",
+  "audio/aac": "MP3",
+  "audio/ogg": "OGG_OPUS",
+};
+
+const getGeminiEncodingFromMime = (mimeType?: string): string => {
+  if (!mimeType) {
+    return "WEBM_OPUS";
+  }
+  return MIME_TO_GEMINI_ENCODING[mimeType.toLowerCase()] ?? "WEBM_OPUS";
+};
+
 const blobToBase64 = (blob: Blob): Promise<string> =>
   new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -182,9 +199,10 @@ export class GoogleGeminiProvider implements AiProvider {
     return this.apiKey;
   }
 
-  async transcribeAudio(options: { audio: Blob; signal?: AbortSignal }) {
+  async transcribeAudio(options: { audio: Blob; mimeType?: string; signal?: AbortSignal }) {
     const key = this.ensureApiKey();
     const content = await blobToBase64(options.audio);
+    const encoding = getGeminiEncodingFromMime(options.mimeType);
 
     const response = await fetch(buildQueryUrl(SPEECH_RECOGNITION_URL, key), {
       method: "POST",
@@ -193,7 +211,7 @@ export class GoogleGeminiProvider implements AiProvider {
       },
       body: JSON.stringify({
         config: {
-          encoding: "WEBM_OPUS",
+          encoding,
           enableAutomaticPunctuation: true,
           languageCode: DEFAULT_LANGUAGE,
           model: DEFAULT_TRANSCRIPTION_MODEL,
