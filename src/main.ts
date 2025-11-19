@@ -148,6 +148,7 @@ export default class Mondo extends Plugin {
     aiApiKey: "",
     openAIWhisperApiKey: "",
     openAIVoice: "",
+    geminiVoice: "",
     openAIModel: "gpt-5-nano",
     editWithAIModel: DEFAULT_EDIT_WITH_AI_MODEL,
     openAITranscriptionPolishEnabled: true,
@@ -272,6 +273,7 @@ export default class Mondo extends Plugin {
     const apiKey = getAiApiKey(this.settings);
     setAiApiKey(this.settings, apiKey);
     this.settings.openAIVoice = this.settings.openAIVoice ?? "";
+    this.settings.geminiVoice = this.settings.geminiVoice ?? "";
     this.settings.openAIModel = this.settings.openAIModel ?? "gpt-5-nano";
     this.settings.editWithAIModel = normalizeEditWithAIModel(
       this.settings.editWithAIModel

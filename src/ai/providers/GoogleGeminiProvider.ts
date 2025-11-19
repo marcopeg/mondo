@@ -12,11 +12,13 @@ const LIST_VOICES_URL = "https://texttospeech.googleapis.com/v1/voices";
 const DEFAULT_MODEL = "gemini-2.5-flash";
 const DEFAULT_TRANSCRIPTION_MODEL = "gemini-2.5-flash";
 const DEFAULT_LANGUAGE = "en-US";
+const DEFAULT_TTS_MODEL = "en-US-Neural2-C";
 const DEFAULT_VOICES = [
-  "en-US-Standard-A",
-  "en-US-Standard-B",
   "en-US-Neural2-C",
-  "en-GB-Standard-A",
+  "en-US-Neural2-D",
+  "en-US-Neural2-F",
+  "en-US-Studio-O",
+  "en-US-Studio-Q",
 ];
 
 const blobToBase64 = (blob: Blob): Promise<string> =>
@@ -309,6 +311,14 @@ export class GoogleGeminiProvider implements AiProvider {
     signal?: AbortSignal;
   }) {
     const key = this.ensureApiKey();
+    
+    // Extract language code from voice name (e.g., "en-US-Neural2-C" → "en-US")
+    // If voice doesn't contain a valid language code pattern, fall back to DEFAULT_LANGUAGE
+    const parts = options.voice.split("-");
+    const languageCode = parts.length >= 2 && parts[0].length === 2 && parts[1].length === 2
+      ? `${parts[0]}-${parts[1]}`
+      : DEFAULT_LANGUAGE;
+    
     const response = await fetch(buildQueryUrl(TEXT_TO_SPEECH_URL, key), {
       method: "POST",
       headers: {
@@ -319,8 +329,8 @@ export class GoogleGeminiProvider implements AiProvider {
           text: options.text,
         },
         voice: {
+          languageCode: languageCode,
           name: options.voice,
-          languageCode: options.voice.split("-").slice(0, 2).join("-") || DEFAULT_LANGUAGE,
         },
         audioConfig: {
           audioEncoding: "MP3",
