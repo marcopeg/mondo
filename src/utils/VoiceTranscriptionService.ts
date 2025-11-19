@@ -7,7 +7,7 @@ import {
 } from "@/ai/settings";
 
 const DEFAULT_OPENAI_MODEL = "gpt-5-nano";
-const DEFAULT_GEMINI_MODEL = "gemini-1.5-flash";
+const DEFAULT_GEMINI_MODEL = "gemini-2.5-flash";
 
 export class VoiceTranscriptionService {
   private readonly plugin: Mondo;
