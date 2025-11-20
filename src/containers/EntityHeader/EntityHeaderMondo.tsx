@@ -538,7 +538,7 @@ export const EntityHeaderMondo = ({ entityType }: EntityHeaderMondoProps) => {
                   Mondo Note • {label}
                 </div>
               </div>
-              <div className="flex flex-shrink-0 gap-2">
+              <div className="flex flex-shrink-0 gap-2" data-entity-actions-desktop>
                 {entityConfig?.frontmatter && (
                   <AddProperty frontmatterConfig={entityConfig.frontmatter} />
                 )}
@@ -559,12 +559,29 @@ export const EntityHeaderMondo = ({ entityType }: EntityHeaderMondoProps) => {
               <div
                 className="flex flex-wrap gap-2"
                 aria-label="Collapsed entity link panels"
+                data-entity-panels
               >
                 {collapsedPanels.map((panel) => (
                   <CollapsedPanelButton key={panel.id} panel={panel} />
                 ))}
               </div>
             ) : null}
+
+            <div className="flex flex-shrink-0 gap-2" data-entity-actions-mobile>
+              {entityConfig?.frontmatter && (
+                <AddProperty frontmatterConfig={entityConfig.frontmatter} />
+              )}
+              {primary ? (
+                <SplitButton
+                  onClick={handlePrimaryClick}
+                  secondaryActions={secondary}
+                  menuAriaLabel="Select related entity to create"
+                  disabled={isBusy}
+                >
+                  {`+ ${primary.label}`}
+                </SplitButton>
+              ) : null}
+            </div>
           </div>
         </div>
       </Card>

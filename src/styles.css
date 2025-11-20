@@ -2463,3 +2463,84 @@ body.focus-mode .markdown-preview-view .view-header {
 .mondo-ai-provider-setting__detection-unknown {
   color: var(--text-warning, #f59e0b);
 }
+
+/* Entity Header Desktop - Panel separator */
+[data-entity-panels] {
+  padding-top: 0.5rem;
+  margin-top: 0.5rem;
+  border-top: 1px solid var(--background-modifier-border);
+}
+
+/* Hide mobile actions on desktop, show desktop actions */
+[data-entity-actions-mobile] {
+  display: none !important;
+}
+
+[data-entity-actions-desktop] {
+  display: flex !important;
+}
+
+/* Entity Header Mobile Responsiveness */
+@media (max-width: 640px) {
+  /* Hide desktop actions on mobile, show mobile actions */
+  [data-entity-actions-desktop] {
+    display: none !important;
+  }
+
+  [data-entity-actions-mobile] {
+    display: flex !important;
+  }
+
+  [data-entity-header] {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 0 !important;
+  }
+
+  [data-entity-header] > *:first-child {
+    align-self: center;
+    margin-bottom: 1rem;
+  }
+
+  [data-entity-header] .flex.min-w-0.flex-1.flex-col {
+    width: 100%;
+  }
+
+  [data-entity-header] .flex.flex-wrap.items-start.justify-between {
+    flex-direction: column;
+    align-items: center !important;
+    gap: 0.75rem !important;
+    padding-bottom: 1rem;
+  }
+
+  [data-entity-header] .min-w-0.flex-1 {
+    text-align: center;
+    width: 100%;
+  }
+
+  /* Panel buttons section with borders above and below */
+  [data-entity-panels] {
+    justify-content: center !important;
+    padding: 1rem 0;
+    margin-top: 0;
+    border-top: 1px solid var(--background-modifier-border);
+    border-bottom: 1px solid var(--background-modifier-border);
+  }
+
+  /* Action buttons at the bottom */
+  [data-entity-actions-mobile] {
+    width: 100% !important;
+    flex-direction: row !important;
+    padding-top: 1rem;
+    justify-content: center !important;
+    flex-wrap: wrap !important;
+    gap: 0 !important;
+    column-gap: 0 !important;
+    row-gap: 0.5rem !important;
+  }
+
+  [data-entity-actions-mobile] > * {
+    width: auto;
+    min-width: min(200px, 100%);
+  }
+}
