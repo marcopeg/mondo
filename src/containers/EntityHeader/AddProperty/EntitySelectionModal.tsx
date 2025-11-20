@@ -14,6 +14,7 @@ type EntitySelectionModalProps = {
   config: MondoEntityFrontmatterFieldConfig;
   title: string;
   hostFile: TCachedFile;
+  propertyKey: string;
 };
 
 /**
@@ -27,6 +28,7 @@ export const EntitySelectionModal = ({
   config,
   title,
   hostFile,
+  propertyKey,
 }: EntitySelectionModalProps) => {
   const app = useApp();
   const [searchTerm, setSearchTerm] = useState("");
@@ -41,6 +43,7 @@ export const EntitySelectionModal = ({
       title,
       config,
       hostFile,
+      propertyKey,
       (selectedFile) => {
         onSelect(selectedFile);
         onClose();
@@ -57,7 +60,7 @@ export const EntitySelectionModal = ({
         // Modal may already be closed
       }
     };
-  }, [isOpen, app, title, config, hostFile, onSelect, onClose]);
+  }, [isOpen, app, title, config, hostFile, propertyKey, onSelect, onClose]);
 
   return null;
 };
@@ -66,6 +69,7 @@ class EntityPickerModal extends Modal {
   private title: string;
   private config: MondoEntityFrontmatterFieldConfig;
   private hostFile: TCachedFile;
+  private propertyKey: string;
   private onSelect: (file: TCachedFile) => void;
   private onCancel: () => void;
   private searchInput: HTMLInputElement | null = null;
@@ -78,6 +82,7 @@ class EntityPickerModal extends Modal {
     title: string,
     config: MondoEntityFrontmatterFieldConfig,
     hostFile: TCachedFile,
+    propertyKey: string,
     onSelect: (file: TCachedFile) => void,
     onCancel: () => void
   ) {
@@ -85,6 +90,7 @@ class EntityPickerModal extends Modal {
     this.title = title;
     this.config = config;
     this.hostFile = hostFile;
+    this.propertyKey = propertyKey;
     this.onSelect = onSelect;
     this.onCancel = onCancel;
   }
@@ -179,11 +185,38 @@ class EntityPickerModal extends Modal {
 
     // Remove duplicates by path
     const seen = new Set<string>();
+    
+    // Get current values to filter out already linked entities
+    const currentPaths = new Set<string>();
+    const frontmatterVal = this.hostFile.cache?.frontmatter?.[this.propertyKey];
+    
+    if (frontmatterVal) {
+      const values = Array.isArray(frontmatterVal) ? frontmatterVal : [frontmatterVal];
+      values.forEach(val => {
+        if (typeof val === 'string') {
+          // Extract link text from [[Link]] or use raw string
+          const match = /\[\[(.*?)\]\]/.exec(val);
+          const linkText = match ? match[1].split('|')[0] : val;
+          
+          // Resolve to file
+          const file = this.app.metadataCache.getFirstLinkpathDest(linkText, this.hostFile.file.path);
+          if (file) {
+            currentPaths.add(file.path);
+          }
+        }
+      });
+    }
+
     this.allEntities = candidates.filter((file) => {
       if (seen.has(file.file.path)) {
         return false;
       }
       seen.add(file.file.path);
+
+      if (currentPaths.has(file.file.path)) {
+        return false;
+      }
+
       return true;
     });
   }

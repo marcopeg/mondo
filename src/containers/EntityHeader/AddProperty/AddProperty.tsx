@@ -151,6 +151,7 @@ export const AddProperty = ({ frontmatterConfig }: AddPropertyProps) => {
           config={selectedProperty.config}
           title={selectedProperty.config.title || selectedProperty.key}
           hostFile={cachedFile}
+          propertyKey={selectedProperty.key}
         />
       )}
     </>
