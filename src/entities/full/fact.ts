@@ -2,7 +2,19 @@ export const fact = {
   name: "Facts",
   singular: "Fact",
   icon: "bookmark",
-  template: "\ndate: {{date}}\n---\n",
+  template: "\ndate: {{date}}\nlinksTo: []\n---\n",
+  frontmatter: {
+    linksTo: {
+      type: "entity",
+      title: "Links To",
+      filter: {
+        type: {
+          in: ["person", "company", "team", "project"],
+        },
+      },
+      multiple: true,
+    },
+  },
   list: {
     columns: [
       { type: "date", prop: "date" },
