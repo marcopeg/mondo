@@ -14,7 +14,6 @@ import type {
   MondoEntityLinkConfig,
 } from "@/types/MondoEntityConfig";
 import { isMondoEntityType } from "@/types/MondoFileType";
-import createEntityForEntity from "@/utils/createEntityForEntity";
 import { resolveCoverImage } from "@/utils/resolveCoverImage";
 import { openEditImageModal } from "@/utils/EditImageModal";
 import { getEntityDisplayName } from "@/utils/getEntityDisplayName";
@@ -24,6 +23,7 @@ import {
 } from "@/context/EntityLinksLayoutContext";
 import DeprecatedTypeWarning from "./DeprecatedTypeWarning";
 import { AddProperty } from "./AddProperty";
+import { RelatedEntityModal } from "./AddRelated";
 
 type EntityHeaderMondoProps = {
   entityType: MondoEntityType;
@@ -377,44 +377,30 @@ export const EntityHeaderMondo = ({ entityType }: EntityHeaderMondoProps) => {
   }, [entityConfig?.createRelated, panelMap, entityType]);
 
   const { collapsedPanels } = useEntityLinksLayout();
-  const [pendingAction, setPendingAction] = useState<string | null>(null);
-  const isPending = pendingAction !== null;
-  const isBusy = isPending || isUploadingCover;
+  const [pendingAction, setPendingAction] = useState<RelatedAction | null>(null);
+  const isBusy = isUploadingCover;
 
   const handleCreateAction = useCallback(
-    async (action: RelatedAction) => {
+    (action: RelatedAction) => {
       if (!cachedFile) {
         new Notice("Unable to determine the current entity.");
         return;
       }
-
-      setPendingAction(action.key);
-      const failureLabel = (action.label || action.targetType).toLowerCase();
-      try {
-        const result = await createEntityForEntity({
-          app,
-          targetType: action.targetType,
-          hostEntity: cachedFile,
-          titleTemplate: action.titleTemplate,
-          attributeTemplates: action.attributes,
-          linkProperties: normalizeLinkProperties(action.linkProperties),
-          openAfterCreate: action.openAfterCreate,
-        });
-
-        if (!result) {
-          new Notice(`Failed to create ${failureLabel} note.`);
-        }
-      } catch (error) {
-        console.error(
-          "EntityHeaderMondo: failed to create related entity",
-          error
-        );
-        new Notice(`Failed to create ${failureLabel} note.`);
-      } finally {
-        setPendingAction(null);
-      }
+      setPendingAction(action);
     },
-    [app, cachedFile]
+    [cachedFile]
+  );
+
+  const handleCloseModal = useCallback(() => {
+    setPendingAction(null);
+  }, []);
+
+  const handleEntitySelected = useCallback(
+    (_file: TFile) => {
+      // Modal handles the entity creation/linking
+      setPendingAction(null);
+    },
+    []
   );
 
   const primary = actions[0];
@@ -425,23 +411,19 @@ export const EntityHeaderMondo = ({ entityType }: EntityHeaderMondoProps) => {
       actions.map((action) => ({
         label: action.label,
         icon: action.icon,
-        disabled: isBusy,
         onSelect: () => {
-          if (isBusy) {
-            return;
-          }
-          void handleCreateAction(action);
+          handleCreateAction(action);
         },
       })),
-    [actions, handleCreateAction, isBusy]
+    [actions, handleCreateAction]
   );
 
   const handlePrimaryClick = useCallback(() => {
-    if (!primary || isBusy) {
+    if (!primary) {
       return;
     }
-    void handleCreateAction(primary);
-  }, [handleCreateAction, isBusy, primary]);
+    handleCreateAction(primary);
+  }, [handleCreateAction, primary]);
 
   const handleCoverSelect = useCallback(
     async (_filePath: string, selectedFile: File) => {
@@ -585,6 +567,21 @@ export const EntityHeaderMondo = ({ entityType }: EntityHeaderMondoProps) => {
           </div>
         </div>
       </Card>
+
+      {pendingAction && cachedFile && (
+        <RelatedEntityModal
+          isOpen={true}
+          onClose={handleCloseModal}
+          onSelect={handleEntitySelected}
+          targetType={pendingAction.targetType}
+          title={`Add ${pendingAction.label}`}
+          hostFile={cachedFile}
+          titleTemplate={pendingAction.titleTemplate}
+          attributes={pendingAction.attributes}
+          linkProperties={normalizeLinkProperties(pendingAction.linkProperties)}
+          openAfterCreate={pendingAction.openAfterCreate}
+        />
+      )}
     </div>
   );
 };
