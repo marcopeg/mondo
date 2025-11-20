@@ -38,7 +38,7 @@ export const company = {
     },
     {
       key: "employee",
-      label: "Person",
+      label: "Employee",
       icon: person.icon,
       targetType: "person",
       create: {

@@ -13,6 +13,48 @@ export const person = {
   icon: "user",
   template:
     "\ndate: {{date}}\nlocation: []\ncompany: []\nrole: []\nteam: []\n---\n",
+  frontmatter: {
+    company: {
+      type: "entity",
+      title: "Company",
+      filter: {
+        type: {
+          in: ["company"],
+        },
+      },
+      // multiple: true,
+    },
+    team: {
+      type: "entity",
+      title: "Team",
+      filter: {
+        type: {
+          in: ["team"],
+        },
+      },
+      multiple: true,
+    },
+    role: {
+      type: "entity",
+      title: "Role",
+      filter: {
+        type: {
+          in: ["role"],
+        },
+      },
+      multiple: true,
+    },
+    location: {
+      type: "entity",
+      title: "Location",
+      filter: {
+        type: {
+          in: ["location"],
+        },
+      },
+      multiple: true,
+    },
+  },
   list: {
     columns: [
       { type: "cover" },
