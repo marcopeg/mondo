@@ -77,6 +77,7 @@ class EntityPickerModal extends Modal {
   private allEntities: TCachedFile[] = [];
   private filteredEntities: TCachedFile[] = [];
   private creating = false;
+  private selectedIndex = 0;
 
   constructor(
     app: any,
@@ -124,9 +125,19 @@ class EntityPickerModal extends Modal {
 
     this.searchInput.addEventListener("input", () => this.filterEntities());
     this.searchInput.addEventListener("keydown", (e) => {
-      if (e.key === "Enter" && this.filteredEntities.length === 0) {
+      if (e.key === "ArrowDown") {
         e.preventDefault();
-        void this.createNewEntity();
+        this.moveSelection(1);
+      } else if (e.key === "ArrowUp") {
+        e.preventDefault();
+        this.moveSelection(-1);
+      } else if (e.key === "Enter") {
+        e.preventDefault();
+        if (this.filteredEntities.length === 0) {
+          void this.createNewEntity();
+        } else {
+          this.selectCurrentEntity();
+        }
       }
     });
 
@@ -336,7 +347,36 @@ class EntityPickerModal extends Modal {
     } else {
       this.filteredEntities = this.allEntities.filter((file) => getEntityDisplayName(file).toLowerCase().includes(searchTerm));
     }
+    this.selectedIndex = 0;
     this.renderResults();
+  }
+
+  private moveSelection(delta: number) {
+    if (this.filteredEntities.length === 0) return;
+    
+    this.selectedIndex = (this.selectedIndex + delta + this.filteredEntities.length) % this.filteredEntities.length;
+    this.renderResults();
+    this.scrollToSelected();
+  }
+
+  private selectCurrentEntity() {
+    if (this.filteredEntities.length === 0) return;
+    
+    const selectedFile = this.filteredEntities[this.selectedIndex];
+    if (selectedFile) {
+      this.onSelect(selectedFile);
+      this.close();
+    }
+  }
+
+  private scrollToSelected() {
+    if (!this.resultsContainer) return;
+    
+    const items = this.resultsContainer.querySelectorAll('.mondo-entity-picker-item');
+    const selectedItem = items[this.selectedIndex];
+    if (selectedItem instanceof HTMLElement) {
+      selectedItem.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    }
   }
 
   private renderResults() {
@@ -360,7 +400,7 @@ class EntityPickerModal extends Modal {
       return;
     }
 
-    this.filteredEntities.forEach((file) => {
+    this.filteredEntities.forEach((file, index) => {
       const item = this.resultsContainer!.createDiv({ cls: "mondo-entity-picker-item" });
       item.style.padding = "0.75rem";
       item.style.cursor = "pointer";
@@ -370,15 +410,24 @@ class EntityPickerModal extends Modal {
       item.style.display = "flex";
       item.style.alignItems = "center";
 
+      const isSelected = index === this.selectedIndex;
+      if (isSelected) {
+        item.style.backgroundColor = "var(--background-modifier-hover)";
+      }
+
       item.setText(getEntityDisplayName(file));
 
       item.addEventListener("mouseenter", () => {
-        item.style.backgroundColor = "var(--background-modifier-hover)";
+        this.selectedIndex = index;
+        this.renderResults();
       });
       item.addEventListener("mouseleave", () => {
-        item.style.backgroundColor = "";
+        if (!isSelected) {
+          item.style.backgroundColor = "";
+        }
       });
       item.addEventListener("touchstart", () => {
+        this.selectedIndex = index;
         item.style.backgroundColor = "var(--background-modifier-hover)";
       });
       item.addEventListener("touchend", () => {
