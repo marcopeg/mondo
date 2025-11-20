@@ -13,6 +13,27 @@ export const team = {
   singular: "Team",
   icon: "users",
   template: "\ndate: {{date}}\ncompany: []\nlocation: []\n---\n",
+  frontmatter: {
+    company: {
+      type: "entity",
+      title: "Company",
+      filter: {
+        type: {
+          in: ["company"],
+        },
+      },
+    },
+    location: {
+      type: "entity",
+      title: "Location",
+      filter: {
+        type: {
+          in: ["location"],
+        },
+      },
+      multiple: true,
+    },
+  },
   createRelated: [
     {
       key: "meeting",
@@ -137,7 +158,8 @@ export const team = {
   list: {
     columns: [
       { type: "title", prop: "show" },
-      { type: "companyArea" },
+      { type: "link", prop: "company" },
+      { type: "link", prop: "location" },
       { type: "members" },
     ],
   },
