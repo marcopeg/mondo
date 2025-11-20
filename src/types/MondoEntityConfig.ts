@@ -105,6 +105,11 @@ export interface MondoEntityFrontmatterFieldConfig {
   type: "entity" | "datetime" | "text" | "number" | "boolean";
   /** Display title for the field */
   title?: string;
+  /** 
+   * Target property key in frontmatter. If not specified, uses the config key.
+   * Allows multiple frontmatter configs to populate the same property.
+   */
+  key?: string;
   /** Whether to allow multiple values (applies to entity type) */
   multiple?: boolean;
   /** Default value or preset function (e.g., "now" for datetime) */

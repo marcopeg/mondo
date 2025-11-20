@@ -32,10 +32,13 @@ export const AddProperty = ({ frontmatterConfig }: AddPropertyProps) => {
     const properties: PropertyOption[] = [];
     const currentFrontmatter = cachedFile?.cache?.frontmatter || {};
 
-    Object.entries(frontmatterConfig).forEach(([key, config]) => {
+    Object.entries(frontmatterConfig).forEach(([configKey, config]) => {
       if (config.type === "entity") {
+        // Use config.key if specified, otherwise fall back to configKey
+        const targetKey = config.key || configKey;
+        
         // Check if property is already set
-        const currentValue = currentFrontmatter[key];
+        const currentValue = currentFrontmatter[targetKey];
         const isSet =
           currentValue !== undefined &&
           currentValue !== null &&
@@ -47,7 +50,7 @@ export const AddProperty = ({ frontmatterConfig }: AddPropertyProps) => {
           return;
         }
 
-        properties.push({ key, config });
+        properties.push({ key: configKey, config });
       }
     });
     return properties;
@@ -76,7 +79,8 @@ export const AddProperty = ({ frontmatterConfig }: AddPropertyProps) => {
         await app.fileManager.processFrontMatter(
           cachedFile.file,
           (frontmatter) => {
-            const propertyKey = selectedProperty.key;
+            // Use config.key if specified, otherwise fall back to the config key
+            const propertyKey = selectedProperty.config.key || selectedProperty.key;
             const existing = (frontmatter as any)[propertyKey];
 
             if (selectedProperty.config.multiple) {

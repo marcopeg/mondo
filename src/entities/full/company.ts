@@ -35,6 +35,42 @@ export const company = {
     ],
   },
   createRelated: [
+    
+    {
+      key: "employee",
+      label: "Employee",
+      icon: person.icon,
+      targetType: "person",
+      create: {
+        attributes: {
+          company: ["{@this}"],
+        },
+      },
+    },
+    {
+      key: "team",
+      label: "Team",
+      icon: team.icon,
+      targetType: "team",
+      create: {
+        attributes: {
+          company: ["{@this}"],
+        },
+      },
+    },
+    {
+      key: "project",
+      label: "Project",
+      icon: project.icon,
+      targetType: "project",
+      create: {
+        attributes: {
+          company: ["{@this}"],
+          team: [],
+          status: "draft",
+        },
+      },
+    },
     {
       key: "meeting",
       label: "Meeting",
@@ -48,50 +84,11 @@ export const company = {
       },
     },
     {
-      key: "employee",
-      label: "Employee",
-      icon: person.icon,
-      targetType: "person",
-      create: {
-        title: "New Employee for {@this.show}",
-        attributes: {
-          company: ["{@this}"],
-        },
-      },
-    },
-    {
-      key: "team",
-      label: "Team",
-      icon: team.icon,
-      targetType: "team",
-      create: {
-        title: "New Team for {@this.show}",
-        attributes: {
-          company: ["{@this}"],
-        },
-      },
-    },
-    {
-      key: "project",
-      label: "Project",
-      icon: project.icon,
-      targetType: "project",
-      create: {
-        title: "New Project for {@this.show}",
-        attributes: {
-          company: ["{@this}"],
-          team: [],
-          status: "draft",
-        },
-      },
-    },
-    {
       key: "task",
       label: "Task",
       icon: task.icon,
       targetType: "task",
       create: {
-        title: "New Task for {@this.show}",
         attributes: {
           company: ["{@this}"],
         },
@@ -103,7 +100,6 @@ export const company = {
       icon: fact.icon,
       targetType: "fact",
       create: {
-        title: "New Fact for {@this.show}",
         attributes: {
           company: ["{@this}"],
         },
@@ -127,7 +123,6 @@ export const company = {
       icon: gear.icon,
       targetType: "gear",
       create: {
-        title: "Untitled Gear for {@this.show}",
         attributes: {
           company: ["{@this}"],
         },
@@ -139,7 +134,6 @@ export const company = {
       icon: idea.icon,
       targetType: "idea",
       create: {
-        title: "Untitled Idea for {@this.show}",
         attributes: {
           company: ["{@this}"],
         },
@@ -151,7 +145,6 @@ export const company = {
       icon: document.icon,
       targetType: "document",
       create: {
-        title: "Untitled Document for {@this.show}",
         attributes: {
           company: ["{@this}"],
         },
@@ -162,7 +155,6 @@ export const company = {
       label: "Link",
       icon: link.icon,
       create: {
-        title: "New Link for {@this.show}",
         attributes: {
           type: "link",
           company: ["{@this}"],
@@ -175,7 +167,6 @@ export const company = {
       icon: goal.icon,
       targetType: "goal",
       create: {
-        title: "Untitled Goal for {@this.show}",
         attributes: {
           linksTo: ["{@this}"],
         },
