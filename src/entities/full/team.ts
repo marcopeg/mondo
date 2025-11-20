@@ -30,8 +30,7 @@ export const team = {
         type: {
           in: ["location"],
         },
-      },
-      multiple: true,
+      }
     },
   },
   createRelated: [
