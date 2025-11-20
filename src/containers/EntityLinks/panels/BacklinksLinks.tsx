@@ -21,12 +21,15 @@ import { useEntityLinksLayout } from "@/context/EntityLinksLayoutContext";
 import { isMondoEntityType } from "@/types/MondoFileType";
 import { matchesAnyPropertyLink } from "@/utils/matchesAnyPropertyLink";
 import { getEntityDisplayName } from "@/utils/getEntityDisplayName";
-import createEntityForEntity from "@/utils/createEntityForEntity";
+import { RelatedEntityModal } from "@/containers/EntityHeader/AddRelated";
 import type { TCachedFile } from "@/types/TCachedFile";
 import { TFile, type App } from "obsidian";
 import { MondoFileManager } from "@/utils/MondoFileManager";
 import { MONDO_FILE_TYPES } from "@/types/MondoFileType";
-import type { MondoEntityBacklinksLinkConfig } from "@/types/MondoEntityConfig";
+import type {
+  MondoEntityBacklinksLinkConfig,
+  MondoEntityCreateAttributes,
+} from "@/types/MondoEntityConfig";
 
 type Align = "left" | "right" | "center";
 type BacklinksColumn =
@@ -915,7 +918,14 @@ export const BacklinksLinks = ({
     [app, hostFile, panelKey, file.cache?.frontmatter]
   );
 
-  const [isCreating, setIsCreating] = useState(false);
+  const [pendingCreate, setPendingCreate] = useState<{
+    targetType: string;
+    title: string;
+    titleTemplate?: string;
+    attributes?: MondoEntityCreateAttributes;
+    linkProperties?: string[];
+    openAfterCreate: boolean;
+  } | null>(null);
 
   const badgeAction = useMemo(() => {
     if (!badgeText) {
@@ -978,7 +988,7 @@ export const BacklinksLinks = ({
       >;
       const override = (createCfg.attributes ?? {}) as Record<string, unknown>;
       return Object.keys({ ...base, ...override }).length > 0
-        ? ({ ...base, ...override } as Record<string, unknown>)
+        ? ({ ...base, ...override } as MondoEntityCreateAttributes)
         : undefined;
     })();
     items.push({
@@ -988,37 +998,26 @@ export const BacklinksLinks = ({
           variant="link"
           icon="plus"
           aria-label={`Create ${effectiveTargetType}`}
-          disabled={isCreating}
+          disabled={!!pendingCreate}
           onClick={() => {
-            if (isCreating) return;
-            setIsCreating(true);
-            (async () => {
-              try {
-                await createEntityForEntity({
-                  app,
-                  targetType: effectiveTargetType as string,
-                  hostEntity: file,
-                  titleTemplate,
-                  attributeTemplates: mergedAttributes as any,
-                  // link back using only hostType-specific properties (no generic "related")
-                  linkProperties: buildLinkProperties(
-                    hostType as MondoEntityType,
-                    (panel.properties ?? panel.prop) as
-                      | string
-                      | string[]
-                      | undefined
-                  ),
-                  openAfterCreate:
-                    (createCfg as any)?.openAfterCreate ??
-                    referencedCreate?.openAfterCreate ??
-                    true,
-                });
-              } catch (error) {
-                console.error("BacklinksLinks: failed to create entity", error);
-              } finally {
-                setIsCreating(false);
-              }
-            })();
+            if (pendingCreate) return;
+            setPendingCreate({
+              targetType: effectiveTargetType as string,
+              title: `Add ${defaultTitle}`,
+              titleTemplate,
+              attributes: mergedAttributes,
+              linkProperties: buildLinkProperties(
+                hostType as MondoEntityType,
+                (panel.properties ?? panel.prop) as
+                  | string
+                  | string[]
+                  | undefined
+              ),
+              openAfterCreate:
+                (createCfg as any)?.openAfterCreate ??
+                referencedCreate?.openAfterCreate ??
+                true,
+            });
           }}
         />
       ),
@@ -1028,8 +1027,7 @@ export const BacklinksLinks = ({
     panel.createEntity,
     panel.properties,
     panel.prop,
-    isCreating,
-    app,
+    pendingCreate,
     file,
     effectiveTargetType,
     hostType,
@@ -1331,6 +1329,21 @@ export const BacklinksLinks = ({
           }}
         />
       </Card>
+
+      {pendingCreate && (
+        <RelatedEntityModal
+          isOpen={true}
+          onClose={() => setPendingCreate(null)}
+          onSelect={() => setPendingCreate(null)}
+          targetType={pendingCreate.targetType}
+          title={pendingCreate.title}
+          hostFile={file}
+          titleTemplate={pendingCreate.titleTemplate}
+          attributes={pendingCreate.attributes}
+          linkProperties={pendingCreate.linkProperties}
+          openAfterCreate={pendingCreate.openAfterCreate}
+        />
+      )}
     </div>
   );
 };
