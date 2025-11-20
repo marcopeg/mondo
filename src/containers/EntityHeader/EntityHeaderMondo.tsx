@@ -341,12 +341,8 @@ export const EntityHeaderMondo = ({ entityType }: EntityHeaderMondoProps) => {
         const rawTitle =
           toOptionalString(specCreate.title) ??
           toOptionalString(panelCreate?.title);
-        const fallbackTitle = targetEntity?.name ?? label;
-        const titleTemplate = rawTitle
-          ? rawTitle
-          : fallbackTitle
-          ? `Untitled ${fallbackTitle}`
-          : undefined;
+        // If no explicit title provided, leave undefined so search starts empty
+        const titleTemplate = rawTitle ?? undefined;
 
         const attributes = specAttributes ?? panelAttributes;
 

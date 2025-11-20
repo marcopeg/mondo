@@ -40,7 +40,6 @@ export const role = {
       icon: task.icon,
       targetType: "person",
       create: {
-        title: "New Person for {@this.show}",
         attributes: {
           role: ["{@this}"],
         },

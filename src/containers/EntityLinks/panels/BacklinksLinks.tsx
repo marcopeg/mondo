@@ -980,7 +980,7 @@ export const BacklinksLinks = ({
 
     // Merge referenced create settings with panel overrides
     const titleTemplate =
-      createCfg.title ?? referencedCreate?.title ?? `Untitled ${defaultTitle}`;
+      createCfg.title ?? referencedCreate?.title ?? undefined;
     const mergedAttributes = (() => {
       const base = (referencedCreate?.attributes ?? {}) as Record<
         string,
