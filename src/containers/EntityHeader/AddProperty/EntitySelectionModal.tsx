@@ -1,9 +1,10 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { Modal } from "obsidian";
+import { useEffect } from "react";
+import { Modal, Notice, TFile } from "obsidian";
 import { useApp } from "@/hooks/use-app";
 import { MondoFileManager } from "@/utils/MondoFileManager";
-import { MONDO_FILE_TYPES } from "@/types/MondoFileType";
+import { MONDO_FILE_TYPES, isMondoEntityType } from "@/types/MondoFileType";
 import { getEntityDisplayName } from "@/utils/getEntityDisplayName";
+import createEntityForEntity from "@/utils/createEntityForEntity";
 import type { TCachedFile } from "@/types/TCachedFile";
 import type { MondoEntityFrontmatterFieldConfig } from "@/types/MondoEntityConfig";
 
@@ -18,8 +19,9 @@ type EntitySelectionModalProps = {
 };
 
 /**
- * Modal for selecting an entity from a filtered list based on the frontmatter config.
- * Supports search and filtering similar to backlinks panels.
+ * Modal for selecting or creating an entity referenced by a dynamic frontmatter property.
+ * If no entities match the search, a "Create new entity" button is shown that creates a new
+ * note for the inferred entity type (propertyKey) using IMS template/frontmatter, links it, and closes.
  */
 export const EntitySelectionModal = ({
   isOpen,
@@ -31,12 +33,9 @@ export const EntitySelectionModal = ({
   propertyKey,
 }: EntitySelectionModalProps) => {
   const app = useApp();
-  const [searchTerm, setSearchTerm] = useState("");
 
   useEffect(() => {
-    if (!isOpen) {
-      return;
-    }
+    if (!isOpen) return;
 
     const modal = new EntityPickerModal(
       app,
@@ -56,8 +55,8 @@ export const EntitySelectionModal = ({
     return () => {
       try {
         modal.close();
-      } catch (e) {
-        // Modal may already be closed
+      } catch (_) {
+        // already closed
       }
     };
   }, [isOpen, app, title, config, hostFile, propertyKey, onSelect, onClose]);
@@ -76,6 +75,7 @@ class EntityPickerModal extends Modal {
   private resultsContainer: HTMLDivElement | null = null;
   private allEntities: TCachedFile[] = [];
   private filteredEntities: TCachedFile[] = [];
+  private creating = false;
 
   constructor(
     app: any,
@@ -99,16 +99,12 @@ class EntityPickerModal extends Modal {
     this.modalEl.addClass("mondo-entity-picker-modal");
     this.titleEl.setText(this.title);
 
-    // Make modal more responsive on mobile
     this.modalEl.style.maxWidth = "min(600px, 90vw)";
     this.contentEl.style.maxHeight = "min(70vh, 600px)";
     this.contentEl.style.display = "flex";
     this.contentEl.style.flexDirection = "column";
 
-    // Create search input
-    const searchContainer = this.contentEl.createDiv({
-      cls: "mondo-entity-picker-search",
-    });
+    const searchContainer = this.contentEl.createDiv({ cls: "mondo-entity-picker-search" });
     searchContainer.style.marginBottom = "1rem";
     searchContainer.style.flexShrink = "0";
 
@@ -119,104 +115,136 @@ class EntityPickerModal extends Modal {
     });
     this.searchInput.style.width = "100%";
     this.searchInput.style.padding = "0.75rem";
-    this.searchInput.style.fontSize = "16px"; // Prevent zoom on iOS
-    this.searchInput.style.border =
-      "1px solid var(--background-modifier-border)";
+    this.searchInput.style.fontSize = "16px";
+    this.searchInput.style.border = "1px solid var(--background-modifier-border)";
     this.searchInput.style.borderRadius = "4px";
     this.searchInput.style.backgroundColor = "var(--background-primary)";
     this.searchInput.style.color = "var(--text-normal)";
 
-    this.searchInput.addEventListener("input", () => {
-      this.filterEntities();
+    this.searchInput.addEventListener("input", () => this.filterEntities());
+    this.searchInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" && this.filteredEntities.length === 0) {
+        e.preventDefault();
+        void this.createNewEntity();
+      }
     });
 
-    // Create results container
-    this.resultsContainer = this.contentEl.createDiv({
-      cls: "mondo-entity-picker-results",
-    });
+    this.resultsContainer = this.contentEl.createDiv({ cls: "mondo-entity-picker-results" });
     this.resultsContainer.style.maxHeight = "100%";
     this.resultsContainer.style.overflowY = "auto";
     this.resultsContainer.style.flex = "1";
     this.resultsContainer.style.minHeight = "0";
-    // Better scrolling on mobile (using setProperty to avoid TS error)
     this.resultsContainer.style.setProperty("-webkit-overflow-scrolling", "touch");
 
-    // Load and filter entities
     this.loadEntities();
     this.filterEntities();
 
-    // Focus search input
-    setTimeout(() => {
-      this.searchInput?.focus();
-    }, 50);
+    setTimeout(() => this.searchInput?.focus(), 50);
   }
 
   onClose() {
     this.contentEl.empty();
   }
 
+  private async createNewEntity() {
+    if (this.creating) return;
+    this.creating = true;
+    try {
+      const rawTitle = (this.searchInput?.value || "").trim();
+      const targetType = this.propertyKey.trim().toLowerCase();
+      if (!isMondoEntityType(targetType)) {
+        new Notice(`Cannot create: unknown entity type "${this.propertyKey}"`);
+        return;
+      }
+
+      const created = await createEntityForEntity({
+        app: this.app,
+        targetType,
+        hostEntity: this.hostFile,
+        titleTemplate: rawTitle || undefined,
+        attributeTemplates: {}, // override default backlink creation
+        linkProperties: [],
+        openAfterCreate: false, // create silently
+      });
+
+      if (!created) {
+        new Notice("Failed to create entity note.");
+        return;
+      }
+
+      // Link new entity in host frontmatter under propertyKey
+      const linktext = this.app.metadataCache.fileToLinktext(created, this.hostFile.file.path, false);
+      const wiki = `[[${linktext}]]`;
+      await this.app.fileManager.processFrontMatter(this.hostFile.file, (fm) => {
+        const key = this.propertyKey;
+        const isMultiple = !!this.config.multiple;
+        const current = fm[key];
+        if (isMultiple) {
+          if (Array.isArray(current)) {
+            if (!current.includes(wiki)) current.push(wiki);
+          } else if (typeof current === "string" && current.trim()) {
+            fm[key] = current === wiki ? current : [current, wiki];
+          } else {
+            fm[key] = [wiki];
+          }
+        } else {
+          fm[key] = wiki; // single value override
+        }
+      });
+
+      // Build TCachedFile for callback
+      const cache = this.app.metadataCache.getFileCache(created) || undefined;
+      const fileManager = MondoFileManager.getInstance(this.app);
+      // Attempt to refresh manager so subsequent opens include new file
+      fileManager.refresh();
+      const cached: TCachedFile = fileManager.getFileByPath(created.path) || { file: created as TFile, cache };
+
+      this.onSelect(cached);
+      this.close();
+    } catch (err) {
+      console.error("EntityPickerModal: createNewEntity failed", err);
+      new Notice("Failed to create entity.");
+    } finally {
+      this.creating = false;
+    }
+  }
+
   private loadEntities() {
     const fileManager = MondoFileManager.getInstance(this.app);
-
-    // Get all files that match the filter configuration
     let candidates: TCachedFile[] = [];
 
-    // If find query is specified, use it (similar to backlinks panel logic)
     if (this.config.find && this.config.find.query) {
-      candidates = this.evaluateFindQuery(
-        this.config.find,
-        fileManager,
-        this.hostFile
-      );
+      candidates = this.evaluateFindQuery(this.config.find, fileManager, this.hostFile);
     } else {
-      // Otherwise, get all Mondo files
       (MONDO_FILE_TYPES as string[]).forEach((type) => {
         const files = fileManager.getFiles(type as any);
         candidates.push(...files);
       });
     }
 
-    // Apply filter predicate if specified
     if (this.config.filter) {
-      candidates = candidates.filter((file) =>
-        this.evalFilterExpr(file, this.config.filter)
-      );
+      candidates = candidates.filter((file) => this.evalFilterExpr(file, this.config.filter));
     }
 
-    // Remove duplicates by path
     const seen = new Set<string>();
-    
-    // Get current values to filter out already linked entities
     const currentPaths = new Set<string>();
     const frontmatterVal = this.hostFile.cache?.frontmatter?.[this.propertyKey];
-    
     if (frontmatterVal) {
       const values = Array.isArray(frontmatterVal) ? frontmatterVal : [frontmatterVal];
-      values.forEach(val => {
-        if (typeof val === 'string') {
-          // Extract link text from [[Link]] or use raw string
+      values.forEach((val) => {
+        if (typeof val === "string") {
           const match = /\[\[(.*?)\]\]/.exec(val);
-          const linkText = match ? match[1].split('|')[0] : val;
-          
-          // Resolve to file
-          const file = this.app.metadataCache.getFirstLinkpathDest(linkText, this.hostFile.file.path);
-          if (file) {
-            currentPaths.add(file.path);
-          }
+          const linkText = match ? match[1].split("|")[0] : val;
+          const f = this.app.metadataCache.getFirstLinkpathDest(linkText, this.hostFile.file.path);
+          if (f) currentPaths.add(f.path);
         }
       });
     }
 
     this.allEntities = candidates.filter((file) => {
-      if (seen.has(file.file.path)) {
-        return false;
-      }
+      if (seen.has(file.file.path)) return false;
       seen.add(file.file.path);
-
-      if (currentPaths.has(file.file.path)) {
-        return false;
-      }
-
+      if (currentPaths.has(file.file.path)) return false;
       return true;
     });
   }
@@ -224,13 +252,9 @@ class EntityPickerModal extends Modal {
   private evaluateFindQuery(
     findConfig: NonNullable<MondoEntityFrontmatterFieldConfig["find"]>,
     fileManager: MondoFileManager,
-    hostFile: TCachedFile
+    _hostFile: TCachedFile
   ): TCachedFile[] {
-    // Simplified find query evaluation
-    // This is a basic implementation - a full implementation would need to handle
-    // all the complex query steps from BacklinksLinks
     const results: TCachedFile[] = [];
-
     findConfig.query.forEach((rule) => {
       rule.steps.forEach((step) => {
         if ((step as any).filter) {
@@ -245,133 +269,84 @@ class EntityPickerModal extends Modal {
         }
       });
     });
-
     return results;
   }
 
-  private evalFilterExpr(
-    entry: TCachedFile,
-    filter: unknown
-  ): boolean {
-    if (!filter) {
-      return true;
-    }
-
+  private evalFilterExpr(entry: TCachedFile, filter: unknown): boolean {
+    if (!filter) return true;
     if (typeof filter === "object" && filter !== null) {
       const obj = filter as any;
-
-      // Handle { all: [...] }
-      if (Array.isArray(obj.all)) {
-        return obj.all.every((e: unknown) => this.evalFilterExpr(entry, e));
-      }
-
-      // Handle { any: [...] }
-      if (Array.isArray(obj.any)) {
-        return obj.any.some((e: unknown) => this.evalFilterExpr(entry, e));
-      }
-
-      // Handle { not: ... }
-      if (obj.not !== undefined) {
-        return !this.evalFilterExpr(entry, obj.not);
-      }
-
-      // Handle property filters like { type: { in: ["person", "company"] } }
+      if (Array.isArray(obj.all)) return obj.all.every((e: unknown) => this.evalFilterExpr(entry, e));
+      if (Array.isArray(obj.any)) return obj.any.some((e: unknown) => this.evalFilterExpr(entry, e));
+      if (obj.not !== undefined) return !this.evalFilterExpr(entry, obj.not);
       if (obj.type) {
-        const mondoType = String(
-          (entry.cache?.frontmatter as any)?.mondoType ||
-            (entry.cache?.frontmatter as any)?.type ||
-            ""
-        )
-          .trim()
-          .toLowerCase();
-
+        const mondoType = String((entry.cache?.frontmatter as any)?.mondoType || (entry.cache?.frontmatter as any)?.type || "").trim().toLowerCase();
         if (typeof obj.type === "object" && obj.type.in) {
-          const types = Array.isArray(obj.type.in)
-            ? obj.type.in
-            : [obj.type.in];
+          const types = Array.isArray(obj.type.in) ? obj.type.in : [obj.type.in];
           return types.includes(mondoType);
         }
-
-        if (typeof obj.type === "string") {
-          return mondoType === obj.type.toLowerCase();
-        }
+        if (typeof obj.type === "string") return mondoType === obj.type.toLowerCase();
       }
     }
-
     return true;
   }
 
   private filterEntities() {
-    if (!this.searchInput || !this.resultsContainer) {
-      return;
-    }
-
+    if (!this.searchInput || !this.resultsContainer) return;
     const searchTerm = this.searchInput.value.toLowerCase().trim();
-
     if (searchTerm === "") {
       this.filteredEntities = this.allEntities;
     } else {
-      this.filteredEntities = this.allEntities.filter((file) => {
-        const displayName = getEntityDisplayName(file).toLowerCase();
-        return displayName.includes(searchTerm);
-      });
+      this.filteredEntities = this.allEntities.filter((file) => getEntityDisplayName(file).toLowerCase().includes(searchTerm));
     }
-
     this.renderResults();
   }
 
   private renderResults() {
-    if (!this.resultsContainer) {
-      return;
-    }
-
+    if (!this.resultsContainer) return;
     this.resultsContainer.empty();
 
     if (this.filteredEntities.length === 0) {
-      const emptyMessage = this.resultsContainer.createDiv({
-        cls: "mondo-entity-picker-empty",
-        text: "No entities found",
-      });
-      emptyMessage.style.padding = "1rem";
-      emptyMessage.style.textAlign = "center";
-      emptyMessage.style.color = "var(--text-muted)";
+      const wrapper = this.resultsContainer.createDiv({ cls: "mondo-entity-picker-empty" });
+      wrapper.style.padding = "1rem";
+      wrapper.style.textAlign = "center";
+
+      const btn = wrapper.createEl("button", { text: "Create new entity" });
+      btn.type = "button";
+      btn.style.padding = "0.5rem 0.75rem";
+      btn.style.borderRadius = "4px";
+      btn.style.cursor = "pointer";
+      btn.style.backgroundColor = "var(--interactive-normal)";
+      btn.style.color = "var(--text-on-accent)";
+      btn.style.border = "1px solid var(--background-modifier-border)";
+      btn.addEventListener("click", () => void this.createNewEntity());
       return;
     }
 
     this.filteredEntities.forEach((file) => {
-      const item = this.resultsContainer!.createDiv({
-        cls: "mondo-entity-picker-item",
-      });
+      const item = this.resultsContainer!.createDiv({ cls: "mondo-entity-picker-item" });
       item.style.padding = "0.75rem";
       item.style.cursor = "pointer";
       item.style.borderRadius = "4px";
-      item.style.touchAction = "manipulation"; // Better touch handling
-      item.style.minHeight = "44px"; // Minimum touch target size
+      item.style.touchAction = "manipulation";
+      item.style.minHeight = "44px";
       item.style.display = "flex";
       item.style.alignItems = "center";
 
-      const displayName = getEntityDisplayName(file);
-      item.setText(displayName);
+      item.setText(getEntityDisplayName(file));
 
       item.addEventListener("mouseenter", () => {
         item.style.backgroundColor = "var(--background-modifier-hover)";
       });
-
       item.addEventListener("mouseleave", () => {
         item.style.backgroundColor = "";
       });
-
-      // Add active state for touch
       item.addEventListener("touchstart", () => {
         item.style.backgroundColor = "var(--background-modifier-hover)";
       });
-
       item.addEventListener("touchend", () => {
-        setTimeout(() => {
-          item.style.backgroundColor = "";
-        }, 100);
+        setTimeout(() => (item.style.backgroundColor = ""), 100);
       });
-
       item.addEventListener("click", () => {
         this.onSelect(file);
         this.close();
