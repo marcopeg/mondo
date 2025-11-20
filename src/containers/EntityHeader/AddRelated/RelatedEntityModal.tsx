@@ -292,7 +292,34 @@ class RelatedPickerModal extends Modal {
     }
 
     const candidates = fileManager.getFiles(normalizedTarget as any);
-    this.allEntities = candidates;
+    
+    // Filter out entities that are already linked via linkProperties
+    const currentPaths = new Set<string>();
+    const linkProps = this.linkProperties || [];
+    const hostFrontmatter = this.hostFile.cache?.frontmatter as Record<string, unknown> | undefined;
+    
+    if (hostFrontmatter && linkProps.length > 0) {
+      linkProps.forEach((prop) => {
+        const key = String(prop).trim();
+        if (!key) return;
+        
+        const frontmatterVal = hostFrontmatter[key];
+        if (frontmatterVal) {
+          const values = Array.isArray(frontmatterVal) ? frontmatterVal : [frontmatterVal];
+          values.forEach((val) => {
+            if (typeof val === "string") {
+              const match = /\[\[(.*?)\]\]/.exec(val);
+              const linkText = match ? match[1].split("|")[0] : val;
+              const f = this.app.metadataCache.getFirstLinkpathDest(linkText, this.hostFile.file.path);
+              if (f) currentPaths.add(f.path);
+            }
+          });
+        }
+      });
+    }
+    
+    // Filter out already-linked entities
+    this.allEntities = candidates.filter((file) => !currentPaths.has(file.file.path));
   }
 
   private filterEntities() {

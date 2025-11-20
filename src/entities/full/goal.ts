@@ -3,8 +3,18 @@ export const goal = {
   singular: "Goal",
   icon: "target",
   template: "\ndate: {{date}}\nstatus: active\nlinksTo: []\n---\n",
-  linkAnythingOn: "linksTo",
-  createAnythingOn: "linksTo",
+  list: {
+    columns: [
+      { type: "title", prop: "show" },
+      { type: "value", prop: "status" },
+      { type: "date", prop: "date" },
+    ],
+    sort: {
+      column: "date",
+      direction: "desc",
+    },
+  },
+  linkAnythingOn: true,
   frontmatter: {
     company: {
       type: "entity",
@@ -54,18 +64,8 @@ export const goal = {
       },
       multiple: true,
     },
-  },
-  list: {
-    columns: [
-      { type: "title", prop: "show" },
-      { type: "value", prop: "status" },
-      { type: "date", prop: "date" },
-    ],
-    sort: {
-      column: "date",
-      direction: "desc",
-    },
-  },
+  }, 
+  createAnythingOn: true,
   createRelated: [
     {
       key: "log",

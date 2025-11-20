@@ -280,7 +280,9 @@ class EntityPickerModal extends Modal {
 
     const seen = new Set<string>();
     const currentPaths = new Set<string>();
-    const frontmatterVal = this.hostFile.cache?.frontmatter?.[this.propertyKey];
+    // Use config.key if specified, otherwise fall back to propertyKey
+    const actualKey = this.config.key || this.propertyKey;
+    const frontmatterVal = this.hostFile.cache?.frontmatter?.[actualKey];
     if (frontmatterVal) {
       const values = Array.isArray(frontmatterVal) ? frontmatterVal : [frontmatterVal];
       values.forEach((val) => {
