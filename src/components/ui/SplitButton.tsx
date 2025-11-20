@@ -151,6 +151,10 @@ export const SplitButton = ({
     "absolute right-0 top-full z-[999] mt-1 min-w-[10rem] overflow-hidden rounded-md border border-[var(--background-modifier-border-hover)] bg-[var(--background-primary)] shadow-lg py-1",
     // subtle separators between items
     "divide-y divide-[var(--background-modifier-border-hover)]",
+    // max height and scroll for long lists
+    "max-h-[min(70vh,400px)] overflow-y-auto",
+    // mobile-friendly scrolling
+    "[-webkit-overflow-scrolling:touch]",
   ].join(" ");
 
   // Focus first enabled item when menu opens
