@@ -5,6 +5,7 @@ import { MondoFileManager } from "@/utils/MondoFileManager";
 import { MONDO_FILE_TYPES, isMondoEntityType } from "@/types/MondoFileType";
 import { getEntityDisplayName } from "@/utils/getEntityDisplayName";
 import createEntityForEntity from "@/utils/createEntityForEntity";
+import { MONDO_ENTITIES } from "@/entities";
 import type { TCachedFile } from "@/types/TCachedFile";
 import type { MondoEntityFrontmatterFieldConfig } from "@/types/MondoEntityConfig";
 
@@ -157,12 +158,48 @@ class EntityPickerModal extends Modal {
         return;
       }
 
+      // Build attributes that copy shared frontmatter properties from host to new entity
+      const sharedAttributes: Record<string, string> = {};
+      const targetEntity = MONDO_ENTITIES[targetType as any];
+      const hostFrontmatter = (this.hostFile.cache?.frontmatter || {}) as Record<string, unknown>;
+
+      // Parse the target entity's template to find which frontmatter properties it defines
+      const targetTemplate = targetEntity?.template || "";
+      const targetProperties = new Set<string>();
+      
+      // Extract properties from template (format: "propertyName: value\n")
+      // Match lines before the "---" separator that contain property definitions
+      const beforeSeparator = targetTemplate.split("---")[0] || "";
+      const propertyMatches = beforeSeparator.matchAll(/^([a-zA-Z_][a-zA-Z0-9_-]*)\s*:/gm);
+      for (const match of propertyMatches) {
+        if (match[1] && match[1] !== "date" && match[1] !== "datetime") {
+          targetProperties.add(match[1].trim());
+        }
+      }
+
+      // For each property defined in target template that also exists in host frontmatter,
+      // copy the value if it's non-empty
+      targetProperties.forEach((propKey) => {
+        const hostValue = hostFrontmatter[propKey];
+        // Only copy if the host has a non-empty value
+        if (hostValue !== undefined && hostValue !== null) {
+          if (typeof hostValue === "string" && hostValue.trim() === "") {
+            return; // skip empty strings
+          }
+          if (Array.isArray(hostValue) && hostValue.length === 0) {
+            return; // skip empty arrays
+          }
+          // Copy the value using {@this.propKey} syntax so createEntityForEntity handles it
+          sharedAttributes[propKey] = `{@this.${propKey}}`;
+        }
+      });
+
       const created = await createEntityForEntity({
         app: this.app,
         targetType,
         hostEntity: this.hostFile,
         titleTemplate: rawTitle || undefined,
-        attributeTemplates: {}, // override default backlink creation
+        attributeTemplates: sharedAttributes,
         linkProperties: [],
         openAfterCreate: false, // create silently
       });
