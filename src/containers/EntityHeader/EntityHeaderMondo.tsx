@@ -519,8 +519,11 @@ export const EntityHeaderMondo = ({ entityType }: EntityHeaderMondoProps) => {
                 </div>
               </div>
               <div className="flex flex-shrink-0 gap-2" data-entity-actions-desktop>
-                {entityConfig?.frontmatter && (
-                  <AddProperty frontmatterConfig={entityConfig.frontmatter} />
+                {(entityConfig?.frontmatter || entityConfig?.linkToAnythingOn) && (
+                  <AddProperty 
+                    frontmatterConfig={entityConfig.frontmatter || {}}
+                    linkToAnythingOn={entityConfig.linkToAnythingOn}
+                  />
                 )}
                 {primary ? (
                   <SplitButton
@@ -548,8 +551,11 @@ export const EntityHeaderMondo = ({ entityType }: EntityHeaderMondoProps) => {
             ) : null}
 
             <div className="flex flex-shrink-0 gap-2" data-entity-actions-mobile>
-              {entityConfig?.frontmatter && (
-                <AddProperty frontmatterConfig={entityConfig.frontmatter} />
+              {(entityConfig?.frontmatter || entityConfig?.linkToAnythingOn) && (
+                <AddProperty 
+                  frontmatterConfig={entityConfig.frontmatter || {}}
+                  linkToAnythingOn={entityConfig.linkToAnythingOn}
+                />
               )}
               {primary ? (
                 <SplitButton

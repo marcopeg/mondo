@@ -3,15 +3,18 @@ import { Notice } from "obsidian";
 import { SplitButton } from "@/components/ui/SplitButton";
 import { useApp } from "@/hooks/use-app";
 import { useEntityFile } from "@/context/EntityFileProvider";
+import { MONDO_ENTITIES, type MondoEntityType } from "@/entities";
 import type { TCachedFile } from "@/types/TCachedFile";
 import type {
   MondoEntityFrontmatterConfig,
   MondoEntityFrontmatterFieldConfig,
 } from "@/types/MondoEntityConfig";
+import { isMondoEntityType } from "@/types/MondoFileType";
 import { EntitySelectionModal } from "./EntitySelectionModal";
 
 type AddPropertyProps = {
   frontmatterConfig: MondoEntityFrontmatterConfig;
+  linkToAnythingOn?: string | boolean;
 };
 
 type PropertyOption = {
@@ -19,7 +22,7 @@ type PropertyOption = {
   config: MondoEntityFrontmatterFieldConfig;
 };
 
-export const AddProperty = ({ frontmatterConfig }: AddPropertyProps) => {
+export const AddProperty = ({ frontmatterConfig, linkToAnythingOn }: AddPropertyProps) => {
   const app = useApp();
   const { file } = useEntityFile();
   const cachedFile = file as TCachedFile | undefined;
@@ -27,12 +30,67 @@ export const AddProperty = ({ frontmatterConfig }: AddPropertyProps) => {
   const [selectedProperty, setSelectedProperty] =
     useState<PropertyOption | null>(null);
 
+  // Expand frontmatter config with linkToAnythingOn entries
+  const expandedFrontmatterConfig = useMemo(() => {
+    if (!linkToAnythingOn) {
+      return frontmatterConfig;
+    }
+
+    // Determine the target property key
+    const targetKey = typeof linkToAnythingOn === 'string' ? linkToAnythingOn : 'linksTo';
+
+    // Get all defined entity types from explicit frontmatter config
+    const explicitTypes = new Set<string>();
+    Object.values(frontmatterConfig).forEach((config) => {
+      if (config.type === 'entity' && config.filter) {
+        const filter = config.filter as any;
+        const types = filter?.type?.in;
+        if (Array.isArray(types)) {
+          types.forEach((t) => explicitTypes.add(String(t).toLowerCase()));
+        }
+      }
+    });
+
+    // Build expanded config
+    const expanded: MondoEntityFrontmatterConfig = { ...frontmatterConfig };
+
+    // Add entries for all entity types not explicitly defined
+    Object.entries(MONDO_ENTITIES).forEach(([entityType, entityConfig]) => {
+      const typeLower = entityType.toLowerCase();
+      
+      // Skip if already explicitly defined
+      if (explicitTypes.has(typeLower)) {
+        return;
+      }
+
+      // Skip if an entry with this config key already exists
+      if (expanded[entityType]) {
+        return;
+      }
+
+      // Add auto-generated entry
+      expanded[entityType] = {
+        type: 'entity',
+        title: entityConfig.singular || entityConfig.name,
+        key: targetKey,
+        filter: {
+          type: {
+            in: [typeLower],
+          },
+        },
+        multiple: true,
+      };
+    });
+
+    return expanded;
+  }, [frontmatterConfig, linkToAnythingOn]);
+
   // Filter properties to only show those that support picker interface (entity type)
   const pickerProperties = useMemo(() => {
     const properties: PropertyOption[] = [];
     const currentFrontmatter = cachedFile?.cache?.frontmatter || {};
 
-    Object.entries(frontmatterConfig).forEach(([configKey, config]) => {
+    Object.entries(expandedFrontmatterConfig).forEach(([configKey, config]) => {
       if (config.type === "entity") {
         // Use config.key if specified, otherwise fall back to configKey
         const targetKey = config.key || configKey;
@@ -54,7 +112,7 @@ export const AddProperty = ({ frontmatterConfig }: AddPropertyProps) => {
       }
     });
     return properties;
-  }, [frontmatterConfig, cachedFile]);
+  }, [expandedFrontmatterConfig, cachedFile]);
 
   const handlePropertySelect = useCallback((property: PropertyOption) => {
     setSelectedProperty(property);

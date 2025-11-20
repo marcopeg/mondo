@@ -271,4 +271,10 @@ export interface MondoEntityConfig<
   createRelated?: MondoEntityRelatedConfig[];
   /** Optional frontmatter field configurations for dynamic property addition */
   frontmatter?: MondoEntityFrontmatterConfig;
+  /**
+   * Optional: automatically add frontmatter entries for all entity types not explicitly
+   * defined in frontmatter config. Can be a string (property key to populate) or boolean
+   * (true defaults to "linksTo", false disables the feature).
+   */
+  linkToAnythingOn?: string | boolean;
 }
