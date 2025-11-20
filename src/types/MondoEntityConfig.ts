@@ -110,6 +110,8 @@ export interface MondoEntityFrontmatterFieldConfig {
    * Allows multiple frontmatter configs to populate the same property.
    */
   key?: string;
+  /** Optional icon to display in the UI */
+  icon?: string;
   /** Whether to allow multiple values (applies to entity type) */
   multiple?: boolean;
   /** Default value or preset function (e.g., "now" for datetime) */

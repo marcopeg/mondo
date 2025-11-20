@@ -10,6 +10,7 @@ export const goal = {
       type: "entity",
       title: "Company",
       key: "linksTo",
+      icon: "building-2",
       filter: {
         type: {
           in: ["company"],
@@ -21,6 +22,7 @@ export const goal = {
       type: "entity",
       title: "Team",
       key: "linksTo",
+      icon: "users",
       filter: {
         type: {
           in: ["team"],
@@ -32,6 +34,7 @@ export const goal = {
       type: "entity",
       title: "Role",
       key: "linksTo",
+      icon: "briefcase",
       filter: {
         type: {
           in: ["role"],
@@ -43,6 +46,7 @@ export const goal = {
       type: "entity",
       title: "Person",
       key: "linksTo",
+      icon: "user",
       filter: {
         type: {
           in: ["person"],

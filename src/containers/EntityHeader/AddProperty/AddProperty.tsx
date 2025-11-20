@@ -74,6 +74,7 @@ export const AddProperty = ({ frontmatterConfig, linkAnythingOn }: AddPropertyPr
         type: 'entity',
         title: entityConfig.singular || entityConfig.name,
         key: targetKey,
+        icon: entityConfig.icon,
         filter: {
           type: {
             in: [typeLower],
@@ -194,10 +195,12 @@ export const AddProperty = ({ frontmatterConfig, linkAnythingOn }: AddPropertyPr
     const actions: Array<any> = [];
     const explicitActions = explicitProperties.map((property) => ({
       label: property.config.title || property.key,
+      icon: property.config.icon,
       onSelect: () => handlePropertySelect(property),
     }));
     const autoActions = autoProperties.map((property) => ({
       label: property.config.title || property.key,
+      icon: property.config.icon,
       onSelect: () => handlePropertySelect(property),
     }));
     actions.push(...explicitActions);
