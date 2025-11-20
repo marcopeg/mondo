@@ -62,12 +62,56 @@ export const goal = {
   },
   createRelated: [
     {
-      key: "goal",
-      label: "Goal",
-      icon: "target",
-      targetType: "goal",
+      key: "log",
+      label: "Log",
+      icon: "file-text",
+      targetType: "log",
       create: {
-        title: "Untitled Goal for {@this.show}",
+        title: "{YY}-{MM}-{DD} {hh}.{mm} Log for {@this.show}",
+        attributes: {
+          linksTo: ["{@this}"],
+        },
+      },
+    },
+    {
+      key: "task",
+      label: "Task",
+      icon: "check-square",
+      targetType: "task",
+      create: {
+        attributes: {
+          linksTo: ["{@this}"],
+        },
+      },
+    },
+    {
+      key: "idea",
+      label: "Idea",
+      icon: "lightbulb",
+      targetType: "idea",
+      create: {
+        attributes: {
+          linksTo: ["{@this}"],
+        },
+      },
+    },
+    {
+      key: "fact",
+      label: "Fact",
+      icon: "info",
+      targetType: "fact",
+      create: {
+        attributes: {
+          linksTo: ["{@this}"],
+        },
+      },
+    },
+    {
+      key: "document",
+      label: "Document",
+      icon: "file-text",
+      targetType: "document",
+      create: {
         attributes: {
           linksTo: ["{@this}"],
         },
