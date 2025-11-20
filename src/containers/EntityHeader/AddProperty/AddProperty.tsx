@@ -1,7 +1,6 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { Notice } from "obsidian";
-import { Button } from "@/components/ui/Button";
-import { Icon } from "@/components/ui/Icon";
+import { SplitButton } from "@/components/ui/SplitButton";
 import { useApp } from "@/hooks/use-app";
 import { useEntityFile } from "@/context/EntityFileProvider";
 import type { TCachedFile } from "@/types/TCachedFile";
@@ -25,55 +24,36 @@ export const AddProperty = ({ frontmatterConfig }: AddPropertyProps) => {
   const { file } = useEntityFile();
   const cachedFile = file as TCachedFile | undefined;
 
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [isOpen, setIsOpen] = useState(false);
   const [selectedProperty, setSelectedProperty] =
     useState<PropertyOption | null>(null);
 
   // Filter properties to only show those that support picker interface (entity type)
   const pickerProperties = useMemo(() => {
     const properties: PropertyOption[] = [];
+    const currentFrontmatter = cachedFile?.cache?.frontmatter || {};
+
     Object.entries(frontmatterConfig).forEach(([key, config]) => {
       if (config.type === "entity") {
+        // Check if property is already set
+        const currentValue = currentFrontmatter[key];
+        const isSet =
+          currentValue !== undefined &&
+          currentValue !== null &&
+          currentValue !== "" &&
+          !(Array.isArray(currentValue) && currentValue.length === 0);
+
+        // If it's set and not multiple, skip it
+        if (isSet && !config.multiple) {
+          return;
+        }
+
         properties.push({ key, config });
       }
     });
     return properties;
-  }, [frontmatterConfig]);
-
-  useEffect(() => {
-    if (!isOpen) return;
-
-    const handlePointerDown = (event: MouseEvent) => {
-      if (
-        containerRef.current &&
-        !containerRef.current.contains(event.target as Node)
-      ) {
-        setIsOpen(false);
-      }
-    };
-
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        setIsOpen(false);
-      }
-    };
-
-    window.addEventListener("mousedown", handlePointerDown);
-    window.addEventListener("keydown", handleKeyDown);
-
-    return () => {
-      window.removeEventListener("mousedown", handlePointerDown);
-      window.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [isOpen]);
-
-  const handleButtonClick = useCallback(() => {
-    setIsOpen((prev) => !prev);
-  }, []);
+  }, [frontmatterConfig, cachedFile]);
 
   const handlePropertySelect = useCallback((property: PropertyOption) => {
-    setIsOpen(false);
     setSelectedProperty(property);
   }, []);
 
@@ -140,50 +120,28 @@ export const AddProperty = ({ frontmatterConfig }: AddPropertyProps) => {
     setSelectedProperty(null);
   }, []);
 
+  const primaryProperty = pickerProperties[0];
+
+  const secondaryActions = useMemo(() => {
+    return pickerProperties.map((property) => ({
+      label: property.config.title || property.key,
+      onSelect: () => handlePropertySelect(property),
+    }));
+  }, [pickerProperties, handlePropertySelect]);
+
   if (pickerProperties.length === 0) {
     return null;
   }
 
-  const menuClasses = [
-    "absolute left-0 top-full z-[999] mt-1 min-w-[10rem] overflow-hidden rounded-md border border-[var(--background-modifier-border-hover)] bg-[var(--background-primary)] shadow-lg py-1",
-    "divide-y divide-[var(--background-modifier-border-hover)]",
-  ].join(" ");
-
   return (
     <>
-      <div ref={containerRef} className="relative inline-flex">
-        <Button
-          onClick={handleButtonClick}
-          variant="button"
-          className="text-xs px-2 py-1"
-          aria-haspopup="menu"
-          aria-expanded={isOpen}
-        >
-          <Icon name="plus" className="h-3.5 w-3.5 mr-1" />
-          Add property
-        </Button>
-
-        {isOpen && (
-          <div className={menuClasses} role="menu">
-            {pickerProperties.map((property) => (
-              <Button
-                key={property.key}
-                type="button"
-                role="menuitem"
-                onClick={() => handlePropertySelect(property)}
-                variant="link"
-                fullWidth
-                className="flex w-full items-center gap-2 px-3 py-2 text-xs text-[var(--text-normal)] hover:bg-[var(--background-modifier-hover)] focus:bg-[var(--background-modifier-hover)] rounded-none text-left"
-                style={{ ["--link-decoration"]: "none" } as React.CSSProperties}
-              >
-                <span className="flex-1 text-left">
-                  {property.config.title || property.key}
-                </span>
-              </Button>
-            ))}
-          </div>
-        )}
-      </div>
+      <SplitButton
+        onClick={() => handlePropertySelect(primaryProperty)}
+        secondaryActions={secondaryActions}
+        menuAriaLabel="Select property to add"
+      >
+        {`+ ${primaryProperty.config.title || primaryProperty.key}`}
+      </SplitButton>
 
       {selectedProperty && cachedFile && (
         <EntitySelectionModal

@@ -16,17 +16,17 @@ export const person = {
   frontmatter: {
     company: {
       type: "entity",
-      title: "Link to a Company",
+      title: "Company",
       filter: {
         type: {
           in: ["company"],
         },
       },
-      multiple: true,
+      // multiple: true,
     },
     team: {
       type: "entity",
-      title: "Link to a Team",
+      title: "Team",
       filter: {
         type: {
           in: ["team"],
@@ -36,7 +36,7 @@ export const person = {
     },
     role: {
       type: "entity",
-      title: "Link to a Role",
+      title: "Role",
       filter: {
         type: {
           in: ["role"],
@@ -46,7 +46,7 @@ export const person = {
     },
     location: {
       type: "entity",
-      title: "Link to a Location",
+      title: "Location",
       filter: {
         type: {
           in: ["location"],
