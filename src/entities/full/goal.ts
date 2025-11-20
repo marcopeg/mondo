@@ -127,6 +127,97 @@ export const goal = {
   links: [
     {
       type: "backlinks",
+      key: "log",
+      config: {
+        title: "Logs",
+        icon: "file-text",
+        visibility: "notEmpty",
+        find: {
+          query: [
+            {
+              steps: [
+                {
+                  in: {
+                    property: "linksTo",
+                    type: ["log"],
+                  },
+                },
+              ],
+            },
+          ],
+        },
+        sort: {
+          strategy: "date",
+          direction: "desc",
+        },
+        columns: [
+          {
+            type: "entityIcon",
+          },
+          {
+            type: "show",
+          },
+          {
+            type: "cover",
+            align: "right",
+          },
+          {
+            type: "date",
+            align: "right",
+          },
+        ],
+        createEntity: {
+          referenceCreate: "log",
+        },
+      },
+    },
+    {
+      type: "backlinks",
+      key: "task",
+      config: {
+        title: "Tasks",
+        icon: "check-square",
+        visibility: "notEmpty",
+        find: {
+          query: [
+            {
+              steps: [
+                {
+                  in: {
+                    property: "linksTo",
+                    type: ["task"],
+                  },
+                },
+              ],
+            },
+          ],
+        },
+        sort: {
+          strategy: "manual",
+        },
+        columns: [
+          {
+            type: "entityIcon",
+          },
+          {
+            type: "show",
+          },
+          {
+            type: "cover",
+            align: "right",
+          },
+          {
+            type: "date",
+            align: "right",
+          },
+        ],
+        createEntity: {
+          referenceCreate: "task",
+        },
+      },
+    },
+    {
+      type: "backlinks",
       key: "link",
       config: {
         title: "Links",
@@ -139,7 +230,7 @@ export const goal = {
                 {
                   notIn: {
                     property: "linksTo",
-                    type: [],
+                    type: ["log", "task"],
                   },
                 },
               ],

@@ -965,18 +965,22 @@ export const BacklinksLinks = ({
       ? (MONDO_ENTITIES[hostTypeLower] as any)
       : undefined;
     const refKey = (createCfg as any)?.referenceCreate as string | undefined;
-    const referencedCreate = (() => {
+    const referencedCreateEntry = (() => {
       if (!refKey || !hostEntityCfg?.createRelated) return undefined;
       const list = hostEntityCfg.createRelated as Array<any>;
       const match = list.find((c) => String(c?.key || "").trim() === refKey);
-      if (!match) return undefined;
-      return (match.create ?? {}) as {
-        title?: string;
-        attributes?: Record<string, unknown>;
-        linkProperties?: string | string[];
-        openAfterCreate?: boolean;
-      };
+      return match;
     })();
+    const referencedCreate = referencedCreateEntry
+      ? ((referencedCreateEntry.create ?? {}) as {
+          title?: string;
+          attributes?: Record<string, unknown>;
+          linkProperties?: string | string[];
+          openAfterCreate?: boolean;
+        })
+      : undefined;
+    const referencedLabel = referencedCreateEntry?.label as string | undefined;
+    const referencedTargetType = referencedCreateEntry?.targetType as string | undefined;
 
     // Merge referenced create settings with panel overrides
     const titleTemplate =
@@ -991,28 +995,39 @@ export const BacklinksLinks = ({
         ? ({ ...base, ...override } as MondoEntityCreateAttributes)
         : undefined;
     })();
+    
+    // When referenceCreate is used, prefer the referenced targetType and linkProperties
+    const finalTargetType = referencedTargetType || effectiveTargetType;
+    const finalLinkProperties = referencedCreateEntry
+      ? (referencedCreate?.linkProperties 
+          ? (Array.isArray(referencedCreate.linkProperties) 
+              ? referencedCreate.linkProperties 
+              : [referencedCreate.linkProperties])
+          : buildLinkProperties(
+              hostType as MondoEntityType,
+              (panel.properties ?? panel.prop) as string | string[] | undefined
+            ))
+      : buildLinkProperties(
+          hostType as MondoEntityType,
+          (panel.properties ?? panel.prop) as string | string[] | undefined
+        );
+    
     items.push({
       key: "create-entity",
       content: (
         <Button
           variant="link"
           icon="plus"
-          aria-label={`Create ${effectiveTargetType}`}
+          aria-label={`Create ${finalTargetType}`}
           disabled={!!pendingCreate}
           onClick={() => {
             if (pendingCreate) return;
             setPendingCreate({
-              targetType: effectiveTargetType as string,
-              title: `Add ${defaultTitle}`,
+              targetType: finalTargetType as string,
+              title: `Add ${referencedLabel ?? defaultTitle}`,
               titleTemplate,
               attributes: mergedAttributes,
-              linkProperties: buildLinkProperties(
-                hostType as MondoEntityType,
-                (panel.properties ?? panel.prop) as
-                  | string
-                  | string[]
-                  | undefined
-              ),
+              linkProperties: finalLinkProperties,
               openAfterCreate:
                 (createCfg as any)?.openAfterCreate ??
                 referencedCreate?.openAfterCreate ??

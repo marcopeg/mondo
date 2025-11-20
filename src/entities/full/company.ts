@@ -35,7 +35,6 @@ export const company = {
     ],
   },
   createRelated: [
-    
     {
       key: "employee",
       label: "Employee",
