@@ -14,15 +14,16 @@ import { EntitySelectionModal } from "./EntitySelectionModal";
 
 type AddPropertyProps = {
   frontmatterConfig: MondoEntityFrontmatterConfig;
-  linkToAnythingOn?: string | boolean;
+  linkAnythingOn?: string | boolean;
 };
 
 type PropertyOption = {
   key: string;
   config: MondoEntityFrontmatterFieldConfig;
+  auto: boolean;
 };
 
-export const AddProperty = ({ frontmatterConfig, linkToAnythingOn }: AddPropertyProps) => {
+export const AddProperty = ({ frontmatterConfig, linkAnythingOn }: AddPropertyProps) => {
   const app = useApp();
   const { file } = useEntityFile();
   const cachedFile = file as TCachedFile | undefined;
@@ -30,14 +31,14 @@ export const AddProperty = ({ frontmatterConfig, linkToAnythingOn }: AddProperty
   const [selectedProperty, setSelectedProperty] =
     useState<PropertyOption | null>(null);
 
-  // Expand frontmatter config with linkToAnythingOn entries
+  // Expand frontmatter config with linkAnythingOn entries
   const expandedFrontmatterConfig = useMemo(() => {
-    if (!linkToAnythingOn) {
+    if (!linkAnythingOn) {
       return frontmatterConfig;
     }
 
     // Determine the target property key
-    const targetKey = typeof linkToAnythingOn === 'string' ? linkToAnythingOn : 'linksTo';
+    const targetKey = typeof linkAnythingOn === 'string' ? linkAnythingOn : 'linksTo';
 
     // Get all defined entity types from explicit frontmatter config
     const explicitTypes = new Set<string>();
@@ -83,13 +84,14 @@ export const AddProperty = ({ frontmatterConfig, linkToAnythingOn }: AddProperty
     });
 
     return expanded;
-  }, [frontmatterConfig, linkToAnythingOn]);
+  }, [frontmatterConfig, linkAnythingOn]);
 
   // Filter properties to only show those that support picker interface (entity type)
   const pickerProperties = useMemo(() => {
     const properties: PropertyOption[] = [];
     const currentFrontmatter = cachedFile?.cache?.frontmatter || {};
 
+    const explicitKeys = new Set(Object.keys(frontmatterConfig));
     Object.entries(expandedFrontmatterConfig).forEach(([configKey, config]) => {
       if (config.type === "entity") {
         // Use config.key if specified, otherwise fall back to configKey
@@ -108,7 +110,7 @@ export const AddProperty = ({ frontmatterConfig, linkToAnythingOn }: AddProperty
           return;
         }
 
-        properties.push({ key: configKey, config });
+        properties.push({ key: configKey, config, auto: !explicitKeys.has(configKey) });
       }
     });
     return properties;
@@ -184,14 +186,27 @@ export const AddProperty = ({ frontmatterConfig, linkToAnythingOn }: AddProperty
     setSelectedProperty(null);
   }, []);
 
-  const primaryProperty = pickerProperties[0];
+  const explicitProperties = pickerProperties.filter(p => !p.auto);
+  const autoProperties = pickerProperties.filter(p => p.auto);
+  const primaryProperty = (explicitProperties[0] || autoProperties[0]) ?? pickerProperties[0];
 
   const secondaryActions = useMemo(() => {
-    return pickerProperties.map((property) => ({
+    const actions: Array<any> = [];
+    const explicitActions = explicitProperties.map((property) => ({
       label: property.config.title || property.key,
       onSelect: () => handlePropertySelect(property),
     }));
-  }, [pickerProperties, handlePropertySelect]);
+    const autoActions = autoProperties.map((property) => ({
+      label: property.config.title || property.key,
+      onSelect: () => handlePropertySelect(property),
+    }));
+    actions.push(...explicitActions);
+    if (explicitActions.length > 0 && autoActions.length > 0) {
+      actions.push({ separator: true });
+    }
+    actions.push(...autoActions);
+    return actions;
+  }, [explicitProperties, autoProperties, handlePropertySelect]);
 
   if (pickerProperties.length === 0) {
     return null;

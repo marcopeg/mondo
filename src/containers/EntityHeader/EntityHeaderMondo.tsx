@@ -38,6 +38,7 @@ type RelatedAction = {
   attributes?: MondoEntityCreateAttributes;
   linkProperties?: string | string[];
   openAfterCreate: boolean;
+  isAuto?: boolean; // true if generated via createAnythingOn
 };
 
 const buildHeaderLabel = (entityType: MondoEntityType) => {
@@ -293,7 +294,7 @@ export const EntityHeaderMondo = ({ entityType }: EntityHeaderMondoProps) => {
     const createAnythingOn = entityConfig?.createAnythingOn;
     
     // Expand createRelated with createAnythingOn entries
-    let expandedSpecs = [...specs];
+    let expandedSpecs: any[] = [...specs];
     
     if (createAnythingOn) {
       // Determine the target property key
@@ -333,6 +334,7 @@ export const EntityHeaderMondo = ({ entityType }: EntityHeaderMondoProps) => {
               [targetKey]: ["{@this}"],
             },
           },
+          _auto: true,
         });
       });
     }
@@ -414,6 +416,7 @@ export const EntityHeaderMondo = ({ entityType }: EntityHeaderMondoProps) => {
           attributes,
           linkProperties,
           openAfterCreate,
+          isAuto: Boolean((spec as any)._auto),
         } as RelatedAction;
       })
       .filter((action): action is RelatedAction => action !== null);
@@ -446,20 +449,32 @@ export const EntityHeaderMondo = ({ entityType }: EntityHeaderMondoProps) => {
     []
   );
 
-  const primary = actions[0];
   const hasCollapsedPanels = collapsedPanels.length > 0;
 
-  const secondary = useMemo(
-    () =>
-      actions.map((action) => ({
-        label: action.label,
-        icon: action.icon,
-        onSelect: () => {
-          handleCreateAction(action);
-        },
-      })),
-    [actions, handleCreateAction]
-  );
+  const secondary = useMemo(() => {
+    const explicit = actions.filter(a => !a.isAuto);
+    const auto = actions.filter(a => a.isAuto);
+    const list: Array<any> = [];
+    list.push(...explicit.map(action => ({
+      label: action.label,
+      icon: action.icon,
+      onSelect: () => handleCreateAction(action),
+    })));
+    if (explicit.length > 0 && auto.length > 0) {
+      list.push({ separator: true });
+    }
+    list.push(...auto.map(action => ({
+      label: action.label,
+      icon: action.icon,
+      onSelect: () => handleCreateAction(action),
+    })));
+    return list;
+  }, [actions, handleCreateAction]);
+
+  const primary = useMemo(() => {
+    const explicitFirst = actions.find(a => !a.isAuto);
+    return explicitFirst ?? actions[0];
+  }, [actions]);
 
   const handlePrimaryClick = useCallback(() => {
     if (!primary) {
@@ -566,10 +581,10 @@ export const EntityHeaderMondo = ({ entityType }: EntityHeaderMondoProps) => {
                 </div>
               </div>
               <div className="flex flex-shrink-0 gap-2" data-entity-actions-desktop>
-                {(entityConfig?.frontmatter || entityConfig?.linkToAnythingOn) && (
+                {(entityConfig?.frontmatter || entityConfig?.linkAnythingOn) && (
                   <AddProperty 
                     frontmatterConfig={entityConfig.frontmatter || {}}
-                    linkToAnythingOn={entityConfig.linkToAnythingOn}
+                    linkAnythingOn={entityConfig.linkAnythingOn}
                   />
                 )}
                 {primary ? (
@@ -598,10 +613,10 @@ export const EntityHeaderMondo = ({ entityType }: EntityHeaderMondoProps) => {
             ) : null}
 
             <div className="flex flex-shrink-0 gap-2" data-entity-actions-mobile>
-              {(entityConfig?.frontmatter || entityConfig?.linkToAnythingOn) && (
+              {(entityConfig?.frontmatter || entityConfig?.linkAnythingOn) && (
                 <AddProperty 
                   frontmatterConfig={entityConfig.frontmatter || {}}
-                  linkToAnythingOn={entityConfig.linkToAnythingOn}
+                  linkAnythingOn={entityConfig.linkAnythingOn}
                 />
               )}
               {primary ? (
