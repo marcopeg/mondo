@@ -139,8 +139,9 @@ export const AddProperty = ({ frontmatterConfig }: AddPropertyProps) => {
         onClick={() => handlePropertySelect(primaryProperty)}
         secondaryActions={secondaryActions}
         menuAriaLabel="Select property to add"
+        icon="link"
       >
-        {`+ ${primaryProperty.config.title || primaryProperty.key}`}
+        {primaryProperty.config.title || primaryProperty.key}
       </SplitButton>
 
       {selectedProperty && cachedFile && (
