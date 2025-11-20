@@ -16,6 +16,17 @@ export const company = {
   singular: "Company",
   icon: "building-2",
   template: "\ndate: {{date}}\nlocation: []\n---\n",
+  frontmatter: {
+    location: {
+      type: "entity",
+      title: "Location",
+      filter: {
+        type: {
+          in: ["location"],
+        },
+      },
+    },
+  },
   list: {
     columns: [
       { type: "cover" },

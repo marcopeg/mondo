@@ -9,7 +9,20 @@ export const role = {
   name: "Roles",
   singular: "Role",
   icon: "briefcase",
-  template: "---\ntype: {{type}}\ndate: {{date}}\n---\n",
+  template: "---\ntype: {{type}}\ndate: {{date}}\ncompany: []\n---\n",
+  frontmatter: {
+    company: {
+      type: "entity",
+      title: "Company",
+      filter: {
+        type: {
+          in: ["company"],
+        },
+      },
+      multiple: true,
+    },
+    
+  },
   list: {
     columns: [
       { type: "title", prop: "show" },
@@ -21,6 +34,18 @@ export const role = {
     },
   },
   createRelated: [
+    {
+      key: "person",
+      label: "Person",
+      icon: task.icon,
+      targetType: "person",
+      create: {
+        title: "New Person for {@this.show}",
+        attributes: {
+          role: ["{@this}"],
+        },
+      },
+    },
     {
       key: "task",
       label: "Task",
@@ -88,8 +113,7 @@ export const role = {
       create: {
         title: "New Link for {@this.show}",
         attributes: {
-          type: "link",
-          role: ["{@this}"],
+          linksTo: ["{@this}"],
         },
       },
     },
@@ -103,6 +127,7 @@ export const role = {
         properties: ["role"],
         title: "People",
         icon: "users",
+        visibility: "notEmpty",
         collapsed: false,
         sort: {
           strategy: "column",
@@ -129,97 +154,35 @@ export const role = {
     },
     {
       type: "backlinks",
-      key: "projects",
-      desc: "Projects associated with this role",
+      key: "links",
       config: {
-        targetType: "project",
-        properties: ["role"],
-        title: "Projects",
-        icon: "folder-git-2",
-        columns: [
-          {
-            type: "show",
-          },
-          {
-            type: "attribute",
-            key: "status",
-          },
-          {
-            type: "date",
-            align: "right",
-          },
-        ],
-        sort: {
-          strategy: "manual",
-        },
-      },
-    },
-    {
-      type: "backlinks",
-      key: "tasks",
-      config: {
-        targetType: "task",
-        properties: ["linksTo"],
-        title: task.name,
-        icon: task.icon,
-        columns: [
-          {
-            type: "show",
-          },
-          {
-            type: "attribute",
-            key: "status",
-          },
-          {
-            type: "date",
-            align: "right",
-          },
-        ],
-        sort: {
-          strategy: "manual",
-        },
-        createEntity: {
-          referenceCreate: "task",
-        },
-      },
-    },
-    {
-      type: "backlinks",
-      key: "logs",
-      config: {
-        targetType: "log",
-        properties: ["linksTo"],
-        title: log.name,
-        icon: log.icon,
-        createEntity: {
-          referenceCreate: "log",
-        },
-      },
-    },
-    {
-      type: "backlinks",
-      key: "linked_links",
-      config: {
-        targetType: "link",
-        properties: ["role"],
-        title: link.name,
-        icon: link.icon,
+        title: "Links",
+        icon: "layers",
         visibility: "notEmpty",
+        find: {
+          query: [
+            {
+              steps: [
+                {
+                  notIn: {
+                    property: ["linksTo"],
+                  },
+                },
+              ],
+            },
+          ],
+        },
         columns: [
-          {
-            type: "show",
-          },
-          {
-            type: "attribute",
-            key: "url",
-          },
-          {
-            type: "date",
-            align: "right",
-          },
+          { type: "entityIcon" },
+          { type: "show" },
+          { type: "cover", align: "right" },
+          { type: "date", align: "right" },
         ],
         sort: {
           strategy: "manual",
+        },
+        createEntity: {
+          enabled: false,
         },
       },
     },

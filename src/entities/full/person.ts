@@ -14,6 +14,15 @@ export const person = {
   template:
     "\ndate: {{date}}\nlocation: []\ncompany: []\nrole: []\nteam: []\n---\n",
   frontmatter: {
+    location: {
+      type: "entity",
+      title: "Location",
+      filter: {
+        type: {
+          in: ["location"],
+        },
+      },
+    },
     company: {
       type: "entity",
       title: "Company",
@@ -22,7 +31,6 @@ export const person = {
           in: ["company"],
         },
       },
-      // multiple: true,
     },
     team: {
       type: "entity",
@@ -32,7 +40,6 @@ export const person = {
           in: ["team"],
         },
       },
-      multiple: true,
     },
     role: {
       type: "entity",
@@ -40,16 +47,6 @@ export const person = {
       filter: {
         type: {
           in: ["role"],
-        },
-      },
-      multiple: true,
-    },
-    location: {
-      type: "entity",
-      title: "Location",
-      filter: {
-        type: {
-          in: ["location"],
         },
       },
       multiple: true,
