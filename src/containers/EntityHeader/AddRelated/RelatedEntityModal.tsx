@@ -339,6 +339,7 @@ class RelatedPickerModal extends Modal {
           selectedFile.file,
           (frontmatter) => {
             const wiki = this.buildWikiLink(selectedFile.file.path, hostFile);
+            const targetPath = hostFile.path;
 
             linkProps.forEach((prop) => {
               const key = String(prop).trim();
@@ -346,14 +347,25 @@ class RelatedPickerModal extends Modal {
 
               const existing = (frontmatter as any)[key];
               if (Array.isArray(existing)) {
-                const has = existing.some((e) => String(e).trim() === wiki);
-                if (!has) existing.push(wiki);
+                const alreadyHas = existing.some((e) => {
+                  const normalized = this.normalizeWikiLinkForComparison(String(e), selectedFile.file.path);
+                  return normalized === targetPath;
+                });
+                if (!alreadyHas) {
+                  existing.push(wiki);
+                }
               } else if (existing === undefined || existing === null) {
                 (frontmatter as any)[key] = [wiki];
               } else {
                 const val = String(existing).trim();
                 const arr = val ? [val] : [];
-                if (!arr.includes(wiki)) arr.push(wiki);
+                const alreadyHas = arr.some((e) => {
+                  const normalized = this.normalizeWikiLinkForComparison(String(e), selectedFile.file.path);
+                  return normalized === targetPath;
+                });
+                if (!alreadyHas) {
+                  arr.push(wiki);
+                }
                 (frontmatter as any)[key] = arr;
               }
             });
@@ -390,12 +402,32 @@ class RelatedPickerModal extends Modal {
   }
 
   private buildWikiLink(sourcePath: string, targetFile: TFile): string {
-    const linktext = this.app.metadataCache.fileToLinktext(
+    let linktext = this.app.metadataCache.fileToLinktext(
       targetFile,
       sourcePath,
       false
     );
+    // Ensure we strip .md extension if present
+    linktext = linktext.replace(/\.md$/i, '');
     return `[[${linktext}]]`;
+  }
+
+  /**
+   * Normalize a wikilink to its target path for comparison.
+   * Handles [[Link]], [[Link|Alias]], and [[path/to/file.md]] formats.
+   */
+  private normalizeWikiLinkForComparison(value: string, sourcePath: string): string | null {
+    const trimmed = String(value).trim();
+    const match = /^\[\[([^\]|]+)/.exec(trimmed);
+    if (!match) return null;
+    
+    const target = match[1].trim();
+    // Resolve to actual file path
+    const file = this.app.metadataCache.getFirstLinkpathDest(
+      target,
+      sourcePath
+    );
+    return file ? file.path : target.replace(/\.md$/i, "");
   }
 
   private applyAttributes(frontmatter: any, targetFile: TFile) {
@@ -500,16 +532,36 @@ class RelatedPickerModal extends Modal {
         const processed = processValue(v);
         if (processed === undefined) return;
 
+        // Determine if processed value is a wikilink (for smarter duplicate detection)
+        const isProcessedWikiLink = typeof processed === "string" && /^\[\[/.test(processed);
+        const processedTargetPath = isProcessedWikiLink 
+          ? this.normalizeWikiLinkForComparison(processed, targetFile.path)
+          : null;
+
         // Add to existing values instead of replacing
         const existing = frontmatter[key];
         if (Array.isArray(processed)) {
           if (Array.isArray(existing)) {
             // Merge arrays, avoiding duplicates
-            const existingSet = new Set(existing.map((e) => String(e).trim()));
             processed.forEach((item) => {
-              const itemStr = String(item).trim();
-              if (!existingSet.has(itemStr)) {
-                existing.push(item);
+              const itemIsWikiLink = typeof item === "string" && /^\[\[/.test(item);
+              if (itemIsWikiLink) {
+                const itemPath = this.normalizeWikiLinkForComparison(String(item), targetFile.path);
+                if (itemPath) {
+                  const alreadyHas = existing.some((e) => {
+                    const ePath = this.normalizeWikiLinkForComparison(String(e), targetFile.path);
+                    return ePath === itemPath;
+                  });
+                  if (!alreadyHas) {
+                    existing.push(item);
+                  }
+                }
+              } else {
+                const itemStr = String(item).trim();
+                const existingSet = new Set(existing.map((e) => String(e).trim()));
+                if (!existingSet.has(itemStr)) {
+                  existing.push(item);
+                }
               }
             });
           } else if (existing === undefined || existing === null) {
@@ -523,21 +575,44 @@ class RelatedPickerModal extends Modal {
         } else {
           // Processed is a single value
           if (Array.isArray(existing)) {
-            const processedStr = String(processed).trim();
-            const has = existing.some((e) => String(e).trim() === processedStr);
-            if (!has) {
-              existing.push(processed);
+            if (isProcessedWikiLink && processedTargetPath) {
+              // Use path-based comparison for wikilinks
+              const alreadyHas = existing.some((e) => {
+                const ePath = this.normalizeWikiLinkForComparison(String(e), targetFile.path);
+                return ePath === processedTargetPath;
+              });
+              if (!alreadyHas) {
+                existing.push(processed);
+              }
+            } else {
+              // Use string comparison for non-wikilinks
+              const processedStr = String(processed).trim();
+              const has = existing.some((e) => String(e).trim() === processedStr);
+              if (!has) {
+                existing.push(processed);
+              }
             }
           } else if (existing === undefined || existing === null) {
             frontmatter[key] = processed;
           } else {
             // Both are single values, convert to array
-            const existingStr = String(existing).trim();
-            const processedStr = String(processed).trim();
-            if (existingStr !== processedStr) {
-              frontmatter[key] = [existing, processed];
+            if (isProcessedWikiLink && processedTargetPath) {
+              const existingIsWikiLink = typeof existing === "string" && /^\[\[/.test(existing);
+              if (existingIsWikiLink) {
+                const existingPath = this.normalizeWikiLinkForComparison(String(existing), targetFile.path);
+                if (existingPath !== processedTargetPath) {
+                  frontmatter[key] = [existing, processed];
+                }
+              } else {
+                frontmatter[key] = [existing, processed];
+              }
+            } else {
+              const existingStr = String(existing).trim();
+              const processedStr = String(processed).trim();
+              if (existingStr !== processedStr) {
+                frontmatter[key] = [existing, processed];
+              }
             }
-            // If they're the same, keep the existing value
           }
         }
       }
