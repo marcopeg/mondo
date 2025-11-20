@@ -46,6 +46,7 @@ export const fact = {
       config: {
         title: "Links",
         icon: "layers",
+        visibility: "notEmpty",
         find: {
           query: [
             {
