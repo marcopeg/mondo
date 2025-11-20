@@ -290,11 +290,58 @@ export const EntityHeaderMondo = ({ entityType }: EntityHeaderMondoProps) => {
 
   const actions = useMemo(() => {
     const specs = entityConfig?.createRelated ?? [];
-    if (specs.length === 0) {
+    const createAnythingOn = entityConfig?.createAnythingOn;
+    
+    // Expand createRelated with createAnythingOn entries
+    let expandedSpecs = [...specs];
+    
+    if (createAnythingOn) {
+      // Determine the target property key
+      const targetKey = typeof createAnythingOn === 'string' ? createAnythingOn : 'linksTo';
+      
+      // Get all defined entity types from explicit createRelated config
+      const explicitTypes = new Set<string>();
+      specs.forEach((spec) => {
+        const targetTypeRaw = toOptionalString(spec.targetType);
+        if (targetTypeRaw) {
+          explicitTypes.add(targetTypeRaw.toLowerCase());
+        }
+      });
+      
+      // Add entries for all entity types not explicitly defined
+      Object.entries(MONDO_ENTITIES).forEach(([entityTypeKey, entityConfigData]) => {
+        const typeLower = entityTypeKey.toLowerCase();
+        
+        // Skip if already explicitly defined
+        if (explicitTypes.has(typeLower)) {
+          return;
+        }
+        
+        // Skip the current entity type (don't create self-referencing by default)
+        if (typeLower === entityType.toLowerCase()) {
+          return;
+        }
+        
+        // Add auto-generated entry
+        expandedSpecs.push({
+          key: entityTypeKey,
+          label: entityConfigData.singular || entityConfigData.name,
+          icon: entityConfigData.icon,
+          targetType: typeLower,
+          create: {
+            attributes: {
+              [targetKey]: ["{@this}"],
+            },
+          },
+        });
+      });
+    }
+    
+    if (expandedSpecs.length === 0) {
       return [] as RelatedAction[];
     }
 
-    return specs
+    return expandedSpecs
       .map((spec) => {
         const panelKey =
           toOptionalString((spec as any).referenceLink) ??

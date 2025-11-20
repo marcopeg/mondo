@@ -4,6 +4,7 @@ export const goal = {
   icon: "target",
   template: "\ndate: {{date}}\nstatus: active\nlinksTo: []\n---\n",
   linkToAnythingOn: "linksTo",
+  createAnythingOn: "linksTo",
   // frontmatter: {
   //   company: {
   //     type: "entity",

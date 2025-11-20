@@ -277,4 +277,10 @@ export interface MondoEntityConfig<
    * (true defaults to "linksTo", false disables the feature).
    */
   linkToAnythingOn?: string | boolean;
+  /**
+   * Optional: automatically add createRelated entries for all entity types not explicitly
+   * defined in createRelated config. Can be a string (property key to populate) or boolean
+   * (true defaults to "linksTo", false disables the feature).
+   */
+  createAnythingOn?: string | boolean;
 }
