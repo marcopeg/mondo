@@ -681,8 +681,10 @@ class RelatedPickerModal extends Modal {
       item.setText(getEntityDisplayName(file));
 
       item.addEventListener("mouseenter", () => {
-        this.selectedIndex = index;
-        this.renderResults();
+        if (this.selectedIndex !== index) {
+          this.selectedIndex = index;
+          this.renderResults();
+        }
       });
       item.addEventListener("mouseleave", () => {
         if (!isSelected) {

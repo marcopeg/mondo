@@ -463,11 +463,13 @@ export const EntityHeaderMondo = ({ entityType }: EntityHeaderMondoProps) => {
           throw new Error("Failed to create image attachment");
         }
 
-        const linktext = app.metadataCache.fileToLinktext(
+        let linktext = app.metadataCache.fileToLinktext(
           targetFile,
           cachedFile.file.path,
           false
         );
+        // Remove .md extension if present
+        linktext = linktext.replace(/\.md$/i, '');
 
         await app.fileManager.processFrontMatter(
           cachedFile.file,

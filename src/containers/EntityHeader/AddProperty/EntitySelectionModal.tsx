@@ -221,7 +221,9 @@ class EntityPickerModal extends Modal {
       }
 
       // Link new entity in host frontmatter under propertyKey
-      const linktext = this.app.metadataCache.fileToLinktext(created, this.hostFile.file.path, false);
+      let linktext = this.app.metadataCache.fileToLinktext(created, this.hostFile.file.path, false);
+      // Remove .md extension if present
+      linktext = linktext.replace(/\.md$/i, '');
       const wiki = `[[${linktext}]]`;
       await this.app.fileManager.processFrontMatter(this.hostFile.file, (fm) => {
         const key = this.propertyKey;
@@ -418,8 +420,10 @@ class EntityPickerModal extends Modal {
       item.setText(getEntityDisplayName(file));
 
       item.addEventListener("mouseenter", () => {
-        this.selectedIndex = index;
-        this.renderResults();
+        if (this.selectedIndex !== index) {
+          this.selectedIndex = index;
+          this.renderResults();
+        }
       });
       item.addEventListener("mouseleave", () => {
         if (!isSelected) {

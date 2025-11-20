@@ -64,11 +64,13 @@ export const AddProperty = ({ frontmatterConfig }: AddPropertyProps) => {
       }
 
       try {
-        const linkText = app.metadataCache.fileToLinktext(
+        let linkText = app.metadataCache.fileToLinktext(
           selectedFile.file,
           cachedFile.file.path,
           false
         );
+        // Remove .md extension if present
+        linkText = linkText.replace(/\.md$/i, '');
         const wikiLink = `[[${linkText}]]`;
 
         await app.fileManager.processFrontMatter(
