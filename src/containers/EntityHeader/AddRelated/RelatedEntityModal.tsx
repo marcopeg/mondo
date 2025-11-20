@@ -19,6 +19,7 @@ type RelatedEntityModalProps = {
   attributes?: MondoEntityCreateAttributes;
   linkProperties?: string[];
   openAfterCreate?: boolean;
+  openCount?: number;
 };
 
 /**
@@ -36,6 +37,7 @@ export const RelatedEntityModal = ({
   attributes,
   linkProperties,
   openAfterCreate = true,
+  openCount = 0,
 }: RelatedEntityModalProps) => {
   const app = useApp();
 
@@ -79,6 +81,7 @@ export const RelatedEntityModal = ({
     openAfterCreate,
     onSelect,
     onClose,
+    openCount,
   ]);
 
   return null;

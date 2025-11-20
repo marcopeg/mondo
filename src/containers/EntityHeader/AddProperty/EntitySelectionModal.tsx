@@ -17,6 +17,7 @@ type EntitySelectionModalProps = {
   title: string;
   hostFile: TCachedFile;
   propertyKey: string;
+  openCount?: number;
 };
 
 /**
@@ -32,6 +33,7 @@ export const EntitySelectionModal = ({
   title,
   hostFile,
   propertyKey,
+  openCount = 0,
 }: EntitySelectionModalProps) => {
   const app = useApp();
 
@@ -60,7 +62,7 @@ export const EntitySelectionModal = ({
         // already closed
       }
     };
-  }, [isOpen, app, title, config, hostFile, propertyKey, onSelect, onClose]);
+  }, [isOpen, app, title, config, hostFile, propertyKey, onSelect, onClose, openCount]);
 
   return null;
 };

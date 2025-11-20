@@ -424,6 +424,7 @@ export const EntityHeaderMondo = ({ entityType }: EntityHeaderMondoProps) => {
 
   const { collapsedPanels } = useEntityLinksLayout();
   const [pendingAction, setPendingAction] = useState<RelatedAction | null>(null);
+  const [modalOpenCount, setModalOpenCount] = useState(0);
   const isBusy = isUploadingCover;
 
   const handleCreateAction = useCallback(
@@ -433,6 +434,7 @@ export const EntityHeaderMondo = ({ entityType }: EntityHeaderMondoProps) => {
         return;
       }
       setPendingAction(action);
+      setModalOpenCount(prev => prev + 1);
     },
     [cachedFile]
   );
@@ -646,6 +648,7 @@ export const EntityHeaderMondo = ({ entityType }: EntityHeaderMondoProps) => {
           attributes={pendingAction.attributes}
           linkProperties={normalizeLinkProperties(pendingAction.linkProperties)}
           openAfterCreate={pendingAction.openAfterCreate}
+          openCount={modalOpenCount}
         />
       )}
     </div>

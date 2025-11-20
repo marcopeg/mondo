@@ -30,6 +30,7 @@ export const AddProperty = ({ frontmatterConfig, linkAnythingOn }: AddPropertyPr
 
   const [selectedProperty, setSelectedProperty] =
     useState<PropertyOption | null>(null);
+  const [modalOpenCount, setModalOpenCount] = useState(0);
 
   // Expand frontmatter config with linkAnythingOn entries
   const expandedFrontmatterConfig = useMemo(() => {
@@ -119,6 +120,7 @@ export const AddProperty = ({ frontmatterConfig, linkAnythingOn }: AddPropertyPr
 
   const handlePropertySelect = useCallback((property: PropertyOption) => {
     setSelectedProperty(property);
+    setModalOpenCount(prev => prev + 1);
   }, []);
 
   const handleEntitySelect = useCallback(
@@ -235,6 +237,7 @@ export const AddProperty = ({ frontmatterConfig, linkAnythingOn }: AddPropertyPr
           title={selectedProperty.config.title || selectedProperty.key}
           hostFile={cachedFile}
           propertyKey={selectedProperty.key}
+          openCount={modalOpenCount}
         />
       )}
     </>
