@@ -9,20 +9,7 @@ export const role = {
   name: "Roles",
   singular: "Role",
   icon: "briefcase",
-  template: "---\ntype: {{type}}\ndate: {{date}}\ncompany: []\n---\n",
-  frontmatter: {
-    company: {
-      type: "entity",
-      title: "Company",
-      filter: {
-        type: {
-          in: ["company"],
-        },
-      },
-      multiple: true,
-    },
-    
-  },
+  template: "---\ndate: {{date}}\n---\n",
   list: {
     columns: [
       { type: "title", prop: "show" },
@@ -32,6 +19,9 @@ export const role = {
       column: "show",
       direction: "asc",
     },
+  },
+  linkAnythingOn: {
+    types: ["company"]
   },
   createRelated: [
     {
@@ -44,79 +34,11 @@ export const role = {
           role: ["{@this}"],
         },
       },
-    },
-    {
-      key: "task",
-      label: "Task",
-      icon: task.icon,
-      targetType: "task",
-      create: {
-        title: "New Task for {@this.show}",
-        attributes: {
-          linksTo: ["{@this}"],
-        },
-      },
-    },
-    {
-      key: "log",
-      label: "Log",
-      icon: log.icon,
-      targetType: "log",
-      create: {
-        title: "{YY}-{MM}-{DD} {hh}.{mm} Log for {@this.show}",
-        attributes: {
-          linksTo: ["{@this}"],
-        },
-      },
-    },
-    {
-      key: "fact",
-      label: "Fact",
-      icon: fact.icon,
-      targetType: "fact",
-      create: {
-        title: "New Fact for {@this.show}",
-        attributes: {
-          linksTo: ["{@this}"],
-        },
-      },
-    },
-    {
-      key: "document",
-      label: "Document",
-      icon: document.icon,
-      targetType: "document",
-      create: {
-        title: "Untitled Document for {@this.show}",
-        attributes: {
-          linksTo: ["{@this}"],
-        },
-      },
-    },
-    {
-      key: "idea",
-      label: "Idea",
-      icon: idea.icon,
-      targetType: "idea",
-      create: {
-        title: "New Idea for {@this.show}",
-        attributes: {
-          linksTo: ["{@this}"],
-        },
-      },
-    },
-    {
-      key: "link",
-      label: "Link",
-      icon: link.icon,
-      create: {
-        title: "New Link for {@this.show}",
-        attributes: {
-          linksTo: ["{@this}"],
-        },
-      },
-    },
+    }
   ],
+  createAnythingOn: {
+    types: ["fact", "log", "idea", "document", "link", "goal", "task", "gear", "tool"]
+  },
   links: [
     {
       type: "backlinks",

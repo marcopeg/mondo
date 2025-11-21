@@ -4,13 +4,9 @@ import { project } from "./project";
 import { task } from "./task";
 import { fact } from "./fact";
 import { log } from "./log";
-import { gear } from "./gear";
-import { idea } from "./idea";
 import { document } from "./document";
 import { meeting } from "./meeting";
 import { link } from "./link";
-import { goal } from "./goal";
-import { role } from "./role";
 
 export const company = {
   name: "Companies",
@@ -75,7 +71,7 @@ export const company = {
       },
     },
   ],
-    createAnythingOn: {
+  createAnythingOn: {
     types: ["fact", "log", "idea", "document", "link", "role", "goal", "task", "gear", "tool"]
   },
   links: [
