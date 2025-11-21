@@ -1,14 +1,4 @@
-import { task } from "./task";
-import { log } from "./log";
-import { fact } from "./fact";
-import { document } from "./document";
-import { idea } from "./idea";
 import { restaurant } from "./restaurant";
-import { team } from "./team";
-import { company } from "./company";
-import { gear } from "./gear";
-import { link } from "./link";
-import { goal } from "./goal";
 
 export const location = {
   name: "Locations",

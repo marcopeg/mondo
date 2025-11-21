@@ -1,10 +1,3 @@
-import { task } from "./task";
-import { log } from "./log";
-import { fact } from "./fact";
-import { document } from "./document";
-import { idea } from "./idea";
-import { link } from "./link";
-
 export const ingredient = {
   name: "Ingredients",
   singular: "Ingredient",
@@ -19,123 +12,10 @@ export const ingredient = {
     ],
   },
   linkAnythingOn: { types: ['recipe']},
-  createAnythingOn: { types: ['recipe', 'ingredient', 'task', 'log', 'idea', 'fact', 'document', 'link']},
   links: [
     {
       type: "backlinks",
-      key: "recipes",
-      config: {
-        targetType: "recipe",
-        properties: ["ingredients"],
-        title: "Recipes",
-        icon: "book-open-check",
-        sort: {
-          strategy: "manual",
-        },
-        columns: [
-          {
-            type: "cover",
-          },
-          {
-            type: "show",
-          },
-        ],
-      },
-    },
-    {
-      type: "backlinks",
-      key: "log",
-      config: {
-        title: "Logs",
-        icon: "file-text",
-        visibility: "notEmpty",
-        find: {
-          query: [
-            {
-              steps: [
-                {
-                  in: {
-                    property: "linksTo",
-                    type: ["log"],
-                  },
-                },
-              ],
-            },
-          ],
-        },
-        sort: {
-          strategy: "date",
-          direction: "desc",
-        },
-        columns: [
-          {
-            type: "entityIcon",
-          },
-          {
-            type: "show",
-          },
-          {
-            type: "cover",
-            align: "right",
-          },
-          {
-            type: "date",
-            align: "right",
-          },
-        ],
-        createEntity: {
-          referenceCreate: "log",
-        },
-      },
-    },
-    {
-      type: "backlinks",
-      key: "task",
-      config: {
-        title: "Tasks",
-        icon: "check-square",
-        visibility: "notEmpty",
-        find: {
-          query: [
-            {
-              steps: [
-                {
-                  in: {
-                    property: "linksTo",
-                    type: ["task"],
-                  },
-                },
-              ],
-            },
-          ],
-        },
-        sort: {
-          strategy: "manual",
-        },
-        columns: [
-          {
-            type: "entityIcon",
-          },
-          {
-            type: "show",
-          },
-          {
-            type: "cover",
-            align: "right",
-          },
-          {
-            type: "date",
-            align: "right",
-          },
-        ],
-        createEntity: {
-          referenceCreate: "task",
-        },
-      },
-    },
-    {
-      type: "backlinks",
-      key: "link",
+      key: "other-links",
       config: {
         title: "Links",
         icon: "layers",
@@ -147,7 +27,7 @@ export const ingredient = {
                 {
                   notIn: {
                     property: "linksTo",
-                    type: ["log", "task"],
+                    type: [],
                   },
                 },
               ],

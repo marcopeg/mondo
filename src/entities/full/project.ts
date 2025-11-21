@@ -1,13 +1,3 @@
-import { person } from "./person";
-import { task } from "./task";
-import { meeting } from "./meeting";
-import { fact } from "./fact";
-import { log } from "./log";
-import { document } from "./document";
-import { idea } from "./idea";
-import { link } from "./link";
-import { goal } from "./goal";
-
 export const project = {
   name: "Projects",
   singular: "Project",
@@ -19,7 +9,7 @@ export const project = {
     columns: [{ type: "title", prop: "show" }],
   },
   linkAnythingOn: { types: ['company', 'team', 'role', 'person', 'project', 'link', 'article', 'document', 'fact', 'idea', 'log', 'task']},
-  createAnythingOn: { types: ['task', 'log', 'idea', 'fact', 'document', 'link', 'article', 'book']},
+  createAnythingOn: { types: ['goal', 'task', 'log', 'idea', 'fact', 'document', 'link', 'article', 'book']},
   links: [
     {
       type: "backlinks",

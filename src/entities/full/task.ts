@@ -155,63 +155,6 @@ export const task = {
     },
     {
       type: "backlinks",
-      key: "linked_links",
-      config: {
-        targetType: "link",
-        properties: ["task"],
-        title: "Links",
-        icon: "link",
-        visibility: "notEmpty",
-        columns: [
-          {
-            type: "show",
-          },
-          {
-            type: "attribute",
-            key: "url",
-          },
-          {
-            type: "date",
-            align: "right",
-          },
-        ],
-        sort: {
-          strategy: "manual",
-        },
-      },
-    },
-    {
-      type: "backlinks",
-      key: "goals",
-      config: {
-        targetType: "goal",
-        properties: ["linksTo"],
-        title: goal.name,
-        icon: goal.icon,
-        visibility: "notEmpty",
-        columns: [
-          {
-            type: "show",
-          },
-          {
-            type: "attribute",
-            key: "status",
-          },
-          {
-            type: "date",
-            align: "right",
-          },
-        ],
-        sort: {
-          strategy: "manual",
-        },
-        createEntity: {
-          referenceCreate: "goal",
-        },
-      },
-    },
-    {
-      type: "backlinks",
       key: "other-links",
       config: {
         title: "Links",

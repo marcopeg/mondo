@@ -22,7 +22,7 @@ export const tool = {
   links: [
     {
       type: "backlinks",
-      key: "link",
+      key: "other-links",
       config: {
         title: "Links",
         icon: "layers",
