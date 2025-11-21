@@ -156,11 +156,16 @@ export const RelevantQuestions = ({
       
       try {
         const isCmdOrCtrl = (e as any).metaKey || (e as any).ctrlKey;
+        const isAlt = (e as any).altKey;
         const file = question.file;
         const lineNumber = question.lineStart;
         
-        // Open file in new leaf if Cmd/Ctrl is pressed
-        const leaf = isCmdOrCtrl 
+        // Cmd+Option+Click (or Ctrl+Alt+Click): open in new tab to the right
+        // Cmd+Click (or Ctrl+Click): open in new tab
+        // Simple click: open in current tab
+        const leaf = isCmdOrCtrl && isAlt
+          ? app.workspace.getLeaf('split', 'vertical')
+          : isCmdOrCtrl 
           ? app.workspace.getLeaf('tab')
           : app.workspace.getLeaf(false);
         
