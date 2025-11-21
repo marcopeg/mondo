@@ -1,3 +1,6 @@
+import { log } from "./log";
+import { task } from "./task";
+
 export const project = {
   name: "Projects",
   singular: "Project",
@@ -9,6 +12,33 @@ export const project = {
     columns: [{ type: "title", prop: "show" }],
   },
   linkAnythingOn: { types: ['company', 'team', 'role', 'person', 'project', 'link', 'article', 'document', 'fact', 'idea', 'log', 'task']},
+   createRelated: [
+      {
+        key: "log",
+        label: "Log",
+        icon: log.icon,
+        panelKey: "logs",
+        targetType: "log",
+        create: {
+          title: "{YY}-{MM}-{DD} {hh}.{mm} Log for {@this.show}",
+          attributes: {
+            project: ["{@this}"],
+          },
+        },
+      },
+      {
+        key: "task",
+        label: "Task",
+        icon: task.icon,
+        panelKey: "tasks",
+        targetType: "task",
+        create: {
+          attributes: {
+            project: ["{@this}"],
+          },
+        },
+      },
+    ],
   createAnythingOn: { types: ['goal', 'task', 'log', 'idea', 'fact', 'document', 'link', 'article', 'book']},
   links: [
     {
@@ -18,20 +48,8 @@ export const project = {
         title: "Logs",
         icon: "file-text",
         visibility: "notEmpty",
-        find: {
-          query: [
-            {
-              steps: [
-                {
-                  in: {
-                    property: "project",
-                    type: ["log"],
-                  },
-                },
-              ],
-            },
-          ],
-        },
+        targetType: "log",
+        properties: ["project"],
         sort: {
           strategy: "date",
           direction: "desc",
@@ -64,20 +82,8 @@ export const project = {
         title: "Tasks",
         icon: "check-square",
         visibility: "notEmpty",
-        find: {
-          query: [
-            {
-              steps: [
-                {
-                  in: {
-                    property: "project",
-                    type: ["task"],
-                  },
-                },
-              ],
-            },
-          ],
-        },
+        targetType: "task",
+        properties: ["project"],
         sort: {
           strategy: "manual",
         },
@@ -104,7 +110,7 @@ export const project = {
     },
     {
       type: "backlinks",
-      key: "link",
+      key: "other-link",
       config: {
         title: "Links",
         icon: "layers",
