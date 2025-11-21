@@ -290,8 +290,17 @@ export interface MondoEntityConfig<
   };
   /**
    * Optional: automatically add createRelated entries for all entity types not explicitly
-   * defined in createRelated config. Can be a string (property key to populate) or boolean
-   * (true defaults to "linksTo", false disables the feature).
+   * defined in createRelated config.
+   * 
+   * - false (default): No auto-generated "Add Related" options
+   * - true: All entities alphabetically, links using "linksTo" property
+   * - string: All entities alphabetically, links using the specified property
+   * - object: Custom configuration
+   *   - key (optional): Property key to populate (defaults to "linksTo")
+   *   - types (optional): Array of entity types to show in the specified order
    */
-  createAnythingOn?: string | boolean;
+  createAnythingOn?: string | boolean | {
+    key?: string;
+    types?: string[];
+  };
 }

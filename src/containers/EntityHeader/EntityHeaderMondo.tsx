@@ -297,8 +297,16 @@ export const EntityHeaderMondo = ({ entityType }: EntityHeaderMondoProps) => {
     let expandedSpecs: any[] = [...specs];
     
     if (createAnythingOn) {
-      // Determine the target property key
-      const targetKey = typeof createAnythingOn === 'string' ? createAnythingOn : 'linksTo';
+      // Parse createAnythingOn configuration
+      let targetKey = 'linksTo';
+      let allowedTypes: string[] | null = null;
+      
+      if (typeof createAnythingOn === 'string') {
+        targetKey = createAnythingOn;
+      } else if (typeof createAnythingOn === 'object') {
+        targetKey = createAnythingOn.key || 'linksTo';
+        allowedTypes = createAnythingOn.types || null;
+      }
       
       // Get all defined entity types from explicit createRelated config
       const explicitTypes = new Set<string>();
@@ -309,9 +317,38 @@ export const EntityHeaderMondo = ({ entityType }: EntityHeaderMondoProps) => {
         }
       });
       
-      // Add entries for all entity types not explicitly defined
-      Object.entries(MONDO_ENTITIES).forEach(([entityTypeKey, entityConfigData]) => {
+      // Determine which entity types to add and in what order
+      let entityTypesToAdd: string[];
+      
+      if (allowedTypes && allowedTypes.length > 0) {
+        // Use specified types in the specified order
+        entityTypesToAdd = allowedTypes;
+        
+        // Warn about non-existent types
+        allowedTypes.forEach((type) => {
+          const typeLower = type.toLowerCase();
+          if (!MONDO_ENTITIES[typeLower as MondoEntityType]) {
+            console.warn(`[createAnythingOn] Entity type "${type}" does not exist and will be ignored`);
+          }
+        });
+      } else {
+        // Use all entity types in alphabetical order
+        entityTypesToAdd = Object.keys(MONDO_ENTITIES).sort((a, b) => {
+          const nameA = MONDO_ENTITIES[a as MondoEntityType].singular || MONDO_ENTITIES[a as MondoEntityType].name;
+          const nameB = MONDO_ENTITIES[b as MondoEntityType].singular || MONDO_ENTITIES[b as MondoEntityType].name;
+          return nameA.localeCompare(nameB);
+        });
+      }
+      
+      // Add entries for entity types
+      entityTypesToAdd.forEach((entityTypeKey) => {
         const typeLower = entityTypeKey.toLowerCase();
+        const entityConfigData = MONDO_ENTITIES[typeLower as MondoEntityType];
+        
+        // Skip if entity type doesn't exist
+        if (!entityConfigData) {
+          return;
+        }
         
         // Skip if already explicitly defined
         if (explicitTypes.has(typeLower)) {

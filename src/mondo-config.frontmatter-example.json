@@ -76,6 +76,10 @@
         "key": "linksTo",
         "types": ["person", "project", "fact"]
       },
+      "createAnythingOn": {
+        "key": "company",
+        "types": ["person", "team", "project"]
+      },
       "frontmatter": {
         "people": {
           "type": "entity",

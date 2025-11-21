@@ -66,6 +66,7 @@ export const goal = {
       multiple: true,
     },
   }, 
+  // Enable creating any entity type (all entities alphabetically, linked via "linksTo")
   createAnythingOn: true,
   createRelated: [
     {

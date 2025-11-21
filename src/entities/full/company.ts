@@ -27,20 +27,6 @@ export const company = {
   linkAnythingOn: {
     types: ["location"]
   },
-  // frontmatter: {
-  //   location: {
-  //     type: "entity",
-  //     title: "Location",
-  //     icon: "map-pin",
-  //     multiple: true,
-  //     filter: {
-  //       type: {
-  //         in: ["location"],
-  //       },
-  //     },
-  //   },
-  // },
-  createAnythingOn: true,
   createRelated: [
     {
       key: "employee",
@@ -72,7 +58,6 @@ export const company = {
       create: {
         attributes: {
           company: ["{@this}"],
-          team: [],
           status: "draft",
         },
       },
@@ -89,96 +74,10 @@ export const company = {
         },
       },
     },
-    {
-      key: "task",
-      label: "Task",
-      icon: task.icon,
-      targetType: "task",
-      create: {
-        attributes: {
-          company: ["{@this}"],
-        },
-      },
-    },
-    {
-      key: "log",
-      label: "Log",
-      icon: log.icon,
-      targetType: "log",
-      create: {
-        title: "{YY}-{MM}-{DD} {hh}.{mm} Log for {@this.show}",
-        attributes: {
-          company: ["{@this}"],
-        },
-      },
-    },
-    {
-      key: "fact",
-      label: "Fact",
-      icon: fact.icon,
-      targetType: "fact",
-      create: {
-        attributes: {
-          company: ["{@this}"],
-        },
-      },
-    },
-    {
-      key: "gear",
-      label: "Gear",
-      icon: gear.icon,
-      targetType: "gear",
-      create: {
-        attributes: {
-          company: ["{@this}"],
-        },
-      },
-    },
-    {
-      key: "idea",
-      label: "Idea",
-      icon: idea.icon,
-      targetType: "idea",
-      create: {
-        attributes: {
-          company: ["{@this}"],
-        },
-      },
-    },
-    {
-      key: "document",
-      label: "Document",
-      icon: document.icon,
-      targetType: "document",
-      create: {
-        attributes: {
-          company: ["{@this}"],
-        },
-      },
-    },
-    {
-      key: "link",
-      label: "Link",
-      icon: link.icon,
-      create: {
-        attributes: {
-          type: "link",
-          company: ["{@this}"],
-        },
-      },
-    },
-    {
-      key: "goal",
-      label: "Goal",
-      icon: goal.icon,
-      targetType: "goal",
-      create: {
-        attributes: {
-          linksTo: ["{@this}"],
-        },
-      },
-    },
   ],
+    createAnythingOn: {
+    types: ["fact", "log", "idea", "document", "link", "role", "goal", "task", "gear", "tool"]
+  },
   links: [
     {
       type: "backlinks",
@@ -275,7 +174,7 @@ export const company = {
                 },
                 {
                   in: {
-                    property: ["team", "teams"],
+                    property: ["team"],
                     type: "project",
                   },
                 },
@@ -317,7 +216,7 @@ export const company = {
       key: "facts",
       config: {
         targetType: "fact",
-        properties: ["company", "linksTo"],
+        properties: ["company"],
         title: fact.name,
         icon: fact.icon,
         visibility: "notEmpty",

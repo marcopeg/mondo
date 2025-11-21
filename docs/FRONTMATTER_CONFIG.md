@@ -354,12 +354,123 @@ In this case:
 - All other entity types are auto-generated with `multiple: true`
 - Auto-generated types link to `linksTo` property
 
+## Create Anything On (Auto-generated Creation Actions)
+
+The `createAnythingOn` configuration mirrors `linkAnythingOn` but generates "Add Related" creation options instead of link options.
+
+### Configuration Options
+
+#### Disabled (default)
+
+```json
+{
+  "createAnythingOn": false
+}
+```
+
+No auto-generated "Add Related" options. Only explicitly defined `createRelated` entries are available.
+
+#### Enabled with Defaults
+
+```json
+{
+  "createAnythingOn": true
+}
+```
+
+- "Add Related" button shows all entity types in alphabetical order (by singular name)
+- Created entities are linked back via the `linksTo` property
+- Current entity type is excluded (no self-referencing by default)
+
+#### Custom Property Key
+
+```json
+{
+  "createAnythingOn": "relatedTo"
+}
+```
+
+- All entity types in alphabetical order
+- Created entities link back via the specified property (`relatedTo`)
+
+#### Advanced Configuration
+
+```json
+{
+  "createAnythingOn": {
+    "key": "company",
+    "types": ["person", "team", "project"]
+  }
+}
+```
+
+Configuration options:
+- **`key`** (optional, string): Property name for linking back. Defaults to `"linksTo"` if omitted.
+- **`types`** (optional, string[]): Array of entity types to show in the specified order. If omitted, all entity types are shown alphabetically.
+
+**Important**: 
+- Entity types in the `types` array must exist in your Mondo configuration
+- Non-existent types will trigger a console warning and be ignored
+- Only entity types not already explicitly defined in `createRelated` are auto-generated
+- The current entity type is always excluded to prevent self-referencing
+
+### Example: Company Entity
+
+```json
+{
+  "entities": {
+    "company": {
+      "type": "company",
+      "name": "Companies",
+      "icon": "building-2",
+      "createAnythingOn": {
+        "key": "company",
+        "types": ["person", "team", "project", "meeting"]
+      }
+    }
+  }
+}
+```
+
+This generates "Add Related" options for Person, Team, Project, and Meeting in that order. Created entities will have `company: [[Current Company]]` in their frontmatter.
+
+### Combining with Explicit createRelated Config
+
+You can combine `createAnythingOn` with explicit `createRelated` definitions:
+
+```json
+{
+  "createRelated": [
+    {
+      "key": "employee",
+      "label": "Employee",
+      "targetType": "person",
+      "create": {
+        "title": "New Employee at {@this.show}",
+        "attributes": {
+          "company": ["{@this}"],
+          "role": ["Employee"]
+        }
+      }
+    }
+  ],
+  "createAnythingOn": {
+    "types": ["team", "project"]
+  }
+}
+```
+
+In this case:
+- The "employee" creation uses the explicit configuration with custom title and role
+- Team and Project options are auto-generated with default behavior
+
 ## Implementation Details
 
 ### Component Architecture
 
 - **AddProperty**: Main button component that shows the property picker popover
 - **EntitySelectionModal**: Modal for selecting entities with search and filtering
+- **EntityHeaderMondo**: Processes `createAnythingOn` and expands `createRelated` actions
 - Type definitions in `src/types/MondoEntityConfig.ts`
 
 ### Integration Points
@@ -368,6 +479,10 @@ The AddProperty component is integrated into `EntityHeaderMondo` and appears whe
 1. The entity has a `frontmatter` configuration, OR
 2. The entity has `linkAnythingOn` enabled
 3. At least one field has type `"entity"` (picker-compatible)
+
+The "Add Related" button appears when:
+1. The entity has a `createRelated` configuration, OR
+2. The entity has `createAnythingOn` enabled
 
 ### Frontmatter Updates
 
