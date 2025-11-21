@@ -24,7 +24,7 @@ export const project = {
               steps: [
                 {
                   in: {
-                    property: "linksTo",
+                    property: "project",
                     type: ["log"],
                   },
                 },
@@ -70,7 +70,7 @@ export const project = {
               steps: [
                 {
                   in: {
-                    property: "linksTo",
+                    property: "project",
                     type: ["task"],
                   },
                 },
@@ -116,7 +116,6 @@ export const project = {
                 {
                   notIn: {
                     property: "linksTo",
-                    type: ["log", "task"],
                   },
                 },
               ],

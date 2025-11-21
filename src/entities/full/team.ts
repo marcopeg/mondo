@@ -173,7 +173,7 @@ export const team = {
       key: "tasks",
       config: {
         targetType: "task",
-        properties: ["linksTo"],
+        properties: ["team"],
         title: task.name,
         icon: task.icon,
         visibility: "notEmpty",
@@ -203,7 +203,7 @@ export const team = {
       key: "logs",
       config: {
         targetType: "log",
-        properties: ["linksTo"],
+        properties: ["team"],
         title: log.name,
         icon: log.icon,
         visibility: "notEmpty",
@@ -226,7 +226,6 @@ export const team = {
                 {
                   notIn: {
                     property: ["linksTo"],
-                    type: ["log", "task"],
                   },
                 },
               ],

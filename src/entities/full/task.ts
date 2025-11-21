@@ -15,6 +15,45 @@ export const task = {
       { type: "value", prop: "status" },
     ],
   },
+  frontmatter: {
+    company: {
+      type: "entity",
+      title: "Company",
+      filter: {
+        type: {
+          in: ["company"],
+        },
+      },
+    },
+    team: {
+      type: "entity",
+      title: "Team",
+      filter: {
+        type: {
+          in: ["team"],
+        },
+      }
+    },
+    project: {
+      type: "entity",
+      title: "Project",
+      filter: {
+        type: {
+          in: ["project"],
+        },
+      }
+    },
+    participants: {
+      type: "entity",
+      title: "Participant",
+      multiple: true,
+      filter: {
+        type: {
+          in: ["person"],
+        },
+      }
+    },
+  },
   createRelated: [
     {
       key: "subtask",
