@@ -176,5 +176,40 @@ export const restaurant = {
         },
       },
     },
+    {
+      type: "backlinks",
+      key: "other-links",
+      config: {
+        title: "Links",
+        icon: "layers",
+        visibility: "notEmpty",
+        find: {
+          query: [
+            {
+              steps: [
+                {
+                  notIn: {
+                    property: ["linksTo"],
+                    type: [],
+                  },
+                },
+              ],
+            },
+          ],
+        },
+        columns: [
+          { type: "entityIcon" },
+          { type: "show" },
+          { type: "cover", align: "right" },
+          { type: "date", align: "right" },
+        ],
+        sort: {
+          strategy: "manual",
+        },
+        createEntity: {
+          enabled: false,
+        },
+      },
+    },
   ],
 } as const;

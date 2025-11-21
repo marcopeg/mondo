@@ -298,7 +298,7 @@ export const team = {
     },
     {
       type: "backlinks",
-      key: "links",
+      key: "other-links",
       config: {
         title: "Links",
         icon: "layers",
@@ -309,8 +309,8 @@ export const team = {
               steps: [
                 {
                   notIn: {
-                    property: ["linksTo", "team"],
-                    type: ["log", "task", "person", "project", "meeting"],
+                    property: ["linksTo"],
+                    type: [],
                   },
                 },
               ],
@@ -320,7 +320,7 @@ export const team = {
         columns: [
           { type: "entityIcon" },
           { type: "show" },
-          { type: "attribute", key: "type", label: "Type" },
+          { type: "cover", align: "right" },
           { type: "date", align: "right" },
         ],
         sort: {
@@ -328,66 +328,6 @@ export const team = {
         },
         createEntity: {
           enabled: false,
-        },
-      },
-    },
-    {
-      type: "backlinks",
-      key: "linked_links",
-      config: {
-        targetType: "link",
-        properties: ["team"],
-        title: link.name,
-        icon: link.icon,
-        visibility: "notEmpty",
-        columns: [
-          {
-            type: "show",
-          },
-          {
-            type: "attribute",
-            key: "url",
-          },
-          {
-            type: "date",
-            align: "right",
-          },
-        ],
-        sort: {
-          strategy: "manual",
-        },
-        createEntity: {
-          referenceCreate: "link",
-        },
-      },
-    },
-    {
-      type: "backlinks",
-      key: "goals",
-      config: {
-        targetType: "goal",
-        properties: ["linksTo"],
-        title: goal.name,
-        icon: goal.icon,
-        visibility: "notEmpty",
-        columns: [
-          {
-            type: "show",
-          },
-          {
-            type: "attribute",
-            key: "status",
-          },
-          {
-            type: "date",
-            align: "right",
-          },
-        ],
-        sort: {
-          strategy: "manual",
-        },
-        createEntity: {
-          referenceCreate: "goal",
         },
       },
     },

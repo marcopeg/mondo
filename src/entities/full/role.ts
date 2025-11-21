@@ -153,7 +153,7 @@ export const role = {
     },
     {
       type: "backlinks",
-      key: "links",
+      key: "other-links",
       config: {
         title: "Links",
         icon: "layers",
@@ -165,6 +165,7 @@ export const role = {
                 {
                   notIn: {
                     property: ["linksTo"],
+                    type: [],
                   },
                 },
               ],
