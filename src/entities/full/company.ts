@@ -4,18 +4,15 @@ import { project } from "./project";
 import { task } from "./task";
 import { fact } from "./fact";
 import { log } from "./log";
-import { gear } from "./gear";
-import { idea } from "./idea";
 import { document } from "./document";
 import { meeting } from "./meeting";
 import { link } from "./link";
-import { goal } from "./goal";
 
 export const company = {
   name: "Companies",
   singular: "Company",
   icon: "building-2",
-  template: "\ndate: {{date}}\nlocation: []\n---\n",
+  template: "\ndate: {{date}}\n---\n",
   list: {
     columns: [
       { type: "cover" },
@@ -23,7 +20,44 @@ export const company = {
       { type: "link", prop: "location" },
     ],
   },
+  linkAnythingOn: {
+    types: ["location"]
+  },
   createRelated: [
+    {
+      key: "employee",
+      label: "Employee",
+      icon: person.icon,
+      targetType: "person",
+      create: {
+        attributes: {
+          company: ["{@this}"],
+        },
+      },
+    },
+    {
+      key: "team",
+      label: "Team",
+      icon: team.icon,
+      targetType: "team",
+      create: {
+        attributes: {
+          company: ["{@this}"],
+        },
+      },
+    },
+    {
+      key: "project",
+      label: "Project",
+      icon: project.icon,
+      targetType: "project",
+      create: {
+        attributes: {
+          company: ["{@this}"],
+          status: "draft",
+        },
+      },
+    },
     {
       key: "meeting",
       label: "Meeting",
@@ -36,141 +70,10 @@ export const company = {
         },
       },
     },
-    {
-      key: "employee",
-      label: "Employee",
-      icon: person.icon,
-      targetType: "person",
-      create: {
-        title: "New Employee for {@this.show}",
-        attributes: {
-          company: ["{@this}"],
-        },
-      },
-    },
-    {
-      key: "team",
-      label: "Team",
-      icon: team.icon,
-      targetType: "team",
-      create: {
-        title: "New Team for {@this.show}",
-        attributes: {
-          company: ["{@this}"],
-        },
-      },
-    },
-    {
-      key: "project",
-      label: "Project",
-      icon: project.icon,
-      targetType: "project",
-      create: {
-        title: "New Project for {@this.show}",
-        attributes: {
-          company: ["{@this}"],
-          team: [],
-          status: "draft",
-        },
-      },
-    },
-    {
-      key: "task",
-      label: "Task",
-      icon: task.icon,
-      targetType: "task",
-      create: {
-        title: "New Task for {@this.show}",
-        attributes: {
-          company: ["{@this}"],
-        },
-      },
-    },
-    {
-      key: "fact",
-      label: "Fact",
-      icon: fact.icon,
-      targetType: "fact",
-      create: {
-        title: "New Fact for {@this.show}",
-        attributes: {
-          company: ["{@this}"],
-        },
-      },
-    },
-    {
-      key: "log",
-      label: "Log",
-      icon: log.icon,
-      targetType: "log",
-      create: {
-        title: "{YY}-{MM}-{DD} {hh}.{mm} Log for {@this.show}",
-        attributes: {
-          company: ["{@this}"],
-        },
-      },
-    },
-    {
-      key: "gear",
-      label: "Gear",
-      icon: gear.icon,
-      targetType: "gear",
-      create: {
-        title: "Untitled Gear for {@this.show}",
-        attributes: {
-          company: ["{@this}"],
-        },
-      },
-    },
-    {
-      key: "idea",
-      label: "Idea",
-      icon: idea.icon,
-      targetType: "idea",
-      create: {
-        title: "Untitled Idea for {@this.show}",
-        attributes: {
-          company: ["{@this}"],
-        },
-      },
-    },
-    {
-      key: "document",
-      label: "Document",
-      icon: document.icon,
-      targetType: "document",
-      create: {
-        title: "Untitled Document for {@this.show}",
-        attributes: {
-          company: ["{@this}"],
-        },
-      },
-    },
-    {
-      key: "link",
-      label: "Link",
-      icon: link.icon,
-      create: {
-        title: "New Link for {@this.show}",
-        attributes: {
-          type: "link",
-          company: ["{@this}"],
-        },
-      },
-    },
-    {
-      key: "goal",
-      label: "Goal",
-      icon: goal.icon,
-      targetType: "goal",
-      create: {
-        title: "Untitled Goal for {@this.show}",
-        attributes: {
-          linksTo: ["{@this}"],
-        },
-      },
-    },
   ],
+  createAnythingOn: {
+    types: ["fact", "log", "idea", "document", "link", "role", "goal", "task", "gear", "tool"]
+  },
   links: [
     {
       type: "backlinks",
@@ -267,7 +170,7 @@ export const company = {
                 },
                 {
                   in: {
-                    property: ["team", "teams"],
+                    property: ["team"],
                     type: "project",
                   },
                 },
@@ -310,7 +213,7 @@ export const company = {
       config: {
         targetType: "fact",
         properties: ["company"],
-        title: "Facts",
+        title: fact.name,
         icon: fact.icon,
         visibility: "notEmpty",
         sort: {
@@ -341,7 +244,7 @@ export const company = {
       config: {
         targetType: "document",
         properties: ["company"],
-        title: "Documents",
+        title: `[deprecated] Documents`,
         icon: document.icon,
         visibility: "notEmpty",
         sort: {
@@ -418,7 +321,7 @@ export const company = {
       config: {
         targetType: "link",
         properties: ["company"],
-        title: link.name,
+        title: `[deprecated] ${link.name}`,
         icon: link.icon,
         visibility: "notEmpty",
         columns: [
@@ -444,31 +347,36 @@ export const company = {
     },
     {
       type: "backlinks",
-      key: "goals",
+      key: "other-links",
       config: {
-        targetType: "goal",
-        properties: ["linksTo"],
-        title: goal.name,
-        icon: goal.icon,
+        title: "Links",
+        icon: "layers",
         visibility: "notEmpty",
+        find: {
+          query: [
+            {
+              steps: [
+                {
+                  notIn: {
+                    property: ["linksTo"],
+                    type: [],
+                  },
+                },
+              ],
+            },
+          ],
+        },
         columns: [
-          {
-            type: "show",
-          },
-          {
-            type: "attribute",
-            key: "status",
-          },
-          {
-            type: "date",
-            align: "right",
-          },
+          { type: "entityIcon" },
+          { type: "show" },
+          { type: "cover", align: "right" },
+          { type: "date", align: "right" },
         ],
         sort: {
           strategy: "manual",
         },
         createEntity: {
-          referenceCreate: "goal",
+          enabled: false,
         },
       },
     },

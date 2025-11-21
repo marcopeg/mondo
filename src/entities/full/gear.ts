@@ -21,164 +21,72 @@ export const gear = {
       { type: "link", prop: "location" },
     ],
   },
-  createRelated: [
-    {
-      key: "task",
-      label: "Task",
-      icon: task.icon,
-      targetType: "task",
-      create: {
-        title: "New Task for {@this.show}",
-        attributes: {
-          linksTo: ["{@this}"],
+  frontmatter: {
+    location: {
+      type: "entity",
+      title: "Location",
+      filter: {
+        type: {
+          in: ["location"],
         },
       },
+      multiple: true,
     },
-    {
-      key: "fact",
-      label: "Fact",
-      icon: fact.icon,
-      targetType: "fact",
-      create: {
-        title: "New Fact for {@this.show}",
-        attributes: {
-          linksTo: ["{@this}"],
+    owner: {
+      type: "entity",
+      title: "Owner",
+      filter: {
+        type: {
+          in: ["person"],
         },
       },
+      multiple: true,
     },
-    {
-      key: "log",
-      label: "Log",
-      icon: log.icon,
-      targetType: "log",
-      create: {
-        title: "{YY}-{MM}-{DD} {hh}.{mm} Log for {@this.show}",
-        attributes: {
-          linksTo: ["{@this}"],
-        },
-      },
-    },
-    {
-      key: "document",
-      label: "Document",
-      icon: document.icon,
-      targetType: "document",
-      create: {
-        title: "Untitled Document for {@this.show}",
-        attributes: {
-          linksTo: ["{@this}"],
-        },
-      },
-    },
-  ],
+  },
+  linkAnythingOn: { types: ['company', 'team', 'role', 'person', 'project', 'link', 'article', 'document', 'fact', 'idea', 'log', 'task']},
   links: [
     {
       type: "backlinks",
-      key: "tasks",
-      config: {
-        targetType: "task",
-        properties: ["linksTo"],
-        title: task.name,
-        icon: task.icon,
-        columns: [
-          {
-            type: "show",
-          },
-          {
-            type: "attribute",
-            key: "status",
-          },
-          {
-            type: "date",
-            align: "right",
-          },
-        ],
-        sort: {
-          strategy: "manual",
-        },
-        createEntity: {
-          referenceCreate: "task",
-        },
-      },
-    },
-    {
-      type: "backlinks",
-      key: "logs",
-      config: {
-        targetType: "log",
-        properties: ["gear"],
-        title: log.name,
-        icon: log.icon,
-        createEntity: {
-          referenceCreate: "log",
-        },
-      },
-    },
-    {
-      type: "backlinks",
-      key: "links",
+      key: "other-links",
       config: {
         title: "Links",
         icon: "layers",
+        visibility: "notEmpty",
         find: {
           query: [
             {
-              description: "Notes referencing this gear",
               steps: [
                 {
                   notIn: {
                     property: "linksTo",
-                    type: ["meeting", "log", "task"],
+                    type: [],
                   },
                 },
               ],
             },
           ],
-          combine: "union",
         },
-        filter: {
-          type: {
-            nin: ["meeting", "log"],
-          },
-        },
-        columns: [
-          { type: "entityIcon" },
-          { type: "show" },
-          { type: "attribute", key: "type", label: "Type" },
-          { type: "date", align: "right" },
-        ],
         sort: {
           strategy: "manual",
         },
-        createEntity: {
-          enabled: false,
-        },
-      },
-    },
-    {
-      type: "backlinks",
-      key: "linked_links",
-      config: {
-        targetType: "link",
-        properties: ["gear"],
-        title: link.name,
-        icon: link.icon,
-        visibility: "notEmpty",
         columns: [
+          {
+            type: "entityIcon",
+          },
           {
             type: "show",
           },
           {
-            type: "attribute",
-            key: "url",
+            type: "cover",
+            align: "right",
           },
           {
             type: "date",
             align: "right",
           },
         ],
-        sort: {
-          strategy: "manual",
+        createEntity: {
+          enabled: false,
         },
       },
     },

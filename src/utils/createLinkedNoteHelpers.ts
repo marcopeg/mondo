@@ -57,7 +57,9 @@ export const buildWikiLink = ({
   targetFile: TFile;
   displayName: string;
 }) => {
-  const linkTarget = app.metadataCache.fileToLinktext(targetFile, sourcePath);
+  let linkTarget = app.metadataCache.fileToLinktext(targetFile, sourcePath);
+  // Remove .md extension if present
+  linkTarget = linkTarget.replace(/\.md$/i, '');
   const alias = displayName ? `|${displayName}` : "";
   return `[[${linkTarget}${alias}]]`;
 };

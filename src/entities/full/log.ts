@@ -13,31 +13,50 @@ export const log = {
       direction: "desc",
     },
   },
+  linkAnythingOn: { types: ['company', 'team', 'role', 'person', 'project', 'link', 'article', 'document', 'fact', 'idea', 'log', 'task']},
   links: [
     {
       type: "backlinks",
-      key: "linked_links",
+      key: "other-links",
       config: {
-        targetType: "link",
-        properties: ["log"],
         title: "Links",
-        icon: "link",
+        icon: "layers",
         visibility: "notEmpty",
+        find: {
+          query: [
+            {
+              steps: [
+                {
+                  notIn: {
+                    property: "linksTo",
+                    type: [],
+                  },
+                },
+              ],
+            },
+          ],
+        },
+        sort: {
+          strategy: "manual",
+        },
         columns: [
+          {
+            type: "entityIcon",
+          },
           {
             type: "show",
           },
           {
-            type: "attribute",
-            key: "url",
+            type: "cover",
+            align: "right",
           },
           {
             type: "date",
             align: "right",
           },
         ],
-        sort: {
-          strategy: "manual",
+        createEntity: {
+          enabled: false,
         },
       },
     },

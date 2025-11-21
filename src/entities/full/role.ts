@@ -9,7 +9,7 @@ export const role = {
   name: "Roles",
   singular: "Role",
   icon: "briefcase",
-  template: "---\ntype: {{type}}\ndate: {{date}}\n---\n",
+  template: "---\ndate: {{date}}\n---\n",
   list: {
     columns: [
       { type: "title", prop: "show" },
@@ -20,80 +20,25 @@ export const role = {
       direction: "asc",
     },
   },
+  linkAnythingOn: {
+    types: ["company"]
+  },
   createRelated: [
     {
-      key: "task",
-      label: "Task",
+      key: "person",
+      label: "Person",
       icon: task.icon,
-      targetType: "task",
+      targetType: "person",
       create: {
-        title: "New Task for {@this.show}",
         attributes: {
-          linksTo: ["{@this}"],
-        },
-      },
-    },
-    {
-      key: "log",
-      label: "Log",
-      icon: log.icon,
-      targetType: "log",
-      create: {
-        title: "{YY}-{MM}-{DD} {hh}.{mm} Log for {@this.show}",
-        attributes: {
-          linksTo: ["{@this}"],
-        },
-      },
-    },
-    {
-      key: "fact",
-      label: "Fact",
-      icon: fact.icon,
-      targetType: "fact",
-      create: {
-        title: "New Fact for {@this.show}",
-        attributes: {
-          linksTo: ["{@this}"],
-        },
-      },
-    },
-    {
-      key: "document",
-      label: "Document",
-      icon: document.icon,
-      targetType: "document",
-      create: {
-        title: "Untitled Document for {@this.show}",
-        attributes: {
-          linksTo: ["{@this}"],
-        },
-      },
-    },
-    {
-      key: "idea",
-      label: "Idea",
-      icon: idea.icon,
-      targetType: "idea",
-      create: {
-        title: "New Idea for {@this.show}",
-        attributes: {
-          linksTo: ["{@this}"],
-        },
-      },
-    },
-    {
-      key: "link",
-      label: "Link",
-      icon: link.icon,
-      create: {
-        title: "New Link for {@this.show}",
-        attributes: {
-          type: "link",
           role: ["{@this}"],
         },
       },
-    },
+    }
   ],
+  createAnythingOn: {
+    types: ["fact", "log", "idea", "document", "link", "goal", "task", "gear", "tool"]
+  },
   links: [
     {
       type: "backlinks",
@@ -103,6 +48,7 @@ export const role = {
         properties: ["role"],
         title: "People",
         icon: "users",
+        visibility: "notEmpty",
         collapsed: false,
         sort: {
           strategy: "column",
@@ -129,97 +75,36 @@ export const role = {
     },
     {
       type: "backlinks",
-      key: "projects",
-      desc: "Projects associated with this role",
+      key: "other-links",
       config: {
-        targetType: "project",
-        properties: ["role"],
-        title: "Projects",
-        icon: "folder-git-2",
-        columns: [
-          {
-            type: "show",
-          },
-          {
-            type: "attribute",
-            key: "status",
-          },
-          {
-            type: "date",
-            align: "right",
-          },
-        ],
-        sort: {
-          strategy: "manual",
-        },
-      },
-    },
-    {
-      type: "backlinks",
-      key: "tasks",
-      config: {
-        targetType: "task",
-        properties: ["linksTo"],
-        title: task.name,
-        icon: task.icon,
-        columns: [
-          {
-            type: "show",
-          },
-          {
-            type: "attribute",
-            key: "status",
-          },
-          {
-            type: "date",
-            align: "right",
-          },
-        ],
-        sort: {
-          strategy: "manual",
-        },
-        createEntity: {
-          referenceCreate: "task",
-        },
-      },
-    },
-    {
-      type: "backlinks",
-      key: "logs",
-      config: {
-        targetType: "log",
-        properties: ["linksTo"],
-        title: log.name,
-        icon: log.icon,
-        createEntity: {
-          referenceCreate: "log",
-        },
-      },
-    },
-    {
-      type: "backlinks",
-      key: "linked_links",
-      config: {
-        targetType: "link",
-        properties: ["role"],
-        title: link.name,
-        icon: link.icon,
+        title: "Links",
+        icon: "layers",
         visibility: "notEmpty",
+        find: {
+          query: [
+            {
+              steps: [
+                {
+                  notIn: {
+                    property: ["linksTo"],
+                    type: [],
+                  },
+                },
+              ],
+            },
+          ],
+        },
         columns: [
-          {
-            type: "show",
-          },
-          {
-            type: "attribute",
-            key: "url",
-          },
-          {
-            type: "date",
-            align: "right",
-          },
+          { type: "entityIcon" },
+          { type: "show" },
+          { type: "cover", align: "right" },
+          { type: "date", align: "right" },
         ],
         sort: {
           strategy: "manual",
+        },
+        createEntity: {
+          enabled: false,
         },
       },
     },

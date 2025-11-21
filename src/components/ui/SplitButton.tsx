@@ -4,10 +4,12 @@ import Button from "@/components/ui/Button";
 import { Icon } from "@/components/ui/Icon";
 
 type SplitButtonAction = {
-  label: ReactNode;
-  onSelect: (event: ReactMouseEvent<HTMLButtonElement>) => void;
+  label?: ReactNode;
+  onSelect?: (event: ReactMouseEvent<HTMLButtonElement>) => void;
   icon?: string;
   disabled?: boolean;
+  /** Render a visual separator instead of a clickable item */
+  separator?: boolean;
 };
 
 type SplitButtonProps = React.ComponentProps<typeof Button> & {
@@ -69,7 +71,7 @@ export const SplitButton = ({
   }, [closeMenu, isOpen]);
 
   const availableSecondaryActions = useMemo(
-    () => secondaryActions.filter((action) => !action.disabled),
+    () => secondaryActions.filter((action) => !action.disabled && !action.separator),
     [secondaryActions]
   );
 
@@ -108,7 +110,7 @@ export const SplitButton = ({
   const handleActionSelect = useCallback(
     (action: SplitButtonAction) =>
       (event: ReactMouseEvent<HTMLButtonElement>) => {
-        if (action.disabled) {
+        if (action.disabled || action.separator || !action.onSelect) {
           return;
         }
         closeMenu();
@@ -151,6 +153,10 @@ export const SplitButton = ({
     "absolute right-0 top-full z-[999] mt-1 min-w-[10rem] overflow-hidden rounded-md border border-[var(--background-modifier-border-hover)] bg-[var(--background-primary)] shadow-lg py-1",
     // subtle separators between items
     "divide-y divide-[var(--background-modifier-border-hover)]",
+    // max height and scroll for long lists
+    "max-h-[min(70vh,400px)] overflow-y-auto",
+    // mobile-friendly scrolling
+    "[-webkit-overflow-scrolling:touch]",
   ].join(" ");
 
   // Focus first enabled item when menu opens
@@ -262,6 +268,15 @@ export const SplitButton = ({
           onKeyDown={handleMenuKeyDown}
         >
           {secondaryActions.map((action, index) => {
+            if (action.separator) {
+              return (
+                <div
+                  key={`sep-${index}`}
+                  role="separator"
+                  className="my-2 h-px bg-[var(--background-modifier-border)] mx-2"
+                />
+              );
+            }
             const isActionDisabled = Boolean(action.disabled);
             return (
               <Button

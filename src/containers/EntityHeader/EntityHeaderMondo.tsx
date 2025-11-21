@@ -14,7 +14,6 @@ import type {
   MondoEntityLinkConfig,
 } from "@/types/MondoEntityConfig";
 import { isMondoEntityType } from "@/types/MondoFileType";
-import createEntityForEntity from "@/utils/createEntityForEntity";
 import { resolveCoverImage } from "@/utils/resolveCoverImage";
 import { openEditImageModal } from "@/utils/EditImageModal";
 import { getEntityDisplayName } from "@/utils/getEntityDisplayName";
@@ -24,6 +23,7 @@ import {
 } from "@/context/EntityLinksLayoutContext";
 import DeprecatedTypeWarning from "./DeprecatedTypeWarning";
 import { AddProperty } from "./AddProperty";
+import { RelatedEntityModal } from "./AddRelated";
 
 type EntityHeaderMondoProps = {
   entityType: MondoEntityType;
@@ -38,6 +38,7 @@ type RelatedAction = {
   attributes?: MondoEntityCreateAttributes;
   linkProperties?: string | string[];
   openAfterCreate: boolean;
+  isAuto?: boolean; // true if generated via createAnythingOn
 };
 
 const buildHeaderLabel = (entityType: MondoEntityType) => {
@@ -290,11 +291,96 @@ export const EntityHeaderMondo = ({ entityType }: EntityHeaderMondoProps) => {
 
   const actions = useMemo(() => {
     const specs = entityConfig?.createRelated ?? [];
-    if (specs.length === 0) {
+    const createAnythingOn = entityConfig?.createAnythingOn;
+    
+    // Expand createRelated with createAnythingOn entries
+    let expandedSpecs: any[] = [...specs];
+    
+    if (createAnythingOn) {
+      // Parse createAnythingOn configuration
+      let targetKey = 'linksTo';
+      let allowedTypes: string[] | null = null;
+      
+      if (typeof createAnythingOn === 'string') {
+        targetKey = createAnythingOn;
+      } else if (typeof createAnythingOn === 'object') {
+        targetKey = createAnythingOn.key || 'linksTo';
+        allowedTypes = createAnythingOn.types || null;
+      }
+      
+      // Get all defined entity types from explicit createRelated config
+      const explicitTypes = new Set<string>();
+      specs.forEach((spec) => {
+        const targetTypeRaw = toOptionalString(spec.targetType);
+        if (targetTypeRaw) {
+          explicitTypes.add(targetTypeRaw.toLowerCase());
+        }
+      });
+      
+      // Determine which entity types to add and in what order
+      let entityTypesToAdd: string[];
+      
+      if (allowedTypes && allowedTypes.length > 0) {
+        // Use specified types in the specified order
+        entityTypesToAdd = allowedTypes;
+        
+        // Warn about non-existent types
+        allowedTypes.forEach((type) => {
+          const typeLower = type.toLowerCase();
+          if (!MONDO_ENTITIES[typeLower as MondoEntityType]) {
+            console.warn(`[createAnythingOn] Entity type "${type}" does not exist and will be ignored`);
+          }
+        });
+      } else {
+        // Use all entity types in alphabetical order
+        entityTypesToAdd = Object.keys(MONDO_ENTITIES).sort((a, b) => {
+          const nameA = MONDO_ENTITIES[a as MondoEntityType].singular || MONDO_ENTITIES[a as MondoEntityType].name;
+          const nameB = MONDO_ENTITIES[b as MondoEntityType].singular || MONDO_ENTITIES[b as MondoEntityType].name;
+          return nameA.localeCompare(nameB);
+        });
+      }
+      
+      // Add entries for entity types
+      entityTypesToAdd.forEach((entityTypeKey) => {
+        const typeLower = entityTypeKey.toLowerCase();
+        const entityConfigData = MONDO_ENTITIES[typeLower as MondoEntityType];
+        
+        // Skip if entity type doesn't exist
+        if (!entityConfigData) {
+          return;
+        }
+        
+        // Skip if already explicitly defined
+        if (explicitTypes.has(typeLower)) {
+          return;
+        }
+        
+        // Skip the current entity type (don't create self-referencing by default)
+        if (typeLower === entityType.toLowerCase()) {
+          return;
+        }
+        
+        // Add auto-generated entry
+        expandedSpecs.push({
+          key: entityTypeKey,
+          label: entityConfigData.singular || entityConfigData.name,
+          icon: entityConfigData.icon,
+          targetType: typeLower,
+          create: {
+            attributes: {
+              [targetKey]: ["{@this}"],
+            },
+          },
+          _auto: true,
+        });
+      });
+    }
+    
+    if (expandedSpecs.length === 0) {
       return [] as RelatedAction[];
     }
 
-    return specs
+    return expandedSpecs
       .map((spec) => {
         const panelKey =
           toOptionalString((spec as any).referenceLink) ??
@@ -341,12 +427,8 @@ export const EntityHeaderMondo = ({ entityType }: EntityHeaderMondoProps) => {
         const rawTitle =
           toOptionalString(specCreate.title) ??
           toOptionalString(panelCreate?.title);
-        const fallbackTitle = targetEntity?.name ?? label;
-        const titleTemplate = rawTitle
-          ? rawTitle
-          : fallbackTitle
-          ? `Untitled ${fallbackTitle}`
-          : undefined;
+        // If no explicit title provided, leave undefined so search starts empty
+        const titleTemplate = rawTitle ?? undefined;
 
         const attributes = specAttributes ?? panelAttributes;
 
@@ -371,77 +453,74 @@ export const EntityHeaderMondo = ({ entityType }: EntityHeaderMondoProps) => {
           attributes,
           linkProperties,
           openAfterCreate,
+          isAuto: Boolean((spec as any)._auto),
         } as RelatedAction;
       })
       .filter((action): action is RelatedAction => action !== null);
   }, [entityConfig?.createRelated, panelMap, entityType]);
 
   const { collapsedPanels } = useEntityLinksLayout();
-  const [pendingAction, setPendingAction] = useState<string | null>(null);
-  const isPending = pendingAction !== null;
-  const isBusy = isPending || isUploadingCover;
+  const [pendingAction, setPendingAction] = useState<RelatedAction | null>(null);
+  const [modalOpenCount, setModalOpenCount] = useState(0);
+  const isBusy = isUploadingCover;
 
   const handleCreateAction = useCallback(
-    async (action: RelatedAction) => {
+    (action: RelatedAction) => {
       if (!cachedFile) {
         new Notice("Unable to determine the current entity.");
         return;
       }
-
-      setPendingAction(action.key);
-      const failureLabel = (action.label || action.targetType).toLowerCase();
-      try {
-        const result = await createEntityForEntity({
-          app,
-          targetType: action.targetType,
-          hostEntity: cachedFile,
-          titleTemplate: action.titleTemplate,
-          attributeTemplates: action.attributes,
-          linkProperties: normalizeLinkProperties(action.linkProperties),
-          openAfterCreate: action.openAfterCreate,
-        });
-
-        if (!result) {
-          new Notice(`Failed to create ${failureLabel} note.`);
-        }
-      } catch (error) {
-        console.error(
-          "EntityHeaderMondo: failed to create related entity",
-          error
-        );
-        new Notice(`Failed to create ${failureLabel} note.`);
-      } finally {
-        setPendingAction(null);
-      }
+      setPendingAction(action);
+      setModalOpenCount(prev => prev + 1);
     },
-    [app, cachedFile]
+    [cachedFile]
   );
 
-  const primary = actions[0];
+  const handleCloseModal = useCallback(() => {
+    setPendingAction(null);
+  }, []);
+
+  const handleEntitySelected = useCallback(
+    (_file: TFile) => {
+      // Modal handles the entity creation/linking
+      setPendingAction(null);
+    },
+    []
+  );
+
   const hasCollapsedPanels = collapsedPanels.length > 0;
 
-  const secondary = useMemo(
-    () =>
-      actions.map((action) => ({
-        label: action.label,
-        icon: action.icon,
-        disabled: isBusy,
-        onSelect: () => {
-          if (isBusy) {
-            return;
-          }
-          void handleCreateAction(action);
-        },
-      })),
-    [actions, handleCreateAction, isBusy]
-  );
+  const secondary = useMemo(() => {
+    const explicit = actions.filter(a => !a.isAuto);
+    const auto = actions.filter(a => a.isAuto);
+    const list: Array<any> = [];
+    list.push(...explicit.map(action => ({
+      label: action.label,
+      icon: action.icon,
+      onSelect: () => handleCreateAction(action),
+    })));
+    if (explicit.length > 0 && auto.length > 0) {
+      list.push({ separator: true });
+    }
+    list.push(...auto.map(action => ({
+      label: action.label,
+      icon: action.icon,
+      onSelect: () => handleCreateAction(action),
+    })));
+    return list;
+  }, [actions, handleCreateAction]);
+
+  const primary = useMemo(() => {
+    const explicitFirst = actions.find(a => !a.isAuto);
+    return explicitFirst ?? actions[0];
+  }, [actions]);
 
   const handlePrimaryClick = useCallback(() => {
-    if (!primary || isBusy) {
+    if (!primary) {
       return;
     }
-    void handleCreateAction(primary);
-  }, [handleCreateAction, isBusy, primary]);
+    handleCreateAction(primary);
+  }, [handleCreateAction, primary]);
 
   const handleCoverSelect = useCallback(
     async (_filePath: string, selectedFile: File) => {
@@ -481,11 +560,13 @@ export const EntityHeaderMondo = ({ entityType }: EntityHeaderMondoProps) => {
           throw new Error("Failed to create image attachment");
         }
 
-        const linktext = app.metadataCache.fileToLinktext(
+        let linktext = app.metadataCache.fileToLinktext(
           targetFile,
           cachedFile.file.path,
           false
         );
+        // Remove .md extension if present
+        linktext = linktext.replace(/\.md$/i, '');
 
         await app.fileManager.processFrontMatter(
           cachedFile.file,
@@ -538,9 +619,12 @@ export const EntityHeaderMondo = ({ entityType }: EntityHeaderMondoProps) => {
                   Mondo Note • {label}
                 </div>
               </div>
-              <div className="flex flex-shrink-0 gap-2">
-                {entityConfig?.frontmatter && (
-                  <AddProperty frontmatterConfig={entityConfig.frontmatter} />
+              <div className="flex flex-shrink-0 gap-2" data-entity-actions-desktop>
+                {(entityConfig?.frontmatter || entityConfig?.linkAnythingOn) && (
+                  <AddProperty 
+                    frontmatterConfig={entityConfig.frontmatter || {}}
+                    linkAnythingOn={entityConfig.linkAnythingOn}
+                  />
                 )}
                 {primary ? (
                   <SplitButton
@@ -559,15 +643,51 @@ export const EntityHeaderMondo = ({ entityType }: EntityHeaderMondoProps) => {
               <div
                 className="flex flex-wrap gap-2"
                 aria-label="Collapsed entity link panels"
+                data-entity-panels
               >
                 {collapsedPanels.map((panel) => (
                   <CollapsedPanelButton key={panel.id} panel={panel} />
                 ))}
               </div>
             ) : null}
+
+            <div className="flex flex-shrink-0 gap-2" data-entity-actions-mobile>
+              {(entityConfig?.frontmatter || entityConfig?.linkAnythingOn) && (
+                <AddProperty 
+                  frontmatterConfig={entityConfig.frontmatter || {}}
+                  linkAnythingOn={entityConfig.linkAnythingOn}
+                />
+              )}
+              {primary ? (
+                <SplitButton
+                  onClick={handlePrimaryClick}
+                  secondaryActions={secondary}
+                  menuAriaLabel="Select related entity to create"
+                  disabled={isBusy}
+                >
+                  {`+ ${primary.label}`}
+                </SplitButton>
+              ) : null}
+            </div>
           </div>
         </div>
       </Card>
+
+      {pendingAction && cachedFile && (
+        <RelatedEntityModal
+          isOpen={true}
+          onClose={handleCloseModal}
+          onSelect={handleEntitySelected}
+          targetType={pendingAction.targetType}
+          title={`Add ${pendingAction.label}`}
+          hostFile={cachedFile}
+          titleTemplate={pendingAction.titleTemplate}
+          attributes={pendingAction.attributes}
+          linkProperties={normalizeLinkProperties(pendingAction.linkProperties)}
+          openAfterCreate={pendingAction.openAfterCreate}
+          openCount={modalOpenCount}
+        />
+      )}
     </div>
   );
 };

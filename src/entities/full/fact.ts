@@ -13,27 +13,16 @@ export const fact = {
       direction: "desc",
     },
   },
-  createRelated: [
-    {
-      key: "fact",
-      label: "Fact",
-      icon: "bookmark",
-      targetType: "fact",
-      create: {
-        title: "Untitled Fact for {@this.show}",
-        attributes: {
-          linksTo: ["{@this}"],
-        },
-      },
-    },
-  ],
+  linkAnythingOn: { types: ['company', 'team', 'role', 'person', 'project', 'link', 'article', 'document', 'fact', 'idea', 'log', 'task']},
+  createAnythingOn: { types: ['fact', 'task', 'log', 'idea']},
   links: [
     {
       type: "backlinks",
-      key: "link",
+      key: "other-links",
       config: {
         title: "Links",
         icon: "layers",
+        visibility: "notEmpty",
         find: {
           query: [
             {
@@ -69,33 +58,6 @@ export const fact = {
         ],
         createEntity: {
           enabled: false,
-        },
-      },
-    },
-    {
-      type: "backlinks",
-      key: "linked_links",
-      config: {
-        targetType: "link",
-        properties: ["fact"],
-        title: "Links",
-        icon: "link",
-        visibility: "notEmpty",
-        columns: [
-          {
-            type: "show",
-          },
-          {
-            type: "attribute",
-            key: "url",
-          },
-          {
-            type: "date",
-            align: "right",
-          },
-        ],
-        sort: {
-          strategy: "manual",
         },
       },
     },

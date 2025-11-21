@@ -105,6 +105,13 @@ export interface MondoEntityFrontmatterFieldConfig {
   type: "entity" | "datetime" | "text" | "number" | "boolean";
   /** Display title for the field */
   title?: string;
+  /** 
+   * Target property key in frontmatter. If not specified, uses the config key.
+   * Allows multiple frontmatter configs to populate the same property.
+   */
+  key?: string;
+  /** Optional icon to display in the UI */
+  icon?: string;
   /** Whether to allow multiple values (applies to entity type) */
   multiple?: boolean;
   /** Default value or preset function (e.g., "now" for datetime) */
@@ -266,4 +273,34 @@ export interface MondoEntityConfig<
   createRelated?: MondoEntityRelatedConfig[];
   /** Optional frontmatter field configurations for dynamic property addition */
   frontmatter?: MondoEntityFrontmatterConfig;
+  /**
+   * Optional: automatically add frontmatter entries for all entity types not explicitly
+   * defined in frontmatter config.
+   * 
+   * - false (default): "Add link" button is not visible
+   * - true: Button visible, shows all entities alphabetically, links using "linksTo" property
+   * - string: Button visible, shows all entities alphabetically, links using the specified property
+   * - object: Button visible with custom configuration
+   *   - key (optional): Property key to populate (defaults to "linksTo")
+   *   - types (optional): Array of entity types to show in the specified order
+   */
+  linkAnythingOn?: string | boolean | {
+    key?: string;
+    types?: string[];
+  };
+  /**
+   * Optional: automatically add createRelated entries for all entity types not explicitly
+   * defined in createRelated config.
+   * 
+   * - false (default): No auto-generated "Add Related" options
+   * - true: All entities alphabetically, links using "linksTo" property
+   * - string: All entities alphabetically, links using the specified property
+   * - object: Custom configuration
+   *   - key (optional): Property key to populate (defaults to "linksTo")
+   *   - types (optional): Array of entity types to show in the specified order
+   */
+  createAnythingOn?: string | boolean | {
+    key?: string;
+    types?: string[];
+  };
 }

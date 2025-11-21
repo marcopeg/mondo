@@ -2121,13 +2121,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"clean-text-utils@npm:^1.1.17":
-  version: 1.1.17
-  resolution: "clean-text-utils@npm:1.1.17"
-  checksum: 10c0/4a27a0905aa3a9115a7116e3fe085a30be4e1f40f997c51fc67fe0f644fa2be52262db077e185f1a8b665b9cfc73ef9512ba30b545a90693a616f9ae5e32e550
-  languageName: node
-  linkType: hard
-
 "cliui@npm:^8.0.1":
   version: 8.0.1
   resolution: "cliui@npm:8.0.1"
@@ -3019,7 +3012,6 @@ __metadata:
     "@typescript-eslint/parser": "npm:5.29.0"
     autoprefixer: "npm:^10.4.21"
     builtin-modules: "npm:3.3.0"
-    clean-text-utils: "npm:^1.1.17"
     concurrently: "npm:^9.2.1"
     esbuild: "npm:0.17.3"
     obsidian: "npm:latest"

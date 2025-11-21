@@ -33,18 +33,36 @@ export const useLink = (
 
       try {
         const isCmdOrCtrl = (e as any).metaKey || (e as any).ctrlKey;
+        const isAlt = (e as any).altKey;
         const plainPath = to;
-        if (isCmdOrCtrl) {
+        
+        // Cmd+Option+Click (or Ctrl+Alt+Click on Windows): open in new tab to the right
+        if (isCmdOrCtrl && isAlt) {
           try {
-            await app.workspace.openLinkText(plainPath, "", "split");
+            const leaf = app.workspace.getLeaf("split", "vertical");
+            const file = app.vault.getAbstractFileByPath(plainPath);
+            if (leaf && file) await (leaf as any).openFile(file);
             return;
           } catch (err) {
-            const leaf = app.workspace.getLeaf(true);
-            if (leaf) await (leaf as any).openFile(app.vault.getAbstractFileByPath(plainPath));
+            console.error("useLink: failed to open file in vertical split", err);
+            return;
+          }
+        }
+        
+        // Cmd+Click (or Ctrl+Click on Windows): open in new tab
+        if (isCmdOrCtrl) {
+          try {
+            const leaf = app.workspace.getLeaf("tab");
+            const file = app.vault.getAbstractFileByPath(plainPath);
+            if (leaf && file) await (leaf as any).openFile(file);
+            return;
+          } catch (err) {
+            console.error("useLink: failed to open file in new tab", err);
             return;
           }
         }
 
+        // Simple click: follow the link in the current tab
         const activeLeaf = app.workspace.getLeaf(false) || app.workspace.getLeaf(true);
         const file = app.vault.getAbstractFileByPath(plainPath);
         if (activeLeaf && file) await (activeLeaf as any).openFile(file);

@@ -15,6 +15,45 @@ export const task = {
       { type: "value", prop: "status" },
     ],
   },
+  frontmatter: {
+    company: {
+      type: "entity",
+      title: "Company",
+      filter: {
+        type: {
+          in: ["company"],
+        },
+      },
+    },
+    team: {
+      type: "entity",
+      title: "Team",
+      filter: {
+        type: {
+          in: ["team"],
+        },
+      }
+    },
+    project: {
+      type: "entity",
+      title: "Project",
+      filter: {
+        type: {
+          in: ["project"],
+        },
+      }
+    },
+    participants: {
+      type: "entity",
+      title: "Participant",
+      multiple: true,
+      filter: {
+        type: {
+          in: ["person"],
+        },
+      }
+    },
+  },
   createRelated: [
     {
       key: "subtask",
@@ -155,58 +194,36 @@ export const task = {
     },
     {
       type: "backlinks",
-      key: "linked_links",
+      key: "other-links",
       config: {
-        targetType: "link",
-        properties: ["task"],
         title: "Links",
-        icon: "link",
+        icon: "layers",
         visibility: "notEmpty",
-        columns: [
-          {
-            type: "show",
-          },
-          {
-            type: "attribute",
-            key: "url",
-          },
-          {
-            type: "date",
-            align: "right",
-          },
-        ],
-        sort: {
-          strategy: "manual",
+        find: {
+          query: [
+            {
+              steps: [
+                {
+                  notIn: {
+                    property: ["linksTo"],
+                    type: [],
+                  },
+                },
+              ],
+            },
+          ],
         },
-      },
-    },
-    {
-      type: "backlinks",
-      key: "goals",
-      config: {
-        targetType: "goal",
-        properties: ["linksTo"],
-        title: goal.name,
-        icon: goal.icon,
-        visibility: "notEmpty",
         columns: [
-          {
-            type: "show",
-          },
-          {
-            type: "attribute",
-            key: "status",
-          },
-          {
-            type: "date",
-            align: "right",
-          },
+          { type: "entityIcon" },
+          { type: "show" },
+          { type: "cover", align: "right" },
+          { type: "date", align: "right" },
         ],
         sort: {
           strategy: "manual",
         },
         createEntity: {
-          referenceCreate: "goal",
+          enabled: false,
         },
       },
     },

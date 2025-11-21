@@ -1,18 +1,42 @@
 import { task } from "./task";
 import { log } from "./log";
-import { fact } from "./fact";
-import { document } from "./document";
-import { idea } from "./idea";
 import { meeting } from "./meeting";
 import { project } from "./project";
-import { link } from "./link";
-import { goal } from "./goal";
 
 export const team = {
   name: "Teams",
   singular: "Team",
   icon: "users",
-  template: "\ndate: {{date}}\ncompany: []\nlocation: []\n---\n",
+  template: "\ndate: {{date}}\n---\n",
+  list: {
+    columns: [
+      { type: "title", prop: "show" },
+      { type: "link", prop: "company" },
+      { type: "link", prop: "location" },
+      { type: "members" },
+    ],
+  },
+  linkAnythingOn: true,
+  frontmatter: {
+    company: {
+      type: "entity",
+      title: "Company",
+      filter: {
+        type: {
+          in: ["company"],
+        },
+      },
+    },
+    location: {
+      type: "entity",
+      title: "Location",
+      filter: {
+        type: {
+          in: ["location"],
+        },
+      }
+    },
+  },
   createRelated: [
     {
       key: "meeting",
@@ -39,66 +63,6 @@ export const team = {
       },
     },
     {
-      key: "task",
-      label: "Task",
-      icon: task.icon,
-      targetType: "task",
-      create: {
-        title: "New Task for {@this.show}",
-        attributes: {
-          linksTo: ["{@this}"],
-        },
-      },
-    },
-    {
-      key: "log",
-      label: "Log",
-      icon: log.icon,
-      targetType: "log",
-      create: {
-        title: "{YY}-{MM}-{DD} {hh}.{mm} Log for {@this.show}",
-        attributes: {
-          linksTo: ["{@this}"],
-        },
-      },
-    },
-    {
-      key: "fact",
-      label: "Fact",
-      icon: fact.icon,
-      targetType: "fact",
-      create: {
-        title: "New Fact for {@this.show}",
-        attributes: {
-          linksTo: ["{@this}"],
-        },
-      },
-    },
-    {
-      key: "document",
-      label: "Document",
-      icon: document.icon,
-      targetType: "document",
-      create: {
-        title: "Untitled Document for {@this.show}",
-        attributes: {
-          linksTo: ["{@this}"],
-        },
-      },
-    },
-    {
-      key: "idea",
-      label: "Idea",
-      icon: idea.icon,
-      targetType: "idea",
-      create: {
-        title: "New Idea for {@this.show}",
-        attributes: {
-          linksTo: ["{@this}"],
-        },
-      },
-    },
-    {
       key: "member",
       label: "Member",
       icon: 'user',
@@ -110,36 +74,9 @@ export const team = {
         },
       },
     },
-    {
-      key: "link",
-      label: "Link",
-      icon: link.icon,
-      create: {
-        title: "New Link for {@this.show}",
-        attributes: {
-          team: ["{@this}"],
-        },
-      },
-    },
-    {
-      key: "goal",
-      label: "Goal",
-      icon: goal.icon,
-      targetType: "goal",
-      create: {
-        title: "Untitled Goal for {@this.show}",
-        attributes: {
-          linksTo: ["{@this}"],
-        },
-      },
-    },
   ],
-  list: {
-    columns: [
-      { type: "title", prop: "show" },
-      { type: "companyArea" },
-      { type: "members" },
-    ],
+  createAnythingOn: {
+    types: ["fact", "log", "idea", "document", "link", "goal", "task", "gear", "tool"]
   },
   links: [
     {
@@ -236,7 +173,7 @@ export const team = {
       key: "tasks",
       config: {
         targetType: "task",
-        properties: ["linksTo"],
+        properties: ["team"],
         title: task.name,
         icon: task.icon,
         visibility: "notEmpty",
@@ -266,7 +203,7 @@ export const team = {
       key: "logs",
       config: {
         targetType: "log",
-        properties: ["linksTo"],
+        properties: ["team"],
         title: log.name,
         icon: log.icon,
         visibility: "notEmpty",
@@ -277,7 +214,7 @@ export const team = {
     },
     {
       type: "backlinks",
-      key: "links",
+      key: "other-links",
       config: {
         title: "Links",
         icon: "layers",
@@ -288,8 +225,7 @@ export const team = {
               steps: [
                 {
                   notIn: {
-                    property: ["linksTo", "team"],
-                    type: ["log", "task", "person", "project", "meeting"],
+                    property: ["linksTo"],
                   },
                 },
               ],
@@ -299,7 +235,7 @@ export const team = {
         columns: [
           { type: "entityIcon" },
           { type: "show" },
-          { type: "attribute", key: "type", label: "Type" },
+          { type: "cover", align: "right" },
           { type: "date", align: "right" },
         ],
         sort: {
@@ -307,66 +243,6 @@ export const team = {
         },
         createEntity: {
           enabled: false,
-        },
-      },
-    },
-    {
-      type: "backlinks",
-      key: "linked_links",
-      config: {
-        targetType: "link",
-        properties: ["team"],
-        title: link.name,
-        icon: link.icon,
-        visibility: "notEmpty",
-        columns: [
-          {
-            type: "show",
-          },
-          {
-            type: "attribute",
-            key: "url",
-          },
-          {
-            type: "date",
-            align: "right",
-          },
-        ],
-        sort: {
-          strategy: "manual",
-        },
-        createEntity: {
-          referenceCreate: "link",
-        },
-      },
-    },
-    {
-      type: "backlinks",
-      key: "goals",
-      config: {
-        targetType: "goal",
-        properties: ["linksTo"],
-        title: goal.name,
-        icon: goal.icon,
-        visibility: "notEmpty",
-        columns: [
-          {
-            type: "show",
-          },
-          {
-            type: "attribute",
-            key: "status",
-          },
-          {
-            type: "date",
-            align: "right",
-          },
-        ],
-        sort: {
-          strategy: "manual",
-        },
-        createEntity: {
-          referenceCreate: "goal",
         },
       },
     },

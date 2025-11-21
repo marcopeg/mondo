@@ -1,178 +1,75 @@
-import { person } from "./person";
-import { task } from "./task";
-import { meeting } from "./meeting";
-import { fact } from "./fact";
 import { log } from "./log";
-import { document } from "./document";
-import { idea } from "./idea";
-import { link } from "./link";
-import { goal } from "./goal";
+import { task } from "./task";
 
 export const project = {
   name: "Projects",
   singular: "Project",
   icon: "folder-git-2",
   template:
-    "\ndate: {{date}}\ncompany: []\nteam: []\nparticipants: []\nstatus: draft\n---\n",
+    "\ndate: {{date}}\nstatus: draft\n---\n",
   
   list: {
     columns: [{ type: "title", prop: "show" }],
   },
-    createRelated: [
-    {
-      key: "task",
-      label: "Task",
-      icon: task.icon,
-      targetType: "task",
-      create: {
-        title: "New Task for {@this.show}",
-        attributes: {
-          project: ["{@this}"],
+  linkAnythingOn: { types: ['company', 'team', 'role', 'person', 'project', 'link', 'article', 'document', 'fact', 'idea', 'log', 'task']},
+   createRelated: [
+      {
+        key: "log",
+        label: "Log",
+        icon: log.icon,
+        panelKey: "logs",
+        targetType: "log",
+        create: {
+          title: "{YY}-{MM}-{DD} {hh}.{mm} Log for {@this.show}",
+          attributes: {
+            project: ["{@this}"],
+          },
         },
       },
-    },
-    {
-      key: "fact",
-      label: "Fact",
-      icon: fact.icon,
-      targetType: "fact",
-      create: {
-        title: "New Fact for {@this.show}",
-        attributes: {
-          project: ["{@this}"],
+      {
+        key: "task",
+        label: "Task",
+        icon: task.icon,
+        panelKey: "tasks",
+        targetType: "task",
+        create: {
+          attributes: {
+            project: ["{@this}"],
+          },
         },
       },
-    },
-    {
-      key: "log",
-      label: "Log",
-      icon: log.icon,
-      targetType: "log",
-      create: {
-        title: "{YY}-{MM}-{DD} {hh}.{mm} Log for {@this.show}",
-        attributes: {
-          project: ["{@this}"],
-        },
-      },
-    },
-    {
-      key: "meeting",
-      label: "Meeting",
-      icon: meeting.icon,
-      targetType: "meeting",
-      create: {
-        title: "{YY}-{MM}-{DD} {hh}.{mm} with {@this.show}",
-        attributes: {
-          project: ["{@this}"],
-          participants: ["{@this.participants}"],
-        },
-      },
-    },
-    {
-      key: "document",
-      label: "Document",
-      icon: document.icon,
-      targetType: "document",
-      create: {
-        title: "Untitled Document for {@this.show}",
-        attributes: {
-          project: ["{@this}"],
-        },
-      },
-    },
-    {
-      key: "idea",
-      label: "Idea",
-      icon: idea.icon,
-      targetType: "idea",
-      create: {
-        title: "New Idea for {@this.show}",
-        attributes: {
-          project: ["{@this}"],
-        },
-      },
-    },
-    {
-      key: "link",
-      label: "Link",
-      icon: link.icon,
-      create: {
-        title: "New Link for {@this.show}",
-        attributes: {
-          project: ["{@this}"],
-        },
-      },
-    },
-    {
-      key: "goal",
-      label: "Goal",
-      icon: goal.icon,
-      targetType: "goal",
-      create: {
-        title: "Untitled Goal for {@this.show}",
-        attributes: {
-          linksTo: ["{@this}"],
-        },
-      },
-    },
-  ],
+    ],
+  createAnythingOn: { types: ['goal', 'task', 'log', 'idea', 'fact', 'document', 'link', 'article', 'book']},
   links: [
     {
       type: "backlinks",
-      key: "tasks",
+      key: "log",
       config: {
-        targetType: "task",
-        properties: ["project"],
-        title: task.name,
-        icon: task.icon,
+        title: "Logs",
+        icon: "file-text",
         visibility: "notEmpty",
+        targetType: "log",
+        properties: ["project"],
+        sort: {
+          strategy: "date",
+          direction: "desc",
+        },
         columns: [
+          {
+            type: "entityIcon",
+          },
           {
             type: "show",
           },
           {
-            type: "attribute",
-            key: "status",
+            type: "cover",
+            align: "right",
           },
           {
             type: "date",
             align: "right",
           },
         ],
-        sort: {
-          strategy: "manual",
-        },
-        createEntity: {
-          referenceCreate: "task",
-        },
-      },
-    },
-    {
-      type: "backlinks",
-      key: "facts",
-      config: {
-        targetType: "fact",
-        properties: ["project"],
-        title: fact.name,
-        icon: fact.icon,
-        visibility: "notEmpty",
-        sort: {
-          strategy: "manual",
-        },
-        createEntity: {
-          referenceCreate: "fact",
-        },
-      },
-    },
-    {
-      type: "backlinks",
-      key: "logs",
-      config: {
-        targetType: "log",
-        properties: ["project"],
-        title: log.name,
-        icon: log.icon,
-        visibility: "notEmpty",
         createEntity: {
           referenceCreate: "log",
         },
@@ -180,56 +77,26 @@ export const project = {
     },
     {
       type: "backlinks",
-      key: "documents",
+      key: "task",
       config: {
-        targetType: "document",
-        properties: ["project"],
-        title: document.name,
-        icon: document.icon,
+        title: "Tasks",
+        icon: "check-square",
         visibility: "notEmpty",
+        targetType: "task",
+        properties: ["project"],
         sort: {
           strategy: "manual",
         },
-        createEntity: {
-          referenceCreate: "document",
-        },
-      },
-    },
-    {
-      type: "backlinks",
-      key: "meetings",
-      config: {
-        title: meeting.name,
-        icon: meeting.icon,
-        visibility: "notEmpty",
-        targetType: "meeting",
-        properties: ["project"],
-        filter: {
-          any: [
-            {
-              "participants.length": {
-                eq: 0,
-              },
-            },
-            {
-              "participants.length": {
-                gt: 1,
-              },
-            },
-          ],
-        },
-        sort: {
-          strategy: "column",
-          column: "date",
-          direction: "desc",
-        },
         columns: [
+          {
+            type: "entityIcon",
+          },
           {
             type: "show",
           },
           {
-            type: "attribute",
-            key: "participants",
+            type: "cover",
+            align: "right",
           },
           {
             type: "date",
@@ -237,13 +104,13 @@ export const project = {
           },
         ],
         createEntity: {
-          referenceCreate: "meeting",
+          referenceCreate: "task",
         },
       },
     },
     {
       type: "backlinks",
-      key: "link",
+      key: "other-link",
       config: {
         title: "Links",
         icon: "layers",
@@ -254,8 +121,7 @@ export const project = {
               steps: [
                 {
                   notIn: {
-                    property: ["linksTo", "project"],
-                    type: ["fact", "task", "log", "document", "meeting"],
+                    property: "linksTo",
                   },
                 },
               ],
@@ -283,66 +149,6 @@ export const project = {
         ],
         createEntity: {
           enabled: false,
-        },
-      },
-    },
-    {
-      type: "backlinks",
-      key: "linked_links",
-      config: {
-        targetType: "link",
-        properties: ["project"],
-        title: link.name,
-        icon: link.icon,
-        visibility: "notEmpty",
-        columns: [
-          {
-            type: "show",
-          },
-          {
-            type: "attribute",
-            key: "url",
-          },
-          {
-            type: "date",
-            align: "right",
-          },
-        ],
-        sort: {
-          strategy: "manual",
-        },
-        createEntity: {
-          referenceCreate: "link",
-        },
-      },
-    },
-    {
-      type: "backlinks",
-      key: "goals",
-      config: {
-        targetType: "goal",
-        properties: ["linksTo"],
-        title: goal.name,
-        icon: goal.icon,
-        visibility: "notEmpty",
-        columns: [
-          {
-            type: "show",
-          },
-          {
-            type: "attribute",
-            key: "status",
-          },
-          {
-            type: "date",
-            align: "right",
-          },
-        ],
-        sort: {
-          strategy: "manual",
-        },
-        createEntity: {
-          referenceCreate: "goal",
         },
       },
     },

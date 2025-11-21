@@ -2,7 +2,7 @@ export const goal = {
   name: "Goals",
   singular: "Goal",
   icon: "target",
-  template: "\ndate: {{date}}\nstatus: active\n---\n",
+  template: "\ndate: {{date}}\nstatus: active\nlinksTo: []\n---\n",
   list: {
     columns: [
       { type: "title", prop: "show" },
@@ -14,24 +14,12 @@ export const goal = {
       direction: "desc",
     },
   },
-  createRelated: [
-    {
-      key: "goal",
-      label: "Goal",
-      icon: "target",
-      targetType: "goal",
-      create: {
-        title: "Untitled Goal for {@this.show}",
-        attributes: {
-          linksTo: ["{@this}"],
-        },
-      },
-    },
-  ],
+  linkAnythingOn: { types: ['company', 'team', 'role', 'person', 'project']},
+  createAnythingOn: { types: ['task', 'log', 'idea', 'fact', 'document', 'link', 'article']},
   links: [
     {
       type: "backlinks",
-      key: "link",
+      key: "other-links",
       config: {
         title: "Links",
         icon: "layers",
