@@ -94,23 +94,23 @@ export const company = {
       },
     },
     {
-      key: "fact",
-      label: "Fact",
-      icon: fact.icon,
-      targetType: "fact",
-      create: {
-        attributes: {
-          company: ["{@this}"],
-        },
-      },
-    },
-    {
       key: "log",
       label: "Log",
       icon: log.icon,
       targetType: "log",
       create: {
         title: "{YY}-{MM}-{DD} {hh}.{mm} Log for {@this.show}",
+        attributes: {
+          company: ["{@this}"],
+        },
+      },
+    },
+    {
+      key: "fact",
+      label: "Fact",
+      icon: fact.icon,
+      targetType: "fact",
+      create: {
         attributes: {
           company: ["{@this}"],
         },
@@ -310,8 +310,8 @@ export const company = {
       key: "facts",
       config: {
         targetType: "fact",
-        properties: ["company"],
-        title: "Facts",
+        properties: ["company", "linksTo"],
+        title: fact.name,
         icon: fact.icon,
         visibility: "notEmpty",
         sort: {
@@ -342,7 +342,7 @@ export const company = {
       config: {
         targetType: "document",
         properties: ["company"],
-        title: "Documents",
+        title: `[deprecated] Documents`,
         icon: document.icon,
         visibility: "notEmpty",
         sort: {
@@ -419,7 +419,7 @@ export const company = {
       config: {
         targetType: "link",
         properties: ["company"],
-        title: link.name,
+        title: `[deprecated] ${link.name}`,
         icon: link.icon,
         visibility: "notEmpty",
         columns: [
@@ -445,31 +445,36 @@ export const company = {
     },
     {
       type: "backlinks",
-      key: "goals",
+      key: "other-links",
       config: {
-        targetType: "goal",
-        properties: ["linksTo"],
-        title: goal.name,
-        icon: goal.icon,
+        title: "Links",
+        icon: "layers",
         visibility: "notEmpty",
+        find: {
+          query: [
+            {
+              steps: [
+                {
+                  notIn: {
+                    property: ["linksTo"],
+                    type: [],
+                  },
+                },
+              ],
+            },
+          ],
+        },
         columns: [
-          {
-            type: "show",
-          },
-          {
-            type: "attribute",
-            key: "status",
-          },
-          {
-            type: "date",
-            align: "right",
-          },
+          { type: "entityIcon" },
+          { type: "show" },
+          { type: "cover", align: "right" },
+          { type: "date", align: "right" },
         ],
         sort: {
           strategy: "manual",
         },
         createEntity: {
-          referenceCreate: "goal",
+          enabled: false,
         },
       },
     },
