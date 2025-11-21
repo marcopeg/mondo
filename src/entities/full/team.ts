@@ -1,12 +1,7 @@
 import { task } from "./task";
 import { log } from "./log";
-import { fact } from "./fact";
-import { document } from "./document";
-import { idea } from "./idea";
 import { meeting } from "./meeting";
 import { project } from "./project";
-import { link } from "./link";
-import { goal } from "./goal";
 
 export const team = {
   name: "Teams",

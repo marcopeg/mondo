@@ -13,6 +13,20 @@ export const person = {
   icon: "user",
   template:
     "\ndate: {{date}}\n---\n",
+  list: {
+    columns: [
+      { type: "cover" },
+      { type: "title", prop: "show" },
+      { type: "link", prop: "company" },
+      { type: "link", prop: "role" },
+      { type: "link", prop: "team" },
+      { type: "link", prop: "location" },
+    ],
+    sort: {
+      column: "show",
+      direction: "asc",
+    },
+  },
   frontmatter: {
     location: {
       type: "entity",
@@ -54,24 +68,11 @@ export const person = {
       multiple: true,
     },
   },
-  list: {
-    columns: [
-      { type: "cover" },
-      { type: "title", prop: "show" },
-      { type: "link", prop: "company" },
-      { type: "link", prop: "role" },
-      { type: "link", prop: "team" },
-      { type: "link", prop: "location" },
-    ],
-    sort: {
-      column: "show",
-      direction: "asc",
-    },
-  },
+  linkAnythingOn: true,
   createRelated: [
     {
       key: "1o1s",
-      label: "1:1 Meeting",
+      label: "1:1",
       icon: meeting.icon,
       targetType: "meeting",
       create: {
@@ -82,62 +83,14 @@ export const person = {
       },
     },
     {
-      key: "fact",
-      label: "Fact",
-      icon: fact.icon,
-      targetType: "fact",
+      key: "meeting",
+      label: "Meeting",
+      icon: meeting.icon,
+      targetType: "meeting",
       create: {
-        title: "Untitled Fact for {@this.show}",
+        title: "{YY}-{MM}-{DD} {hh}.{mm} by {@this.show}",
         attributes: {
-          linksTo: ["{@this}"],
-        },
-      },
-    },
-    {
-      key: "log",
-      label: "Log",
-      icon: log.icon,
-      targetType: "log",
-      create: {
-        title: "{YY}-{MM}-{DD} {hh}.{mm} Log for {@this.show}",
-        attributes: {
-          linksTo: ["{@this}"],
-        },
-      },
-    },
-    {
-      key: "task",
-      label: "Task",
-      icon: task.icon,
-      targetType: "task",
-      create: {
-        title: "Untitled Task for {@this.show}",
-        attributes: {
-          linksTo: ["{@this}"],
-        },
-      },
-    },
-    {
-      key: "document",
-      label: "Document",
-      icon: document.icon,
-      targetType: "document",
-      create: {
-        title: "Untitled Document for {@this.show}",
-        attributes: {
-          linksTo: ["{@this}"],
-        },
-      },
-    },
-    {
-      key: "project",
-      label: "Project",
-      icon: project.icon,
-      targetType: "project",
-      create: {
-        title: "Untitled Project for {@this.show}",
-        attributes: {
-          linksTo: ["{@this}"],
+          participants: ["{@this}"],
         },
       },
     },
@@ -169,21 +122,10 @@ export const person = {
         },
       },
     },
-    {
-      key: "goal",
-      label: "Goal",
-      icon: goal.icon,
-      targetType: "goal",
-      create: {
-        title: "Untitled Goal for {@this.show}",
-        attributes: {
-          linksTo: ["{@this}"],
-        },
-      },
-    },
-    
-    
   ],
+  createAnythingOn: {
+    types: ["fact", "log", "idea", "document", "link", "goal", "task", "gear", "tool"]
+  },
   links: [
     {
       type: "backlinks",
@@ -409,11 +351,7 @@ export const person = {
           },
         ],
         createEntity: {
-          enabled: true,
-          title: "{YY}-{MM}-{DD} {hh}.{mm} Untitled Meeting",
-          attributes: {
-            participants: ["{@this}"],
-          },
+          referenceCreate: "meeting",
         },
       },
     },
@@ -479,23 +417,6 @@ export const person = {
     },
     {
       type: "backlinks",
-      key: "facts",
-      config: {
-        targetType: "fact",
-        properties: ["linksTo", "participants"],
-        title: fact.name,
-        icon: fact.icon,
-        visibility: "notEmpty",
-        sort: {
-          strategy: "manual",
-        },
-        createEntity: {
-          referenceCreate: "fact",
-        },
-      },
-    },
-    {
-      type: "backlinks",
       key: "logs",
       config: {
         targetType: "log",
@@ -510,23 +431,6 @@ export const person = {
     },
     {
       type: "backlinks",
-      key: "documents",
-      config: {
-        targetType: "document",
-        properties: ["linksTo", "participants"],
-        title: document.name,
-        icon: document.icon,
-        visibility: "notEmpty",
-        sort: {
-          strategy: "manual",
-        },
-        createEntity: {
-          referenceCreate: "document",
-        },
-      },
-    },
-    {
-      type: "backlinks",
       key: "tasks",
       config: {
         targetType: "task",
@@ -534,99 +438,8 @@ export const person = {
         title: task.name,
         icon: task.icon,
         visibility: "notEmpty",
-        columns: [
-          {
-            type: "show",
-          },
-          {
-            type: "attribute",
-            key: "status",
-          },
-          {
-            type: "date",
-            align: "right",
-          },
-        ],
-        sort: {
-          strategy: "manual",
-        },
         createEntity: {
           referenceCreate: "task",
-        },
-      },
-    },
-    {
-      type: "backlinks",
-      key: "link",
-      config: {
-        title: "Links",
-        icon: "layers",
-        visibility: "notEmpty",
-        find: {
-          query: [
-            {
-              steps: [
-                {
-                  notIn: {
-                    property: "linksTo",
-                    type: ["meeting", "log", "project", "person", "fact", "document", "task"],
-                  },
-                },
-              ],
-            },
-          ],
-        },
-        sort: {
-          strategy: "manual",
-        },
-        columns: [
-          {
-            type: "entityIcon",
-          },
-          {
-            type: "show",
-          },
-          {
-            type: "cover",
-            align: "right",
-          },
-          {
-            type: "date",
-            align: "right",
-          },
-        ],
-        createEntity: {
-          enabled: false,
-        },
-      },
-    },
-    {
-      type: "backlinks",
-      key: "goals",
-      config: {
-        targetType: "goal",
-        properties: ["linksTo"],
-        title: goal.name,
-        icon: goal.icon,
-        visibility: "notEmpty",
-        columns: [
-          {
-            type: "show",
-          },
-          {
-            type: "attribute",
-            key: "status",
-          },
-          {
-            type: "date",
-            align: "right",
-          },
-        ],
-        sort: {
-          strategy: "manual",
-        },
-        createEntity: {
-          referenceCreate: "goal",
         },
       },
     },
@@ -644,7 +457,7 @@ export const person = {
                 {
                   notIn: {
                     property: ["linksTo"],
-                    type: [],
+                    type: ["log", "task"],
                   },
                 },
               ],
