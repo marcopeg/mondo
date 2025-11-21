@@ -250,6 +250,110 @@ This configuration finds facts that:
 2. Are not the current note itself
 3. Have type "fact"
 
+## Link Anything On (Auto-generated Entity Links)
+
+The `linkAnythingOn` configuration provides a convenient way to automatically generate frontmatter field configurations for linking to any entity type without explicitly defining each one.
+
+### Configuration Options
+
+#### Disabled (default)
+
+```json
+{
+  "linkAnythingOn": false
+}
+```
+
+The "Add link" button is not visible. Only explicitly defined frontmatter fields are available.
+
+#### Enabled with Defaults
+
+```json
+{
+  "linkAnythingOn": true
+}
+```
+
+- Button is visible
+- Shows all entity types in alphabetical order (by singular name)
+- Links are added to the `linksTo` property by default
+- All values are stored as arrays
+
+#### Custom Property Key
+
+```json
+{
+  "linkAnythingOn": "customProperty"
+}
+```
+
+- Button is visible
+- Shows all entity types in alphabetical order
+- Links are added to the specified property (`customProperty`)
+
+#### Advanced Configuration
+
+```json
+{
+  "linkAnythingOn": {
+    "key": "relatedEntities",
+    "types": ["person", "company", "project"]
+  }
+}
+```
+
+Configuration options:
+- **`key`** (optional, string): Property name to populate. Defaults to `"linksTo"` if omitted.
+- **`types`** (optional, string[]): Array of entity types to show in the specified order. If omitted, all entity types are shown in alphabetical order.
+
+**Important**: 
+- Entity types in the `types` array must exist in your Mondo configuration
+- Non-existent types will trigger a console warning and be ignored in the UI
+- The icon and name for each type are retrieved from the entity configuration
+- Only entity types not already explicitly defined in `frontmatter` are auto-generated
+
+### Example: Company Entity
+
+```json
+{
+  "entities": {
+    "company": {
+      "type": "company",
+      "name": "Companies",
+      "icon": "building-2",
+      "linkAnythingOn": {
+        "types": ["person", "project", "meeting", "task"]
+      }
+    }
+  }
+}
+```
+
+This generates "Add link" options for Person, Project, Meeting, and Task in that order, all linking to the `linksTo` property (default).
+
+### Combining with Explicit Frontmatter Config
+
+You can combine `linkAnythingOn` with explicit `frontmatter` definitions:
+
+```json
+{
+  "frontmatter": {
+    "location": {
+      "type": "entity",
+      "title": "Location",
+      "filter": { "type": { "in": ["location"] } },
+      "multiple": false
+    }
+  },
+  "linkAnythingOn": true
+}
+```
+
+In this case:
+- The "location" field uses the explicit configuration (single value)
+- All other entity types are auto-generated with `multiple: true`
+- Auto-generated types link to `linksTo` property
+
 ## Implementation Details
 
 ### Component Architecture
@@ -261,15 +365,16 @@ This configuration finds facts that:
 ### Integration Points
 
 The AddProperty component is integrated into `EntityHeaderMondo` and appears when:
-1. The entity has a `frontmatter` configuration
-2. At least one field has type `"entity"` (picker-compatible)
+1. The entity has a `frontmatter` configuration, OR
+2. The entity has `linkAnythingOn` enabled
+3. At least one field has type `"entity"` (picker-compatible)
 
 ### Frontmatter Updates
 
 When an entity is selected:
 1. A wikilink is generated using Obsidian's `fileToLinktext` method
 2. The frontmatter is updated using `app.fileManager.processFrontMatter`
-3. Array handling respects the `multiple` configuration
+3. All values are stored as arrays (regardless of `multiple` setting)
 4. Duplicate values are automatically prevented
 
 ## Future Enhancements

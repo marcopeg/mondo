@@ -14,7 +14,10 @@ import { EntitySelectionModal } from "./EntitySelectionModal";
 
 type AddPropertyProps = {
   frontmatterConfig: MondoEntityFrontmatterConfig;
-  linkAnythingOn?: string | boolean;
+  linkAnythingOn?: string | boolean | {
+    key?: string;
+    types?: string[];
+  };
 };
 
 type PropertyOption = {
@@ -38,8 +41,16 @@ export const AddProperty = ({ frontmatterConfig, linkAnythingOn }: AddPropertyPr
       return frontmatterConfig;
     }
 
-    // Determine the target property key
-    const targetKey = typeof linkAnythingOn === 'string' ? linkAnythingOn : 'linksTo';
+    // Parse linkAnythingOn configuration
+    let targetKey = 'linksTo';
+    let allowedTypes: string[] | null = null;
+    
+    if (typeof linkAnythingOn === 'string') {
+      targetKey = linkAnythingOn;
+    } else if (typeof linkAnythingOn === 'object') {
+      targetKey = linkAnythingOn.key || 'linksTo';
+      allowedTypes = linkAnythingOn.types || null;
+    }
 
     // Get all defined entity types from explicit frontmatter config
     const explicitTypes = new Set<string>();
@@ -56,9 +67,38 @@ export const AddProperty = ({ frontmatterConfig, linkAnythingOn }: AddPropertyPr
     // Build expanded config
     const expanded: MondoEntityFrontmatterConfig = { ...frontmatterConfig };
 
-    // Add entries for all entity types not explicitly defined
-    Object.entries(MONDO_ENTITIES).forEach(([entityType, entityConfig]) => {
+    // Determine which entity types to add and in what order
+    let entityTypesToAdd: string[];
+    
+    if (allowedTypes && allowedTypes.length > 0) {
+      // Use specified types in the specified order
+      entityTypesToAdd = allowedTypes;
+      
+      // Warn about non-existent types
+      allowedTypes.forEach((type) => {
+        const typeLower = type.toLowerCase();
+        if (!MONDO_ENTITIES[typeLower as MondoEntityType]) {
+          console.warn(`[linkAnythingOn] Entity type "${type}" does not exist and will be ignored`);
+        }
+      });
+    } else {
+      // Use all entity types in alphabetical order
+      entityTypesToAdd = Object.keys(MONDO_ENTITIES).sort((a, b) => {
+        const nameA = MONDO_ENTITIES[a as MondoEntityType].singular || MONDO_ENTITIES[a as MondoEntityType].name;
+        const nameB = MONDO_ENTITIES[b as MondoEntityType].singular || MONDO_ENTITIES[b as MondoEntityType].name;
+        return nameA.localeCompare(nameB);
+      });
+    }
+
+    // Add entries for entity types
+    entityTypesToAdd.forEach((entityType) => {
       const typeLower = entityType.toLowerCase();
+      const entityConfig = MONDO_ENTITIES[typeLower as MondoEntityType];
+      
+      // Skip if entity type doesn't exist
+      if (!entityConfig) {
+        return;
+      }
       
       // Skip if already explicitly defined
       if (explicitTypes.has(typeLower)) {

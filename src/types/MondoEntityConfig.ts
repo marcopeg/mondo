@@ -275,10 +275,19 @@ export interface MondoEntityConfig<
   frontmatter?: MondoEntityFrontmatterConfig;
   /**
    * Optional: automatically add frontmatter entries for all entity types not explicitly
-   * defined in frontmatter config. Can be a string (property key to populate) or boolean
-   * (true defaults to "linksTo", false disables the feature).
+   * defined in frontmatter config.
+   * 
+   * - false (default): "Add link" button is not visible
+   * - true: Button visible, shows all entities alphabetically, links using "linksTo" property
+   * - string: Button visible, shows all entities alphabetically, links using the specified property
+   * - object: Button visible with custom configuration
+   *   - key (optional): Property key to populate (defaults to "linksTo")
+   *   - types (optional): Array of entity types to show in the specified order
    */
-  linkAnythingOn?: string | boolean;
+  linkAnythingOn?: string | boolean | {
+    key?: string;
+    types?: string[];
+  };
   /**
    * Optional: automatically add createRelated entries for all entity types not explicitly
    * defined in createRelated config. Can be a string (property key to populate) or boolean

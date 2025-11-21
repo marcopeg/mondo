@@ -122,6 +122,9 @@ When creating a linked entity via `createRelated`, the new note's frontmatter is
 
 If `attributes` redefines a key (e.g., `"status": "done"`), it overrides the template value.
 - `links` enumerates the panels rendered inside the injected entity sidebar (`src/events/inject-mondo-links.tsx`). Built-in `type: "backlinks"` uses the schema documented in `MondoEntityBacklinksLinkConfig`. Custom types map to React components registered in `src/containers/EntityLinks/EntityLinks.tsx`.
+- `frontmatter` defines dynamic properties that can be added to notes via UI picker. See [FRONTMATTER_CONFIG.md](./FRONTMATTER_CONFIG.md) for details.
+- `linkAnythingOn` automatically generates entity link options without explicit frontmatter configuration. Can be `false` (disabled), `true` (all entities with default "linksTo" property), a string (custom property name), or an object with `key` and `types` properties. See [FRONTMATTER_CONFIG.md](./FRONTMATTER_CONFIG.md#link-anything-on-auto-generated-entity-links) for full documentation.
+- `createAnythingOn` automatically generates "Add Related" options for entity types. Similar to `linkAnythingOn` but for creation actions.
 
 ### Validation and defaults
 

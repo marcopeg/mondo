@@ -70,8 +70,12 @@
     "company": {
       "type": "company",
       "name": "Companies",
-      "icon": "building",
-      "template": "---\nmondoType: company\nshow: {{title}}\n---\n",
+      "icon": "building-2",
+      "template": "---\nmondoType: company\nshow: {{title}}\ndate: {{date}}\n---\n",
+      "linkAnythingOn": {
+        "key": "linksTo",
+        "types": ["person", "project", "fact"]
+      },
       "frontmatter": {
         "people": {
           "type": "entity",

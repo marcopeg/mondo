@@ -22,7 +22,6 @@ export const person = {
           in: ["location"],
         },
       },
-      multiple: true,
     },
     company: {
       type: "entity",
@@ -32,6 +31,7 @@ export const person = {
           in: ["company"],
         },
       },
+      multiple: true,
     },
     team: {
       type: "entity",
@@ -41,6 +41,7 @@ export const person = {
           in: ["team"],
         },
       },
+      multiple: true
     },
     role: {
       type: "entity",

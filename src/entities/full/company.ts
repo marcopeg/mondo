@@ -16,19 +16,7 @@ export const company = {
   name: "Companies",
   singular: "Company",
   icon: "building-2",
-  template: "\ndate: {{date}}\nlocation: []\n---\n",
-  frontmatter: {
-    location: {
-      type: "entity",
-      title: "Location",
-      filter: {
-        type: {
-          in: ["location"],
-        },
-      },
-      multiple: true,
-    },
-  },
+  template: "\ndate: {{date}}\n---\n",
   list: {
     columns: [
       { type: "cover" },
@@ -36,6 +24,23 @@ export const company = {
       { type: "link", prop: "location" },
     ],
   },
+  linkAnythingOn: {
+    types: ["location"]
+  },
+  // frontmatter: {
+  //   location: {
+  //     type: "entity",
+  //     title: "Location",
+  //     icon: "map-pin",
+  //     multiple: true,
+  //     filter: {
+  //       type: {
+  //         in: ["location"],
+  //       },
+  //     },
+  //   },
+  // },
+  createAnythingOn: true,
   createRelated: [
     {
       key: "employee",

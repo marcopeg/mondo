@@ -14,6 +14,7 @@ export const goal = {
       direction: "desc",
     },
   },
+  // Enable linking to any entity type (all entities alphabetically, using "linksTo")
   linkAnythingOn: true,
   frontmatter: {
     company: {
