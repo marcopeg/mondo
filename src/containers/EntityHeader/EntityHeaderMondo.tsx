@@ -641,7 +641,7 @@ export const EntityHeaderMondo = ({ entityType }: EntityHeaderMondoProps) => {
 
             {hasCollapsedPanels ? (
               <div
-                className="flex flex-wrap gap-2"
+                className="flex w-full flex-wrap justify-end gap-2 pr-2 sm:justify-start sm:pr-0"
                 aria-label="Collapsed entity link panels"
                 data-entity-panels
               >
