@@ -12,7 +12,16 @@ export const team = {
   name: "Teams",
   singular: "Team",
   icon: "users",
-  template: "\ndate: {{date}}\ncompany: []\nlocation: []\n---\n",
+  template: "\ndate: {{date}}\n---\n",
+  list: {
+    columns: [
+      { type: "title", prop: "show" },
+      { type: "link", prop: "company" },
+      { type: "link", prop: "location" },
+      { type: "members" },
+    ],
+  },
+  linkAnythingOn: true,
   frontmatter: {
     company: {
       type: "entity",
@@ -59,66 +68,6 @@ export const team = {
       },
     },
     {
-      key: "task",
-      label: "Task",
-      icon: task.icon,
-      targetType: "task",
-      create: {
-        title: "New Task for {@this.show}",
-        attributes: {
-          linksTo: ["{@this}"],
-        },
-      },
-    },
-    {
-      key: "log",
-      label: "Log",
-      icon: log.icon,
-      targetType: "log",
-      create: {
-        title: "{YY}-{MM}-{DD} {hh}.{mm} Log for {@this.show}",
-        attributes: {
-          linksTo: ["{@this}"],
-        },
-      },
-    },
-    {
-      key: "fact",
-      label: "Fact",
-      icon: fact.icon,
-      targetType: "fact",
-      create: {
-        title: "New Fact for {@this.show}",
-        attributes: {
-          linksTo: ["{@this}"],
-        },
-      },
-    },
-    {
-      key: "document",
-      label: "Document",
-      icon: document.icon,
-      targetType: "document",
-      create: {
-        title: "Untitled Document for {@this.show}",
-        attributes: {
-          linksTo: ["{@this}"],
-        },
-      },
-    },
-    {
-      key: "idea",
-      label: "Idea",
-      icon: idea.icon,
-      targetType: "idea",
-      create: {
-        title: "New Idea for {@this.show}",
-        attributes: {
-          linksTo: ["{@this}"],
-        },
-      },
-    },
-    {
       key: "member",
       label: "Member",
       icon: 'user',
@@ -130,37 +79,9 @@ export const team = {
         },
       },
     },
-    {
-      key: "link",
-      label: "Link",
-      icon: link.icon,
-      create: {
-        title: "New Link for {@this.show}",
-        attributes: {
-          team: ["{@this}"],
-        },
-      },
-    },
-    {
-      key: "goal",
-      label: "Goal",
-      icon: goal.icon,
-      targetType: "goal",
-      create: {
-        title: "Untitled Goal for {@this.show}",
-        attributes: {
-          linksTo: ["{@this}"],
-        },
-      },
-    },
   ],
-  list: {
-    columns: [
-      { type: "title", prop: "show" },
-      { type: "link", prop: "company" },
-      { type: "link", prop: "location" },
-      { type: "members" },
-    ],
+  createAnythingOn: {
+    types: ["fact", "log", "idea", "document", "link", "goal", "task", "gear", "tool"]
   },
   links: [
     {
@@ -310,7 +231,7 @@ export const team = {
                 {
                   notIn: {
                     property: ["linksTo"],
-                    type: [],
+                    type: ["log", "task"],
                   },
                 },
               ],
