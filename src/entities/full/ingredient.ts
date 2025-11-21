@@ -9,7 +9,7 @@ export const ingredient = {
   name: "Ingredients",
   singular: "Ingredient",
   icon: "carrot",
-  template: "\ncategory: []\nsupplier: []\n---\n",
+  template: "\ndate: {{date}}\ncategory: []\nsupplier: []\n---\n",
   list: {
     columns: [
       { type: "cover" },
@@ -18,80 +18,8 @@ export const ingredient = {
       { type: "link", prop: "supplier" },
     ],
   },
-  createRelated: [
-    {
-      key: "task",
-      label: "Task",
-      icon: task.icon,
-      targetType: "task",
-      create: {
-        title: "New Task for {@this.show}",
-        attributes: {
-          linksTo: ["{@this}"],
-        },
-      },
-    },
-    {
-      key: "log",
-      label: "Log",
-      icon: log.icon,
-      targetType: "log",
-      create: {
-        title: "{YY}-{MM}-{DD} {hh}.{mm} Log for {@this.show}",
-        attributes: {
-          linksTo: ["{@this}"],
-        },
-      },
-    },
-    {
-      key: "fact",
-      label: "Fact",
-      icon: fact.icon,
-      targetType: "fact",
-      create: {
-        title: "New Fact for {@this.show}",
-        attributes: {
-          linksTo: ["{@this}"],
-        },
-      },
-    },
-    {
-      key: "document",
-      label: "Document",
-      icon: document.icon,
-      targetType: "document",
-      create: {
-        title: "Untitled Document for {@this.show}",
-        attributes: {
-          linksTo: ["{@this}"],
-        },
-      },
-    },
-    {
-      key: "idea",
-      label: "Idea",
-      icon: idea.icon,
-      targetType: "idea",
-      create: {
-        title: "New Idea for {@this.show}",
-        attributes: {
-          linksTo: ["{@this}"],
-        },
-      },
-    },
-    {
-      key: "link",
-      label: "Link",
-      icon: link.icon,
-      create: {
-        title: "New Link for {@this.show}",
-        attributes: {
-          type: "link",
-          ingredient: ["{@this}"],
-        },
-      },
-    },
-  ],
+  linkAnythingOn: { types: ['recipe']},
+  createAnythingOn: { types: ['recipe', 'ingredient', 'task', 'log', 'idea', 'fact', 'document', 'link']},
   links: [
     {
       type: "backlinks",
@@ -116,41 +44,45 @@ export const ingredient = {
     },
     {
       type: "backlinks",
-      key: "tasks",
+      key: "log",
       config: {
-        targetType: "task",
-        properties: ["linksTo"],
-        title: task.name,
-        icon: task.icon,
+        title: "Logs",
+        icon: "file-text",
+        visibility: "notEmpty",
+        find: {
+          query: [
+            {
+              steps: [
+                {
+                  in: {
+                    property: "linksTo",
+                    type: ["log"],
+                  },
+                },
+              ],
+            },
+          ],
+        },
+        sort: {
+          strategy: "date",
+          direction: "desc",
+        },
         columns: [
+          {
+            type: "entityIcon",
+          },
           {
             type: "show",
           },
           {
-            type: "attribute",
-            key: "status",
+            type: "cover",
+            align: "right",
           },
           {
             type: "date",
             align: "right",
           },
         ],
-        sort: {
-          strategy: "manual",
-        },
-        createEntity: {
-          referenceCreate: "task",
-        },
-      },
-    },
-    {
-      type: "backlinks",
-      key: "logs",
-      config: {
-        targetType: "log",
-        properties: ["linksTo"],
-        title: log.name,
-        icon: log.icon,
         createEntity: {
           referenceCreate: "log",
         },
@@ -158,34 +90,52 @@ export const ingredient = {
     },
     {
       type: "backlinks",
-      key: "linked_links",
+      key: "task",
       config: {
-        targetType: "link",
-        properties: ["ingredient"],
-        title: link.name,
-        icon: link.icon,
+        title: "Tasks",
+        icon: "check-square",
         visibility: "notEmpty",
+        find: {
+          query: [
+            {
+              steps: [
+                {
+                  in: {
+                    property: "linksTo",
+                    type: ["task"],
+                  },
+                },
+              ],
+            },
+          ],
+        },
+        sort: {
+          strategy: "manual",
+        },
         columns: [
+          {
+            type: "entityIcon",
+          },
           {
             type: "show",
           },
           {
-            type: "attribute",
-            key: "url",
+            type: "cover",
+            align: "right",
           },
           {
             type: "date",
             align: "right",
           },
         ],
-        sort: {
-          strategy: "manual",
+        createEntity: {
+          referenceCreate: "task",
         },
       },
     },
     {
       type: "backlinks",
-      key: "other-links",
+      key: "link",
       config: {
         title: "Links",
         icon: "layers",
@@ -196,23 +146,33 @@ export const ingredient = {
               steps: [
                 {
                   notIn: {
-                    property: ["linksTo"],
-                    type: [],
+                    property: "linksTo",
+                    type: ["log", "task"],
                   },
                 },
               ],
             },
           ],
         },
-        columns: [
-          { type: "entityIcon" },
-          { type: "show" },
-          { type: "cover", align: "right" },
-          { type: "date", align: "right" },
-        ],
         sort: {
           strategy: "manual",
         },
+        columns: [
+          {
+            type: "entityIcon",
+          },
+          {
+            type: "show",
+          },
+          {
+            type: "cover",
+            align: "right",
+          },
+          {
+            type: "date",
+            align: "right",
+          },
+        ],
         createEntity: {
           enabled: false,
         },

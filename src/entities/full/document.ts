@@ -10,99 +10,103 @@ export const document = {
       { type: "value", prop: "file" },
     ],
   },
+  linkAnythingOn: { types: ['company', 'team', 'role', 'person', 'project', 'link', 'article', 'document', 'fact', 'idea', 'log', 'task']},
+  createAnythingOn: { types: ['task', 'log', 'idea', 'fact', 'document', 'link', 'article', 'book']},
   links: [
     {
       type: "backlinks",
-      key: "facts",
+      key: "log",
       config: {
-        targetType: "fact",
-        properties: ["document"],
-        title: "Facts",
-        icon: "file-text",
-        sort: {
-          strategy: "manual",
-        },
-      },
-    },
-    {
-      type: "backlinks",
-      key: "logs",
-      config: {
-        targetType: "log",
-        properties: ["document"],
         title: "Logs",
-        icon: "clipboard-list",
-      },
-    },
-    {
-      type: "backlinks",
-      key: "documents",
-      config: {
-        targetType: "document",
-        properties: ["document"],
-        title: "Documents",
-        icon: "paperclip",
+        icon: "file-text",
+        visibility: "notEmpty",
+        find: {
+          query: [
+            {
+              steps: [
+                {
+                  in: {
+                    property: "linksTo",
+                    type: ["log"],
+                  },
+                },
+              ],
+            },
+          ],
+        },
         sort: {
-          strategy: "manual",
+          strategy: "date",
+          direction: "desc",
+        },
+        columns: [
+          {
+            type: "entityIcon",
+          },
+          {
+            type: "show",
+          },
+          {
+            type: "cover",
+            align: "right",
+          },
+          {
+            type: "date",
+            align: "right",
+          },
+        ],
+        createEntity: {
+          referenceCreate: "log",
         },
       },
     },
     {
       type: "backlinks",
-      key: "tasks",
+      key: "task",
       config: {
-        targetType: "task",
-        properties: ["document"],
         title: "Tasks",
         icon: "check-square",
-        columns: [
-          {
-            type: "show",
-          },
-          {
-            type: "attribute",
-            key: "status",
-          },
-          {
-            type: "date",
-            align: "right",
-          },
-        ],
-        sort: {
-          strategy: "manual",
-        },
-      },
-    },
-    {
-      type: "backlinks",
-      key: "linked_links",
-      config: {
-        targetType: "link",
-        properties: ["document"],
-        title: "Links",
-        icon: "link",
         visibility: "notEmpty",
+        find: {
+          query: [
+            {
+              steps: [
+                {
+                  in: {
+                    property: "linksTo",
+                    type: ["task"],
+                  },
+                },
+              ],
+            },
+          ],
+        },
+        sort: {
+          strategy: "manual",
+        },
         columns: [
+          {
+            type: "entityIcon",
+          },
           {
             type: "show",
           },
           {
-            type: "attribute",
-            key: "url",
+            type: "cover",
+            align: "right",
           },
           {
             type: "date",
             align: "right",
           },
         ],
-        sort: {
-          strategy: "manual",
+        createEntity: {
+          referenceCreate: "task",
         },
       },
     },
     {
       type: "backlinks",
-      key: "other-links",
+      key: "link",
       config: {
         title: "Links",
         icon: "layers",
@@ -113,23 +117,33 @@ export const document = {
               steps: [
                 {
                   notIn: {
-                    property: ["linksTo"],
-                    type: [],
+                    property: "linksTo",
+                    type: ["log", "task"],
                   },
                 },
               ],
             },
           ],
         },
-        columns: [
-          { type: "entityIcon" },
-          { type: "show" },
-          { type: "cover", align: "right" },
-          { type: "date", align: "right" },
-        ],
         sort: {
           strategy: "manual",
         },
+        columns: [
+          {
+            type: "entityIcon",
+          },
+          {
+            type: "show",
+          },
+          {
+            type: "cover",
+            align: "right",
+          },
+          {
+            type: "date",
+            align: "right",
+          },
+        ],
         createEntity: {
           enabled: false,
         },
