@@ -10,87 +10,7 @@ export const meeting = {
   name: "Meetings",
   singular: "Meeting",
   icon: "calendar-clock",
-  template: "\ndate: {{date}}\nparticipants: []\nlocation: []\n---\n",
-  createRelated: [
-    {
-      key: "task",
-      label: "Task",
-      icon: "check-square",
-      panelKey: "tasks",
-      targetType: "task",
-      create: {
-        attributes: {},
-      },
-    },
-    {
-      key: "log",
-      label: "Log",
-      icon: "file-plus",
-      panelKey: "logs",
-      targetType: "log",
-      create: {
-        attributes: {},
-      },
-    },
-    {
-      key: "fact",
-      label: "Fact",
-      icon: "bookmark-plus",
-      panelKey: "facts",
-      targetType: "fact",
-      create: {
-        attributes: {},
-      },
-    },
-    {
-      key: "document",
-      label: "Document",
-      icon: document.icon,
-      targetType: "document",
-      create: {
-        title: "Untitled Document for {@this.show}",
-        attributes: {
-          linksTo: ["{@this}"],
-        },
-      },
-    },
-    {
-      key: "idea",
-      label: "Idea",
-      icon: idea.icon,
-      targetType: "idea",
-      create: {
-        title: "New Idea for {@this.show}",
-        attributes: {
-          linksTo: ["{@this}"],
-        },
-      },
-    },
-    {
-      key: "link",
-      label: "Link",
-      icon: link.icon,
-      create: {
-        title: "New Link for {@this.show}",
-        attributes: {
-          type: "link",
-          meeting: ["{@this}"],
-        },
-      },
-    },
-    {
-      key: "goal",
-      label: "Goal",
-      icon: goal.icon,
-      targetType: "goal",
-      create: {
-        title: "Untitled Goal for {@this.show}",
-        attributes: {
-          linksTo: ["{@this}"],
-        },
-      },
-    },
-  ],
+  template: "\ndate: {{date}}\n---\n",
   list: {
     columns: [
       { type: "date", prop: "date_time", linkToNote: true },
@@ -102,13 +22,55 @@ export const meeting = {
       direction: "desc",
     },
   },
+  frontmatter: {
+    participants: {
+      type: "entity",
+      title: "Participant",
+      multiple: true,
+      filter: {
+        type: {
+          in: ["person"],
+        },
+      },
+    },
+    company: {
+      type: "entity",
+      title: "Company",
+      filter: {
+        type: {
+          in: ["company"],
+        },
+      }
+    },
+    team: {
+      type: "entity",
+      title: "Team",
+      multiple: true,
+      filter: {
+        type: {
+          in: ["team"],
+        },
+      }
+    },
+    location: {
+      type: "entity",
+      title: "Location",
+      filter: {
+        type: {
+          in: ["location"],
+        },
+      }
+    },
+  },
+  linkAnythingOn: { types: ['project', 'link', 'article', 'document', 'fact', 'idea', 'log', 'task']},
+  createAnythingOn: { types: ['task', 'log', 'idea', 'fact', 'document', 'link']},
   links: [
     {
       type: "backlinks",
       key: "tasks",
       config: {
         targetType: "task",
-        properties: ["meeting"],
+        properties: ["linksTo"],
         title: "Tasks",
         icon: task.icon,
         visibility: "notEmpty",
@@ -135,67 +97,10 @@ export const meeting = {
       key: "logs",
       config: {
         targetType: "log",
-        properties: ["meeting"],
+        properties: ["linksTo"],
         title: "Logs",
         icon: log.icon,
         visibility: "notEmpty",
-      },
-    },
-    {
-      type: "backlinks",
-      key: "linked_links",
-      config: {
-        targetType: "link",
-        properties: ["meeting"],
-        title: link.name,
-        icon: link.icon,
-        visibility: "notEmpty",
-        columns: [
-          {
-            type: "show",
-          },
-          {
-            type: "attribute",
-            key: "url",
-          },
-          {
-            type: "date",
-            align: "right",
-          },
-        ],
-        sort: {
-          strategy: "manual",
-        },
-      },
-    },
-    {
-      type: "backlinks",
-      key: "goals",
-      config: {
-        targetType: "goal",
-        properties: ["linksTo"],
-        title: goal.name,
-        icon: goal.icon,
-        visibility: "notEmpty",
-        columns: [
-          {
-            type: "show",
-          },
-          {
-            type: "attribute",
-            key: "status",
-          },
-          {
-            type: "date",
-            align: "right",
-          },
-        ],
-        sort: {
-          strategy: "manual",
-        },
-        createEntity: {
-          referenceCreate: "goal",
-        },
       },
     },
     {
@@ -212,7 +117,7 @@ export const meeting = {
                 {
                   notIn: {
                     property: ["linksTo"],
-                    type: [],
+                    type: ["task", "log"],
                   },
                 },
               ],

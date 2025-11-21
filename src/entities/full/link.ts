@@ -9,94 +9,50 @@ export const link = {
       { type: "date", prop: "date" },
     ],
   },
-  createRelated: [
-    {
-      key: "task",
-      label: "Task",
-      icon: "check-square",
-      create: {
-        title: "New Task for {@this.show}",
-        attributes: {
-          type: "task",
-          linksTo: ["{@this}"],
-        },
-      },
-    },
-    {
-      key: "log",
-      label: "Log",
-      icon: "file-clock",
-      create: {
-        title: "{YY}-{MM}-{DD} {hh}.{mm} Log for {@this.show}",
-        attributes: {
-          type: "log",
-          linksTo: ["{@this}"],
-        },
-      },
-    },
-    {
-      key: "fact",
-      label: "Fact",
-      icon: "bookmark",
-      create: {
-        title: "New Fact for {@this.show}",
-        attributes: {
-          type: "fact",
-          linksTo: ["{@this}"],
-        },
-      },
-    },
-    {
-      key: "document",
-      label: "Document",
-      icon: "file-text",
-      create: {
-        title: "Untitled Document for {@this.show}",
-        attributes: {
-          type: "document",
-          linksTo: ["{@this}"],
-        },
-      },
-    },
-  ],
+  linkAnythingOn: { types: ['company', 'team', 'role', 'person', 'project', 'link', 'article', 'document', 'fact', 'idea', 'log', 'task']},
+  createAnythingOn: { types: ['task', 'log', 'idea', 'fact', 'document', 'link', 'article', 'book']},
   links: [
     {
       type: "backlinks",
-      key: "tasks",
+      key: "log",
       config: {
-        targetType: "task",
-        properties: ["linksTo"],
-        title: "Tasks",
-        icon: "check-square",
+        title: "Logs",
+        icon: "file-text",
+        visibility: "notEmpty",
+        find: {
+          query: [
+            {
+              steps: [
+                {
+                  in: {
+                    property: "linksTo",
+                    type: ["log"],
+                  },
+                },
+              ],
+            },
+          ],
+        },
+        sort: {
+          strategy: "date",
+          direction: "desc",
+        },
         columns: [
+          {
+            type: "entityIcon",
+          },
           {
             type: "show",
           },
           {
-            type: "attribute",
-            key: "status",
+            type: "cover",
+            align: "right",
           },
           {
             type: "date",
             align: "right",
           },
         ],
-        sort: {
-          strategy: "manual",
-        },
-        createEntity: {
-          referenceCreate: "task",
-        },
-      },
-    },
-    {
-      type: "backlinks",
-      key: "logs",
-      config: {
-        targetType: "log",
-        properties: ["linksTo"],
-        title: "Logs",
-        icon: "file-clock",
         createEntity: {
           referenceCreate: "log",
         },
@@ -104,14 +60,59 @@ export const link = {
     },
     {
       type: "backlinks",
-      key: "related",
+      key: "task",
       config: {
-        title: "Related",
-        icon: "layers",
+        title: "Tasks",
+        icon: "check-square",
+        visibility: "notEmpty",
         find: {
           query: [
             {
-              description: "Notes referencing this link",
+              steps: [
+                {
+                  in: {
+                    property: "linksTo",
+                    type: ["task"],
+                  },
+                },
+              ],
+            },
+          ],
+        },
+        sort: {
+          strategy: "manual",
+        },
+        columns: [
+          {
+            type: "entityIcon",
+          },
+          {
+            type: "show",
+          },
+          {
+            type: "cover",
+            align: "right",
+          },
+          {
+            type: "date",
+            align: "right",
+          },
+        ],
+        createEntity: {
+          referenceCreate: "task",
+        },
+      },
+    },
+    {
+      type: "backlinks",
+      key: "link",
+      config: {
+        title: "Links",
+        icon: "layers",
+        visibility: "notEmpty",
+        find: {
+          query: [
+            {
               steps: [
                 {
                   notIn: {
@@ -123,15 +124,25 @@ export const link = {
             },
           ],
         },
-        columns: [
-          { type: "entityIcon" },
-          { type: "show" },
-          { type: "attribute", key: "type", label: "Type" },
-          { type: "date", align: "right" },
-        ],
         sort: {
           strategy: "manual",
         },
+        columns: [
+          {
+            type: "entityIcon",
+          },
+          {
+            type: "show",
+          },
+          {
+            type: "cover",
+            align: "right",
+          },
+          {
+            type: "date",
+            align: "right",
+          },
+        ],
         createEntity: {
           enabled: false,
         },
