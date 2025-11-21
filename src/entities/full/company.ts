@@ -10,6 +10,7 @@ import { document } from "./document";
 import { meeting } from "./meeting";
 import { link } from "./link";
 import { goal } from "./goal";
+import { role } from "./role";
 
 export const company = {
   name: "Companies",
@@ -25,6 +26,7 @@ export const company = {
           in: ["location"],
         },
       },
+      multiple: true,
     },
   },
   list: {

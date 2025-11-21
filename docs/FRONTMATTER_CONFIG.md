@@ -142,14 +142,17 @@ When an entity has frontmatter configuration with at least one `entity` type fie
 
 ### Multiple Values
 
+Values are **always stored as arrays** in the frontmatter, regardless of the `multiple` setting.
+
 When `multiple: true` is set:
-- The property value becomes an array
-- Multiple entities can be added without replacing existing values
+- Multiple entities can be added to the array
+- The "Add property" button remains available even after adding values
 - Duplicate values are prevented automatically
 
 When `multiple: false` or not specified:
-- Only one value is stored
-- Adding a new value replaces the existing one
+- Only one value can be added to the array
+- The "Add property" button is hidden once a value exists
+- Adding a value when one already exists is prevented by the UI
 
 ## Example Configurations
 
@@ -170,9 +173,10 @@ When `multiple: false` or not specified:
 }
 ```
 
-Result in frontmatter:
+Result in frontmatter (always an array):
 ```yaml
-company: "[[Acme Corp]]"
+company:
+  - "[[Acme Corp]]"
 ```
 
 ### Multiple People Links

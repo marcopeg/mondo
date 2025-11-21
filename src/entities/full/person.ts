@@ -12,7 +12,7 @@ export const person = {
   singular: "Person",
   icon: "user",
   template:
-    "\ndate: {{date}}\nlocation: []\ncompany: []\nrole: []\nteam: []\n---\n",
+    "\ndate: {{date}}\n---\n",
   frontmatter: {
     location: {
       type: "entity",
@@ -22,6 +22,7 @@ export const person = {
           in: ["location"],
         },
       },
+      multiple: true,
     },
     company: {
       type: "entity",

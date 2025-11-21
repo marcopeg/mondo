@@ -146,28 +146,23 @@ export const AddProperty = ({ frontmatterConfig, linkAnythingOn }: AddPropertyPr
             const propertyKey = selectedProperty.config.key || selectedProperty.key;
             const existing = (frontmatter as any)[propertyKey];
 
-            if (selectedProperty.config.multiple) {
-              // Multiple values allowed - add to array
-              if (Array.isArray(existing)) {
-                const has = existing.some(
-                  (e) => String(e).trim() === wikiLink
-                );
-                if (!has) {
-                  existing.push(wikiLink);
-                }
-              } else if (existing === undefined || existing === null) {
-                (frontmatter as any)[propertyKey] = [wikiLink];
-              } else {
-                const val = String(existing).trim();
-                const arr = val ? [val] : [];
-                if (!arr.includes(wikiLink)) {
-                  arr.push(wikiLink);
-                }
-                (frontmatter as any)[propertyKey] = arr;
+            // Always store values as arrays
+            if (Array.isArray(existing)) {
+              const has = existing.some(
+                (e) => String(e).trim() === wikiLink
+              );
+              if (!has) {
+                existing.push(wikiLink);
               }
+            } else if (existing === undefined || existing === null) {
+              (frontmatter as any)[propertyKey] = [wikiLink];
             } else {
-              // Single value - replace
-              (frontmatter as any)[propertyKey] = wikiLink;
+              const val = String(existing).trim();
+              const arr = val ? [val] : [];
+              if (!arr.includes(wikiLink)) {
+                arr.push(wikiLink);
+              }
+              (frontmatter as any)[propertyKey] = arr;
             }
           }
         );

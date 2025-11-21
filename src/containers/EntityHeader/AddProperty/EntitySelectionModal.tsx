@@ -229,18 +229,15 @@ class EntityPickerModal extends Modal {
       const wiki = `[[${linktext}]]`;
       await this.app.fileManager.processFrontMatter(this.hostFile.file, (fm) => {
         const key = this.propertyKey;
-        const isMultiple = !!this.config.multiple;
         const current = fm[key];
-        if (isMultiple) {
-          if (Array.isArray(current)) {
-            if (!current.includes(wiki)) current.push(wiki);
-          } else if (typeof current === "string" && current.trim()) {
-            fm[key] = current === wiki ? current : [current, wiki];
-          } else {
-            fm[key] = [wiki];
-          }
+        
+        // Always store values as arrays
+        if (Array.isArray(current)) {
+          if (!current.includes(wiki)) current.push(wiki);
+        } else if (typeof current === "string" && current.trim()) {
+          fm[key] = current === wiki ? [current] : [current, wiki];
         } else {
-          fm[key] = wiki; // single value override
+          fm[key] = [wiki];
         }
       });
 
