@@ -11,7 +11,49 @@ export const project = {
   list: {
     columns: [{ type: "title", prop: "show" }],
   },
-  linkAnythingOn: { types: ['company', 'team', 'role', 'person', 'project', 'link', 'article', 'document', 'fact', 'idea', 'log', 'task']},
+  frontmatter: {
+    company: {
+      type: "entity",
+      title: "Link to a Company",
+      filter: {
+        type: {
+          in: ["company"],
+        },
+      },
+      multiple: true,
+    },
+    team: {
+      type: "entity",
+      title: "Link to a Team",
+      filter: {
+        type: {
+          in: ["team"],
+        },
+      },
+      multiple: true,
+    },
+    role: {
+      type: "entity",
+      title: "Link to a Role",
+      filter: {
+        type: {
+          in: ["role"],
+        },
+      },
+      multiple: true,
+    },
+    location: {
+      type: "entity",
+      title: "Link to a Location",
+      filter: {
+        type: {
+          in: ["location"],
+        },
+      },
+      multiple: true,
+    },
+  },
+  linkAnythingOn: { types: ['person', 'project', 'link', 'article', 'document', 'fact', 'idea', 'log', 'task']},
    createRelated: [
       {
         key: "log",
