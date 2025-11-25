@@ -190,7 +190,19 @@ class EntityPickerModal extends Modal {
         }
       }
 
-      // For each property defined in target template that also exists in host frontmatter,
+      // Also check the frontmatter schema of the target entity for additional properties
+      // This covers properties like "company" which may not be in the template string but
+      // are defined in the entity's frontmatter configuration
+      const targetFrontmatterSchema = (targetEntity as { frontmatter?: Record<string, unknown> })?.frontmatter;
+      if (targetFrontmatterSchema && typeof targetFrontmatterSchema === "object") {
+        Object.keys(targetFrontmatterSchema).forEach((propKey) => {
+          if (propKey !== "date" && propKey !== "datetime") {
+            targetProperties.add(propKey);
+          }
+        });
+      }
+
+      // For each property defined in target template/schema that also exists in host frontmatter,
       // copy the value if it's non-empty
       targetProperties.forEach((propKey) => {
         const hostValue = hostFrontmatter[propKey];
