@@ -7,8 +7,8 @@ import { Typography } from "@/components/ui/Typography";
 import { Icon } from "@/components/ui/Icon";
 import { ReadableDate } from "@/components/ui/ReadableDate";
 import { AUDIO_FILE_EXTENSIONS } from "@/utils/AudioTranscriptionManager";
-import type { App, EventRef, TAbstractFile } from "obsidian";
-import { TFile } from "obsidian";
+import type { App, EventRef, TAbstractFile, FileSystemAdapter } from "obsidian";
+import { Modal, Notice, TFile } from "obsidian";
 
 const isAudioFile = (file: TFile) =>
   AUDIO_FILE_EXTENSIONS.has(file.extension.toLowerCase());
@@ -106,6 +106,106 @@ const openFileInWorkspace = async (app: App, file: TFile) => {
     console.error("Mondo Audio Logs: failed to open file", error);
   }
 };
+
+class ExportTodosModal extends Modal {
+  private paths: string[];
+
+  constructor(app: App, paths: string[]) {
+    super(app);
+    this.paths = paths;
+  }
+
+  onOpen() {
+    this.modalEl.addClass("mondo-export-todos-modal");
+    this.titleEl.setText("Audio Files Without Transcription");
+
+    this.modalEl.style.maxWidth = "min(700px, 90vw)";
+    this.contentEl.style.maxHeight = "min(70vh, 600px)";
+    this.contentEl.style.display = "flex";
+    this.contentEl.style.flexDirection = "column";
+
+    if (this.paths.length === 0) {
+      const emptyEl = this.contentEl.createEl("p", {
+        text: "All audio files have transcriptions!",
+        cls: "mondo-export-todos-empty",
+      });
+      emptyEl.style.padding = "1rem";
+      emptyEl.style.textAlign = "center";
+      emptyEl.style.color = "var(--text-muted)";
+      return;
+    }
+
+    const countEl = this.contentEl.createEl("p", {
+      text: `${this.paths.length} audio file(s) without transcription:`,
+      cls: "mondo-export-todos-count",
+    });
+    countEl.style.marginBottom = "1rem";
+    countEl.style.color = "var(--text-muted)";
+
+    const listContainer = this.contentEl.createDiv({
+      cls: "mondo-export-todos-list",
+    });
+    listContainer.style.flex = "1";
+    listContainer.style.overflow = "auto";
+    listContainer.style.border = "1px solid var(--background-modifier-border)";
+    listContainer.style.borderRadius = "4px";
+    listContainer.style.backgroundColor = "var(--background-primary)";
+    listContainer.style.padding = "0.5rem";
+    listContainer.style.marginBottom = "1rem";
+    listContainer.style.fontFamily = "monospace";
+    listContainer.style.fontSize = "12px";
+    listContainer.style.whiteSpace = "pre-wrap";
+    listContainer.style.wordBreak = "break-all";
+
+    listContainer.setText(this.paths.join("\n"));
+
+    const buttonsContainer = this.contentEl.createDiv({
+      cls: "mondo-export-todos-buttons",
+    });
+    buttonsContainer.style.display = "flex";
+    buttonsContainer.style.gap = "0.5rem";
+    buttonsContainer.style.justifyContent = "flex-end";
+    buttonsContainer.style.flexShrink = "0";
+
+    const copyBtn = buttonsContainer.createEl("button", {
+      text: "Copy to Clipboard",
+      cls: "mod-cta",
+    });
+    copyBtn.style.padding = "0.5rem 1rem";
+    copyBtn.addEventListener("click", () => {
+      navigator.clipboard.writeText(this.paths.join("\n")).then(
+        () => {
+          new Notice("Copied to clipboard!");
+        },
+        () => {
+          new Notice("Failed to copy to clipboard");
+        }
+      );
+    });
+
+    const saveBtn = buttonsContainer.createEl("button", {
+      text: "Save as TXT",
+    });
+    saveBtn.style.padding = "0.5rem 1rem";
+    saveBtn.addEventListener("click", () => {
+      const content = this.paths.join("\n");
+      const blob = new Blob([content], { type: "text/plain" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "audio-todos.txt";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      new Notice("File saved!");
+    });
+  }
+
+  onClose() {
+    this.contentEl.empty();
+  }
+}
 
 type AudioMetadata = {
   transcription: {
@@ -898,6 +998,18 @@ export const AudioLogsView = ({ plugin }: AudioLogsViewProps) => {
     [app.vault, handleStopPlayback, manager]
   );
 
+  const handleExportTodos = useCallback(() => {
+    const adapter = app.vault.adapter as FileSystemAdapter;
+    const basePath = adapter.getBasePath();
+    
+    const untranscribedPaths = audioFiles
+      .filter((file) => !transcriptionsMap.has(file.path) && !voiceoverSourcesMap.has(file.path))
+      .map((file) => `${basePath}/${file.path}`);
+
+    const modal = new ExportTodosModal(app, untranscribedPaths);
+    modal.open();
+  }, [app, audioFiles, transcriptionsMap, voiceoverSourcesMap]);
+
   const totals = useMemo(() => {
     const totalSize = audioFiles.reduce((sum, file) => sum + file.stat.size, 0);
     return {
@@ -988,8 +1100,15 @@ export const AudioLogsView = ({ plugin }: AudioLogsViewProps) => {
 
   return (
     <div className="p-4 space-y-6">
-      <div className="border-b border-[var(--background-modifier-border)] pb-3">
+      <div className="flex items-center justify-between border-b border-[var(--background-modifier-border)] pb-3">
         <Typography variant="h1">Audio Notes</Typography>
+        <Button
+          icon="list-todo"
+          onClick={handleExportTodos}
+          aria-label="Export audio files without transcription"
+        >
+          Export TODOs
+        </Button>
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2">
