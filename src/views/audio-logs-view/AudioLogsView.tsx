@@ -7,7 +7,7 @@ import { Typography } from "@/components/ui/Typography";
 import { Icon } from "@/components/ui/Icon";
 import { ReadableDate } from "@/components/ui/ReadableDate";
 import { AUDIO_FILE_EXTENSIONS } from "@/utils/AudioTranscriptionManager";
-import type { App, EventRef, TAbstractFile, FileSystemAdapter } from "obsidian";
+import type { App, EventRef, TAbstractFile } from "obsidian";
 import { Modal, Notice, TFile } from "obsidian";
 
 const isAudioFile = (file: TFile) =>
@@ -999,12 +999,17 @@ export const AudioLogsView = ({ plugin }: AudioLogsViewProps) => {
   );
 
   const handleExportTodos = useCallback(() => {
-    const adapter = app.vault.adapter as FileSystemAdapter;
-    const basePath = adapter.getBasePath();
+    const adapter = app.vault.adapter;
+    const basePath = "getBasePath" in adapter && typeof adapter.getBasePath === "function"
+      ? adapter.getBasePath()
+      : "";
     
     const untranscribedPaths = audioFiles
       .filter((file) => !transcriptionsMap.has(file.path) && !voiceoverSourcesMap.has(file.path))
-      .map((file) => `${basePath}/${file.path}`);
+      .map((file) => {
+        const filePath = file.path.replace(/^\/+/, "");
+        return basePath ? `${basePath}/${filePath}` : filePath;
+      });
 
     const modal = new ExportTodosModal(app, untranscribedPaths);
     modal.open();
