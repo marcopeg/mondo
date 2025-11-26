@@ -7,7 +7,7 @@ import { getEntityDisplayName } from "@/utils/getEntityDisplayName";
 import createEntityForEntity from "@/utils/createEntityForEntity";
 import { MONDO_ENTITIES } from "@/entities";
 import type { TCachedFile } from "@/types/TCachedFile";
-import type { MondoEntityFrontmatterFieldConfig } from "@/types/MondoEntityConfig";
+import type { MondoEntityFrontmatterFieldConfig, MondoEntityFrontmatterConfig } from "@/types/MondoEntityConfig";
 
 type EntitySelectionModalProps = {
   isOpen: boolean;
@@ -180,17 +180,36 @@ class EntityPickerModal extends Modal {
       const targetTemplate = targetEntity?.template || "";
       const targetProperties = new Set<string>();
       
+      // Properties to exclude from auto-copying (system properties)
+      const excludedProperties = new Set(["date", "datetime"]);
+      
+      // Helper to add property if not excluded
+      const addPropertyIfValid = (propKey: string) => {
+        const trimmed = propKey.trim();
+        if (trimmed && !excludedProperties.has(trimmed)) {
+          targetProperties.add(trimmed);
+        }
+      };
+      
       // Extract properties from template (format: "propertyName: value\n")
       // Match lines before the "---" separator that contain property definitions
       const beforeSeparator = targetTemplate.split("---")[0] || "";
       const propertyMatches = beforeSeparator.matchAll(/^([a-zA-Z_][a-zA-Z0-9_-]*)\s*:/gm);
       for (const match of propertyMatches) {
-        if (match[1] && match[1] !== "date" && match[1] !== "datetime") {
-          targetProperties.add(match[1].trim());
+        if (match[1]) {
+          addPropertyIfValid(match[1]);
         }
       }
 
-      // For each property defined in target template that also exists in host frontmatter,
+      // Also check the frontmatter schema of the target entity for additional properties
+      // This covers properties like "company" which may not be in the template string but
+      // are defined in the entity's frontmatter configuration
+      const targetFrontmatterSchema = targetEntity?.frontmatter as MondoEntityFrontmatterConfig | undefined;
+      if (targetFrontmatterSchema && typeof targetFrontmatterSchema === "object") {
+        Object.keys(targetFrontmatterSchema).forEach(addPropertyIfValid);
+      }
+
+      // For each property defined in target template/schema that also exists in host frontmatter,
       // copy the value if it's non-empty
       targetProperties.forEach((propKey) => {
         const hostValue = hostFrontmatter[propKey];
