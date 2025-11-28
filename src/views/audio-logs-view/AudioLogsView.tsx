@@ -1146,10 +1146,7 @@ export const AudioLogsView = ({ plugin }: AudioLogsViewProps) => {
                 Title
               </Table.HeadCell>
               <Table.HeadCell className="w-48 p-3 text-left text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">
-                Date
-              </Table.HeadCell>
-              <Table.HeadCell className="w-24 p-3 text-left text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">
-                Size
+                Date & Size
               </Table.HeadCell>
               <Table.HeadCell className="p-3 text-left text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">
                 Transcription
@@ -1164,7 +1161,7 @@ export const AudioLogsView = ({ plugin }: AudioLogsViewProps) => {
               <tr>
                 <Table.Cell
                   className="p-6 text-center text-[var(--text-muted)]"
-                  colSpan={6}
+                  colSpan={5}
                 >
                   {isLoading
                     ? "Loading audio notes..."
@@ -1237,11 +1234,15 @@ export const AudioLogsView = ({ plugin }: AudioLogsViewProps) => {
                         </div>
                       </div>
                     </Table.Cell>
-                    <Table.Cell className="p-3 align-middle text-[var(--text-muted)]">
-                      <ReadableDate value={row.dateValue} fallback="--" />
-                    </Table.Cell>
-                    <Table.Cell className="p-3 align-middle text-[var(--text-normal)]">
-                      {row.sizeLabel}
+                    <Table.Cell className="p-3 align-middle">
+                      <div className="flex flex-col gap-1">
+                        <span className="text-[var(--text-muted)]">
+                          <ReadableDate value={row.dateValue} fallback="--" />
+                        </span>
+                        <span className="text-sm text-[var(--text-normal)]">
+                          {row.sizeLabel}
+                        </span>
+                      </div>
                     </Table.Cell>
                     <Table.Cell className="p-3 align-middle">
                       {row.hasTranscription || row.hasVoiceoverSource ? (
