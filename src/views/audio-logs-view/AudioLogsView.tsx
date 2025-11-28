@@ -1137,25 +1137,6 @@ export const AudioLogsView = ({ plugin }: AudioLogsViewProps) => {
 
       <div className="hidden overflow-hidden rounded-lg border border-[var(--background-modifier-border)] sm:block">
         <Table>
-          <thead className="bg-[var(--background-secondary-alt, var(--background-secondary))]">
-            <tr>
-              <Table.HeadCell className="w-12 p-3 text-left text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">
-                Play
-              </Table.HeadCell>
-              <Table.HeadCell className="p-3 text-left text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">
-                Title
-              </Table.HeadCell>
-              <Table.HeadCell className="w-48 p-3 text-left text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">
-                Date & Size
-              </Table.HeadCell>
-              <Table.HeadCell className="p-3 text-left text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">
-                Transcription
-              </Table.HeadCell>
-              <Table.HeadCell className="w-16 p-3 text-right text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">
-                Actions
-              </Table.HeadCell>
-            </tr>
-          </thead>
           <tbody>
             {rows.length === 0 ? (
               <tr>
