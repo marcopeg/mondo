@@ -1198,7 +1198,7 @@ export const AudioLogsView = ({ plugin }: AudioLogsViewProps) => {
               <tr>
                 <Table.Cell
                   className="p-6 text-center text-[var(--text-muted)]"
-                  colSpan={6}
+                  colSpan={5}
                 >
                   {isLoading
                     ? "Loading audio notes..."
@@ -1224,7 +1224,7 @@ export const AudioLogsView = ({ plugin }: AudioLogsViewProps) => {
 
                 return (
                   <Table.Row key={row.file.path} className="border-t border-[var(--background-modifier-border)]">
-                    <Table.Cell className="p-3">
+                    <Table.Cell className="w-12 p-3">
                       <button
                         type="button"
                         className="flex h-8 w-8 items-center justify-center rounded-full border border-[var(--background-modifier-border)] bg-[var(--background-secondary)] text-[var(--text-normal)] hover:bg-[var(--background-secondary-alt, var(--background-secondary))]"
@@ -1235,7 +1235,7 @@ export const AudioLogsView = ({ plugin }: AudioLogsViewProps) => {
                       </button>
                     </Table.Cell>
                     <Table.Cell className="p-3 align-middle">
-                      <div className="flex w-full max-w-[28rem] min-w-0 flex-col items-start gap-1">
+                      <div className="flex w-full min-w-0 flex-col items-start gap-1">
                         <Button
                           variant="link"
                           tone="info"
@@ -1271,7 +1271,7 @@ export const AudioLogsView = ({ plugin }: AudioLogsViewProps) => {
                         </div>
                       </div>
                     </Table.Cell>
-                    <Table.Cell className="p-3 align-middle">
+                    <Table.Cell className="w-32 p-3 align-middle">
                       <div className="flex flex-col gap-1">
                         <span className="text-[var(--text-muted)]">
                           <ReadableDate value={row.dateValue} fallback="--" />
@@ -1282,13 +1282,13 @@ export const AudioLogsView = ({ plugin }: AudioLogsViewProps) => {
                       </div>
                     </Table.Cell>
                     <Table.Cell className="p-3 align-middle">
-                      {row.referencingNotes.length > 0 ? (
-                        <div className="flex flex-col gap-1">
-                          {row.referencingNotes.map((note) => (
+                      <div className="flex flex-col gap-1">
+                        {row.referencingNotes.map((note) => (
+                          <div key={note.path} className="flex items-center gap-2">
+                            <span>🔗</span>
                             <a
-                              key={note.path}
                               href="#"
-                              className="block max-w-[16rem] truncate text-sm text-[var(--interactive-accent)] hover:underline"
+                              className="truncate text-sm text-[var(--interactive-accent)] hover:underline"
                               onClick={(event) => {
                                 event.preventDefault();
                                 void openFileInWorkspace(app, note);
@@ -1297,87 +1297,80 @@ export const AudioLogsView = ({ plugin }: AudioLogsViewProps) => {
                             >
                               {note.basename}
                             </a>
-                          ))}
-                        </div>
-                      ) : (
-                        <span className="text-sm text-[var(--text-muted)]">—</span>
-                      )}
-                    </Table.Cell>
-                    <Table.Cell className="p-3 align-middle">
-                      {row.hasTranscription || row.hasVoiceoverSource ? (
-                        <div className="flex flex-col gap-3">
-                          {row.hasTranscription ? (
-                            <div className="flex flex-col gap-1">
-                              <span className="text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">
-                                Transcription
-                              </span>
-                              <a
-                                href="#"
-                                className="block max-w-[22rem] truncate text-[var(--interactive-accent)] hover:underline"
-                                onClick={(event) => {
-                                  event.preventDefault();
-                                  if (row.transcription.file) {
-                                    void openFileInWorkspace(app, row.transcription.file);
-                                  }
-                                }}
-                                title={
-                                  row.transcriptionTooltip ??
-                                  row.transcriptionLabel ??
-                                  "Open transcription"
+                          </div>
+                        ))}
+                        {row.hasTranscription ? (
+                          <div className="flex items-center gap-2">
+                            <span>📝</span>
+                            <a
+                              href="#"
+                              className="truncate text-sm text-[var(--interactive-accent)] hover:underline"
+                              onClick={(event) => {
+                                event.preventDefault();
+                                if (row.transcription.file) {
+                                  void openFileInWorkspace(app, row.transcription.file);
                                 }
-                              >
-                                {row.transcriptionLabel ??
-                                  row.transcription.file?.basename ??
-                                  "Open transcription"}
-                              </a>
-                            </div>
-                          ) : null}
-                          {row.hasVoiceoverSource ? (
-                            <div className="flex flex-col gap-1">
-                              <span className="text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">
-                                Voiceover Source
-                              </span>
-                              <a
-                                href="#"
-                                className="block max-w-[22rem] truncate text-[var(--interactive-accent)] hover:underline"
-                                onClick={(event) => {
-                                  event.preventDefault();
-                                  if (row.voiceoverSource.file) {
-                                    void openFileInWorkspace(app, row.voiceoverSource.file);
-                                  }
-                                }}
-                                title={
-                                  row.voiceoverTooltip ??
-                                  row.voiceoverLabel ??
-                                  "Open voiceover source"
+                              }}
+                              title={
+                                row.transcriptionTooltip ??
+                                row.transcriptionLabel ??
+                                "Open transcription"
+                              }
+                            >
+                              {row.transcriptionLabel ??
+                                row.transcription.file?.basename ??
+                                "Transcription"}
+                            </a>
+                          </div>
+                        ) : null}
+                        {row.hasVoiceoverSource ? (
+                          <div className="flex items-center gap-2">
+                            <span>🎙️</span>
+                            <a
+                              href="#"
+                              className="truncate text-sm text-[var(--interactive-accent)] hover:underline"
+                              onClick={(event) => {
+                                event.preventDefault();
+                                if (row.voiceoverSource.file) {
+                                  void openFileInWorkspace(app, row.voiceoverSource.file);
                                 }
-                              >
-                                {row.voiceoverLabel ??
-                                  row.voiceoverSource.file?.basename ??
-                                  "Open voiceover source"}
-                              </a>
-                            </div>
-                          ) : null}
-                        </div>
-                      ) : canShowTranscribeButton ? (
-                        <Button
-                          icon="wand-2"
-                          className="mod-cta"
-                          disabled={row.isTranscribing}
-                          onClick={() => handleTranscribe(row.file)}
-                        >
-                          {transcribeLabel}
-                        </Button>
-                      ) : (
-                        <div className="flex items-center gap-2 text-[var(--text-muted)]">
-                          <Icon name="clock" className="h-4 w-4" />
-                          <span className="text-sm">
-                            {showResolvingState ? "Resolving..." : "Preparing..."}
-                          </span>
-                        </div>
-                      )}
+                              }}
+                              title={
+                                row.voiceoverTooltip ??
+                                row.voiceoverLabel ??
+                                "Open voiceover source"
+                              }
+                            >
+                              {row.voiceoverLabel ??
+                                row.voiceoverSource.file?.basename ??
+                                "Voiceover Source"}
+                            </a>
+                          </div>
+                        ) : null}
+                        {!row.hasTranscription && canShowTranscribeButton ? (
+                          <Button
+                            icon="wand-2"
+                            className="mod-cta"
+                            disabled={row.isTranscribing}
+                            onClick={() => handleTranscribe(row.file)}
+                          >
+                            {transcribeLabel}
+                          </Button>
+                        ) : null}
+                        {!row.hasTranscription &&
+                        !row.hasVoiceoverSource &&
+                        row.referencingNotes.length === 0 &&
+                        !canShowTranscribeButton ? (
+                          <div className="flex items-center gap-2 text-[var(--text-muted)]">
+                            <Icon name="clock" className="h-4 w-4" />
+                            <span className="text-sm">
+                              {showResolvingState ? "Resolving..." : "Preparing..."}
+                            </span>
+                          </div>
+                        ) : null}
+                      </div>
                     </Table.Cell>
-                    <Table.Cell className="p-3 text-right align-middle">
+                    <Table.Cell className="w-12 p-3 text-right align-middle">
                       <Button
                         icon="trash"
                         variant="link"
@@ -1474,70 +1467,15 @@ export const AudioLogsView = ({ plugin }: AudioLogsViewProps) => {
                     }}
                   />
                 </div>
-                <div className="mt-4 space-y-3">
-                  {row.hasTranscription ? (
+                {(row.hasTranscription || row.hasVoiceoverSource || row.referencingNotes.length > 0 || canShowTranscribeButton || showResolvingState) ? (
+                  <div className="mt-4">
                     <div className="flex flex-col gap-1">
-                      <span className="text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">
-                        Transcription
-                      </span>
-                      <a
-                        href="#"
-                        className="block truncate text-[var(--interactive-accent)] hover:underline"
-                        onClick={(event) => {
-                          event.preventDefault();
-                          if (row.transcription.file) {
-                            void openFileInWorkspace(app, row.transcription.file);
-                          }
-                        }}
-                        title={
-                          row.transcriptionTooltip ??
-                          row.transcriptionLabel ??
-                          "Open transcription"
-                        }
-                      >
-                        {row.transcriptionLabel ??
-                          row.transcription.file?.basename ??
-                          "Open transcription"}
-                      </a>
-                    </div>
-                  ) : null}
-                  {row.hasVoiceoverSource ? (
-                    <div className="flex flex-col gap-1">
-                      <span className="text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">
-                        Voiceover Source
-                      </span>
-                      <a
-                        href="#"
-                        className="block truncate text-[var(--interactive-accent)] hover:underline"
-                        onClick={(event) => {
-                          event.preventDefault();
-                          if (row.voiceoverSource.file) {
-                            void openFileInWorkspace(app, row.voiceoverSource.file);
-                          }
-                        }}
-                        title={
-                          row.voiceoverTooltip ??
-                          row.voiceoverLabel ??
-                          "Open voiceover source"
-                        }
-                      >
-                        {row.voiceoverLabel ??
-                          row.voiceoverSource.file?.basename ??
-                          "Open voiceover source"}
-                      </a>
-                    </div>
-                  ) : null}
-                  {row.referencingNotes.length > 0 ? (
-                    <div className="flex flex-col gap-1">
-                      <span className="text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">
-                        Referenced In
-                      </span>
-                      <div className="flex flex-col gap-1">
-                        {row.referencingNotes.map((note) => (
+                      {row.referencingNotes.map((note) => (
+                        <div key={note.path} className="flex items-center gap-2">
+                          <span>🔗</span>
                           <a
-                            key={note.path}
                             href="#"
-                            className="block truncate text-[var(--interactive-accent)] hover:underline"
+                            className="truncate text-[var(--interactive-accent)] hover:underline"
                             onClick={(event) => {
                               event.preventDefault();
                               void openFileInWorkspace(app, note);
@@ -1546,31 +1484,80 @@ export const AudioLogsView = ({ plugin }: AudioLogsViewProps) => {
                           >
                             {note.basename}
                           </a>
-                        ))}
-                      </div>
+                        </div>
+                      ))}
+                      {row.hasTranscription ? (
+                        <div className="flex items-center gap-2">
+                          <span>📝</span>
+                          <a
+                            href="#"
+                            className="truncate text-[var(--interactive-accent)] hover:underline"
+                            onClick={(event) => {
+                              event.preventDefault();
+                              if (row.transcription.file) {
+                                void openFileInWorkspace(app, row.transcription.file);
+                              }
+                            }}
+                            title={
+                              row.transcriptionTooltip ??
+                              row.transcriptionLabel ??
+                              "Open transcription"
+                            }
+                          >
+                            {row.transcriptionLabel ??
+                              row.transcription.file?.basename ??
+                              "Transcription"}
+                          </a>
+                        </div>
+                      ) : null}
+                      {row.hasVoiceoverSource ? (
+                        <div className="flex items-center gap-2">
+                          <span>🎙️</span>
+                          <a
+                            href="#"
+                            className="truncate text-[var(--interactive-accent)] hover:underline"
+                            onClick={(event) => {
+                              event.preventDefault();
+                              if (row.voiceoverSource.file) {
+                                void openFileInWorkspace(app, row.voiceoverSource.file);
+                              }
+                            }}
+                            title={
+                              row.voiceoverTooltip ??
+                              row.voiceoverLabel ??
+                              "Open voiceover source"
+                            }
+                          >
+                            {row.voiceoverLabel ??
+                              row.voiceoverSource.file?.basename ??
+                              "Voiceover Source"}
+                          </a>
+                        </div>
+                      ) : null}
+                      {!row.hasTranscription && canShowTranscribeButton ? (
+                        <Button
+                          icon="wand-2"
+                          className="mod-cta"
+                          disabled={row.isTranscribing}
+                          onClick={() => handleTranscribe(row.file)}
+                        >
+                          {transcribeLabel}
+                        </Button>
+                      ) : null}
+                      {!row.hasTranscription &&
+                      !row.hasVoiceoverSource &&
+                      row.referencingNotes.length === 0 &&
+                      !canShowTranscribeButton ? (
+                        <div className="flex items-center gap-2 text-[var(--text-muted)]">
+                          <Icon name="clock" className="h-4 w-4" />
+                          <span className="text-sm">
+                            {showResolvingState ? "Resolving..." : "Preparing..."}
+                          </span>
+                        </div>
+                      ) : null}
                     </div>
-                  ) : null}
-                  {canShowTranscribeButton ? (
-                    <Button
-                      icon="wand-2"
-                      className="mod-cta"
-                      disabled={row.isTranscribing}
-                      onClick={() => handleTranscribe(row.file)}
-                    >
-                      {transcribeLabel}
-                    </Button>
-                  ) : null}
-                  {!row.hasTranscription &&
-                  !row.hasVoiceoverSource &&
-                  !canShowTranscribeButton ? (
-                    <div className="flex items-center gap-2 text-[var(--text-muted)]">
-                      <Icon name="clock" className="h-4 w-4" />
-                      <span className="text-sm">
-                        {showResolvingState ? "Resolving..." : "Preparing..."}
-                      </span>
-                    </div>
-                  ) : null}
-                </div>
+                  </div>
+                ) : null}
               </div>
             );
           })
