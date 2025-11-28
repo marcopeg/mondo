@@ -1023,6 +1023,59 @@ export const AudioLogsView = ({ plugin }: AudioLogsViewProps) => {
     };
   }, [audioFiles]);
 
+  // Efficiently find all notes that reference each audio file
+  const audioBacklinksMap = useMemo(() => {
+    const map = new Map<string, TFile[]>();
+    
+    // Get all markdown files
+    const markdownFiles = app.vault.getMarkdownFiles();
+    
+    // For each audio file, check which notes reference it
+    audioFiles.forEach((audioFile) => {
+      const referencing: TFile[] = [];
+      
+      markdownFiles.forEach((mdFile) => {
+        const cache = app.metadataCache.getFileCache(mdFile);
+        if (!cache) return;
+        
+        // Check embeds (e.g., ![[audio.mp3]])
+        const embeds = cache.embeds ?? [];
+        const hasEmbed = embeds.some((embed) => {
+          const resolved = app.metadataCache.getFirstLinkpathDest(
+            embed.link,
+            mdFile.path
+          );
+          return resolved?.path === audioFile.path;
+        });
+        
+        if (hasEmbed) {
+          referencing.push(mdFile);
+          return;
+        }
+        
+        // Check regular links (e.g., [[audio.mp3]])
+        const links = cache.links ?? [];
+        const hasLink = links.some((link) => {
+          const resolved = app.metadataCache.getFirstLinkpathDest(
+            link.link,
+            mdFile.path
+          );
+          return resolved?.path === audioFile.path;
+        });
+        
+        if (hasLink) {
+          referencing.push(mdFile);
+        }
+      });
+      
+      if (referencing.length > 0) {
+        map.set(audioFile.path, referencing);
+      }
+    });
+    
+    return map;
+  }, [app.metadataCache, app.vault, audioFiles]);
+
   const rows = useMemo(
     () =>
       visibleFiles.map((file) => {
@@ -1073,6 +1126,8 @@ export const AudioLogsView = ({ plugin }: AudioLogsViewProps) => {
         const isTranscribing =
           Boolean(transcribing[file.path]) ||
           manager?.isTranscriptionInProgress(file) === true;
+        
+        const referencingNotes = audioBacklinksMap.get(file.path) ?? [];
 
         return {
           file,
@@ -1091,9 +1146,10 @@ export const AudioLogsView = ({ plugin }: AudioLogsViewProps) => {
           isResolvingMetadata,
           displayTitle,
           isResolved: meta?.isResolved ?? false,
+          referencingNotes,
         };
       }),
-    [manager, metadataMap, transcribing, visibleFiles]
+    [audioBacklinksMap, manager, metadataMap, transcribing, visibleFiles]
   );
   const totalNotesLabel = totals.totalNotes.toLocaleString();
   const totalSizeLabel = formatFileSize(totals.totalSize);
@@ -1142,7 +1198,7 @@ export const AudioLogsView = ({ plugin }: AudioLogsViewProps) => {
               <tr>
                 <Table.Cell
                   className="p-6 text-center text-[var(--text-muted)]"
-                  colSpan={5}
+                  colSpan={6}
                 >
                   {isLoading
                     ? "Loading audio notes..."
@@ -1224,6 +1280,28 @@ export const AudioLogsView = ({ plugin }: AudioLogsViewProps) => {
                           {row.sizeLabel}
                         </span>
                       </div>
+                    </Table.Cell>
+                    <Table.Cell className="p-3 align-middle">
+                      {row.referencingNotes.length > 0 ? (
+                        <div className="flex flex-col gap-1">
+                          {row.referencingNotes.map((note) => (
+                            <a
+                              key={note.path}
+                              href="#"
+                              className="block max-w-[16rem] truncate text-sm text-[var(--interactive-accent)] hover:underline"
+                              onClick={(event) => {
+                                event.preventDefault();
+                                void openFileInWorkspace(app, note);
+                              }}
+                              title={note.path}
+                            >
+                              {note.basename}
+                            </a>
+                          ))}
+                        </div>
+                      ) : (
+                        <span className="text-sm text-[var(--text-muted)]">—</span>
+                      )}
                     </Table.Cell>
                     <Table.Cell className="p-3 align-middle">
                       {row.hasTranscription || row.hasVoiceoverSource ? (
@@ -1447,6 +1525,29 @@ export const AudioLogsView = ({ plugin }: AudioLogsViewProps) => {
                           row.voiceoverSource.file?.basename ??
                           "Open voiceover source"}
                       </a>
+                    </div>
+                  ) : null}
+                  {row.referencingNotes.length > 0 ? (
+                    <div className="flex flex-col gap-1">
+                      <span className="text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">
+                        Referenced In
+                      </span>
+                      <div className="flex flex-col gap-1">
+                        {row.referencingNotes.map((note) => (
+                          <a
+                            key={note.path}
+                            href="#"
+                            className="block truncate text-[var(--interactive-accent)] hover:underline"
+                            onClick={(event) => {
+                              event.preventDefault();
+                              void openFileInWorkspace(app, note);
+                            }}
+                            title={note.path}
+                          >
+                            {note.basename}
+                          </a>
+                        ))}
+                      </div>
                     </div>
                   ) : null}
                   {canShowTranscribeButton ? (
