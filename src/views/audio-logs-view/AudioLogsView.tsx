@@ -1015,6 +1015,22 @@ export const AudioLogsView = ({ plugin }: AudioLogsViewProps) => {
     modal.open();
   }, [app, audioFiles, transcriptionsMap, voiceoverSourcesMap]);
 
+  const handleCopyAbsolutePath = useCallback((file: TFile) => {
+    const adapter = app.vault.adapter;
+    const basePath = "getBasePath" in adapter && typeof adapter.getBasePath === "function"
+      ? adapter.getBasePath()
+      : "";
+    
+    const filePath = file.path.replace(/^\/+/, "");
+    const absolutePath = basePath ? `${basePath}/${filePath}` : filePath;
+    
+    navigator.clipboard.writeText(absolutePath).then(() => {
+      new Notice("Path copied to clipboard");
+    }).catch(() => {
+      new Notice("Failed to copy path");
+    });
+  }, [app.vault.adapter]);
+
   const totals = useMemo(() => {
     const totalSize = audioFiles.reduce((sum, file) => sum + file.stat.size, 0);
     return {
@@ -1256,15 +1272,17 @@ export const AudioLogsView = ({ plugin }: AudioLogsViewProps) => {
                             </span>
                           ) : null}
                         </Button>
-                        <div
-                          className="group relative w-full text-xs text-[var(--text-muted)]"
-                          aria-label={row.pathLabel}
-                          tabIndex={0}
-                          title={row.pathLabel}
-                        >
-                          <span className="block w-full truncate">
-                            {row.pathLabel}
-                          </span>
+                        <div className="group relative flex w-full items-center gap-1">
+                          <div
+                            className="flex-1 truncate text-xs text-[var(--text-muted)] cursor-pointer"
+                            aria-label={row.pathLabel}
+                            title={row.pathLabel}
+                            onClick={() => handleCopyAbsolutePath(row.file)}
+                          >
+                            <span className="truncate">
+                              {row.pathLabel}
+                            </span>
+                          </div>
                           <span className={tooltipClasses} role="presentation">
                             {row.pathLabel}
                           </span>
@@ -1442,12 +1460,15 @@ export const AudioLogsView = ({ plugin }: AudioLogsViewProps) => {
                           </span>
                         ) : null}
                       </Button>
-                      <div
-                        className="text-xs text-[var(--text-muted)]"
-                        aria-label={row.pathLabel}
-                        title={row.pathLabel}
-                      >
-                        <span className="block truncate">{row.pathLabel}</span>
+                      <div className="flex items-center gap-1">
+                        <div
+                          className="flex-1 truncate text-xs text-[var(--text-muted)] cursor-pointer"
+                          aria-label={row.pathLabel}
+                          title={row.pathLabel}
+                          onClick={() => handleCopyAbsolutePath(row.file)}
+                        >
+                          <span className="truncate">{row.pathLabel}</span>
+                        </div>
                       </div>
                       <div className="flex flex-wrap gap-x-4 gap-y-2 text-sm">
                         <span className="text-[var(--text-muted)]">
